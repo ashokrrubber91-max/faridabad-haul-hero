@@ -69,7 +69,7 @@ function DriverPage() {
   });
 
   if (loading) return <Center><Loader2 className="h-5 w-5 animate-spin text-primary" /></Center>;
-  if (role && role !== "driver" && role !== "admin") return <Navigate to={role === "admin" ? "/admin" : "/customer"} />;
+  if (role && role !== "driver" && role !== "admin") return <Navigate to="/customer" />;
 
   const pending = (queue.data ?? []).filter((b) => b.status === "pending");
   const mine = (queue.data ?? []).filter((b) => b.driver_id === user?.id && b.status !== "pending");
