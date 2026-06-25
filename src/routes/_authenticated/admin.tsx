@@ -38,11 +38,27 @@ function AdminPage() {
     },
   });
 
+  const smsLogs = useQuery({
+    queryKey: ["admin-sms-logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sms_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   useEffect(() => {
     const ch = supabase
       .channel("admin-feed")
       .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () =>
         qc.invalidateQueries({ queryKey: ["admin-bookings"] }),
+      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "sms_logs" }, () =>
+        qc.invalidateQueries({ queryKey: ["admin-sms-logs"] }),
       )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
