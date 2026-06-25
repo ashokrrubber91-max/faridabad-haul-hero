@@ -34,10 +34,10 @@ function AuthPage() {
   const [tab, setTab] = useState<"signin" | "signup">(search.mode ?? "signin");
 
   useEffect(() => {
-    if (loading || !user || !role) return;
-    if (role === "admin") navigate({ to: "/admin" });
-    else if (role === "driver") navigate({ to: "/driver" });
-    else navigate({ to: "/customer" });
+    if (loading || !user) return;
+    if (role === "admin") navigate({ to: "/admin", replace: true });
+    else if (role === "driver") navigate({ to: "/driver", replace: true });
+    else navigate({ to: "/customer", replace: true });
   }, [user, role, loading, navigate]);
 
   return (
