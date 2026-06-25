@@ -41,10 +41,14 @@ function AuthedLayout() {
             <span className="font-display text-xl tracking-wide text-secondary">MINIPORT</span>
           </Link>
           <div className="flex items-center gap-2">
-            <div className="hidden text-right sm:block">
-              <p className="text-xs font-semibold text-secondary">{profile?.name ?? ""}</p>
-              <p className="text-xs text-muted-foreground">{profile?.phone}</p>
-            </div>
+            {profile?.name && (
+              <div className="text-right">
+                <p className="text-xs font-semibold text-secondary sm:text-sm">
+                  Welcome, {profile.name.split(" ")[0]}
+                </p>
+                <p className="hidden text-xs text-muted-foreground sm:block">{profile.phone}</p>
+              </div>
+            )}
             <Button size="sm" variant="ghost" onClick={signOut} aria-label="Sign out">
               <LogOut className="h-4 w-4" />
             </Button>
