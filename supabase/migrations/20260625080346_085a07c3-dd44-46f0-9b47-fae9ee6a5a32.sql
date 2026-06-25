@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.enqueue_sms_for_booking() FROM PUBLIC, anon, authenticated;

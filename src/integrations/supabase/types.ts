@@ -80,6 +80,62 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_logs: {
+        Row: {
+          body: string
+          booking_id: string
+          created_at: string
+          error: string | null
+          event: Database["public"]["Enums"]["sms_event"]
+          id: string
+          phone: string
+          provider_sid: string | null
+          recipient: Database["public"]["Enums"]["sms_recipient"]
+          recipient_user_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["sms_status"]
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          booking_id: string
+          created_at?: string
+          error?: string | null
+          event: Database["public"]["Enums"]["sms_event"]
+          id?: string
+          phone: string
+          provider_sid?: string | null
+          recipient: Database["public"]["Enums"]["sms_recipient"]
+          recipient_user_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["sms_status"]
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          booking_id?: string
+          created_at?: string
+          error?: string | null
+          event?: Database["public"]["Enums"]["sms_event"]
+          id?: string
+          phone?: string
+          provider_sid?: string | null
+          recipient?: Database["public"]["Enums"]["sms_recipient"]
+          recipient_user_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["sms_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_logs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -119,6 +175,9 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "cancelled"
+      sms_event: "accepted" | "started" | "completed"
+      sms_recipient: "customer" | "driver"
+      sms_status: "queued" | "sent" | "failed"
       vehicle_type: "tata_ace" | "pickup_8ft" | "tata_407"
     }
     CompositeTypes: {
@@ -255,6 +314,9 @@ export const Constants = {
         "completed",
         "cancelled",
       ],
+      sms_event: ["accepted", "started", "completed"],
+      sms_recipient: ["customer", "driver"],
+      sms_status: ["queued", "sent", "failed"],
       vehicle_type: ["tata_ace", "pickup_8ft", "tata_407"],
     },
   },
