@@ -1,7 +1,7 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, ArrowRight, MapPin, Users, Truck, IndianRupee } from "lucide-react";
+import { Loader2, ArrowRight, MapPin, Users, Truck, IndianRupee, MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
