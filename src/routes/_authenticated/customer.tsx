@@ -1,41 +1,52 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { z } from "zod";
-import { MapPin, ArrowRight, Package, Loader2 } from "lucide-react";
+import { MapPin, ArrowRight, Package, Loader2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { VEHICLES, estimateFare, vehicleLabel, STATUS_META, type VehicleId } from "@/lib/booking";
+import { LocationSearchOverlay, type PlacePick } from "@/components/booking/LocationSearchOverlay";
+import { MapPinConfirm } from "@/components/booking/MapPinConfirm";
 
 export const Route = createFileRoute("/_authenticated/customer")({
-  head: () => ({ meta: [{ title: "Book a truck \u2014 MiniPort" }] }),
+  head: () => ({ meta: [{ title: "Book a truck — MiniPort" }] }),
   component: CustomerPage,
 });
 
-const bookingSchema = z.object({
-  pickup: z.string().trim().min(4, "Enter pickup address").max(200),
-  drop: z.string().trim().min(4, "Enter drop address").max(200),
-  distance: z.coerce.number().positive("Distance must be > 0").max(80),
-  notes: z.string().max(300).optional(),
-});
+type Stage = { type: "search" | "confirm"; mode: "pickup" | "drop" } | null;
+
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
 
 function CustomerPage() {
   const { user, role, loading } = useAuth();
   const qc = useQueryClient();
   const [vehicle, setVehicle] = useState<VehicleId>("tata_ace");
-  const [pickup, setPickup] = useState("");
-  const [drop, setDrop] = useState("");
-  const [distance, setDistance] = useState("");
+  const [pickup, setPickup] = useState<PlacePick | null>(null);
+  const [drop, setDrop] = useState<PlacePick | null>(null);
   const [notes, setNotes] = useState("");
+  const [stage, setStage] = useState<Stage>(null);
+  const [pending, setPending] = useState<PlacePick | null>(null);
 
-  const distanceNum = Number(distance);
-  const fare = estimateFare(vehicle, isFinite(distanceNum) ? distanceNum : 0);
+  const distanceKm = useMemo(() => {
+    if (!pickup || !drop) return 0;
+    // road factor ~1.3 over straight-line distance
+    return Math.max(0.5, +(haversineKm(pickup, drop) * 1.3).toFixed(1));
+  }, [pickup, drop]);
+  const fare = estimateFare(vehicle, distanceKm);
 
   const bookings = useQuery({
     queryKey: ["my-bookings", user?.id],
@@ -55,31 +66,47 @@ function CustomerPage() {
     if (!user) return;
     const ch = supabase
       .channel("cust-bookings")
-      .on("postgres_changes", { event: "*", schema: "public", table: "bookings", filter: `customer_id=eq.${user.id}` }, () => {
-        qc.invalidateQueries({ queryKey: ["my-bookings", user.id] });
-      })
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "bookings", filter: `customer_id=eq.${user.id}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["my-bookings", user.id] });
+        },
+      )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [user, qc]);
 
   const create = useMutation({
     mutationFn: async () => {
-      const parsed = bookingSchema.safeParse({ pickup, drop, distance, notes });
-      if (!parsed.success) throw new Error(parsed.error.issues[0].message);
+      if (!pickup) throw new Error("Choose pickup location");
+      if (!drop) throw new Error("Choose drop location");
+      if (distanceKm <= 0) throw new Error("Invalid distance");
       const { error } = await supabase.from("bookings").insert({
         customer_id: user!.id,
-        pickup_address: parsed.data.pickup,
-        drop_address: parsed.data.drop,
+        pickup_address: pickup.address,
+        drop_address: drop.address,
         vehicle_type: vehicle,
-        distance_km: parsed.data.distance,
+        distance_km: distanceKm,
         fare,
-        notes: parsed.data.notes || null,
+        notes:
+          [
+            notes.trim(),
+            pickup.contactName && `Sender: ${pickup.contactName} (${pickup.contactPhone ?? ""})`,
+            drop.contactName && `Receiver: ${drop.contactName} (${drop.contactPhone ?? ""})`,
+          ]
+            .filter(Boolean)
+            .join(" · ") || null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Booking placed \u2014 finding a driver");
-      setPickup(""); setDrop(""); setDistance(""); setNotes("");
+      toast.success("Booking placed — finding a driver");
+      setPickup(null);
+      setDrop(null);
+      setNotes("");
       qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -99,21 +126,29 @@ function CustomerPage() {
     return <Navigate to={role === "driver" ? "/driver" : "/admin"} />;
   }
 
+  const openSearch = (mode: "pickup" | "drop") => setStage({ type: "search", mode });
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
       <section className="surface-card p-5">
         <h2 className="font-display text-2xl tracking-wide text-secondary">New booking</h2>
-        <p className="text-sm text-muted-foreground">Faridabad only \u00b7 transparent flat fare</p>
+        <p className="text-sm text-muted-foreground">Faridabad only · transparent flat fare</p>
 
         <div className="mt-5 space-y-4">
-          <div>
-            <Label htmlFor="pickup" className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-primary" /> Pickup</Label>
-            <Input id="pickup" placeholder="House 21, Sector 15, Faridabad" value={pickup} onChange={(e) => setPickup(e.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="drop" className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-success" /> Drop</Label>
-            <Input id="drop" placeholder="Plot 14, NIT, Faridabad" value={drop} onChange={(e) => setDrop(e.target.value)} />
-          </div>
+          <LocationButton
+            label="Pickup"
+            dotClass="text-primary"
+            place={pickup}
+            placeholder="Search pickup location"
+            onClick={() => openSearch("pickup")}
+          />
+          <LocationButton
+            label="Drop"
+            dotClass="text-success"
+            place={drop}
+            placeholder="Search drop location"
+            onClick={() => openSearch("drop")}
+          />
 
           <div>
             <Label>Vehicle</Label>
@@ -129,31 +164,37 @@ function CustomerPage() {
                 >
                   <div>
                     <p className="text-sm font-semibold text-secondary">{v.label}</p>
-                    <p className="text-xs text-muted-foreground">Up to {v.capacity} \u00b7 \u20b9{v.perKm}/km</p>
+                    <p className="text-xs text-muted-foreground">
+                      Up to {v.capacity} · ₹{v.perKm}/km
+                    </p>
                   </div>
-                  <span className="text-xs font-semibold text-muted-foreground">Base \u20b9{v.base}</span>
+                  <span className="text-xs font-semibold text-muted-foreground">Base ₹{v.base}</span>
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <Label htmlFor="distance">Distance (km)</Label>
-            <Input id="distance" inputMode="decimal" placeholder="e.g. 8.5" value={distance} onChange={(e) => setDistance(e.target.value)} />
-          </div>
-
-          <div>
             <Label htmlFor="notes">Notes for driver (optional)</Label>
-            <Textarea id="notes" rows={2} placeholder="2 mattresses + 1 sofa" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={300} />
+            <Textarea
+              id="notes"
+              rows={2}
+              placeholder="2 mattresses + 1 sofa"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              maxLength={300}
+            />
           </div>
 
           <div className="flex items-center justify-between rounded-md bg-secondary/95 px-4 py-3 text-secondary-foreground">
             <div>
-              <p className="text-xs uppercase tracking-wider opacity-80">Estimated fare</p>
-              <p className="font-display text-3xl">\u20b9 {fare || "—"}</p>
+              <p className="text-xs uppercase tracking-wider opacity-80">
+                {distanceKm > 0 ? `${distanceKm} km · estimated fare` : "Estimated fare"}
+              </p>
+              <p className="font-display text-3xl">₹ {fare || "—"}</p>
             </div>
             <Button onClick={() => create.mutate()} disabled={create.isPending} className="h-11">
-              {create.isPending ? "Booking\u2026" : "Book now"}
+              {create.isPending ? "Booking…" : "Book now"}
             </Button>
           </div>
         </div>
@@ -161,7 +202,9 @@ function CustomerPage() {
 
       <section>
         <h2 className="mb-3 font-display text-2xl tracking-wide text-secondary">Your bookings</h2>
-        {bookings.isLoading ? <CenterLoader /> : (
+        {bookings.isLoading ? (
+          <CenterLoader />
+        ) : (
           <div className="space-y-3">
             {(bookings.data ?? []).length === 0 && (
               <div className="surface-card p-6 text-center text-sm text-muted-foreground">
@@ -177,7 +220,7 @@ function CustomerPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>{vehicleLabel(b.vehicle_type)}</span>
-                        <span>\u00b7</span>
+                        <span>·</span>
                         <span>{b.distance_km} km</span>
                       </div>
                       <p className="mt-1 truncate text-sm font-medium text-secondary">{b.pickup_address}</p>
@@ -186,15 +229,23 @@ function CustomerPage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-display text-xl text-secondary">\u20b9{Number(b.fare).toFixed(0)}</p>
-                      <Badge variant={meta.tone === "destructive" ? "destructive" : "secondary"} className={tone(meta.tone)}>
+                      <p className="font-display text-xl text-secondary">₹{Number(b.fare).toFixed(0)}</p>
+                      <Badge
+                        variant={meta.tone === "destructive" ? "destructive" : "secondary"}
+                        className={tone(meta.tone)}
+                      >
                         {meta.label}
                       </Badge>
                     </div>
                   </div>
-                  {(b.status === "pending") && (
+                  {b.status === "pending" && (
                     <div className="mt-3 flex justify-end">
-                      <Button size="sm" variant="ghost" onClick={() => cancel.mutate(b.id)} disabled={cancel.isPending}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => cancel.mutate(b.id)}
+                        disabled={cancel.isPending}
+                      >
                         Cancel
                       </Button>
                     </div>
@@ -205,20 +256,91 @@ function CustomerPage() {
           </div>
         )}
       </section>
+
+      <LocationSearchOverlay
+        open={stage?.type === "search"}
+        onOpenChange={(v) => !v && setStage(null)}
+        mode={stage?.mode ?? "pickup"}
+        onPick={(p) => {
+          setPending(p);
+          setStage({ type: "confirm", mode: stage?.mode ?? "pickup" });
+        }}
+      />
+      <MapPinConfirm
+        open={stage?.type === "confirm"}
+        onOpenChange={(v) => !v && setStage(null)}
+        mode={stage?.mode ?? "pickup"}
+        initial={pending}
+        onConfirm={(p) => {
+          if (stage?.mode === "pickup") setPickup(p);
+          else setDrop(p);
+          setPending(null);
+          setStage(null);
+        }}
+      />
     </div>
+  );
+}
+
+function LocationButton({
+  label,
+  dotClass,
+  place,
+  placeholder,
+  onClick,
+}: {
+  label: string;
+  dotClass: string;
+  place: PlacePick | null;
+  placeholder: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-3 rounded-md border bg-background p-3 text-left transition-colors hover:bg-muted"
+    >
+      <MapPin className={`h-4 w-4 shrink-0 ${dotClass}`} />
+      <div className="min-w-0 flex-1">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+        {place ? (
+          <>
+            <p className="truncate text-sm font-medium text-secondary">
+              {place.alias || place.address}
+            </p>
+            {place.alias && (
+              <p className="truncate text-xs text-muted-foreground">{place.address}</p>
+            )}
+          </>
+        ) : (
+          <p className="truncate text-sm text-muted-foreground">{placeholder}</p>
+        )}
+      </div>
+      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+    </button>
   );
 }
 
 function tone(t: "warning" | "primary" | "success" | "muted" | "destructive") {
   switch (t) {
-    case "warning": return "bg-warning text-warning-foreground hover:bg-warning";
-    case "primary": return "bg-primary text-primary-foreground hover:bg-primary";
-    case "success": return "bg-success text-success-foreground hover:bg-success";
-    case "destructive": return "";
-    default: return "";
+    case "warning":
+      return "bg-warning text-warning-foreground hover:bg-warning";
+    case "primary":
+      return "bg-primary text-primary-foreground hover:bg-primary";
+    case "success":
+      return "bg-success text-success-foreground hover:bg-success";
+    case "destructive":
+      return "";
+    default:
+      return "";
   }
 }
 
 function CenterLoader() {
-  return <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
+  return (
+    <div className="flex justify-center py-10">
+      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+    </div>
+  );
 }
