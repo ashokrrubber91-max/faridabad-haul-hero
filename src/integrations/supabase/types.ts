@@ -80,6 +80,51 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_addresses: {
+        Row: {
+          address: string
+          alias: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["address_kind"]
+          latitude: number | null
+          longitude: number | null
+          place_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          alias?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["address_kind"]
+          latitude?: number | null
+          longitude?: number | null
+          place_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          alias?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["address_kind"]
+          latitude?: number | null
+          longitude?: number | null
+          place_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sms_logs: {
         Row: {
           body: string
@@ -168,6 +213,7 @@ export type Database = {
       }
     }
     Enums: {
+      address_kind: "home" | "shop" | "other"
       app_role: "customer" | "driver" | "admin"
       booking_status:
         | "pending"
@@ -306,6 +352,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      address_kind: ["home", "shop", "other"],
       app_role: ["customer", "driver", "admin"],
       booking_status: [
         "pending",
