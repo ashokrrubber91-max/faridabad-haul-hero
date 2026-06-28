@@ -16,8 +16,20 @@ export const Route = createFileRoute("/_authenticated/driver")({
 });
 
 function DriverPage() {
-  const { user, role, roles, activeMode, loading } = useAuth();
+  const { user, role, roles, activeMode, profile, loading } = useAuth();
   const qc = useQueryClient();
+
+  const setOnline = useMutation({
+    mutationFn: async (next: boolean) => {
+      const { error } = await supabase.from("profiles").update({ is_online: next }).eq("id", user!.id);
+      if (error) throw error;
+      return next;
+    },
+    onSuccess: (next) => {
+      toast.success(next ? "You\u2019re online \u2014 receiving jobs" : "You\u2019re offline");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const queue = useQuery({
     queryKey: ["driver-feed", user?.id],
