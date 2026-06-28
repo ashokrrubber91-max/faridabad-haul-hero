@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META } from "@/lib/booking";
 
 export const Route = createFileRoute("/_authenticated/admin")({
-  head: () => ({ meta: [{ title: "Admin \u2014 MiniPort" }] }),
+  head: () => ({ meta: [{ title: "Admin — MiniPort" }] }),
   component: AdminPage,
 });
 
@@ -90,7 +90,7 @@ function AdminPage() {
         <Stat icon={<Truck className="h-4 w-4" />} label="Pending" value={pending} tone="warning" />
         <Stat icon={<Truck className="h-4 w-4" />} label="Active" value={active} tone="primary" />
         <Stat icon={<Truck className="h-4 w-4" />} label="Completed" value={completed.length} tone="success" />
-        <Stat icon={<IndianRupee className="h-4 w-4" />} label="Revenue" value={`\u20b9${revenue.toFixed(0)}`} tone="ink" />
+        <Stat icon={<IndianRupee className="h-4 w-4" />} label="Revenue" value={`₹${revenue.toFixed(0)}`} tone="ink" />
       </div>
 
       <section className="surface-card">
@@ -109,9 +109,9 @@ function AdminPage() {
                 <div className="min-w-0">
                   <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span>{vehicleLabel(b.vehicle_type)}</span>
-                    <span>\u00b7</span>
+                    <span>·</span>
                     <span>{b.distance_km} km</span>
-                    <span>\u00b7</span>
+                    <span>·</span>
                     <span>{new Date(b.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</span>
                   </div>
                   <p className="flex items-start gap-1.5 truncate text-sm font-medium text-secondary">
@@ -122,11 +122,11 @@ function AdminPage() {
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Customer: <span className="text-secondary">{customer?.name ?? "—"}</span> ({customer?.phone ?? "—"})
-                    {driver && <> \u00b7 Driver: <span className="text-secondary">{driver.name}</span> ({driver.phone})</>}
+                    {driver && <> · Driver: <span className="text-secondary">{driver.name}</span> ({driver.phone})</>}
                   </p>
                 </div>
                 <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end">
-                  <p className="font-display text-xl text-secondary">\u20b9{Number(b.fare).toFixed(0)}</p>
+                  <p className="font-display text-xl text-secondary">₹{Number(b.fare).toFixed(0)}</p>
                   <Badge className={tone(meta.tone)}>{meta.label}</Badge>
                 </div>
               </div>

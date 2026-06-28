@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META } from "@/lib/booking";
 
 export const Route = createFileRoute("/_authenticated/driver")({
-  head: () => ({ meta: [{ title: "Driver \u2014 MiniPort" }] }),
+  head: () => ({ meta: [{ title: "Driver — MiniPort" }] }),
   component: DriverPage,
 });
 
@@ -26,7 +26,7 @@ function DriverPage() {
       return next;
     },
     onSuccess: (next) => {
-      toast.success(next ? "You\u2019re online \u2014 receiving jobs" : "You\u2019re offline");
+      toast.success(next ? "You're online — receiving jobs" : "You're offline");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -69,7 +69,7 @@ function DriverPage() {
       if (!data) throw new Error("Already taken by another driver");
       return data;
     },
-    onSuccess: () => toast.success("You\u2019ve got the job!"),
+    onSuccess: () => toast.success("You've got the job!"),
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -121,7 +121,7 @@ function DriverPage() {
           <div className="text-right">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">Today</p>
             <p className="font-display text-xl text-secondary">
-              \u20b9{todayEarnings.toFixed(0)}
+              ₹{todayEarnings.toFixed(0)}
               <span className="ml-1 text-xs text-muted-foreground">· {todayCompleted.length} trips</span>
             </p>
           </div>
@@ -160,7 +160,7 @@ function DriverPage() {
               <div key={b.id} className="surface-card border-l-4 border-l-primary p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{vehicleLabel(b.vehicle_type)} \u00b7 {b.distance_km} km</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{vehicleLabel(b.vehicle_type)} · {b.distance_km} km</p>
                     <p className="mt-1 flex items-start gap-1.5 text-sm font-medium text-secondary">
                       <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />{b.pickup_address}
                     </p>
@@ -170,7 +170,7 @@ function DriverPage() {
                     {b.notes && <p className="mt-1 text-xs italic text-muted-foreground">"{b.notes}"</p>}
                   </div>
                   <div className="text-right">
-                    <p className="font-display text-2xl text-secondary">\u20b9{Number(b.fare).toFixed(0)}</p>
+                    <p className="font-display text-2xl text-secondary">₹{Number(b.fare).toFixed(0)}</p>
                     <Button size="sm" className="mt-2 h-9" onClick={() => accept.mutate(b.id)} disabled={accept.isPending}>
                       Accept
                     </Button>
@@ -194,7 +194,7 @@ function DriverPage() {
                 <div key={b.id} className="surface-card p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">{vehicleLabel(b.vehicle_type)} \u00b7 {b.distance_km} km</p>
+                      <p className="text-xs text-muted-foreground">{vehicleLabel(b.vehicle_type)} · {b.distance_km} km</p>
                       <p className="truncate text-sm font-medium text-secondary">{b.pickup_address}</p>
                       <p className="flex items-center gap-1 truncate text-sm text-muted-foreground">
                         <ArrowRight className="h-3 w-3" /> {b.drop_address}
