@@ -61,18 +61,21 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_mode: string
           created_at: string
           id: string
           name: string
           phone: string
         }
         Insert: {
+          active_mode?: string
           created_at?: string
           id: string
           name: string
           phone: string
         }
         Update: {
+          active_mode?: string
           created_at?: string
           id?: string
           name?: string
