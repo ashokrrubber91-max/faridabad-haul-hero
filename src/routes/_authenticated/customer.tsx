@@ -32,7 +32,7 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
 }
 
 function CustomerPage() {
-  const { user, role, loading } = useAuth();
+  const { user, role, roles, activeMode, loading } = useAuth();
   const qc = useQueryClient();
   const [vehicle, setVehicle] = useState<VehicleId>("tata_ace");
   const [pickup, setPickup] = useState<PlacePick | null>(null);
@@ -124,6 +124,10 @@ function CustomerPage() {
   if (loading) return <CenterLoader />;
   if (role && role !== "customer" && role !== "admin") {
     return <Navigate to={role === "driver" ? "/driver" : "/admin"} />;
+  }
+  // Dual-role: if user is also a driver and has switched into driver mode, send them to /driver.
+  if (role !== "admin" && roles.includes("driver") && activeMode === "driver") {
+    return <Navigate to="/driver" />;
   }
 
   const openSearch = (mode: "pickup" | "drop") => setStage({ type: "search", mode });

@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS active_mode TEXT NOT NULL DEFAULT 'customer' CHECK (active_mode IN ('customer','driver'));

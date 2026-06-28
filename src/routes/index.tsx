@@ -65,8 +65,8 @@ function Index() {
           <div className="surface-card relative p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sector 21 \u2192 NIT</p>
-                <p className="font-display text-3xl text-secondary">\u20b9 374</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sector 21 → NIT</p>
+                <p className="font-display text-3xl text-secondary">₹ 374</p>
               </div>
               <div className="brand-gradient rounded-lg p-3">
                 <Truck className="h-6 w-6 text-white" />
