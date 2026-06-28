@@ -2,9 +2,10 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowRight, Loader2, MapPin, Truck } from "lucide-react";
+import { ArrowRight, Loader2, MapPin, Truck, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META } from "@/lib/booking";
@@ -77,9 +78,60 @@ function DriverPage() {
 
   const pending = (queue.data ?? []).filter((b) => b.status === "pending");
   const mine = (queue.data ?? []).filter((b) => b.driver_id === user?.id && b.status !== "pending");
+  const isOnline = profile?.is_online ?? false;
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayCompleted = mine.filter(
+    (b) => b.status === "completed" && new Date(b.updated_at ?? b.created_at) >= today,
+  );
+  const todayEarnings = todayCompleted.reduce((sum, b) => sum + Number(b.fare || 0), 0);
+  const activeJob = mine.find((b) => b.status === "accepted" || b.status === "in_progress");
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      <section className="surface-card flex flex-wrap items-center justify-between gap-3 p-4">
+        <div className="flex items-center gap-3">
+          {isOnline ? (
+            <Wifi className="h-5 w-5 text-success" />
+          ) : (
+            <WifiOff className="h-5 w-5 text-muted-foreground" />
+          )}
+          <div>
+            <p className="font-display text-base tracking-wide text-secondary">
+              {isOnline ? "Online" : "Offline"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {isOnline ? "Job requests will appear below" : "Go online to receive jobs"}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Today</p>
+            <p className="font-display text-xl text-secondary">
+              \u20b9{todayEarnings.toFixed(0)}
+              <span className="ml-1 text-xs text-muted-foreground">· {todayCompleted.length} trips</span>
+            </p>
+          </div>
+          <Switch
+            checked={isOnline}
+            onCheckedChange={(v) => setOnline.mutate(v)}
+            disabled={setOnline.isPending}
+            aria-label="Toggle online"
+          />
+        </div>
+      </section>
+
+      {activeJob && (
+        <section className="surface-card border-l-4 border-l-primary p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">Active job</p>
+          <p className="mt-1 text-sm font-medium text-secondary">{activeJob.pickup_address}</p>
+          <p className="flex items-center gap-1 text-sm text-muted-foreground">
+            <ArrowRight className="h-3 w-3" /> {activeJob.drop_address}
+          </p>
+        </section>
+      )}
+
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-2xl tracking-wide text-secondary">Live requests</h2>
