@@ -90,7 +90,7 @@ function DriverPage() {
 
   const pending = (queue.data ?? []).filter((b) => b.status === "pending");
   const mine = (queue.data ?? []).filter((b) => b.driver_id === user?.id && b.status !== "pending");
-  const isOnline = profile?.is_online ?? false;
+  const isOnline = setOnline.variables ?? profile?.is_online ?? false;
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayCompleted = mine.filter(
