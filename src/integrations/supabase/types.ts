@@ -64,6 +64,7 @@ export type Database = {
           active_mode: string
           created_at: string
           id: string
+          is_online: boolean
           name: string
           phone: string
         }
@@ -71,6 +72,7 @@ export type Database = {
           active_mode?: string
           created_at?: string
           id: string
+          is_online?: boolean
           name: string
           phone: string
         }
@@ -78,6 +80,7 @@ export type Database = {
           active_mode?: string
           created_at?: string
           id?: string
+          is_online?: boolean
           name?: string
           phone?: string
         }
