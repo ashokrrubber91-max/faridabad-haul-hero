@@ -203,19 +203,35 @@ function CustomerPage() {
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-md bg-secondary/95 px-4 py-3 text-secondary-foreground">
-            <div>
-              <p className="text-xs uppercase tracking-wider opacity-80">
-                {distanceKm > 0 ? `${distanceKm} km · estimated fare` : "Estimated fare"}
-              </p>
-              <p className="font-display text-3xl">₹ {fare || "—"}</p>
+          <CheckoutExtras
+            fare={baseFare}
+            promo={promo}
+            setPromo={setPromo}
+            coins={coins}
+            setCoins={setCoins}
+            method={method}
+            setMethod={setMethod}
+          />
+
+          <div className="rounded-md bg-secondary/95 px-4 py-3 text-secondary-foreground">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-wider opacity-80">
+                  {distanceKm > 0 ? `${distanceKm} km · total` : "Estimated total"}
+                </p>
+                <p className="font-display text-3xl">₹ {fare || "—"}</p>
+                {discount > 0 && (
+                  <p className="text-xs opacity-80">Base ₹{baseFare} − ₹{discount} off</p>
+                )}
+              </div>
+              <Button onClick={() => create.mutate()} disabled={create.isPending} className="h-11">
+                {create.isPending ? "Booking…" : "Book now"}
+              </Button>
             </div>
-            <Button onClick={() => create.mutate()} disabled={create.isPending} className="h-11">
-              {create.isPending ? "Booking…" : "Book now"}
-            </Button>
           </div>
         </div>
       </section>
+
 
       <section>
         <h2 className="mb-3 font-display text-2xl tracking-wide text-secondary">Your bookings</h2>
