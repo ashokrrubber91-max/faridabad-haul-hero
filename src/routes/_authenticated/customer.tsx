@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { VEHICLES, estimateFare, vehicleLabel, STATUS_META, type VehicleId } from "@/lib/booking";
 import { LocationSearchOverlay, type PlacePick } from "@/components/booking/LocationSearchOverlay";
 import { MapPinConfirm } from "@/components/booking/MapPinConfirm";
+import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
 
 export const Route = createFileRoute("/_authenticated/customer")({
   head: () => ({ meta: [{ title: "Book a truck — MiniPort" }] }),
@@ -40,13 +41,18 @@ function CustomerPage() {
   const [notes, setNotes] = useState("");
   const [stage, setStage] = useState<Stage>(null);
   const [pending, setPending] = useState<PlacePick | null>(null);
+  const [promo, setPromo] = useState<{ code: string; discount: number } | null>(null);
+  const [coins, setCoins] = useState(0);
+  const [method, setMethod] = useState<PaymentMethod>("cod");
 
   const distanceKm = useMemo(() => {
     if (!pickup || !drop) return 0;
     // road factor ~1.3 over straight-line distance
     return Math.max(0.5, +(haversineKm(pickup, drop) * 1.3).toFixed(1));
   }, [pickup, drop]);
-  const fare = estimateFare(vehicle, distanceKm);
+  const baseFare = estimateFare(vehicle, distanceKm);
+  const discount = Math.min(baseFare, (promo?.discount ?? 0) + coins);
+  const fare = Math.max(0, baseFare - discount);
 
   const bookings = useQuery({
     queryKey: ["my-bookings", user?.id],
@@ -91,6 +97,10 @@ function CustomerPage() {
         vehicle_type: vehicle,
         distance_km: distanceKm,
         fare,
+        coupon_code: promo?.code ?? null,
+        coupon_discount: promo?.discount ?? 0,
+        coins_redeemed: coins,
+        payment_method: method,
         notes:
           [
             notes.trim(),
@@ -107,7 +117,10 @@ function CustomerPage() {
       setPickup(null);
       setDrop(null);
       setNotes("");
+      setPromo(null);
+      setCoins(0);
       qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
+      qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -190,19 +203,35 @@ function CustomerPage() {
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-md bg-secondary/95 px-4 py-3 text-secondary-foreground">
-            <div>
-              <p className="text-xs uppercase tracking-wider opacity-80">
-                {distanceKm > 0 ? `${distanceKm} km · estimated fare` : "Estimated fare"}
-              </p>
-              <p className="font-display text-3xl">₹ {fare || "—"}</p>
+          <CheckoutExtras
+            fare={baseFare}
+            promo={promo}
+            setPromo={setPromo}
+            coins={coins}
+            setCoins={setCoins}
+            method={method}
+            setMethod={setMethod}
+          />
+
+          <div className="rounded-md bg-secondary/95 px-4 py-3 text-secondary-foreground">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-wider opacity-80">
+                  {distanceKm > 0 ? `${distanceKm} km · total` : "Estimated total"}
+                </p>
+                <p className="font-display text-3xl">₹ {fare || "—"}</p>
+                {discount > 0 && (
+                  <p className="text-xs opacity-80">Base ₹{baseFare} − ₹{discount} off</p>
+                )}
+              </div>
+              <Button onClick={() => create.mutate()} disabled={create.isPending} className="h-11">
+                {create.isPending ? "Booking…" : "Book now"}
+              </Button>
             </div>
-            <Button onClick={() => create.mutate()} disabled={create.isPending} className="h-11">
-              {create.isPending ? "Booking…" : "Book now"}
-            </Button>
           </div>
         </div>
       </section>
+
 
       <section>
         <h2 className="mb-3 font-display text-2xl tracking-wide text-secondary">Your bookings</h2>

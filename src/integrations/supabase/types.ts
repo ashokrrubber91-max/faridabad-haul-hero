@@ -16,6 +16,9 @@ export type Database = {
     Tables: {
       bookings: {
         Row: {
+          coins_redeemed: number
+          coupon_code: string | null
+          coupon_discount: number
           created_at: string
           customer_id: string
           distance_km: number
@@ -24,12 +27,17 @@ export type Database = {
           fare: number
           id: string
           notes: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
           pickup_address: string
           status: Database["public"]["Enums"]["booking_status"]
           updated_at: string
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
         }
         Insert: {
+          coins_redeemed?: number
+          coupon_code?: string | null
+          coupon_discount?: number
           created_at?: string
           customer_id: string
           distance_km: number
@@ -38,12 +46,17 @@ export type Database = {
           fare: number
           id?: string
           notes?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           pickup_address: string
           status?: Database["public"]["Enums"]["booking_status"]
           updated_at?: string
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
         }
         Update: {
+          coins_redeemed?: number
+          coupon_code?: string | null
+          coupon_discount?: number
           created_at?: string
           customer_id?: string
           distance_km?: number
@@ -52,10 +65,54 @@ export type Database = {
           fare?: number
           id?: string
           notes?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           pickup_address?: string
           status?: Database["public"]["Enums"]["booking_status"]
           updated_at?: string
           vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Relationships: []
+      }
+      coupons: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          kind: Database["public"]["Enums"]["coupon_kind"]
+          max_discount: number | null
+          max_uses: number | null
+          min_fare: number
+          uses: number
+          value: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["coupon_kind"]
+          max_discount?: number | null
+          max_uses?: number | null
+          min_fare?: number
+          uses?: number
+          value: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["coupon_kind"]
+          max_discount?: number | null
+          max_uses?: number | null
+          min_fare?: number
+          uses?: number
+          value?: number
         }
         Relationships: []
       }
@@ -205,6 +262,59 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_accounts: {
+        Row: {
+          coins_balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coins_balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coins_balance?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          delta: number
+          id: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          delta: number
+          id?: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          delta?: number
+          id?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -217,6 +327,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_coupon: {
+        Args: { _code: string; _fare: number }
+        Returns: {
+          code: string
+          discount: number
+          message: string
+        }[]
+      }
     }
     Enums: {
       address_kind: "home" | "shop" | "other"
@@ -227,6 +345,9 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "cancelled"
+      coupon_kind: "flat" | "percent"
+      payment_method: "cod" | "wallet" | "upi" | "card" | "netbanking"
+      payment_status: "pending" | "paid" | "failed" | "refunded"
       sms_event: "accepted" | "started" | "completed"
       sms_recipient: "customer" | "driver"
       sms_status: "queued" | "sent" | "failed"
@@ -367,6 +488,9 @@ export const Constants = {
         "completed",
         "cancelled",
       ],
+      coupon_kind: ["flat", "percent"],
+      payment_method: ["cod", "wallet", "upi", "card", "netbanking"],
+      payment_status: ["pending", "paid", "failed", "refunded"],
       sms_event: ["accepted", "started", "completed"],
       sms_recipient: ["customer", "driver"],
       sms_status: ["queued", "sent", "failed"],
