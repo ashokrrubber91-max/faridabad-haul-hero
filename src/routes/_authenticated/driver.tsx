@@ -83,8 +83,8 @@ function DriverPage() {
 
   if (loading) return <Center><Loader2 className="h-5 w-5 animate-spin text-primary" /></Center>;
   if (role && role !== "driver" && role !== "admin") return <Navigate to="/customer" />;
-  // Dual-role: driver-capable user has flipped back to customer mode.
-  if (role !== "admin" && roles.includes("driver") && activeMode === "customer") {
+  // Dual-role only: user has BOTH customer and driver roles and flipped to customer mode.
+  if (role !== "admin" && roles.includes("driver") && roles.includes("customer") && activeMode === "customer") {
     return <Navigate to="/customer" />;
   }
 
