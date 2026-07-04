@@ -138,8 +138,8 @@ function CustomerPage() {
   if (role && role !== "customer" && role !== "admin") {
     return <Navigate to={role === "driver" ? "/driver" : "/admin"} />;
   }
-  // Dual-role: if user is also a driver and has switched into driver mode, send them to /driver.
-  if (role !== "admin" && roles.includes("driver") && activeMode === "driver") {
+  // Dual-role only: user has BOTH customer and driver roles and switched into driver mode.
+  if (role !== "admin" && roles.includes("driver") && roles.includes("customer") && activeMode === "driver") {
     return <Navigate to="/driver" />;
   }
 
