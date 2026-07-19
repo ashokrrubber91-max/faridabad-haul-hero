@@ -330,6 +330,7 @@ function CustomerPage() {
           setStage(null);
         }}
       />
+      <SupportChat role="customer" />
     </div>
   );
 }
