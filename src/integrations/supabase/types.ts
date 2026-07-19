@@ -17,57 +17,78 @@ export type Database = {
       bookings: {
         Row: {
           coins_redeemed: number
+          commission_amount: number
+          commission_rate: number
           coupon_code: string | null
           coupon_discount: number
           created_at: string
           customer_id: string
           distance_km: number
           driver_id: string | null
+          driver_net_earning: number
           drop_address: string
+          drop_otp: string | null
+          drop_verified_at: string | null
           fare: number
           id: string
           notes: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_status: Database["public"]["Enums"]["payment_status"]
           pickup_address: string
+          pickup_otp: string | null
+          pickup_verified_at: string | null
           status: Database["public"]["Enums"]["booking_status"]
           updated_at: string
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
         }
         Insert: {
           coins_redeemed?: number
+          commission_amount?: number
+          commission_rate?: number
           coupon_code?: string | null
           coupon_discount?: number
           created_at?: string
           customer_id: string
           distance_km: number
           driver_id?: string | null
+          driver_net_earning?: number
           drop_address: string
+          drop_otp?: string | null
+          drop_verified_at?: string | null
           fare: number
           id?: string
           notes?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
           pickup_address: string
+          pickup_otp?: string | null
+          pickup_verified_at?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
           updated_at?: string
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
         }
         Update: {
           coins_redeemed?: number
+          commission_amount?: number
+          commission_rate?: number
           coupon_code?: string | null
           coupon_discount?: number
           created_at?: string
           customer_id?: string
           distance_km?: number
           driver_id?: string | null
+          driver_net_earning?: number
           drop_address?: string
+          drop_otp?: string | null
+          drop_verified_at?: string | null
           fare?: number
           id?: string
           notes?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
           pickup_address?: string
+          pickup_otp?: string | null
+          pickup_verified_at?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
           updated_at?: string
           vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
@@ -113,6 +134,63 @@ export type Database = {
           min_fare?: number
           uses?: number
           value?: number
+        }
+        Relationships: []
+      }
+      driver_incentive_config: {
+        Row: {
+          active: boolean
+          bonus_amount: number
+          created_at: string
+          id: string
+          label: string
+          rides_required: number
+        }
+        Insert: {
+          active?: boolean
+          bonus_amount: number
+          created_at?: string
+          id?: string
+          label: string
+          rides_required: number
+        }
+        Update: {
+          active?: boolean
+          bonus_amount?: number
+          created_at?: string
+          id?: string
+          label?: string
+          rides_required?: number
+        }
+        Relationships: []
+      }
+      driver_incentive_earnings: {
+        Row: {
+          bonus_amount: number
+          created_at: string
+          credited_at: string | null
+          driver_id: string
+          earned_on: string
+          id: string
+          rides_completed: number
+        }
+        Insert: {
+          bonus_amount: number
+          created_at?: string
+          credited_at?: string | null
+          driver_id: string
+          earned_on: string
+          id?: string
+          rides_completed: number
+        }
+        Update: {
+          bonus_amount?: number
+          created_at?: string
+          credited_at?: string | null
+          driver_id?: string
+          earned_on?: string
+          id?: string
+          rides_completed?: number
         }
         Relationships: []
       }
@@ -264,16 +342,19 @@ export type Database = {
       }
       wallet_accounts: {
         Row: {
+          cash_balance: number
           coins_balance: number
           updated_at: string
           user_id: string
         }
         Insert: {
+          cash_balance?: number
           coins_balance?: number
           updated_at?: string
           user_id: string
         }
         Update: {
+          cash_balance?: number
           coins_balance?: number
           updated_at?: string
           user_id?: string
@@ -326,6 +407,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      settle_daily_incentives: {
+        Args: { _day?: string }
+        Returns: {
+          bonus: number
+          driver_id: string
+          rides: number
+        }[]
       }
       validate_coupon: {
         Args: { _code: string; _fare: number }

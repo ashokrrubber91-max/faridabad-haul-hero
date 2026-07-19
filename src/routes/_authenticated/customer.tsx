@@ -13,6 +13,7 @@ import { VEHICLES, estimateFare, vehicleLabel, STATUS_META, type VehicleId } fro
 import { LocationSearchOverlay, type PlacePick } from "@/components/booking/LocationSearchOverlay";
 import { MapPinConfirm } from "@/components/booking/MapPinConfirm";
 import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
+import { SupportChat } from "@/components/support/SupportChat";
 
 export const Route = createFileRoute("/_authenticated/customer")({
   head: () => ({ meta: [{ title: "Book a truck — MiniPort" }] }),
@@ -271,6 +272,24 @@ function CustomerPage() {
                       </Badge>
                     </div>
                   </div>
+                  {(b.status === "accepted" || b.status === "in_progress") && (b.pickup_otp || b.drop_otp) && (
+                    <div className="mt-3 grid gap-2 rounded-md bg-primary/5 p-3 sm:grid-cols-2">
+                      {b.pickup_otp && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Pickup OTP</p>
+                          <p className="font-display text-2xl tracking-widest text-primary">{b.pickup_otp}</p>
+                          <p className="text-[10px] text-muted-foreground">Share with driver at pickup</p>
+                        </div>
+                      )}
+                      {b.drop_otp && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Drop OTP</p>
+                          <p className="font-display text-2xl tracking-widest text-primary">{b.drop_otp}</p>
+                          <p className="text-[10px] text-muted-foreground">Share only after delivery</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {b.status === "pending" && (
                     <div className="mt-3 flex justify-end">
                       <Button
@@ -311,6 +330,7 @@ function CustomerPage() {
           setStage(null);
         }}
       />
+      <SupportChat role="customer" />
     </div>
   );
 }
