@@ -117,9 +117,10 @@ function DriverPage() {
   const verifyOtp = useMutation({
     mutationFn: async ({ id, otp, expected, next }: { id: string; otp: string; expected: string | null; next: "in_progress" | "completed" }) => {
       if (!expected || otp.trim() !== expected) throw new Error("Wrong OTP");
-      const patch: Record<string, unknown> = { status: next };
-      if (next === "in_progress") patch.pickup_verified_at = new Date().toISOString();
-      else patch.drop_verified_at = new Date().toISOString();
+      const now = new Date().toISOString();
+      const patch = next === "in_progress"
+        ? { status: next, pickup_verified_at: now }
+        : { status: next, drop_verified_at: now };
       const { error } = await supabase.from("bookings").update(patch).eq("id", id);
       if (error) throw error;
     },
