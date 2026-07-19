@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-export const Route = createFileRoute("/_authenticated/driver/wallet")({
-  head: () => ({ meta: [{ title: "Wallet — MiniPort Driver" }] }),
+export const Route = createFileRoute("/_authenticated/wallet")({
+  head: () => ({ meta: [{ title: "Wallet — MiniPort" }] }),
   component: WalletPage,
 });
 

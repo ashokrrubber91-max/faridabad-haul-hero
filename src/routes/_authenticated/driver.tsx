@@ -171,7 +171,7 @@ function DriverPage() {
             </p>
           </div>
           <Button asChild size="sm" variant="outline">
-            <Link to="/driver/wallet">Top up</Link>
+            <Link to="/wallet">Top up</Link>
           </Button>
         </div>
       )}
@@ -192,7 +192,7 @@ function DriverPage() {
         <StatCard label="Today's Earnings" value={`₹${todayEarnings.toFixed(0)}`} />
         <StatCard label="Trips Completed" value={String(ridesToday)} />
         <StatCard label="Incentive Progress" value={`${ridesToday}/${topTarget}`} />
-        <Link to="/driver/wallet" className="surface-card flex flex-col justify-between p-3 transition-colors hover:bg-muted">
+        <Link to="/wallet" className="surface-card flex flex-col justify-between p-3 transition-colors hover:bg-muted">
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Wallet</p>
           <p className="font-display text-2xl text-secondary">
             <Wallet className="mr-1 inline h-5 w-5 text-primary" />₹{cash.toFixed(0)}

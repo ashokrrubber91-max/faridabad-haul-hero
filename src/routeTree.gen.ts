@@ -12,10 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AuthenticatedDriverRouteImport } from './routes/_authenticated/driver'
 import { Route as AuthenticatedCustomerRouteImport } from './routes/_authenticated/customer'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
-import { Route as AuthenticatedDriverWalletRouteImport } from './routes/_authenticated/driver.wallet'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -30,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedWalletRoute = AuthenticatedWalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDriverRoute = AuthenticatedDriverRouteImport.update({
   id: '/driver',
@@ -46,28 +51,22 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedDriverWalletRoute =
-  AuthenticatedDriverWalletRouteImport.update({
-    id: '/wallet',
-    path: '/wallet',
-    getParentRoute: () => AuthenticatedDriverRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/customer': typeof AuthenticatedCustomerRoute
-  '/driver': typeof AuthenticatedDriverRouteWithChildren
-  '/driver/wallet': typeof AuthenticatedDriverWalletRoute
+  '/driver': typeof AuthenticatedDriverRoute
+  '/wallet': typeof AuthenticatedWalletRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/customer': typeof AuthenticatedCustomerRoute
-  '/driver': typeof AuthenticatedDriverRouteWithChildren
-  '/driver/wallet': typeof AuthenticatedDriverWalletRoute
+  '/driver': typeof AuthenticatedDriverRoute
+  '/wallet': typeof AuthenticatedWalletRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -76,20 +75,14 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/customer': typeof AuthenticatedCustomerRoute
-  '/_authenticated/driver': typeof AuthenticatedDriverRouteWithChildren
-  '/_authenticated/driver/wallet': typeof AuthenticatedDriverWalletRoute
+  '/_authenticated/driver': typeof AuthenticatedDriverRoute
+  '/_authenticated/wallet': typeof AuthenticatedWalletRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/auth'
-    | '/admin'
-    | '/customer'
-    | '/driver'
-    | '/driver/wallet'
+  fullPaths: '/' | '/auth' | '/admin' | '/customer' | '/driver' | '/wallet'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/admin' | '/customer' | '/driver' | '/driver/wallet'
+  to: '/' | '/auth' | '/admin' | '/customer' | '/driver' | '/wallet'
   id:
     | '__root__'
     | '/'
@@ -98,7 +91,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/customer'
     | '/_authenticated/driver'
-    | '/_authenticated/driver/wallet'
+    | '/_authenticated/wallet'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -130,6 +123,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/wallet': {
+      id: '/_authenticated/wallet'
+      path: '/wallet'
+      fullPath: '/wallet'
+      preLoaderRoute: typeof AuthenticatedWalletRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/driver': {
       id: '/_authenticated/driver'
       path: '/driver'
@@ -151,37 +151,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/driver/wallet': {
-      id: '/_authenticated/driver/wallet'
-      path: '/wallet'
-      fullPath: '/driver/wallet'
-      preLoaderRoute: typeof AuthenticatedDriverWalletRouteImport
-      parentRoute: typeof AuthenticatedDriverRoute
-    }
   }
 }
-
-interface AuthenticatedDriverRouteChildren {
-  AuthenticatedDriverWalletRoute: typeof AuthenticatedDriverWalletRoute
-}
-
-const AuthenticatedDriverRouteChildren: AuthenticatedDriverRouteChildren = {
-  AuthenticatedDriverWalletRoute: AuthenticatedDriverWalletRoute,
-}
-
-const AuthenticatedDriverRouteWithChildren =
-  AuthenticatedDriverRoute._addFileChildren(AuthenticatedDriverRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCustomerRoute: typeof AuthenticatedCustomerRoute
-  AuthenticatedDriverRoute: typeof AuthenticatedDriverRouteWithChildren
+  AuthenticatedDriverRoute: typeof AuthenticatedDriverRoute
+  AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCustomerRoute: AuthenticatedCustomerRoute,
-  AuthenticatedDriverRoute: AuthenticatedDriverRouteWithChildren,
+  AuthenticatedDriverRoute: AuthenticatedDriverRoute,
+  AuthenticatedWalletRoute: AuthenticatedWalletRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
