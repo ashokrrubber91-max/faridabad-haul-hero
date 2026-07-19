@@ -13,6 +13,7 @@ import { VEHICLES, estimateFare, vehicleLabel, STATUS_META, type VehicleId } fro
 import { LocationSearchOverlay, type PlacePick } from "@/components/booking/LocationSearchOverlay";
 import { MapPinConfirm } from "@/components/booking/MapPinConfirm";
 import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
+import { SupportChat } from "@/components/support/SupportChat";
 
 export const Route = createFileRoute("/_authenticated/customer")({
   head: () => ({ meta: [{ title: "Book a truck — MiniPort" }] }),
