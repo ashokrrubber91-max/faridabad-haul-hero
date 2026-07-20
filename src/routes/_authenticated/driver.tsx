@@ -181,11 +181,25 @@ function DriverPage() {
           {isOnline ? <Wifi className="h-5 w-5 text-success" /> : <WifiOff className="h-5 w-5 text-muted-foreground" />}
           <div>
             <p className="font-display text-base tracking-wide text-secondary">{isOnline ? "You're online — receiving jobs nearby" : "You're offline — Go online to receive jobs"}</p>
-            <p className="text-xs text-muted-foreground">Faridabad zone</p>
+            <p className="text-xs text-muted-foreground">
+              {activeJob ? "🔒 Locked — active trip in progress" : "Faridabad zone"}
+            </p>
           </div>
         </div>
-        <Switch checked={isOnline} onCheckedChange={(v) => setOnline.mutate(v)} disabled={setOnline.isPending} aria-label="Toggle online" />
+        <Switch
+          checked={isOnline}
+          onCheckedChange={(v) => {
+            if (activeJob && !v) {
+              toast.error("You cannot go offline while on an active trip. Please complete the trip first.");
+              return;
+            }
+            setOnline.mutate(v);
+          }}
+          disabled={setOnline.isPending || !!activeJob}
+          aria-label="Toggle online"
+        />
       </section>
+
 
       {/* Stats */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
