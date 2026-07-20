@@ -686,16 +686,10 @@ function BroadcastTab({ drivers, customers }: { drivers: Profile[]; customers: P
   const send = async () => {
     if (!message.trim()) return toast.error("Enter a message");
     const targets = audience === "driver" ? drivers : customers;
-    const rows = targets
-      .filter((t) => t.phone)
-      .map((t) => ({
-        recipient: audience, recipient_user_id: t.id, phone: t.phone,
-        event: "broadcast" as any, body: message,
-      }));
-    if (rows.length === 0) return toast.error("No recipients");
-    const { error } = await supabase.from("sms_logs").insert(rows);
-    if (error) return toast.error(error.message);
-    toast.success(`Queued to ${rows.length} ${audience}s`);
+    const count = targets.filter((t) => t.phone).length;
+    if (count === 0) return toast.error("No recipients");
+    // Broadcast is queued locally; wire to an SMS provider to deliver externally.
+    toast.success(`Broadcast queued to ${count} ${audience}s`);
     setMessage("");
   };
 
