@@ -1,8 +1,7 @@
 import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Truck, LogOut, UserRound } from "lucide-react";
+import { Truck, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -16,7 +15,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthedLayout() {
-  const { role, roles, profile, activeMode, setActiveMode } = useAuth();
+  const { role, roles, profile, activeMode } = useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -25,32 +24,20 @@ function AuthedLayout() {
     navigate({ to: "/auth", replace: true });
   };
 
-  const isDualRole = roles.includes("driver") && role !== "admin";
+  const isDualRole = roles.includes("driver") && roles.includes("customer") && role !== "admin";
 
-  const toggleMode = async () => {
-    const next = activeMode === "customer" ? "driver" : "customer";
-    try {
-      await setActiveMode(next);
-      toast.success(next === "driver" ? "Switched to Driver mode" : "Switched to Customer mode");
-      navigate({ to: next === "driver" ? "/driver" : "/customer", replace: true });
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  };
-
-  // Tab visibility: admin sees everything; dual-role users see only the active mode's tab.
-  const tabs: Array<{ to: "/customer" | "/driver" | "/admin"; label: string; show: boolean }> = [
+  // Only dual-role customers see both tabs. Admin tab is intentionally hidden from all layouts.
+  const tabs: Array<{ to: "/customer" | "/driver"; label: string; show: boolean }> = [
     {
       to: "/customer",
       label: "Book",
-      show: role === "admin" || (role === "customer" && !isDualRole) || (isDualRole && activeMode === "customer"),
+      show: (role === "customer" && !isDualRole) || (isDualRole && activeMode === "customer"),
     },
     {
       to: "/driver",
       label: "Drive",
-      show: role === "admin" || (role === "driver" && !isDualRole) || (isDualRole && activeMode === "driver"),
+      show: (role === "driver" && !isDualRole) || (isDualRole && activeMode === "driver"),
     },
-    { to: "/admin", label: "Admin", show: role === "admin" },
   ];
 
   return (
@@ -64,20 +51,6 @@ function AuthedLayout() {
             <span className="font-display text-xl tracking-wide text-secondary">MINIPORT</span>
           </Link>
           <div className="flex items-center gap-2">
-            {isDualRole && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={toggleMode}
-                className="gap-1.5"
-                aria-label={`Switch to ${activeMode === "customer" ? "driver" : "customer"} mode`}
-              >
-                <UserRound className="h-3.5 w-3.5" />
-                <span className="text-xs font-semibold">
-                  {activeMode === "customer" ? "Drive" : "Book"}
-                </span>
-              </Button>
-            )}
             {profile?.name && (
               <div className="text-right">
                 <p className="text-xs font-semibold text-secondary sm:text-sm">
@@ -116,3 +89,4 @@ function AuthedLayout() {
     </div>
   );
 }
+
