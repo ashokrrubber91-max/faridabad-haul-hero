@@ -75,3 +75,20 @@ export const sendSupportChat = createServerFn({ method: "POST" })
       return { reply: fallbackReply(data.role, data.messages[data.messages.length - 1]?.content ?? "") };
     }
   });
+
+function fallbackReply(role: "customer" | "driver", userText: string): string {
+  const t = userText.toLowerCase();
+  if (role === "driver") {
+    if (t.includes("incentive")) return "Aapka incentive daily 12:00 AM ko wallet me credit hota hai. Aaj ka progress driver dashboard pe 'Today's target' card me dikh raha hai. Agar 24 ghante ke baad bhi credit nahi hua toh support team ko forward kar diya gaya hai.";
+    if (t.includes("wallet") || t.includes("top")) return "Wallet top-up ke liye Driver → Wallet page pe jaayein aur UPI/Cash option choose karein. Minimum ₹100 balance zaroori hai naye jobs receive karne ke liye.";
+    if (t.includes("phone") || t.includes("customer")) return "Agar customer ka phone off hai toh 2 minute wait karein, phir pickup location pe pahunch kar dobara try karein. 5 min tak koi response nahi mile toh 'Cancel ride' se safe cancel kar sakte hain.";
+    if (t.includes("emergency") || t.includes("accident")) return "🚨 Emergency me turant **112** dial karein. Aapki live location Miniport safety team ko share kar di gayi hai — support 2 minute me contact karega.";
+    return "Main aapki madad ke liye hoon. Aap incentive, wallet, ya emergency ke baare me pooch sakte hain. Serious issue ke liye Miniport Faridabad support team ko notify kar diya gaya hai.";
+  }
+  if (t.includes("where") || t.includes("driver") || t.includes("track")) return "Aapka driver active ride pe hai — customer dashboard pe live status aur OTP dikh raha hai. Driver ki ETA map par update ho rahi hai.";
+  if (t.includes("fare") || t.includes("bill") || t.includes("dispute")) return "Fare distance × per-km rate + base fare pe calculate hota hai. Agar aapko lagta hai bill galat hai, booking ID share karein — support team review karegi.";
+  if (t.includes("cancel")) return "Ride cancel karne ke liye active booking card pe 'Cancel' button use karein. Driver accept karne ke baad cancellation par small fee lag sakti hai.";
+  if (t.includes("human") || t.includes("support")) return "Aapki request Miniport Faridabad support team ko forward kar di gayi hai — koi executive jaldi call karega.";
+  return "Main Miniport Support hoon. Aap tracking, fare, cancel, ya kisi bhi issue ke baare me pooch sakte hain.";
+}
+
