@@ -490,9 +490,10 @@ function LiveTripsTab({
 }
 
 /* ============================== Fares & Commission ============================== */
+type FareRow = { id: string; label: string; base: number; perKm: number };
 function FaresTab({ bookings }: { bookings: Booking[] }) {
-  const [rates, setRates] = useState(() =>
-    VEHICLES.map((v) => ({ id: v.id, label: v.label, base: v.base, perKm: v.perKm })),
+  const [rates, setRates] = useState<FareRow[]>(() =>
+    VEHICLES.map((v) => ({ id: v.id, label: v.label, base: Number(v.base), perKm: Number(v.perKm) })),
   );
   const [commission, setCommission] = useState(10);
 
