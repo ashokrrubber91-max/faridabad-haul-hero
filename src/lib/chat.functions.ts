@@ -62,13 +62,16 @@ export const sendSupportChat = createServerFn({ method: "POST" })
     const gateway = createLovableAiGatewayProvider(key);
     const model = gateway("google/gemini-3.5-flash");
 
-    const { text } = await generateText({
-      model,
-      messages: [
-        { role: "system", content: `${system}\n\nLive context:\n${contextBlock}` },
-        ...data.messages,
-      ],
-    });
-
-    return { reply: text };
+    try {
+      const { text } = await generateText({
+        model,
+        system: `${system}\n\nLive context:\n${contextBlock}`,
+        messages: data.messages.map((m) => ({ role: m.role, content: m.content })),
+      });
+      if (text?.trim()) return { reply: text };
+      return { reply: fallbackReply(data.role, data.messages[data.messages.length - 1]?.content ?? "") };
+    } catch (err) {
+      console.error("[support-chat] AI error:", err);
+      return { reply: fallbackReply(data.role, data.messages[data.messages.length - 1]?.content ?? "") };
+    }
   });
