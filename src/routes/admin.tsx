@@ -176,7 +176,8 @@ function AdminPage() {
   }, [wallets.data]);
 
   if (loading) return <Center><Loader2 className="h-5 w-5 animate-spin text-primary" /></Center>;
-  if (role && role !== "admin") return <Navigate to={role === "driver" ? "/driver" : "/customer"} />;
+  // Passcode-gated in AdminGate above; no role redirect here.
+  void role;
 
   const all = bookings.data ?? [];
   const today = new Date(); today.setHours(0, 0, 0, 0);
