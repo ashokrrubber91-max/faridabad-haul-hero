@@ -2,7 +2,7 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { MapPin, ArrowRight, Package, Loader2, ChevronRight } from "lucide-react";
+import { MapPin, ArrowRight, Package, Loader2, ChevronRight, Map as MapIcon, Navigation, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,9 @@ import { LocationSearchOverlay, type PlacePick } from "@/components/booking/Loca
 import { MapPinConfirm } from "@/components/booking/MapPinConfirm";
 import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
 import { SupportChat } from "@/components/support/SupportChat";
+import { FARIDABAD_CENTER } from "@/lib/google-maps";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export const Route = createFileRoute("/_authenticated/customer")({
   head: () => ({ meta: [{ title: "Book a truck — MiniPort" }] }),
@@ -45,6 +48,9 @@ function CustomerPage() {
   const [promo, setPromo] = useState<{ code: string; discount: number } | null>(null);
   const [coins, setCoins] = useState(0);
   const [method, setMethod] = useState<PaymentMethod>("cod");
+  const [cancelTarget, setCancelTarget] = useState<{ id: string; addr: string } | null>(null);
+  const [cancelReason, setCancelReason] = useState("Driver taking too long");
+  const [cancelNote, setCancelNote] = useState("");
 
   const distanceKm = useMemo(() => {
     if (!pickup || !drop) return 0;
@@ -127,11 +133,20 @@ function CustomerPage() {
   });
 
   const cancel = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", id);
+    mutationFn: async ({ id, reason, existingNotes }: { id: string; reason: string; existingNotes: string | null }) => {
+      const noteLine = `Cancelled by customer: ${reason}`;
+      const nextNotes = existingNotes ? `${existingNotes} · ${noteLine}` : noteLine;
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: "cancelled", notes: nextNotes })
+        .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => toast.success("Booking cancelled"),
+    onSuccess: () => {
+      toast.success("Booking cancelled");
+      setCancelTarget(null);
+      setCancelNote("");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -153,20 +168,29 @@ function CustomerPage() {
         <p className="text-sm text-muted-foreground">Faridabad only · transparent flat fare</p>
 
         <div className="mt-5 space-y-4">
-          <LocationButton
+          <LocationRow
             label="Pickup"
             dotClass="text-primary"
             place={pickup}
             placeholder="Search pickup location"
-            onClick={() => openSearch("pickup")}
+            onSearch={() => openSearch("pickup")}
+            onPickOnMap={() => {
+              setPending(pickup ?? { address: "", ...FARIDABAD_CENTER });
+              setStage({ type: "confirm", mode: "pickup" });
+            }}
           />
-          <LocationButton
+          <LocationRow
             label="Drop"
             dotClass="text-success"
             place={drop}
             placeholder="Search drop location"
-            onClick={() => openSearch("drop")}
+            onSearch={() => openSearch("drop")}
+            onPickOnMap={() => {
+              setPending(drop ?? { address: "", ...FARIDABAD_CENTER });
+              setStage({ type: "confirm", mode: "drop" });
+            }}
           />
+
 
           <div>
             <Label>Vehicle</Label>
@@ -272,6 +296,9 @@ function CustomerPage() {
                       </Badge>
                     </div>
                   </div>
+                  {(b.status === "accepted" || b.status === "in_progress") && (
+                    <LiveTrackingCard booking={b} />
+                  )}
                   {(b.status === "accepted" || b.status === "in_progress") && (b.pickup_otp || b.drop_otp) && (
                     <div className="mt-3 grid gap-2 rounded-md bg-primary/5 p-3 sm:grid-cols-2">
                       {b.pickup_otp && (
@@ -290,15 +317,15 @@ function CustomerPage() {
                       )}
                     </div>
                   )}
-                  {b.status === "pending" && (
+                  {(b.status === "pending" || b.status === "accepted") && (
                     <div className="mt-3 flex justify-end">
                       <Button
                         size="sm"
-                        variant="ghost"
-                        onClick={() => cancel.mutate(b.id)}
+                        variant="destructive"
+                        onClick={() => setCancelTarget({ id: b.id, addr: b.pickup_address })}
                         disabled={cancel.isPending}
                       >
-                        Cancel
+                        <X className="h-3.5 w-3.5" /> Cancel Booking
                       </Button>
                     </div>
                   )}
@@ -308,6 +335,61 @@ function CustomerPage() {
           </div>
         )}
       </section>
+
+      <Dialog
+        open={!!cancelTarget}
+        onOpenChange={(v) => {
+          if (!v) {
+            setCancelTarget(null);
+            setCancelNote("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel this booking?</DialogTitle>
+            <DialogDescription className="truncate">{cancelTarget?.addr}</DialogDescription>
+          </DialogHeader>
+          <RadioGroup value={cancelReason} onValueChange={setCancelReason} className="space-y-2">
+            {[
+              "Driver taking too long",
+              "Booked by mistake",
+              "Changed my plan",
+              "Wrong pickup or drop",
+              "Other",
+            ].map((r) => (
+              <label key={r} className="flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm">
+                <RadioGroupItem value={r} /> {r}
+              </label>
+            ))}
+          </RadioGroup>
+          {cancelReason === "Other" && (
+            <Textarea
+              placeholder="Tell us more (optional)"
+              value={cancelNote}
+              onChange={(e) => setCancelNote(e.target.value)}
+              rows={2}
+              maxLength={200}
+            />
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCancelTarget(null)}>Keep booking</Button>
+            <Button
+              variant="destructive"
+              disabled={cancel.isPending}
+              onClick={() => {
+                if (!cancelTarget) return;
+                const reason = cancelReason === "Other" && cancelNote.trim() ? cancelNote.trim() : cancelReason;
+                const existing = (bookings.data ?? []).find((x) => x.id === cancelTarget.id)?.notes ?? null;
+                cancel.mutate({ id: cancelTarget.id, reason, existingNotes: existing });
+              }}
+            >
+              Confirm cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <LocationSearchOverlay
         open={stage?.type === "search"}
@@ -335,45 +417,87 @@ function CustomerPage() {
   );
 }
 
-function LocationButton({
+function LocationRow({
   label,
   dotClass,
   place,
   placeholder,
-  onClick,
+  onSearch,
+  onPickOnMap,
 }: {
   label: string;
   dotClass: string;
   place: PlacePick | null;
   placeholder: string;
-  onClick: () => void;
+  onSearch: () => void;
+  onPickOnMap: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-md border bg-background p-3 text-left transition-colors hover:bg-muted"
-    >
-      <MapPin className={`h-4 w-4 shrink-0 ${dotClass}`} />
-      <div className="min-w-0 flex-1">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
-        {place ? (
-          <>
-            <p className="truncate text-sm font-medium text-secondary">
-              {place.alias || place.address}
-            </p>
-            {place.alias && (
-              <p className="truncate text-xs text-muted-foreground">{place.address}</p>
-            )}
-          </>
-        ) : (
-          <p className="truncate text-sm text-muted-foreground">{placeholder}</p>
-        )}
-      </div>
-      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-    </button>
+    <div className="flex items-stretch gap-2">
+      <button
+        type="button"
+        onClick={onSearch}
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-md border bg-background p-3 text-left transition-colors hover:bg-muted"
+      >
+        <MapPin className={`h-4 w-4 shrink-0 ${dotClass}`} />
+        <div className="min-w-0 flex-1">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+          {place ? (
+            <>
+              <p className="truncate text-sm font-medium text-secondary">
+                {place.alias || place.address}
+              </p>
+              {place.alias && (
+                <p className="truncate text-xs text-muted-foreground">{place.address}</p>
+              )}
+            </>
+          ) : (
+            <p className="truncate text-sm text-muted-foreground">{placeholder}</p>
+          )}
+        </div>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </button>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onPickOnMap}
+        className="h-auto shrink-0 px-3"
+        title="Select pin on map"
+      >
+        <MapIcon className="h-4 w-4" />
+      </Button>
+    </div>
   );
 }
+
+function LiveTrackingCard({ booking }: { booking: { status: string; pickup_address: string; drop_address: string; distance_km: number } }) {
+  const isPickup = booking.status === "accepted";
+  const km = Math.max(0.4, Number(booking.distance_km) * (isPickup ? 0.35 : 0.6));
+  const eta = Math.max(2, Math.round(km * 3));
+  return (
+    <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-3">
+      <div className="flex items-center gap-2 text-primary">
+        <Navigation className="h-4 w-4 animate-pulse" />
+        <p className="text-sm font-semibold">
+          {isPickup
+            ? `Driver is ${km.toFixed(1)} km away · Arriving in ~${eta} min`
+            : `On the way to drop · ${km.toFixed(1)} km · ~${eta} min`}
+        </p>
+      </div>
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-primary/15">
+        <div
+          className="h-full rounded-full bg-primary transition-all"
+          style={{ width: isPickup ? "35%" : "70%" }}
+        />
+      </div>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        Live location updates every few seconds.
+      </p>
+    </div>
+  );
+}
+
+
 
 function tone(t: "warning" | "primary" | "success" | "muted" | "destructive") {
   switch (t) {

@@ -410,13 +410,26 @@ function ActiveJobCard({ job, onVerify, pending }: { job: any; onVerify: (otp: s
           : `Payment Mode: Online — ₹${net.toFixed(0)} will be added to your wallet`}
       </div>
 
-      {contact.phone && (
-        <Button asChild size="sm" variant="outline" className="mt-3">
-          <a href={`tel:${contact.phone}`}>
-            <Phone className="h-3.5 w-3.5" /> Call {contact.name || (next === "in_progress" ? "sender" : "receiver")}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+              next === "in_progress" ? job.pickup_address : job.drop_address,
+            )}&travelmode=driving`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <MapPin className="h-3.5 w-3.5" /> Open Google Maps Navigation
           </a>
         </Button>
-      )}
+        {contact.phone && (
+          <Button asChild size="sm" variant="outline">
+            <a href={`tel:${contact.phone}`}>
+              <Phone className="h-3.5 w-3.5" /> Call {contact.name || (next === "in_progress" ? "sender" : "receiver")}
+            </a>
+          </Button>
+        )}
+      </div>
 
       <div className="mt-4 rounded-md border border-primary/40 bg-primary/5 p-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-primary">{label}</p>

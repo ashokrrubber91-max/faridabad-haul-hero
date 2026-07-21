@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -19,10 +19,45 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META, VEHICLES } from "@/lib/booking";
 
-export const Route = createFileRoute("/_authenticated/admin")({
+export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — MiniPort" }] }),
-  component: AdminPage,
+  component: AdminGate,
 });
+
+const ADMIN_PASSCODE = "miniport2026";
+const ADMIN_KEY = "miniport_admin_ok";
+
+function AdminGate() {
+  const [ok, setOk] = useState<boolean>(() =>
+    typeof window !== "undefined" && window.localStorage.getItem(ADMIN_KEY) === "1",
+  );
+  const [code, setCode] = useState("");
+  const unlock = () => {
+    if (code === ADMIN_PASSCODE) {
+      window.localStorage.setItem(ADMIN_KEY, "1");
+      setOk(true);
+    } else toast.error("Wrong passcode");
+  };
+  if (!ok) {
+    return (
+      <div className="mx-auto mt-24 max-w-sm rounded-lg border bg-card p-6 shadow-sm">
+        <h1 className="font-display text-2xl tracking-wide text-secondary">Admin access</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Enter the admin passcode to continue.</p>
+        <Input
+          type="password"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="Passcode"
+          className="mt-4"
+          onKeyDown={(e) => { if (e.key === "Enter") unlock(); }}
+        />
+        <Button className="mt-3 w-full" onClick={unlock}>Unlock</Button>
+        <p className="mt-3 text-center text-xs text-muted-foreground">Default: miniport2026</p>
+      </div>
+    );
+  }
+  return <AdminPage />;
+}
 
 type Booking = {
   id: string; customer_id: string; driver_id: string | null;
@@ -141,7 +176,8 @@ function AdminPage() {
   }, [wallets.data]);
 
   if (loading) return <Center><Loader2 className="h-5 w-5 animate-spin text-primary" /></Center>;
-  if (role && role !== "admin") return <Navigate to={role === "driver" ? "/driver" : "/customer"} />;
+  // Passcode-gated in AdminGate above; no role redirect here.
+  void role;
 
   const all = bookings.data ?? [];
   const today = new Date(); today.setHours(0, 0, 0, 0);
