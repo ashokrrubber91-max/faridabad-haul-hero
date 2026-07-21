@@ -168,20 +168,29 @@ function CustomerPage() {
         <p className="text-sm text-muted-foreground">Faridabad only · transparent flat fare</p>
 
         <div className="mt-5 space-y-4">
-          <LocationButton
+          <LocationRow
             label="Pickup"
             dotClass="text-primary"
             place={pickup}
             placeholder="Search pickup location"
-            onClick={() => openSearch("pickup")}
+            onSearch={() => openSearch("pickup")}
+            onPickOnMap={() => {
+              setPending(pickup ?? { address: "", ...FARIDABAD_CENTER });
+              setStage({ type: "confirm", mode: "pickup" });
+            }}
           />
-          <LocationButton
+          <LocationRow
             label="Drop"
             dotClass="text-success"
             place={drop}
             placeholder="Search drop location"
-            onClick={() => openSearch("drop")}
+            onSearch={() => openSearch("drop")}
+            onPickOnMap={() => {
+              setPending(drop ?? { address: "", ...FARIDABAD_CENTER });
+              setStage({ type: "confirm", mode: "drop" });
+            }}
           />
+
 
           <div>
             <Label>Vehicle</Label>
