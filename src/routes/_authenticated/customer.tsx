@@ -14,6 +14,9 @@ import { LocationSearchOverlay, type PlacePick } from "@/components/booking/Loca
 import { MapPinConfirm } from "@/components/booking/MapPinConfirm";
 import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
 import { SupportChat } from "@/components/support/SupportChat";
+import { FARIDABAD_CENTER } from "@/lib/google-maps";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export const Route = createFileRoute("/_authenticated/customer")({
   head: () => ({ meta: [{ title: "Book a truck — MiniPort" }] }),
