@@ -133,11 +133,20 @@ function CustomerPage() {
   });
 
   const cancel = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", id);
+    mutationFn: async ({ id, reason, existingNotes }: { id: string; reason: string; existingNotes: string | null }) => {
+      const noteLine = `Cancelled by customer: ${reason}`;
+      const nextNotes = existingNotes ? `${existingNotes} · ${noteLine}` : noteLine;
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: "cancelled", notes: nextNotes })
+        .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => toast.success("Booking cancelled"),
+    onSuccess: () => {
+      toast.success("Booking cancelled");
+      setCancelTarget(null);
+      setCancelNote("");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
