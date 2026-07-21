@@ -296,6 +296,9 @@ function CustomerPage() {
                       </Badge>
                     </div>
                   </div>
+                  {(b.status === "accepted" || b.status === "in_progress") && (
+                    <LiveTrackingCard booking={b} />
+                  )}
                   {(b.status === "accepted" || b.status === "in_progress") && (b.pickup_otp || b.drop_otp) && (
                     <div className="mt-3 grid gap-2 rounded-md bg-primary/5 p-3 sm:grid-cols-2">
                       {b.pickup_otp && (
@@ -314,15 +317,15 @@ function CustomerPage() {
                       )}
                     </div>
                   )}
-                  {b.status === "pending" && (
+                  {(b.status === "pending" || b.status === "accepted") && (
                     <div className="mt-3 flex justify-end">
                       <Button
                         size="sm"
-                        variant="ghost"
-                        onClick={() => cancel.mutate(b.id)}
+                        variant="destructive"
+                        onClick={() => setCancelTarget({ id: b.id, addr: b.pickup_address })}
                         disabled={cancel.isPending}
                       >
-                        Cancel
+                        <X className="h-3.5 w-3.5" /> Cancel Booking
                       </Button>
                     </div>
                   )}
@@ -332,6 +335,61 @@ function CustomerPage() {
           </div>
         )}
       </section>
+
+      <Dialog
+        open={!!cancelTarget}
+        onOpenChange={(v) => {
+          if (!v) {
+            setCancelTarget(null);
+            setCancelNote("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel this booking?</DialogTitle>
+            <DialogDescription className="truncate">{cancelTarget?.addr}</DialogDescription>
+          </DialogHeader>
+          <RadioGroup value={cancelReason} onValueChange={setCancelReason} className="space-y-2">
+            {[
+              "Driver taking too long",
+              "Booked by mistake",
+              "Changed my plan",
+              "Wrong pickup or drop",
+              "Other",
+            ].map((r) => (
+              <label key={r} className="flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm">
+                <RadioGroupItem value={r} /> {r}
+              </label>
+            ))}
+          </RadioGroup>
+          {cancelReason === "Other" && (
+            <Textarea
+              placeholder="Tell us more (optional)"
+              value={cancelNote}
+              onChange={(e) => setCancelNote(e.target.value)}
+              rows={2}
+              maxLength={200}
+            />
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCancelTarget(null)}>Keep booking</Button>
+            <Button
+              variant="destructive"
+              disabled={cancel.isPending}
+              onClick={() => {
+                if (!cancelTarget) return;
+                const reason = cancelReason === "Other" && cancelNote.trim() ? cancelNote.trim() : cancelReason;
+                const existing = (bookings.data ?? []).find((x) => x.id === cancelTarget.id)?.notes ?? null;
+                cancel.mutate({ id: cancelTarget.id, reason, existingNotes: existing });
+              }}
+            >
+              Confirm cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <LocationSearchOverlay
         open={stage?.type === "search"}
