@@ -417,45 +417,87 @@ function CustomerPage() {
   );
 }
 
-function LocationButton({
+function LocationRow({
   label,
   dotClass,
   place,
   placeholder,
-  onClick,
+  onSearch,
+  onPickOnMap,
 }: {
   label: string;
   dotClass: string;
   place: PlacePick | null;
   placeholder: string;
-  onClick: () => void;
+  onSearch: () => void;
+  onPickOnMap: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-md border bg-background p-3 text-left transition-colors hover:bg-muted"
-    >
-      <MapPin className={`h-4 w-4 shrink-0 ${dotClass}`} />
-      <div className="min-w-0 flex-1">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
-        {place ? (
-          <>
-            <p className="truncate text-sm font-medium text-secondary">
-              {place.alias || place.address}
-            </p>
-            {place.alias && (
-              <p className="truncate text-xs text-muted-foreground">{place.address}</p>
-            )}
-          </>
-        ) : (
-          <p className="truncate text-sm text-muted-foreground">{placeholder}</p>
-        )}
-      </div>
-      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-    </button>
+    <div className="flex items-stretch gap-2">
+      <button
+        type="button"
+        onClick={onSearch}
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-md border bg-background p-3 text-left transition-colors hover:bg-muted"
+      >
+        <MapPin className={`h-4 w-4 shrink-0 ${dotClass}`} />
+        <div className="min-w-0 flex-1">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+          {place ? (
+            <>
+              <p className="truncate text-sm font-medium text-secondary">
+                {place.alias || place.address}
+              </p>
+              {place.alias && (
+                <p className="truncate text-xs text-muted-foreground">{place.address}</p>
+              )}
+            </>
+          ) : (
+            <p className="truncate text-sm text-muted-foreground">{placeholder}</p>
+          )}
+        </div>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </button>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onPickOnMap}
+        className="h-auto shrink-0 px-3"
+        title="Select pin on map"
+      >
+        <MapIcon className="h-4 w-4" />
+      </Button>
+    </div>
   );
 }
+
+function LiveTrackingCard({ booking }: { booking: { status: string; pickup_address: string; drop_address: string; distance_km: number } }) {
+  const isPickup = booking.status === "accepted";
+  const km = Math.max(0.4, Number(booking.distance_km) * (isPickup ? 0.35 : 0.6));
+  const eta = Math.max(2, Math.round(km * 3));
+  return (
+    <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-3">
+      <div className="flex items-center gap-2 text-primary">
+        <Navigation className="h-4 w-4 animate-pulse" />
+        <p className="text-sm font-semibold">
+          {isPickup
+            ? `Driver is ${km.toFixed(1)} km away · Arriving in ~${eta} min`
+            : `On the way to drop · ${km.toFixed(1)} km · ~${eta} min`}
+        </p>
+      </div>
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-primary/15">
+        <div
+          className="h-full rounded-full bg-primary transition-all"
+          style={{ width: isPickup ? "35%" : "70%" }}
+        />
+      </div>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        Live location updates every few seconds.
+      </p>
+    </div>
+  );
+}
+
+
 
 function tone(t: "warning" | "primary" | "success" | "muted" | "destructive") {
   switch (t) {
