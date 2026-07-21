@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META, VEHICLES } from "@/lib/booking";
 
-export const Route = createFileRoute("/_authenticated/admin")({
+export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — MiniPort" }] }),
   component: AdminPage,
 });
