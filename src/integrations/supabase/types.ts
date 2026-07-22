@@ -194,12 +194,67 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_kyc: {
+        Row: {
+          city: string
+          dl_back_url: string | null
+          dl_front_url: string | null
+          driver_id: string
+          full_name: string
+          id_proof_url: string | null
+          rc_url: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["kyc_status"]
+          submitted_at: string
+          updated_at: string
+          vehicle_id: string
+          vehicle_photo_url: string | null
+        }
+        Insert: {
+          city?: string
+          dl_back_url?: string | null
+          dl_front_url?: string | null
+          driver_id: string
+          full_name: string
+          id_proof_url?: string | null
+          rc_url?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          submitted_at?: string
+          updated_at?: string
+          vehicle_id: string
+          vehicle_photo_url?: string | null
+        }
+        Update: {
+          city?: string
+          dl_back_url?: string | null
+          dl_front_url?: string | null
+          driver_id?: string
+          full_name?: string
+          id_proof_url?: string | null
+          rc_url?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          submitted_at?: string
+          updated_at?: string
+          vehicle_id?: string
+          vehicle_photo_url?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           active_mode: string
           created_at: string
           id: string
           is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
           name: string
           phone: string
         }
@@ -208,6 +263,7 @@ export type Database = {
           created_at?: string
           id: string
           is_online?: boolean
+          kyc_status?: Database["public"]["Enums"]["kyc_status"]
           name: string
           phone: string
         }
@@ -216,6 +272,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_online?: boolean
+          kyc_status?: Database["public"]["Enums"]["kyc_status"]
           name?: string
           phone?: string
         }
@@ -435,6 +492,7 @@ export type Database = {
         | "completed"
         | "cancelled"
       coupon_kind: "flat" | "percent"
+      kyc_status: "not_submitted" | "pending" | "approved" | "rejected"
       payment_method: "cod" | "wallet" | "upi" | "card" | "netbanking"
       payment_status: "pending" | "paid" | "failed" | "refunded"
       sms_event: "accepted" | "started" | "completed"
@@ -578,6 +636,7 @@ export const Constants = {
         "cancelled",
       ],
       coupon_kind: ["flat", "percent"],
+      kyc_status: ["not_submitted", "pending", "approved", "rejected"],
       payment_method: ["cod", "wallet", "upi", "card", "netbanking"],
       payment_status: ["pending", "paid", "failed", "refunded"],
       sms_event: ["accepted", "started", "completed"],
