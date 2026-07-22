@@ -193,7 +193,21 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
             </p>
           </header>
 
-          <div ref={mapRef} className="h-[42vh] w-full bg-muted" />
+          <div className="relative w-full shrink-0" style={{ height: 350 }}>
+            <div ref={mapRef} className="absolute inset-0 h-full w-full bg-muted" />
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={useCurrentLocation}
+              className="absolute bottom-3 right-3 shadow-md"
+            >
+              <Crosshair className="mr-1.5 h-4 w-4" /> Use my location
+            </Button>
+            <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-background/90 px-3 py-1 text-[11px] font-medium text-secondary shadow-sm">
+              Drag the pin or tap the map to set your exact location
+            </div>
+          </div>
 
           <div className="flex-1 overflow-y-auto p-4">
             <div className="surface-card p-4">
