@@ -41,7 +41,7 @@ export function useAuth(): AuthState {
       }
       const [{ data: roleRows }, { data: profileRow }] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", u.id),
-        supabase.from("profiles").select("name, phone, active_mode, is_online").eq("id", u.id).maybeSingle(),
+        supabase.from("profiles").select("name, phone, active_mode, is_online, kyc_status").eq("id", u.id).maybeSingle(),
       ]);
       if (!active) return;
       const dbRoles = (roleRows ?? []).map((r) => r.role as AppRole);
@@ -53,6 +53,7 @@ export function useAuth(): AuthState {
               ...profileRow,
               active_mode: (profileRow.active_mode as ActiveMode) ?? "customer",
               is_online: profileRow.is_online ?? false,
+              kyc_status: ((profileRow as { kyc_status?: KycStatus }).kyc_status ?? "not_submitted") as KycStatus,
             }
           : null,
       );
