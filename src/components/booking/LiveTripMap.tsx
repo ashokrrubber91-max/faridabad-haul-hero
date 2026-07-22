@@ -1,38 +1,66 @@
 import { useEffect, useRef, useState } from "react";
-import { loadGoogleMaps } from "@/lib/google-maps";
-import { Navigation } from "lucide-react";
+import { loadGoogleMaps, FARIDABAD_CENTER } from "@/lib/google-maps";
+import { Navigation, Loader2 } from "lucide-react";
 
 interface Props {
-  pickup: { lat: number; lng: number; address: string };
-  drop: { lat: number; lng: number; address: string };
-  /** "accepted" → driver → pickup; "in_progress" → driver → drop */
+  pickupAddress: string;
+  dropAddress: string;
+  /** "accepted" → driver → pickup; "in_progress" → pickup → drop */
   phase: "accepted" | "in_progress";
   distanceKm: number;
 }
 
-/**
- * Interactive map that renders the current active leg (driver → pickup, or pickup → drop).
- * Uses a simulated driver marker that eases along the route line until real telemetry is wired up.
- */
-export function LiveTripMap({ pickup, drop, phase, distanceKm }: Props) {
+type LatLng = { lat: number; lng: number };
+
+/** Interactive map that renders the current active leg with a simulated driver marker. */
+export function LiveTripMap({ pickupAddress, dropAddress, phase, distanceKm }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const routeRef = useRef<google.maps.Polyline | null>(null);
   const driverMarker = useRef<google.maps.Marker | null>(null);
   const pickupMarker = useRef<google.maps.Marker | null>(null);
   const dropMarker = useRef<google.maps.Marker | null>(null);
+  const [pickup, setPickup] = useState<LatLng | null>(null);
+  const [drop, setDrop] = useState<LatLng | null>(null);
   const [progress, setProgress] = useState(0);
 
-  const legFrom = phase === "accepted"
-    ? { lat: pickup.lat + 0.018, lng: pickup.lng - 0.014 } // simulated driver origin near pickup
-    : pickup;
-  const legTo = phase === "accepted" ? pickup : drop;
+  // Geocode both addresses once
+  useEffect(() => {
+    let cancelled = false;
+    loadGoogleMaps().then(async (g) => {
+      const geocoder = new g.maps.Geocoder();
+      const geo = async (addr: string): Promise<LatLng> => {
+        try {
+          const res = await geocoder.geocode({ address: addr, region: "IN" });
+          const loc = res.results[0]?.geometry.location;
+          return loc ? { lat: loc.lat(), lng: loc.lng() } : FARIDABAD_CENTER;
+        } catch {
+          return FARIDABAD_CENTER;
+        }
+      };
+      const [p, d] = await Promise.all([geo(pickupAddress), geo(dropAddress)]);
+      if (!cancelled) {
+        setPickup(p);
+        setDrop(d);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pickupAddress, dropAddress]);
+
+  const legFrom: LatLng | null = pickup && drop
+    ? phase === "accepted"
+      ? { lat: pickup.lat + 0.018, lng: pickup.lng - 0.014 }
+      : pickup
+    : null;
+  const legTo: LatLng | null = phase === "accepted" ? pickup : drop;
   const legDistance = phase === "accepted" ? Math.max(0.4, distanceKm * 0.35) : Math.max(0.5, distanceKm);
   const eta = Math.max(2, Math.round(legDistance * (1 - progress) * 3));
   const remainingKm = (legDistance * (1 - progress)).toFixed(1);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !pickup || !drop || !legFrom || !legTo) return;
     let cancelled = false;
     loadGoogleMaps().then((g) => {
       if (cancelled || !mapRef.current) return;
@@ -90,9 +118,8 @@ export function LiveTripMap({ pickup, drop, phase, distanceKm }: Props) {
       mapInstance.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, pickup.lat, pickup.lng, drop.lat, drop.lng]);
+  }, [pickup, drop, phase]);
 
-  // Simulate driver movement toward the target
   useEffect(() => {
     setProgress(0);
     const id = setInterval(() => {
@@ -102,7 +129,7 @@ export function LiveTripMap({ pickup, drop, phase, distanceKm }: Props) {
   }, [phase]);
 
   useEffect(() => {
-    if (!driverMarker.current) return;
+    if (!driverMarker.current || !legFrom || !legTo) return;
     const lat = legFrom.lat + (legTo.lat - legFrom.lat) * progress;
     const lng = legFrom.lng + (legTo.lng - legFrom.lng) * progress;
     driverMarker.current.setPosition({ lat, lng });
@@ -121,7 +148,14 @@ export function LiveTripMap({ pickup, drop, phase, distanceKm }: Props) {
           </p>
         </div>
       </div>
-      <div ref={mapRef} className="h-[240px] w-full bg-muted" />
+      <div className="relative h-[240px] w-full bg-muted">
+        <div ref={mapRef} className="absolute inset-0 h-full w-full" />
+        {(!pickup || !drop) && (
+          <div className="absolute inset-0 grid place-items-center">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          </div>
+        )}
+      </div>
       <p className="border-t bg-background px-3 py-1.5 text-[11px] text-muted-foreground">
         {phase === "accepted" ? "Driver → Pickup" : "Pickup → Drop"} · Live location updates automatically.
       </p>
