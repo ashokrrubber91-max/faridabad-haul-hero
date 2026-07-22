@@ -298,7 +298,12 @@ function CustomerPage() {
                     </div>
                   </div>
                   {(b.status === "accepted" || b.status === "in_progress") && (
-                    <LiveTrackingCard booking={b} />
+                    <LiveTripMap
+                      pickupAddress={b.pickup_address}
+                      dropAddress={b.drop_address}
+                      phase={b.status === "accepted" ? "accepted" : "in_progress"}
+                      distanceKm={Number(b.distance_km) || 0}
+                    />
                   )}
                   {(b.status === "accepted" || b.status === "in_progress") && (b.pickup_otp || b.drop_otp) && (
                     <div className="mt-3 grid gap-2 rounded-md bg-primary/5 p-3 sm:grid-cols-2">
