@@ -55,11 +55,13 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
   }, [open, initial]);
 
   useEffect(() => {
-    if (!open || !initial || !mapRef.current) return;
+    if (!open || !mapRef.current) return;
     let cancelled = false;
+    const initLat = initial?.lat ?? FARIDABAD_CENTER.lat;
+    const initLng = initial?.lng ?? FARIDABAD_CENTER.lng;
     loadGoogleMaps().then((g) => {
       if (cancelled || !mapRef.current) return;
-      const center = { lat: initial.lat, lng: initial.lng };
+      const center = { lat: initLat, lng: initLng };
       mapInstance.current = new g.maps.Map(mapRef.current, {
         center,
         zoom: 16,
@@ -73,11 +75,13 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
         draggable: true,
       });
       geocoderRef.current = new g.maps.Geocoder();
-      markerRef.current.addListener("dragend", async () => {
-        const pos = markerRef.current?.getPosition();
-        if (!pos) return;
-        const lat = pos.lat();
-        const lng = pos.lng();
+      // Force re-layout after sheet animation settles (fixes blank grey box)
+      setTimeout(() => {
+        if (!mapInstance.current) return;
+        g.maps.event.trigger(mapInstance.current, "resize");
+        mapInstance.current.setCenter(center);
+      }, 250);
+      const reverseGeocode = async (lat: number, lng: number) => {
         setCoords({ lat, lng });
         try {
           const res = await geocoderRef.current!.geocode({ location: { lat, lng } });
@@ -85,12 +89,46 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
         } catch {
           /* ignore */
         }
+      };
+      markerRef.current.addListener("dragend", () => {
+        const pos = markerRef.current?.getPosition();
+        if (!pos) return;
+        void reverseGeocode(pos.lat(), pos.lng());
+      });
+      mapInstance.current.addListener("click", (ev: google.maps.MapMouseEvent) => {
+        const ll = ev.latLng;
+        if (!ll || !markerRef.current) return;
+        markerRef.current.setPosition(ll);
+        void reverseGeocode(ll.lat(), ll.lng());
       });
     });
     return () => {
       cancelled = true;
+      mapInstance.current = null;
+      markerRef.current = null;
     };
   }, [open, initial]);
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) return toast.error("Location not available");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        markerRef.current?.setPosition({ lat, lng });
+        mapInstance.current?.panTo({ lat, lng });
+        setCoords({ lat, lng });
+        try {
+          const res = await geocoderRef.current?.geocode({ location: { lat, lng } });
+          if (res?.results[0]) setAddress(res.results[0].formatted_address);
+        } catch {
+          /* ignore */
+        }
+      },
+      () => toast.error("Could not fetch your location"),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  };
 
   useEffect(() => {
     if (useMyPhone && profile?.phone) setContactPhone(profile.phone);
