@@ -20,7 +20,7 @@ export interface AuthState {
 export function useAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
-  const [profile, setProfile] = useState<{ name: string; phone: string; active_mode: ActiveMode; is_online: boolean } | null>(null);
+  const [profile, setProfile] = useState<{ name: string; phone: string; active_mode: ActiveMode; is_online: boolean; kyc_status: KycStatus } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
