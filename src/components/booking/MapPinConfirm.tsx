@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Home, Store, Bookmark, ArrowLeft } from "lucide-react";
-import { loadGoogleMaps } from "@/lib/google-maps";
+import { Loader2, Home, Store, Bookmark, ArrowLeft, Crosshair } from "lucide-react";
+import { loadGoogleMaps, FARIDABAD_CENTER } from "@/lib/google-maps";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -55,11 +55,13 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
   }, [open, initial]);
 
   useEffect(() => {
-    if (!open || !initial || !mapRef.current) return;
+    if (!open || !mapRef.current) return;
     let cancelled = false;
+    const initLat = initial?.lat ?? FARIDABAD_CENTER.lat;
+    const initLng = initial?.lng ?? FARIDABAD_CENTER.lng;
     loadGoogleMaps().then((g) => {
       if (cancelled || !mapRef.current) return;
-      const center = { lat: initial.lat, lng: initial.lng };
+      const center = { lat: initLat, lng: initLng };
       mapInstance.current = new g.maps.Map(mapRef.current, {
         center,
         zoom: 16,
@@ -73,11 +75,13 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
         draggable: true,
       });
       geocoderRef.current = new g.maps.Geocoder();
-      markerRef.current.addListener("dragend", async () => {
-        const pos = markerRef.current?.getPosition();
-        if (!pos) return;
-        const lat = pos.lat();
-        const lng = pos.lng();
+      // Force re-layout after sheet animation settles (fixes blank grey box)
+      setTimeout(() => {
+        if (!mapInstance.current) return;
+        g.maps.event.trigger(mapInstance.current, "resize");
+        mapInstance.current.setCenter(center);
+      }, 250);
+      const reverseGeocode = async (lat: number, lng: number) => {
         setCoords({ lat, lng });
         try {
           const res = await geocoderRef.current!.geocode({ location: { lat, lng } });
@@ -85,12 +89,46 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
         } catch {
           /* ignore */
         }
+      };
+      markerRef.current.addListener("dragend", () => {
+        const pos = markerRef.current?.getPosition();
+        if (!pos) return;
+        void reverseGeocode(pos.lat(), pos.lng());
+      });
+      mapInstance.current.addListener("click", (ev: google.maps.MapMouseEvent) => {
+        const ll = ev.latLng;
+        if (!ll || !markerRef.current) return;
+        markerRef.current.setPosition(ll);
+        void reverseGeocode(ll.lat(), ll.lng());
       });
     });
     return () => {
       cancelled = true;
+      mapInstance.current = null;
+      markerRef.current = null;
     };
   }, [open, initial]);
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) return toast.error("Location not available");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        markerRef.current?.setPosition({ lat, lng });
+        mapInstance.current?.panTo({ lat, lng });
+        setCoords({ lat, lng });
+        try {
+          const res = await geocoderRef.current?.geocode({ location: { lat, lng } });
+          if (res?.results[0]) setAddress(res.results[0].formatted_address);
+        } catch {
+          /* ignore */
+        }
+      },
+      () => toast.error("Could not fetch your location"),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  };
 
   useEffect(() => {
     if (useMyPhone && profile?.phone) setContactPhone(profile.phone);
@@ -155,7 +193,21 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
             </p>
           </header>
 
-          <div ref={mapRef} className="h-[42vh] w-full bg-muted" />
+          <div className="relative w-full shrink-0" style={{ height: 350 }}>
+            <div ref={mapRef} className="absolute inset-0 h-full w-full bg-muted" />
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={useCurrentLocation}
+              className="absolute bottom-3 right-3 shadow-md"
+            >
+              <Crosshair className="mr-1.5 h-4 w-4" /> Use my location
+            </Button>
+            <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-background/90 px-3 py-1 text-[11px] font-medium text-secondary shadow-sm">
+              Drag the pin or tap the map to set your exact location
+            </div>
+          </div>
 
           <div className="flex-1 overflow-y-auto p-4">
             <div className="surface-card p-4">

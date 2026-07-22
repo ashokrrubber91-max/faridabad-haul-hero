@@ -5,12 +5,14 @@ import type { User } from "@supabase/supabase-js";
 export type AppRole = "customer" | "driver" | "admin";
 export type ActiveMode = "customer" | "driver";
 
+export type KycStatus = "not_submitted" | "pending" | "approved" | "rejected";
+
 export interface AuthState {
   loading: boolean;
   user: User | null;
   role: AppRole | null;
   roles: AppRole[];
-  profile: { name: string; phone: string; active_mode: ActiveMode; is_online: boolean } | null;
+  profile: { name: string; phone: string; active_mode: ActiveMode; is_online: boolean; kyc_status: KycStatus } | null;
   activeMode: ActiveMode;
   setActiveMode: (m: ActiveMode) => Promise<void>;
 }
@@ -18,7 +20,7 @@ export interface AuthState {
 export function useAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
-  const [profile, setProfile] = useState<{ name: string; phone: string; active_mode: ActiveMode; is_online: boolean } | null>(null);
+  const [profile, setProfile] = useState<{ name: string; phone: string; active_mode: ActiveMode; is_online: boolean; kyc_status: KycStatus } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export function useAuth(): AuthState {
       }
       const [{ data: roleRows }, { data: profileRow }] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", u.id),
-        supabase.from("profiles").select("name, phone, active_mode, is_online").eq("id", u.id).maybeSingle(),
+        supabase.from("profiles").select("name, phone, active_mode, is_online, kyc_status").eq("id", u.id).maybeSingle(),
       ]);
       if (!active) return;
       const dbRoles = (roleRows ?? []).map((r) => r.role as AppRole);
@@ -51,6 +53,7 @@ export function useAuth(): AuthState {
               ...profileRow,
               active_mode: (profileRow.active_mode as ActiveMode) ?? "customer",
               is_online: profileRow.is_online ?? false,
+              kyc_status: ((profileRow as { kyc_status?: KycStatus }).kyc_status ?? "not_submitted") as KycStatus,
             }
           : null,
       );

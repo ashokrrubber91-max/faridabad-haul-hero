@@ -2,7 +2,7 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { MapPin, ArrowRight, Package, Loader2, ChevronRight, Map as MapIcon, Navigation, X } from "lucide-react";
+import { MapPin, ArrowRight, Package, Loader2, ChevronRight, Map as MapIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { VEHICLES, estimateFare, vehicleLabel, STATUS_META, type VehicleId } from "@/lib/booking";
 import { LocationSearchOverlay, type PlacePick } from "@/components/booking/LocationSearchOverlay";
 import { MapPinConfirm } from "@/components/booking/MapPinConfirm";
+import { LiveTripMap } from "@/components/booking/LiveTripMap";
 import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
 import { SupportChat } from "@/components/support/SupportChat";
 import { FARIDABAD_CENTER } from "@/lib/google-maps";
@@ -297,7 +298,12 @@ function CustomerPage() {
                     </div>
                   </div>
                   {(b.status === "accepted" || b.status === "in_progress") && (
-                    <LiveTrackingCard booking={b} />
+                    <LiveTripMap
+                      pickupAddress={b.pickup_address}
+                      dropAddress={b.drop_address}
+                      phase={b.status === "accepted" ? "accepted" : "in_progress"}
+                      distanceKm={Number(b.distance_km) || 0}
+                    />
                   )}
                   {(b.status === "accepted" || b.status === "in_progress") && (b.pickup_otp || b.drop_otp) && (
                     <div className="mt-3 grid gap-2 rounded-md bg-primary/5 p-3 sm:grid-cols-2">
@@ -470,32 +476,6 @@ function LocationRow({
   );
 }
 
-function LiveTrackingCard({ booking }: { booking: { status: string; pickup_address: string; drop_address: string; distance_km: number } }) {
-  const isPickup = booking.status === "accepted";
-  const km = Math.max(0.4, Number(booking.distance_km) * (isPickup ? 0.35 : 0.6));
-  const eta = Math.max(2, Math.round(km * 3));
-  return (
-    <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-3">
-      <div className="flex items-center gap-2 text-primary">
-        <Navigation className="h-4 w-4 animate-pulse" />
-        <p className="text-sm font-semibold">
-          {isPickup
-            ? `Driver is ${km.toFixed(1)} km away · Arriving in ~${eta} min`
-            : `On the way to drop · ${km.toFixed(1)} km · ~${eta} min`}
-        </p>
-      </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-primary/15">
-        <div
-          className="h-full rounded-full bg-primary transition-all"
-          style={{ width: isPickup ? "35%" : "70%" }}
-        />
-      </div>
-      <p className="mt-1 text-[11px] text-muted-foreground">
-        Live location updates every few seconds.
-      </p>
-    </div>
-  );
-}
 
 
 
