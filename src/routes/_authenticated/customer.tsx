@@ -476,32 +476,6 @@ function LocationRow({
   );
 }
 
-function LiveTrackingCard({ booking }: { booking: { status: string; pickup_address: string; drop_address: string; distance_km: number } }) {
-  const isPickup = booking.status === "accepted";
-  const km = Math.max(0.4, Number(booking.distance_km) * (isPickup ? 0.35 : 0.6));
-  const eta = Math.max(2, Math.round(km * 3));
-  return (
-    <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-3">
-      <div className="flex items-center gap-2 text-primary">
-        <Navigation className="h-4 w-4 animate-pulse" />
-        <p className="text-sm font-semibold">
-          {isPickup
-            ? `Driver is ${km.toFixed(1)} km away · Arriving in ~${eta} min`
-            : `On the way to drop · ${km.toFixed(1)} km · ~${eta} min`}
-        </p>
-      </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-primary/15">
-        <div
-          className="h-full rounded-full bg-primary transition-all"
-          style={{ width: isPickup ? "35%" : "70%" }}
-        />
-      </div>
-      <p className="mt-1 text-[11px] text-muted-foreground">
-        Live location updates every few seconds.
-      </p>
-    </div>
-  );
-}
 
 
 
