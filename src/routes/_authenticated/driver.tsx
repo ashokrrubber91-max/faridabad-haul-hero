@@ -159,8 +159,31 @@ function DriverPage() {
   const earnedTier = [...sortedTiers].reverse().find((t) => t.rides_required <= ridesToday);
   const earnedToday = earnedTier?.bonus_amount ?? 0;
 
+  const kycStatus = profile?.kyc_status ?? "not_submitted";
+  const kycVerified = kycStatus === "approved" || role === "admin";
+
   return (
     <div className="space-y-6">
+      {!kycVerified && (
+        <div className="surface-card flex items-start gap-3 border-l-4 border-l-primary bg-primary/5 p-3">
+          <ShieldCheck className="mt-0.5 h-4 w-4 text-primary" />
+          <div className="flex-1 text-sm">
+            <p className="font-semibold text-secondary">
+              {kycStatus === "pending"
+                ? "Verification pending — admin will review within 24 hours"
+                : kycStatus === "rejected"
+                ? "Your KYC was rejected — please re-submit documents"
+                : "Complete driver verification to start receiving jobs"}
+            </p>
+            <p className="text-xs text-muted-foreground">Upload your licence, RC, ID proof and vehicle photo.</p>
+          </div>
+          <Button asChild size="sm">
+            <Link to="/driver-kyc">
+              {kycStatus === "not_submitted" ? "Start KYC" : "View status"}
+            </Link>
+          </Button>
+        </div>
+      )}
       {walletLow && (
         <div className="surface-card flex items-start gap-3 border-l-4 border-l-warning bg-warning/5 p-3">
           <AlertTriangle className="mt-0.5 h-4 w-4 text-warning" />
