@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { VEHICLES, estimateFare, vehicleLabel, STATUS_META, type VehicleId } from "@/lib/booking";
 import { LocationSearchOverlay, type PlacePick } from "@/components/booking/LocationSearchOverlay";
 import { MapPinConfirm } from "@/components/booking/MapPinConfirm";
+import { LiveTripMap } from "@/components/booking/LiveTripMap";
 import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
 import { SupportChat } from "@/components/support/SupportChat";
 import { FARIDABAD_CENTER } from "@/lib/google-maps";
