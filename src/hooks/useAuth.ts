@@ -5,12 +5,14 @@ import type { User } from "@supabase/supabase-js";
 export type AppRole = "customer" | "driver" | "admin";
 export type ActiveMode = "customer" | "driver";
 
+export type KycStatus = "not_submitted" | "pending" | "approved" | "rejected";
+
 export interface AuthState {
   loading: boolean;
   user: User | null;
   role: AppRole | null;
   roles: AppRole[];
-  profile: { name: string; phone: string; active_mode: ActiveMode; is_online: boolean } | null;
+  profile: { name: string; phone: string; active_mode: ActiveMode; is_online: boolean; kyc_status: KycStatus } | null;
   activeMode: ActiveMode;
   setActiveMode: (m: ActiveMode) => Promise<void>;
 }
