@@ -1,25 +1,23 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Package, Wallet, User, Truck, ClipboardList } from "lucide-react";
-
-type Tab = { to: string; label: string; icon: typeof Home };
-
-const CUSTOMER_TABS: Tab[] = [
-  { to: "/customer", label: "Home", icon: Home },
-  { to: "/orders", label: "Orders", icon: Package },
-  { to: "/wallet", label: "Wallet", icon: Wallet },
-  { to: "/account", label: "Account", icon: User },
-];
-
-const DRIVER_TABS: Tab[] = [
-  { to: "/driver", label: "Home", icon: Truck },
-  { to: "/driver-rides", label: "My Rides", icon: ClipboardList },
-  { to: "/wallet", label: "Earnings", icon: Wallet },
-  { to: "/driver-profile", label: "Profile", icon: User },
-];
+import { Home, Package, Wallet, User, Truck } from "lucide-react";
 
 export function BottomNav({ variant }: { variant: "customer" | "driver" }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const tabs = variant === "customer" ? CUSTOMER_TABS : DRIVER_TABS;
+
+  const tabs =
+    variant === "customer"
+      ? ([
+          { to: "/customer", label: "Home", icon: Home },
+          { to: "/orders", label: "Orders", icon: Package },
+          { to: "/wallet", label: "Wallet", icon: Wallet },
+          { to: "/account", label: "Account", icon: User },
+        ] as const)
+      : ([
+          { to: "/driver", label: "Home", icon: Truck },
+          { to: "/orders", label: "Rides", icon: Package },
+          { to: "/wallet", label: "Earnings", icon: Wallet },
+          { to: "/account", label: "Account", icon: User },
+        ] as const);
 
   return (
     <nav
