@@ -301,7 +301,12 @@ function BankAccounts({ userId, accounts, loading }: { userId?: string; accounts
                 <Label htmlFor="b-holder">Account holder name</Label>
                 <Input id="b-holder" value={holder} onChange={(e) => setHolder(e.target.value)} maxLength={60} />
               </div>
+              <div>
+                <Label htmlFor="b-bank">Bank name</Label>
+                <Input id="b-bank" value={bankName} onChange={(e) => setBankName(e.target.value)} maxLength={60} />
+              </div>
               <div className="grid grid-cols-2 gap-3">
+
                 <div>
                   <Label htmlFor="b-acc">Account number</Label>
                   <Input id="b-acc" inputMode="numeric" value={acc} onChange={(e) => setAcc(e.target.value)} maxLength={20} />
