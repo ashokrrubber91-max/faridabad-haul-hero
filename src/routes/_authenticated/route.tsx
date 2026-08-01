@@ -3,6 +3,8 @@ import { Truck, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { BottomNav } from "@/components/nav/BottomNav";
+
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -83,10 +85,12 @@ function AuthedLayout() {
           </nav>
         )}
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-6">
+      <main className="mx-auto max-w-5xl px-4 pb-24 pt-6">
         <Outlet />
       </main>
+      {role && <BottomNav variant={role === "driver" || activeMode === "driver" ? "driver" : "customer"} />}
     </div>
+
   );
 }
 

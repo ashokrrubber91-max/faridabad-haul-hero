@@ -37,6 +37,8 @@ export type Database = {
           pickup_address: string
           pickup_otp: string | null
           pickup_verified_at: string | null
+          rating: number | null
+          review: string | null
           status: Database["public"]["Enums"]["booking_status"]
           updated_at: string
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
@@ -63,6 +65,8 @@ export type Database = {
           pickup_address: string
           pickup_otp?: string | null
           pickup_verified_at?: string | null
+          rating?: number | null
+          review?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
           updated_at?: string
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
@@ -89,6 +93,8 @@ export type Database = {
           pickup_address?: string
           pickup_otp?: string | null
           pickup_verified_at?: string | null
+          rating?: number | null
+          review?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
           updated_at?: string
           vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
@@ -134,6 +140,78 @@ export type Database = {
           min_fare?: number
           uses?: number
           value?: number
+        }
+        Relationships: []
+      }
+      customer_gstins: {
+        Row: {
+          business_address: string | null
+          business_name: string
+          created_at: string
+          gstin: string
+          id: string
+          is_default: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_address?: string | null
+          business_name: string
+          created_at?: string
+          gstin: string
+          id?: string
+          is_default?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_address?: string | null
+          business_name?: string
+          created_at?: string
+          gstin?: string
+          id?: string
+          is_default?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      driver_bank_accounts: {
+        Row: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at: string
+          driver_id: string
+          id: string
+          ifsc: string
+          is_default: boolean
+          updated_at: string
+          upi_id: string | null
+        }
+        Insert: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          ifsc: string
+          is_default?: boolean
+          updated_at?: string
+          upi_id?: string | null
+        }
+        Update: {
+          account_holder?: string
+          account_number?: string
+          bank_name?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          ifsc?: string
+          is_default?: boolean
+          updated_at?: string
+          upi_id?: string | null
         }
         Relationships: []
       }
@@ -202,6 +280,9 @@ export type Database = {
           driver_id: string
           full_name: string
           id_proof_url: string | null
+          insurance_url: string | null
+          number_plate_url: string | null
+          puc_url: string | null
           rc_url: string | null
           rejection_reason: string | null
           reviewed_at: string | null
@@ -210,6 +291,7 @@ export type Database = {
           submitted_at: string
           updated_at: string
           vehicle_id: string
+          vehicle_number: string | null
           vehicle_photo_url: string | null
         }
         Insert: {
@@ -219,6 +301,9 @@ export type Database = {
           driver_id: string
           full_name: string
           id_proof_url?: string | null
+          insurance_url?: string | null
+          number_plate_url?: string | null
+          puc_url?: string | null
           rc_url?: string | null
           rejection_reason?: string | null
           reviewed_at?: string | null
@@ -227,6 +312,7 @@ export type Database = {
           submitted_at?: string
           updated_at?: string
           vehicle_id: string
+          vehicle_number?: string | null
           vehicle_photo_url?: string | null
         }
         Update: {
@@ -236,6 +322,9 @@ export type Database = {
           driver_id?: string
           full_name?: string
           id_proof_url?: string | null
+          insurance_url?: string | null
+          number_plate_url?: string | null
+          puc_url?: string | null
           rc_url?: string | null
           rejection_reason?: string | null
           reviewed_at?: string | null
@@ -244,6 +333,7 @@ export type Database = {
           submitted_at?: string
           updated_at?: string
           vehicle_id?: string
+          vehicle_number?: string | null
           vehicle_photo_url?: string | null
         }
         Relationships: []
@@ -453,6 +543,39 @@ export type Database = {
           },
         ]
       }
+      withdrawal_requests: {
+        Row: {
+          amount: number
+          created_at: string
+          driver_id: string
+          id: string
+          method: string
+          note: string | null
+          status: Database["public"]["Enums"]["withdrawal_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          driver_id: string
+          id?: string
+          method?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["withdrawal_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          driver_id?: string
+          id?: string
+          method?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["withdrawal_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -499,6 +622,7 @@ export type Database = {
       sms_recipient: "customer" | "driver"
       sms_status: "queued" | "sent" | "failed"
       vehicle_type: "tata_ace" | "pickup_8ft" | "tata_407"
+      withdrawal_status: "requested" | "paid" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -643,6 +767,7 @@ export const Constants = {
       sms_recipient: ["customer", "driver"],
       sms_status: ["queued", "sent", "failed"],
       vehicle_type: ["tata_ace", "pickup_8ft", "tata_407"],
+      withdrawal_status: ["requested", "paid", "rejected"],
     },
   },
 } as const
