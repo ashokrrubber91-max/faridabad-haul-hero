@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
+import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedDriverKycRouteImport } from './routes/_authenticated/driver-kyc'
 import { Route as AuthenticatedDriverRouteImport } from './routes/_authenticated/driver'
 import { Route as AuthenticatedCustomerRouteImport } from './routes/_authenticated/customer'
@@ -42,6 +43,11 @@ const AuthenticatedWalletRoute = AuthenticatedWalletRouteImport.update({
   path: '/wallet',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDriverKycRoute = AuthenticatedDriverKycRouteImport.update({
   id: '/driver-kyc',
   path: '/driver-kyc',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/customer': typeof AuthenticatedCustomerRoute
   '/driver': typeof AuthenticatedDriverRoute
   '/driver-kyc': typeof AuthenticatedDriverKycRoute
+  '/orders': typeof AuthenticatedOrdersRoute
   '/wallet': typeof AuthenticatedWalletRoute
 }
 export interface FileRoutesByTo {
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/customer': typeof AuthenticatedCustomerRoute
   '/driver': typeof AuthenticatedDriverRoute
   '/driver-kyc': typeof AuthenticatedDriverKycRoute
+  '/orders': typeof AuthenticatedOrdersRoute
   '/wallet': typeof AuthenticatedWalletRoute
 }
 export interface FileRoutesById {
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/_authenticated/customer': typeof AuthenticatedCustomerRoute
   '/_authenticated/driver': typeof AuthenticatedDriverRoute
   '/_authenticated/driver-kyc': typeof AuthenticatedDriverKycRoute
+  '/_authenticated/orders': typeof AuthenticatedOrdersRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
 }
 export interface FileRouteTypes {
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/customer'
     | '/driver'
     | '/driver-kyc'
+    | '/orders'
     | '/wallet'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/customer'
     | '/driver'
     | '/driver-kyc'
+    | '/orders'
     | '/wallet'
   id:
     | '__root__'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/_authenticated/customer'
     | '/_authenticated/driver'
     | '/_authenticated/driver-kyc'
+    | '/_authenticated/orders'
     | '/_authenticated/wallet'
   fileRoutesById: FileRoutesById
 }
@@ -162,6 +174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWalletRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/orders': {
+      id: '/_authenticated/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof AuthenticatedOrdersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/driver-kyc': {
       id: '/_authenticated/driver-kyc'
       path: '/driver-kyc'
@@ -190,6 +209,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCustomerRoute: typeof AuthenticatedCustomerRoute
   AuthenticatedDriverRoute: typeof AuthenticatedDriverRoute
   AuthenticatedDriverKycRoute: typeof AuthenticatedDriverKycRoute
+  AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
 }
 
@@ -197,6 +217,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCustomerRoute: AuthenticatedCustomerRoute,
   AuthenticatedDriverRoute: AuthenticatedDriverRoute,
   AuthenticatedDriverKycRoute: AuthenticatedDriverKycRoute,
+  AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
 }
 
