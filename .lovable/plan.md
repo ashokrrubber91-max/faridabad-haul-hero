@@ -1,73 +1,49 @@
-# Miniport Production Overhaul — Phased Plan
+# MiniPort — Production Overhaul (Phases 2–5)
 
-The request spans ~15 subsystems. Shipping it all in one turn would break more than it builds. I'll deliver it in four phases, each independently working. This plan covers Phase 1 in detail and outlines 2–4.
+This request covers ~25 subsystems. Shipping it in one turn would break more than it builds, so it's split into four phases. Each phase leaves the app fully working.
 
-## Phase 1 (this turn) — Map bug + Live tracking + Driver KYC
+## Phase 2 (next turn) — Navigation shells + Orders + Wallet + Account
 
-### 1A. Fix blank map in `MapPinConfirm`
-Root cause: the sheet mounts with `initial=null` in some flows, and the `useEffect` bails when `initial` is falsy so `new google.maps.Map` never runs. Also the container is inside a scroll region that can render with `height: 0` before Maps initializes.
+**Customer: persistent 4-tab bottom nav**
+- `Home` — "Book Now" / "Drive with MiniPort" cards + the booking form.
+- `Orders` — full history (2-year window), status pills, driver name + vehicle number, "Book Again", invoice download link.
+- `Wallet` — coins balance, reward ledger, cashback lines, full transaction history, "Add money" and "Transfer to bank" entry points (payment rails wired in Phase 4).
+- `Account` — name/email, saved addresses, multiple GSTINs with a default flag, support access, monthly bulk invoice download.
 
-Changes in `src/components/booking/MapPinConfirm.tsx`:
-- Always initialize the map on `open`, defaulting to `FARIDABAD_CENTER` when `initial` is null.
-- Give the map container explicit `height: 350px; width: 100%` (not viewport-relative) and a helper label "Drag pin to set exact location".
-- Add `google.maps.event.trigger(map, "resize")` after mount in case the sheet animates in.
-- Red pin using `SymbolPath` marker so it's visible even before tiles finish.
+**Driver: 3-screen nav**
+- `Home` (request queue) · `My Rides` · `Profile`.
+- Active/accepted ride moves to its own dedicated screen.
+- Profile: vehicle details, document photos (RC, Insurance, number plate, DL, PUC), net monthly earnings after commission, bank account details for withdrawals + QR.
 
-### 1B. Live driver tracking on customer active booking
-New file `src/components/booking/LiveTripMap.tsx`:
-- Google Map showing pickup + drop markers, polyline route via `DirectionsService`.
-- Driver marker position:
-  - Before pickup OTP verified: animates from a simulated origin toward pickup (interpolated every 3s, since no real telemetry exists yet).
-  - After pickup OTP verified (booking status `in_progress` AND `pickup_verified_at` set): animates from pickup toward drop, and the route re-renders pickup→drop.
-- ETA text derived from remaining distance / 25 km·h.
+**Schema:** `customer_gstins`, `driver_bank_accounts`, extra document columns on `driver_kyc`, `booking_invoices` metadata.
 
-Wire into `src/routes/_authenticated/customer.tsx`:
-- Replace the existing "Driver is X km away" static banner with `<LiveTripMap booking={activeBooking} />` inside the active booking card.
-- Height 260px on mobile, 320px on desktop.
+## Phase 3 — Booking flow, location, and trip lifecycle
 
-Realtime already subscribes to booking changes; no schema change needed for the visual switch — we key off `status` + existing `pickup_verified_at`.
+- **Review Booking**: vehicle cards with 3D-style renders, capacity, free loading window; goods allowed vs restricted list; GSTIN selector; flexible coin redemption (custom amount or full balance); T&C block stating loading time and overtime rate up front.
+- **Multi-stop**: `booking_stops` table, up to 3 additional pickup/drop points, fare recalculated.
+- **Location fixes**: reliable auto-location fetch, map pin selection hardening, paste-a-map-link (Google/WhatsApp share links) → resolves and auto-fills pickup or drop in one tap, explicit "Save address" button (no implicit saves).
+- **Loading/unloading timer**: free window starts at pickup OTP entry (90 min for 750 kg class, scaled per vehicle), then ₹2/min overtime accrued server-side onto the fare.
+- **Driver wait/cancel**: cancel option appears only after a 5-minute wait timer once the driver is at pickup.
+- **Proof of delivery**: drop OTP required, optional goods photo upload.
+- **Post-trip**: rating flow unlocked on completion + downloadable PDF tax invoice (SAC 9965/9967, CGST/SGST/IGST split).
 
-### 1C. Driver KYC onboarding + admin approval
+## Phase 4 — Auth, payments, live tracking
 
-**Schema (single migration):**
-- `driver_kyc` table: `driver_id` (PK, FK profiles), `full_name`, `city`, `vehicle_id`, `dl_front_url`, `dl_back_url`, `rc_url`, `id_proof_url`, `vehicle_photo_url`, `status` (`pending|approved|rejected`), `rejection_reason`, `submitted_at`, `reviewed_at`, `reviewed_by`. RLS: driver reads/writes own row; admin reads/updates all.
-- Storage bucket `driver-kyc` (private). RLS: driver uploads to `{driver_id}/...`; admin reads all.
-- Add `kyc_status` column to `profiles` (default `not_submitted`), synced by trigger from `driver_kyc.status`.
+- **Auth**: Phone OTP (Twilio Verify via connector), Google Sign-In, Apple Sign-In, persistent sessions.
+- **Dual-role switching**: role toggle; a customer can create a driver profile from the Driver section and vice-versa, sharing one login.
+- **Live tracking**: `driver_locations` table + realtime pings from the driver screen replace the current simulated marker; customer sees driver name, vehicle number, phone, and a continuously updating map + ETA once pickup OTP is entered.
+- **Wallet money movement**: UPI/card top-up and bank transfer via a payment provider.
 
-**Driver flow:**
-- New route `src/routes/_authenticated/driver-kyc.tsx` — 3-step wizard (Personal → Vehicle → Documents with previews).
-- `src/routes/_authenticated/driver.tsx`: if role is driver and `kyc_status !== 'approved'`, render a lock screen with status banner ("Verification Pending — reviewed within 24 hours" / "Rejected: {reason}" / CTA to start submission) instead of the dashboard.
+## Phase 5 — Verification gate, dispatch, AI support
 
-**Admin flow:**
-- New "KYC Approvals" tab in `src/routes/admin.tsx` — list of pending submissions with document thumbnails, Approve / Reject (with reason) buttons.
+- **Approval gate**: drivers cannot go online, receive requests, or get notifications until KYC is approved (enforced in RLS, not just UI).
+- **Dispatch**: online-only targeting; incoming request shows a full-screen, call-style overlay with ringtone and vibration.
+- **AI chatbot**: reads live KYC approval status; adds voice in/voice out for drivers who can't type.
 
-## Phase 2 (next turn) — 4-tab bottom nav + Orders + Wallet + Account
-- `src/components/nav/BottomNav.tsx` with 4 icons; visible only for customers.
-- Split `customer.tsx` into `home.tsx` (booking form), `orders.tsx` (active/completed/cancelled with CRN, status pills, PDF/consignment note links), `wallet.tsx` (already exists — extend with Add Money placeholder + ledger), `account.tsx` (profile, saved addresses, GSTIN, support).
-- Move existing booking form into Home tab; keep route paths stable via redirects.
+## Known limitation to decide on
 
-## Phase 3 — Review Booking upgrades + Flexible coins + GST + Multi-stop
-- Vehicle card with photo/capacity/loading window.
-- Goods category + weight picker + restricted-items advisory.
-- GST toggle → CGST/SGST/IGST split (add `gstin`, `business_name`, `tax_breakup` JSON to bookings).
-- Coins: checkbox for max redeem + numeric input for custom amount, live total.
-- Multi-stop: `booking_stops` table (up to 3), recalculated fare.
-- POD: drop OTP already exists; add optional receiver photo upload + e-way bill field for orders >₹50k.
-- Completed trip: 5-star rating modal (already partly exists via `rating` column), PDF tax invoice (client-side jsPDF with SAC 9965/9967), Book Again.
+True background execution with an app-off ringing overlay is not possible in a web app. Realistically the web app can do: web push notifications, a full-screen ringing overlay with sound + vibration while the tab is alive or the PWA is installed and backgrounded. A genuine always-listening background service needs a native wrapper (Capacitor) shipped to the Play Store. I'll build the PWA/push version in Phase 5 unless you want to go native.
 
-## Phase 4 — Auth revamp
-- Configure Google via `supabase--configure_social_auth`.
-- Connect Twilio connector; add `/api/public/otp/send` and `/api/public/otp/verify` server routes that call Twilio Verify.
-- Rebuild `src/routes/auth.tsx`: Customer/Driver toggle at top, "Continue with Google" button, phone input → 6-digit OTP screen, remove disclaimer.
+## Ordering note
 
-## Out of scope for this plan
-- Real driver GPS telemetry (Phase 1B simulates until we add a `driver_locations` table + realtime pings from the driver app).
-- Real UPI/card top-ups in Wallet (Add Money will be a placeholder; wiring Razorpay/Stripe is a separate ask).
-- E-Rickshaw vehicle option — needs fare config; folded into Phase 3 with the vehicle grid rework.
-
-## Technical notes
-- Google Directions API is enabled via the existing Maps browser key; no new secret.
-- KYC uploads go through the browser Supabase client with signed URLs read by admin.
-- Twilio requires `standard_connectors--connect` (Phase 4) — you'll pick the connection when I run that step.
-
-Confirm this phasing and I'll execute Phase 1 immediately. Reply "go" to proceed, or tell me to reshuffle.
+Phases can be reordered. If a specific item is blocking you right now (e.g. location/map fixes or the driver approval gate), say so and I'll pull it forward.
