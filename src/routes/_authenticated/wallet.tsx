@@ -232,8 +232,9 @@ function WalletPage() {
 type Bank = {
   id: string;
   account_holder: string;
-  account_number: string | null;
-  ifsc: string | null;
+  bank_name: string;
+  account_number: string;
+  ifsc: string;
   upi_id: string | null;
   is_default: boolean;
 };
@@ -242,6 +243,7 @@ function BankAccounts({ userId, accounts, loading }: { userId?: string; accounts
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [holder, setHolder] = useState("");
+  const [bankName, setBankName] = useState("");
   const [acc, setAcc] = useState("");
   const [ifsc, setIfsc] = useState("");
   const [upi, setUpi] = useState("");
@@ -249,19 +251,23 @@ function BankAccounts({ userId, accounts, loading }: { userId?: string; accounts
   const add = useMutation({
     mutationFn: async () => {
       if (holder.trim().length < 2) throw new Error("Enter the account holder name");
-      const hasBank = acc.trim().length >= 8 && /^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc.trim().toUpperCase());
-      const hasUpi = /^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(upi.trim());
-      if (!hasBank && !hasUpi) throw new Error("Add either a valid account number + IFSC, or a UPI ID");
+      if (bankName.trim().length < 2) throw new Error("Enter the bank name");
+      if (acc.trim().length < 8) throw new Error("Enter a valid account number");
+      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc.trim().toUpperCase())) throw new Error("Enter a valid IFSC code");
+      const upiId = upi.trim();
+      if (upiId && !/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(upiId)) throw new Error("Enter a valid UPI ID");
       const { error } = await supabase.from("driver_bank_accounts").insert({
         driver_id: userId!,
         account_holder: holder.trim(),
-        account_number: hasBank ? acc.trim() : null,
-        ifsc: hasBank ? ifsc.trim().toUpperCase() : null,
-        upi_id: hasUpi ? upi.trim() : null,
+        bank_name: bankName.trim(),
+        account_number: acc.trim(),
+        ifsc: ifsc.trim().toUpperCase(),
+        upi_id: upiId || null,
         is_default: accounts.length === 0,
       });
       if (error) throw error;
     },
+
     onSuccess: () => {
       toast.success("Payout method saved");
       setOpen(false);
