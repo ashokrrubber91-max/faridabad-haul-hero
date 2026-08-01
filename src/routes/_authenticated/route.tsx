@@ -3,6 +3,8 @@ import { Truck, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { BottomNav } from "@/components/nav/BottomNav";
+
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
