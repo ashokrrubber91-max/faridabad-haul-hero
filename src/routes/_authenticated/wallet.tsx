@@ -272,6 +272,8 @@ function BankAccounts({ userId, accounts, loading }: { userId?: string; accounts
       toast.success("Payout method saved");
       setOpen(false);
       setHolder("");
+      setBankName("");
+
       setAcc("");
       setIfsc("");
       setUpi("");
