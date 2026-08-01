@@ -365,9 +365,11 @@ function WithdrawDialog({ cash, banks, onDone }: { cash: number; banks: Bank[]; 
       const target = banks.find((b) => b.is_default) ?? banks[0];
       const { error } = await supabase.from("withdrawal_requests").insert({
         driver_id: user!.id,
-        bank_account_id: target.id,
         amount: amt,
+        method: target.upi_id ? "upi" : "bank",
+        note: target.upi_id ?? `${target.bank_name} ****${target.account_number.slice(-4)}`,
       });
+
       if (error) throw error;
     },
     onSuccess: () => {
