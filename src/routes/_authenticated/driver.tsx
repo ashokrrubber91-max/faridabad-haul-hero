@@ -456,8 +456,39 @@ function PendingJob({ job, onAccept, pending }: { job: any; onAccept: () => void
   );
 }
 
-function ActiveJobCard({ job, onVerify, pending }: { job: any; onVerify: (otp: string, next: "in_progress" | "completed") => void; pending: boolean }) {
+function ActiveJobCard({
+  job,
+  onVerify,
+  pending,
+}: {
+  job: any;
+  onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null) => void;
+  pending: boolean;
+}) {
   const [otp, setOtp] = useState("");
+  const [podPath, setPodPath] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const uploadProof = async (file: File) => {
+    setUploading(true);
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth.user?.id;
+    if (!uid) {
+      setUploading(false);
+      toast.error("Session expired — please sign in again");
+      return;
+    }
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${uid}/${job.id}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("delivery-proof").upload(path, file, { upsert: true });
+    setUploading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setPodPath(path);
+    toast.success("Proof photo attached");
+  };
   const next = job.status === "accepted" ? "in_progress" : "completed";
   const label = next === "in_progress" ? "Verify Pickup OTP" : "Verify Drop OTP";
   const contact = extractContact(job.notes, next === "in_progress" ? "Sender" : "Receiver");
