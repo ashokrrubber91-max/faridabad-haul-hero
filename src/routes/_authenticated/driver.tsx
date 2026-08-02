@@ -182,6 +182,12 @@ function DriverPage() {
   const kycStatus = profile?.kyc_status ?? "not_submitted";
   const kycVerified = kycStatus === "approved" || role === "admin";
 
+  // Full-screen incoming-ride alert: only when verified, online, free, and not dismissed.
+  const incoming =
+    kycVerified && isOnline && !activeJob
+      ? pending.find((b) => !dismissed.includes(b.id))
+      : undefined;
+
   return (
     <div className="space-y-6">
       {!kycVerified && (
