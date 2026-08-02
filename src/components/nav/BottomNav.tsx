@@ -14,7 +14,7 @@ export function BottomNav({ variant }: { variant: "customer" | "driver" }) {
         ] as const)
       : ([
           { to: "/driver", label: "Home", icon: Truck },
-          { to: "/orders", label: "Rides", icon: Package },
+          { to: "/driver-rides", label: "Rides", icon: Package },
           { to: "/wallet", label: "Earnings", icon: Wallet },
           { to: "/account", label: "Account", icon: User },
         ] as const);
