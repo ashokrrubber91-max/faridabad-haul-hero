@@ -304,12 +304,13 @@ function DriverPage() {
       {activeJob && (
         <ActiveJobCard
           job={activeJob}
-          onVerify={(otp, next) =>
+          onVerify={(otp, next, podPath) =>
             verifyOtp.mutate({
               id: activeJob.id,
               otp,
               expected: next === "in_progress" ? activeJob.pickup_otp : activeJob.drop_otp,
               next,
+              podPath,
             })
           }
           pending={verifyOtp.isPending}
@@ -319,9 +320,14 @@ function DriverPage() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-2xl tracking-wide text-secondary">Live requests</h2>
-          <Badge className="bg-warning text-warning-foreground hover:bg-warning">{pending.length} waiting</Badge>
+          <Badge className="bg-warning text-warning-foreground hover:bg-warning">{kycVerified ? pending.length : 0} waiting</Badge>
         </div>
-        {pending.length === 0 ? (
+        {!kycVerified ? (
+          <div className="surface-card p-6 text-center text-sm text-muted-foreground">
+            <ShieldCheck className="mx-auto mb-2 h-5 w-5 text-primary" />
+            Ride requests unlock once your documents are verified by the MiniPort team.
+          </div>
+        ) : pending.length === 0 ? (
           <div className="surface-card p-6 text-center text-sm text-muted-foreground">
             <Truck className="mx-auto mb-2 h-5 w-5" />
             {isOnline ? "Looking for rides in Faridabad…" : "Go online to receive job requests."}
@@ -332,6 +338,20 @@ function DriverPage() {
           </div>
         )}
       </section>
+
+      {incoming && (
+        <IncomingRideOverlay
+          job={incoming}
+          accepting={accept.isPending}
+          onAccept={() => {
+            const id = incoming.id;
+            setDismissed((d) => [...d, id]);
+            accept.mutate(id);
+          }}
+          onDismiss={() => setDismissed((d) => [...d, incoming.id])}
+        />
+      )}
+
 
       <section>
         <h2 className="mb-3 font-display text-2xl tracking-wide text-secondary">My jobs</h2>
