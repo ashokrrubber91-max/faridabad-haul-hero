@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   IndianRupee,
   ShieldCheck,
+  Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META } from "@/lib/booking";
 import { SupportChat } from "@/components/support/SupportChat";
+import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 
 export const Route = createFileRoute("/_authenticated/driver")({
   head: () => ({ meta: [{ title: "Driver — MiniPort" }] }),
