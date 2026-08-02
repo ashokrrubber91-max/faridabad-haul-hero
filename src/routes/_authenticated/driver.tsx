@@ -38,6 +38,7 @@ type IncentiveTier = { rides_required: number; bonus_amount: number; label: stri
 function DriverPage() {
   const { user, role, roles, activeMode, profile, loading } = useAuth();
   const qc = useQueryClient();
+  const [dismissed, setDismissed] = useState<string[]>([]);
 
   const setOnline = useMutation({
     mutationFn: async (next: boolean) => {
