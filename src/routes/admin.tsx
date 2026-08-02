@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META, VEHICLES } from "@/lib/booking";
+import { KycReviewTab } from "@/components/admin/KycReviewTab";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — MiniPort" }] }),
@@ -205,6 +206,7 @@ function AdminPage() {
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-muted/50">
           <TabsTrigger value="overview" className="gap-1.5"><LayoutDashboard className="h-3.5 w-3.5" />Overview</TabsTrigger>
           <TabsTrigger value="drivers" className="gap-1.5"><UserCog className="h-3.5 w-3.5" />Drivers</TabsTrigger>
+          <TabsTrigger value="kyc" className="gap-1.5"><ShieldCheck className="h-3.5 w-3.5" />KYC Review</TabsTrigger>
           <TabsTrigger value="customers" className="gap-1.5"><UserRound className="h-3.5 w-3.5" />Customers</TabsTrigger>
           <TabsTrigger value="trips" className="gap-1.5"><Radio className="h-3.5 w-3.5" />Live Trips</TabsTrigger>
           <TabsTrigger value="fares" className="gap-1.5"><Percent className="h-3.5 w-3.5" />Fares & Commission</TabsTrigger>
@@ -241,6 +243,11 @@ function AdminPage() {
             qc.invalidateQueries({ queryKey: ["admin-profiles"] });
             qc.invalidateQueries({ queryKey: ["admin-wallets"] });
           }} />
+        </TabsContent>
+
+        {/* KYC REVIEW */}
+        <TabsContent value="kyc">
+          <KycReviewTab />
         </TabsContent>
 
         {/* CUSTOMERS */}

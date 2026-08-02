@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   IndianRupee,
   ShieldCheck,
+  Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META } from "@/lib/booking";
 import { SupportChat } from "@/components/support/SupportChat";
+import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 
 export const Route = createFileRoute("/_authenticated/driver")({
   head: () => ({ meta: [{ title: "Driver — MiniPort" }] }),
@@ -36,6 +38,7 @@ type IncentiveTier = { rides_required: number; bonus_amount: number; label: stri
 function DriverPage() {
   const { user, role, roles, activeMode, profile, loading } = useAuth();
   const qc = useQueryClient();
+  const [dismissed, setDismissed] = useState<string[]>([]);
 
   const setOnline = useMutation({
     mutationFn: async (next: boolean) => {
@@ -116,18 +119,34 @@ function DriverPage() {
   });
 
   const verifyOtp = useMutation({
-    mutationFn: async ({ id, otp, expected, next }: { id: string; otp: string; expected: string | null; next: "in_progress" | "completed" }) => {
-      if (!expected || otp.trim() !== expected) throw new Error("Wrong OTP");
+    mutationFn: async ({
+      id,
+      otp,
+      expected,
+      next,
+      podPath,
+    }: {
+      id: string;
+      otp: string;
+      expected: string | null;
+      next: "in_progress" | "completed";
+      podPath?: string | null;
+    }) => {
+      // Drop can be closed with the 4-digit OTP or with a photo proof of delivery.
+      const otpOk = !!expected && otp.trim() === expected;
+      if (!otpOk && !(next === "completed" && podPath)) throw new Error("Wrong OTP");
       const now = new Date().toISOString();
-      const patch = next === "in_progress"
-        ? { status: next, pickup_verified_at: now }
-        : { status: next, drop_verified_at: now };
+      const patch =
+        next === "in_progress"
+          ? { status: next, pickup_verified_at: now }
+          : { status: next, drop_verified_at: now, ...(podPath ? { pod_photo_url: podPath } : {}) };
       const { error } = await supabase.from("bookings").update(patch).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: (_d, v) => toast.success(v.next === "in_progress" ? "Pickup verified — trip started" : "Drop verified — trip completed 🎉"),
+    onSuccess: (_d, v) => toast.success(v.next === "in_progress" ? "Pickup verified — trip started" : "Delivery confirmed — trip completed 🎉"),
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   if (loading) return <Center><Loader2 className="h-5 w-5 animate-spin text-primary" /></Center>;
   if (role && role !== "driver" && role !== "admin") return <Navigate to="/customer" />;
@@ -162,6 +181,12 @@ function DriverPage() {
 
   const kycStatus = profile?.kyc_status ?? "not_submitted";
   const kycVerified = kycStatus === "approved" || role === "admin";
+
+  // Full-screen incoming-ride alert: only when verified, online, free, and not dismissed.
+  const incoming =
+    kycVerified && isOnline && !activeJob
+      ? pending.find((b) => !dismissed.includes(b.id))
+      : undefined;
 
   return (
     <div className="space-y-6">
@@ -288,12 +313,13 @@ function DriverPage() {
       {activeJob && (
         <ActiveJobCard
           job={activeJob}
-          onVerify={(otp, next) =>
+          onVerify={(otp, next, podPath) =>
             verifyOtp.mutate({
               id: activeJob.id,
               otp,
               expected: next === "in_progress" ? activeJob.pickup_otp : activeJob.drop_otp,
               next,
+              podPath,
             })
           }
           pending={verifyOtp.isPending}
@@ -303,9 +329,14 @@ function DriverPage() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-2xl tracking-wide text-secondary">Live requests</h2>
-          <Badge className="bg-warning text-warning-foreground hover:bg-warning">{pending.length} waiting</Badge>
+          <Badge className="bg-warning text-warning-foreground hover:bg-warning">{kycVerified ? pending.length : 0} waiting</Badge>
         </div>
-        {pending.length === 0 ? (
+        {!kycVerified ? (
+          <div className="surface-card p-6 text-center text-sm text-muted-foreground">
+            <ShieldCheck className="mx-auto mb-2 h-5 w-5 text-primary" />
+            Ride requests unlock once your documents are verified by the MiniPort team.
+          </div>
+        ) : pending.length === 0 ? (
           <div className="surface-card p-6 text-center text-sm text-muted-foreground">
             <Truck className="mx-auto mb-2 h-5 w-5" />
             {isOnline ? "Looking for rides in Faridabad…" : "Go online to receive job requests."}
@@ -316,6 +347,20 @@ function DriverPage() {
           </div>
         )}
       </section>
+
+      {incoming && (
+        <IncomingRideOverlay
+          job={incoming}
+          accepting={accept.isPending}
+          onAccept={() => {
+            const id = incoming.id;
+            setDismissed((d) => [...d, id]);
+            accept.mutate(id);
+          }}
+          onDismiss={() => setDismissed((d) => [...d, incoming.id])}
+        />
+      )}
+
 
       <section>
         <h2 className="mb-3 font-display text-2xl tracking-wide text-secondary">My jobs</h2>
@@ -411,8 +456,39 @@ function PendingJob({ job, onAccept, pending }: { job: any; onAccept: () => void
   );
 }
 
-function ActiveJobCard({ job, onVerify, pending }: { job: any; onVerify: (otp: string, next: "in_progress" | "completed") => void; pending: boolean }) {
+function ActiveJobCard({
+  job,
+  onVerify,
+  pending,
+}: {
+  job: any;
+  onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null) => void;
+  pending: boolean;
+}) {
   const [otp, setOtp] = useState("");
+  const [podPath, setPodPath] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const uploadProof = async (file: File) => {
+    setUploading(true);
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth.user?.id;
+    if (!uid) {
+      setUploading(false);
+      toast.error("Session expired — please sign in again");
+      return;
+    }
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${uid}/${job.id}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("delivery-proof").upload(path, file, { upsert: true });
+    setUploading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setPodPath(path);
+    toast.success("Proof photo attached");
+  };
   const next = job.status === "accepted" ? "in_progress" : "completed";
   const label = next === "in_progress" ? "Verify Pickup OTP" : "Verify Drop OTP";
   const contact = extractContact(job.notes, next === "in_progress" ? "Sender" : "Receiver");
@@ -460,7 +536,7 @@ function ActiveJobCard({ job, onVerify, pending }: { job: any; onVerify: (otp: s
         <p className="mt-0.5 text-xs text-muted-foreground">
           {next === "in_progress"
             ? "Ask the sender for the 4-digit pickup OTP to start the trip."
-            : "Ask the receiver for the 4-digit drop OTP to complete the trip."}
+            : "Ask the receiver for the 4-digit drop OTP — or attach a delivery photo if they can't share it."}
         </p>
         <div className="mt-2 flex gap-2">
           <Input
@@ -473,13 +549,37 @@ function ActiveJobCard({ job, onVerify, pending }: { job: any; onVerify: (otp: s
           />
           <Button
             size="sm"
-            disabled={otp.length !== 4 || pending}
-            onClick={() => { onVerify(otp, next); setOtp(""); }}
+            disabled={pending || (otp.length !== 4 && !(next === "completed" && podPath))}
+            onClick={() => { onVerify(otp, next, podPath); setOtp(""); }}
           >
             {pending ? "Verifying…" : next === "in_progress" ? "Start trip" : "Complete trip"}
           </Button>
         </div>
+
+        {next === "completed" && (
+          <div className="mt-3 border-t border-primary/20 pt-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary">Proof of delivery</p>
+            <label className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-secondary">
+              <Camera className="h-4 w-4 text-primary" />
+              {uploading ? "Uploading…" : podPath ? "Photo attached — retake" : "Take / upload delivery photo"}
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void uploadProof(f);
+                }}
+              />
+            </label>
+            {podPath && (
+              <p className="mt-1 text-xs text-success">Photo proof ready — you can complete the trip without the OTP.</p>
+            )}
+          </div>
+        )}
       </div>
+
     </section>
   );
 }
