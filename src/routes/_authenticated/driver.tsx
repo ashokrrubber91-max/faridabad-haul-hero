@@ -536,7 +536,7 @@ function ActiveJobCard({
         <p className="mt-0.5 text-xs text-muted-foreground">
           {next === "in_progress"
             ? "Ask the sender for the 4-digit pickup OTP to start the trip."
-            : "Ask the receiver for the 4-digit drop OTP to complete the trip."}
+            : "Ask the receiver for the 4-digit drop OTP — or attach a delivery photo if they can't share it."}
         </p>
         <div className="mt-2 flex gap-2">
           <Input
@@ -549,13 +549,37 @@ function ActiveJobCard({
           />
           <Button
             size="sm"
-            disabled={otp.length !== 4 || pending}
-            onClick={() => { onVerify(otp, next); setOtp(""); }}
+            disabled={pending || (otp.length !== 4 && !(next === "completed" && podPath))}
+            onClick={() => { onVerify(otp, next, podPath); setOtp(""); }}
           >
             {pending ? "Verifying…" : next === "in_progress" ? "Start trip" : "Complete trip"}
           </Button>
         </div>
+
+        {next === "completed" && (
+          <div className="mt-3 border-t border-primary/20 pt-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary">Proof of delivery</p>
+            <label className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-secondary">
+              <Camera className="h-4 w-4 text-primary" />
+              {uploading ? "Uploading…" : podPath ? "Photo attached — retake" : "Take / upload delivery photo"}
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void uploadProof(f);
+                }}
+              />
+            </label>
+            {podPath && (
+              <p className="mt-1 text-xs text-success">Photo proof ready — you can complete the trip without the OTP.</p>
+            )}
+          </div>
+        )}
       </div>
+
     </section>
   );
 }
