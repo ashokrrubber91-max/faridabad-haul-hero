@@ -244,6 +244,11 @@ function AdminPage() {
           }} />
         </TabsContent>
 
+        {/* KYC REVIEW */}
+        <TabsContent value="kyc">
+          <KycReviewTab />
+        </TabsContent>
+
         {/* CUSTOMERS */}
         <TabsContent value="customers">
           <CustomersTab customers={customers} bookings={all} />
