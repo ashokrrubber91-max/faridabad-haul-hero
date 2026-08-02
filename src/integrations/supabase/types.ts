@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       bookings: {
         Row: {
+          cancellation_reason: string | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -37,6 +38,7 @@ export type Database = {
           pickup_address: string
           pickup_otp: string | null
           pickup_verified_at: string | null
+          pod_photo_url: string | null
           rating: number | null
           review: string | null
           status: Database["public"]["Enums"]["booking_status"]
@@ -44,6 +46,7 @@ export type Database = {
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
         }
         Insert: {
+          cancellation_reason?: string | null
           coins_redeemed?: number
           commission_amount?: number
           commission_rate?: number
@@ -65,6 +68,7 @@ export type Database = {
           pickup_address: string
           pickup_otp?: string | null
           pickup_verified_at?: string | null
+          pod_photo_url?: string | null
           rating?: number | null
           review?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
@@ -72,6 +76,7 @@ export type Database = {
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
         }
         Update: {
+          cancellation_reason?: string | null
           coins_redeemed?: number
           commission_amount?: number
           commission_rate?: number
@@ -93,6 +98,7 @@ export type Database = {
           pickup_address?: string
           pickup_otp?: string | null
           pickup_verified_at?: string | null
+          pod_photo_url?: string | null
           rating?: number | null
           review?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
@@ -588,6 +594,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_kyc_approved: { Args: { _user_id: string }; Returns: boolean }
       settle_daily_incentives: {
         Args: { _day?: string }
         Returns: {
