@@ -42,7 +42,13 @@ function CustomerPage() {
   const [promo, setPromo] = useState<{ code: string; discount: number } | null>(null);
   const [coins, setCoins] = useState(0);
   const [method, setMethod] = useState<PaymentMethod>("cod");
-  const [cancelTarget, setCancelTarget] = useState<{ id: string; addr: string } | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<{
+    id: string;
+    addr: string;
+    status: string;
+    fare: number;
+    since: string;
+  } | null>(null);
   const [cancelReason, setCancelReason] = useState("Driver taking too long");
   const [cancelNote, setCancelNote] = useState("");
   const [stops, setStops] = useState<PlacePick[]>([]);
