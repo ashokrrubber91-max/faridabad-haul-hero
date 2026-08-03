@@ -638,14 +638,22 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
   const [rides, setRides] = useState("");
   const [bonus, setBonus] = useState("");
   const [label, setLabel] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [editTier, setEditTier] = useState<any | null>(null);
+  const [editRides, setEditRides] = useState("");
+  const [editBonus, setEditBonus] = useState("");
+  const [editLabel, setEditLabel] = useState("");
+  const [editBusy, setEditBusy] = useState(false);
 
   const add = async () => {
     const r = Number(rides), b = Number(bonus);
     if (!r || !b || !label) return toast.error("Fill all fields");
+    setBusy(true);
     const { error } = await supabase.from("driver_incentive_config")
       .upsert({ rides_required: r, bonus_amount: b, label, active: true }, { onConflict: "rides_required" });
+    setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Incentive saved");
+    toast.success("Incentive tier saved");
     setRides(""); setBonus(""); setLabel(""); onChanged();
   };
 
@@ -653,24 +661,45 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
     const { error } = await supabase.from("driver_incentive_config")
       .update({ active: !t.active }).eq("id", t.id);
     if (error) return toast.error(error.message);
+    toast.success(t.active ? "Tier paused" : "Tier activated");
     onChanged();
+  };
+
+  const openEdit = (t: any) => {
+    setEditTier(t);
+    setEditRides(String(t.rides_required));
+    setEditBonus(String(t.bonus_amount));
+    setEditLabel(t.label);
+  };
+
+  const saveEdit = async () => {
+    if (!editTier) return;
+    const r = Number(editRides), b = Number(editBonus);
+    if (!r || !b || !editLabel) return toast.error("Fill all fields");
+    setEditBusy(true);
+    const { error } = await supabase.from("driver_incentive_config")
+      .update({ rides_required: r, bonus_amount: b, label: editLabel }).eq("id", editTier.id);
+    setEditBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Tier updated");
+    setEditTier(null); onChanged();
   };
 
   return (
     <div className="space-y-4">
       <section className="surface-card p-4">
-        <h3 className="font-display text-xl tracking-wide text-secondary">Add / update tier</h3>
+        <h3 className="font-display text-xl tracking-wide text-secondary">Add tier</h3>
         <div className="mt-3 grid gap-2 sm:grid-cols-[100px_120px_1fr_auto] sm:items-end">
           <div><Label className="text-xs">Rides</Label><Input type="number" value={rides} onChange={(e) => setRides(e.target.value)} /></div>
           <div><Label className="text-xs">Bonus (₹)</Label><Input type="number" value={bonus} onChange={(e) => setBonus(e.target.value)} /></div>
           <div><Label className="text-xs">Label</Label><Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. 10 rides = ₹200" /></div>
-          <Button onClick={add}>Save tier</Button>
+          <Button onClick={add} disabled={busy}>{busy ? "Saving..." : "Save tier"}</Button>
         </div>
       </section>
 
       <section className="surface-card">
         <div className="border-b border-border px-4 py-3">
-          <h3 className="font-display text-xl tracking-wide text-secondary">Active tiers</h3>
+          <h3 className="font-display text-xl tracking-wide text-secondary">Incentive tiers</h3>
         </div>
         <div className="divide-y divide-border">
           {tiers.length === 0 && <p className="px-4 py-8 text-center text-sm text-muted-foreground">No incentive tiers yet.</p>}
@@ -680,7 +709,8 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
                 <p className="text-sm font-semibold text-secondary">{t.label}</p>
                 <p className="text-xs text-muted-foreground">{t.rides_required} rides → ₹{Number(t.bonus_amount).toFixed(0)}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                <Button size="sm" variant="outline" onClick={() => openEdit(t)}>Edit</Button>
                 <span className="text-xs text-muted-foreground">{t.active ? "Active" : "Paused"}</span>
                 <Switch checked={t.active} onCheckedChange={() => toggle(t)} />
               </div>
@@ -688,6 +718,21 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
           ))}
         </div>
       </section>
+
+      <Dialog open={!!editTier} onOpenChange={(o) => !o && setEditTier(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit tier</DialogTitle></DialogHeader>
+          <div className="grid gap-2">
+            <div><Label className="text-xs">Rides required</Label><Input type="number" value={editRides} onChange={(e) => setEditRides(e.target.value)} /></div>
+            <div><Label className="text-xs">Bonus (₹)</Label><Input type="number" value={editBonus} onChange={(e) => setEditBonus(e.target.value)} /></div>
+            <div><Label className="text-xs">Label</Label><Input value={editLabel} onChange={(e) => setEditLabel(e.target.value)} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTier(null)}>Cancel</Button>
+            <Button onClick={saveEdit} disabled={editBusy}>{editBusy ? "Saving..." : "Save changes"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
