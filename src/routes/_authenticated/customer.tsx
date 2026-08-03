@@ -443,6 +443,25 @@ function CustomerPage() {
             <DialogTitle>Cancel this booking?</DialogTitle>
             <DialogDescription className="truncate">{cancelTarget?.addr}</DialogDescription>
           </DialogHeader>
+          {cancelTarget && (() => {
+            const q = cancellationQuote(cancelTarget.status, cancelTarget.fare, cancelTarget.since);
+            return (
+              <div
+                className={`rounded-md border p-3 text-sm ${
+                  q.fee > 0 ? "border-destructive/40 bg-destructive/5" : "border-success/40 bg-success/5"
+                }`}
+              >
+                <p className={`font-semibold ${q.fee > 0 ? "text-destructive" : "text-success"}`}>{q.label}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{q.detail}</p>
+                {q.fee > 0 && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    The charge is settled from your wallet and may show a negative balance (e.g. −₹{q.fee}) until your
+                    next booking.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
           <RadioGroup value={cancelReason} onValueChange={setCancelReason} className="space-y-2">
             {[
               "Driver taking too long",
@@ -474,11 +493,13 @@ function CustomerPage() {
                 if (!cancelTarget) return;
                 const reason = cancelReason === "Other" && cancelNote.trim() ? cancelNote.trim() : cancelReason;
                 const existing = (bookings.data ?? []).find((x) => x.id === cancelTarget.id)?.notes ?? null;
-                cancel.mutate({ id: cancelTarget.id, reason, existingNotes: existing });
+                const { fee } = cancellationQuote(cancelTarget.status, cancelTarget.fare, cancelTarget.since);
+                cancel.mutate({ id: cancelTarget.id, reason, existingNotes: existing, fee });
               }}
             >
               Confirm cancel
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
