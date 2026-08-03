@@ -738,36 +738,75 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
 }
 
 /* ============================== Coupons ============================== */
+type CouponForm = {
+  code: string; kind: "flat" | "percent"; value: string; minFare: string;
+  maxDiscount: string; maxUses: string; expiresAt: string;
+};
+const emptyCouponForm: CouponForm = { code: "", kind: "flat", value: "", minFare: "0", maxDiscount: "", maxUses: "", expiresAt: "" };
+
 function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => void }) {
-  const [code, setCode] = useState("");
-  const [kind, setKind] = useState<"flat" | "percent">("flat");
-  const [value, setValue] = useState("");
-  const [minFare, setMinFare] = useState("0");
+  const [form, setForm] = useState<CouponForm>(emptyCouponForm);
+  const [busy, setBusy] = useState(false);
+  const [editCoupon, setEditCoupon] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState<CouponForm>(emptyCouponForm);
+  const [editBusy, setEditBusy] = useState(false);
+
+  const buildPayload = (f: CouponForm) => ({
+    code: f.code.trim().toUpperCase(),
+    kind: f.kind,
+    value: Number(f.value),
+    min_fare: Number(f.minFare || 0),
+    max_discount: f.maxDiscount ? Number(f.maxDiscount) : null,
+    max_uses: f.maxUses ? Number(f.maxUses) : null,
+    expires_at: f.expiresAt ? new Date(f.expiresAt).toISOString() : null,
+  });
 
   const add = async () => {
-    if (!code || !value) return toast.error("Fill code and value");
-    const { error } = await supabase.from("coupons").insert({
-      code: code.toUpperCase(), kind, value: Number(value), min_fare: Number(minFare), active: true,
-    });
+    if (!form.code || !form.value) return toast.error("Fill code and value");
+    setBusy(true);
+    const { error } = await supabase.from("coupons").insert({ ...buildPayload(form), active: true });
+    setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Coupon created");
-    setCode(""); setValue(""); setMinFare("0"); onChanged();
+    setForm(emptyCouponForm); onChanged();
   };
 
   const toggle = async (c: any) => {
     const { error } = await supabase.from("coupons").update({ active: !c.active }).eq("id", c.id);
     if (error) return toast.error(error.message);
+    toast.success(c.active ? "Coupon deactivated" : "Coupon activated");
     onChanged();
+  };
+
+  const openEdit = (c: any) => {
+    setEditCoupon(c);
+    setEditForm({
+      code: c.code, kind: c.kind, value: String(c.value), minFare: String(c.min_fare ?? 0),
+      maxDiscount: c.max_discount != null ? String(c.max_discount) : "",
+      maxUses: c.max_uses != null ? String(c.max_uses) : "",
+      expiresAt: c.expires_at ? new Date(c.expires_at).toISOString().slice(0, 10) : "",
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editCoupon) return;
+    if (!editForm.code || !editForm.value) return toast.error("Fill code and value");
+    setEditBusy(true);
+    const { error } = await supabase.from("coupons").update(buildPayload(editForm)).eq("id", editCoupon.id);
+    setEditBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Coupon updated");
+    setEditCoupon(null); onChanged();
   };
 
   return (
     <div className="space-y-4">
       <section className="surface-card p-4">
         <h3 className="font-display text-xl tracking-wide text-secondary">Create coupon</h3>
-        <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_120px_120px_120px_auto] sm:items-end">
-          <div><Label className="text-xs">Code</Label><Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="SAVE20" /></div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <div><Label className="text-xs">Code</Label><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="SAVE20" /></div>
           <div><Label className="text-xs">Kind</Label>
-            <Select value={kind} onValueChange={(v) => setKind(v as any)}>
+            <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v as any })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="flat">Flat ₹</SelectItem>
@@ -775,9 +814,12 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
               </SelectContent>
             </Select>
           </div>
-          <div><Label className="text-xs">Value</Label><Input type="number" value={value} onChange={(e) => setValue(e.target.value)} /></div>
-          <div><Label className="text-xs">Min fare</Label><Input type="number" value={minFare} onChange={(e) => setMinFare(e.target.value)} /></div>
-          <Button onClick={add}>Create</Button>
+          <div><Label className="text-xs">Value</Label><Input type="number" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} /></div>
+          <div><Label className="text-xs">Min fare</Label><Input type="number" value={form.minFare} onChange={(e) => setForm({ ...form, minFare: e.target.value })} /></div>
+          <div><Label className="text-xs">Max discount (₹, optional)</Label><Input type="number" value={form.maxDiscount} onChange={(e) => setForm({ ...form, maxDiscount: e.target.value })} /></div>
+          <div><Label className="text-xs">Max uses (optional)</Label><Input type="number" value={form.maxUses} onChange={(e) => setForm({ ...form, maxUses: e.target.value })} /></div>
+          <div><Label className="text-xs">Expires on (optional)</Label><Input type="date" value={form.expiresAt} onChange={(e) => setForm({ ...form, expiresAt: e.target.value })} /></div>
+          <div className="flex items-end"><Button onClick={add} disabled={busy} className="w-full">{busy ? "Creating..." : "Create coupon"}</Button></div>
         </div>
       </section>
 
@@ -788,19 +830,50 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
         <div className="divide-y divide-border">
           {coupons.length === 0 && <p className="px-4 py-8 text-center text-sm text-muted-foreground">No coupons yet.</p>}
           {coupons.map((c) => (
-            <div key={c.id} className="flex items-center justify-between px-4 py-3">
-              <div>
+            <div key={c.id} className="flex items-center justify-between gap-2 px-4 py-3">
+              <div className="min-w-0">
                 <p className="text-sm font-semibold text-secondary">{c.code}
                   <span className="ml-2 text-xs font-normal text-muted-foreground">
                     {c.kind === "flat" ? `₹${c.value} off` : `${c.value}% off`} · min ₹{c.min_fare} · used {c.uses}{c.max_uses ? `/${c.max_uses}` : ""}
+                    {c.max_discount ? ` · cap ₹${c.max_discount}` : ""}{c.expires_at ? ` · expires ${new Date(c.expires_at).toLocaleDateString("en-IN")}` : ""}
                   </span>
                 </p>
               </div>
-              <Switch checked={c.active} onCheckedChange={() => toggle(c)} />
+              <div className="flex shrink-0 items-center gap-3">
+                <Button size="sm" variant="outline" onClick={() => openEdit(c)}>Edit</Button>
+                <Switch checked={c.active} onCheckedChange={() => toggle(c)} />
+              </div>
             </div>
           ))}
         </div>
       </section>
+
+      <Dialog open={!!editCoupon} onOpenChange={(o) => !o && setEditCoupon(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit coupon — {editCoupon?.code}</DialogTitle></DialogHeader>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div><Label className="text-xs">Code</Label><Input value={editForm.code} onChange={(e) => setEditForm({ ...editForm, code: e.target.value })} /></div>
+            <div><Label className="text-xs">Kind</Label>
+              <Select value={editForm.kind} onValueChange={(v) => setEditForm({ ...editForm, kind: v as any })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="flat">Flat ₹</SelectItem>
+                  <SelectItem value="percent">Percent %</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label className="text-xs">Value</Label><Input type="number" value={editForm.value} onChange={(e) => setEditForm({ ...editForm, value: e.target.value })} /></div>
+            <div><Label className="text-xs">Min fare</Label><Input type="number" value={editForm.minFare} onChange={(e) => setEditForm({ ...editForm, minFare: e.target.value })} /></div>
+            <div><Label className="text-xs">Max discount</Label><Input type="number" value={editForm.maxDiscount} onChange={(e) => setEditForm({ ...editForm, maxDiscount: e.target.value })} /></div>
+            <div><Label className="text-xs">Max uses</Label><Input type="number" value={editForm.maxUses} onChange={(e) => setEditForm({ ...editForm, maxUses: e.target.value })} /></div>
+            <div className="sm:col-span-2"><Label className="text-xs">Expires on</Label><Input type="date" value={editForm.expiresAt} onChange={(e) => setEditForm({ ...editForm, expiresAt: e.target.value })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditCoupon(null)}>Cancel</Button>
+            <Button onClick={saveEdit} disabled={editBusy}>{editBusy ? "Saving..." : "Save changes"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
