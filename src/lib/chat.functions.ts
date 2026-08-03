@@ -6,6 +6,7 @@ import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 
 const InputSchema = z.object({
   role: z.enum(["customer", "driver"]),
+  clientContext: z.string().max(2000).optional(),
   messages: z
     .array(
       z.object({
@@ -54,10 +55,17 @@ export const sendSupportChat = createServerFn({ method: "POST" })
       contextBlock = `Today's completed rides: ${doneToday.length}. Wallet: ${JSON.stringify(wallet)}. Incentive tiers: ${JSON.stringify(tiers)}. Recent jobs: ${JSON.stringify(mine ?? [])}`;
     }
 
+    const languageInstruction =
+      "IMPORTANT: Detect the language the user just wrote in (Hindi in Devanagari script, Hinglish/romanized Hindi, or English) and reply in that SAME language/style. Never switch languages on your own.";
+
     const system =
       data.role === "customer"
-        ? `You are Miniport Support — a helpful, concise chatbot for a mini-truck booking app in Faridabad, India. Answer in the user's language (Hindi/English/Hinglish). Use the live context to give specific answers about their booking, driver ETA, fare, or refund. For serious issues (accident, safety, fraud, refund dispute) say you are connecting them to the Faridabad support team. Keep replies under 4 short sentences. Never invent trip data.`
-        : `You are Miniport Driver Support — a helpful bilingual (Hindi/English/Hinglish) chatbot for driver partners in Faridabad. Use the live context to answer about incentives, wallet, commission, and job flow. Commission is 10% of fare. Incentive tiers: 5 rides = ₹50, 10 rides = ₹200. Bonus credits at 12:00 AM. Keep replies under 4 short sentences. For emergencies (accident, medical) tell them to call 112 and say support is being alerted.`;
+        ? `You are Miniport Support — a helpful, concise chatbot for a mini-truck booking app in Faridabad, India. ${languageInstruction} Use the live context to give specific answers about their booking, driver ETA, fare, refund, wallet/coins balance, or KYC status. For serious issues (accident, safety, fraud, refund dispute) say you are connecting them to the Faridabad support team. Keep replies under 4 short sentences. Never invent trip data.`
+        : `You are Miniport Driver Support — a helpful bilingual (Hindi/English/Hinglish) chatbot for driver partners in Faridabad. ${languageInstruction} Use the live context to answer about incentives, wallet balance, commission, job flow, and KYC status. Commission is 10% of fare. Incentive tiers: 5 rides = ₹50, 10 rides = ₹200. Bonus credits at 12:00 AM. Keep replies under 4 short sentences. For emergencies (accident, medical) tell them to call 112 and say support is being alerted.`;
+
+    if (data.clientContext) {
+      contextBlock = `${contextBlock}\nUser-side snapshot (wallet/order/KYC): ${data.clientContext}`;
+    }
 
     const gateway = createLovableAiGatewayProvider(key);
     const model = gateway("google/gemini-3.5-flash");
