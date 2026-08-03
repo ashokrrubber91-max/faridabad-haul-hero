@@ -27,6 +27,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META } from "@/lib/booking";
 import { SupportChat } from "@/components/support/SupportChat";
 import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
+import { LoadingTimerCard } from "@/components/booking/LoadingTimerCard";
 
 export const Route = createFileRoute("/_authenticated/driver")({
   head: () => ({ meta: [{ title: "Driver — MiniPort" }] }),

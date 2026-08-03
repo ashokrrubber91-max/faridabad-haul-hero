@@ -221,14 +221,22 @@ function AdminPage() {
         {/* OVERVIEW */}
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat icon={<IndianRupee className="h-4 w-4" />} label="Revenue Today" value={`₹${revenueToday.toFixed(0)}`} tone="primary" />
-            <Stat icon={<IndianRupee className="h-4 w-4" />} label="Commission (all)" value={`₹${commissionAll.toFixed(0)}`} tone="success" />
-            <Stat icon={<Truck className="h-4 w-4" />} label="Live trips" value={active.length} tone="warning" />
-            <Stat icon={<Truck className="h-4 w-4" />} label="Completed today" value={completedToday.length} tone="ink" />
-            <Stat icon={<Users className="h-4 w-4" />} label="Drivers" value={`${onlineDrivers}/${drivers.length}`} tone="primary" />
-            <Stat icon={<Users className="h-4 w-4" />} label="Customers" value={customers.length} tone="ink" />
-            <Stat icon={<Truck className="h-4 w-4" />} label="Pending req." value={pending} tone="warning" />
-            <Stat icon={<IndianRupee className="h-4 w-4" />} label="Lifetime revenue" value={`₹${revenueAll.toFixed(0)}`} tone="success" />
+            <Stat icon={<IndianRupee className="h-4 w-4" />} label="Revenue Today" value={`₹${revenueToday.toFixed(0)}`} tone="primary"
+              onClick={() => setDrill({ kind: "bookings", title: "Revenue today — bookings", rows: completedToday })} />
+            <Stat icon={<IndianRupee className="h-4 w-4" />} label="Commission (all)" value={`₹${commissionAll.toFixed(0)}`} tone="success"
+              onClick={() => setDrill({ kind: "bookings", title: "Commission — completed bookings", rows: completedAll, showCommission: true })} />
+            <Stat icon={<Truck className="h-4 w-4" />} label="Live trips" value={active.length} tone="warning"
+              onClick={() => setDrill({ kind: "bookings", title: "Live trips", rows: active })} />
+            <Stat icon={<Truck className="h-4 w-4" />} label="Completed today" value={completedToday.length} tone="ink"
+              onClick={() => setDrill({ kind: "bookings", title: "Completed today", rows: completedToday })} />
+            <Stat icon={<Users className="h-4 w-4" />} label="Drivers" value={`${onlineDrivers}/${drivers.length}`} tone="primary"
+              onClick={() => setDrill({ kind: "profiles", title: "Drivers", rows: drivers })} />
+            <Stat icon={<Users className="h-4 w-4" />} label="Customers" value={customers.length} tone="ink"
+              onClick={() => setDrill({ kind: "profiles", title: "Customers", rows: customers })} />
+            <Stat icon={<Truck className="h-4 w-4" />} label="Pending req." value={pending} tone="warning"
+              onClick={() => setDrill({ kind: "bookings", title: "Pending requests", rows: all.filter((b) => b.status === "pending") })} />
+            <Stat icon={<IndianRupee className="h-4 w-4" />} label="Lifetime revenue" value={`₹${revenueAll.toFixed(0)}`} tone="success"
+              onClick={() => setDrill({ kind: "bookings", title: "Lifetime revenue — completed bookings", rows: completedAll })} />
           </div>
 
           <section className="surface-card">
@@ -237,6 +245,34 @@ function AdminPage() {
             </div>
             <BookingsList bookings={all.slice(0, 15)} profileMap={profileMap} />
           </section>
+
+          <DrillDownDialog
+            open={!!drill}
+            onOpenChange={(o) => !o && setDrill(null)}
+            title={drill?.title ?? ""}
+            rows={drill?.rows ?? []}
+            columns={
+              drill?.kind === "profiles"
+                ? profileDrillColumns
+                : bookingDrillColumns(drill?.showCommission)
+            }
+            searchFn={
+              drill?.kind === "profiles"
+                ? (row: any, q: string) => row.name?.toLowerCase().includes(q.toLowerCase()) || row.phone?.includes(q)
+                : (row: any, q: string) => {
+                    const query = q.toLowerCase();
+                    const customer = profileMap.get(row.customer_id);
+                    const driver = row.driver_id ? profileMap.get(row.driver_id) : null;
+                    return (
+                      row.pickup_address?.toLowerCase().includes(query) ||
+                      row.drop_address?.toLowerCase().includes(query) ||
+                      customer?.name?.toLowerCase().includes(query) ||
+                      driver?.name?.toLowerCase().includes(query) ||
+                      row.status?.toLowerCase().includes(query)
+                    );
+                  }
+            }
+          />
         </TabsContent>
 
         {/* DRIVERS */}
