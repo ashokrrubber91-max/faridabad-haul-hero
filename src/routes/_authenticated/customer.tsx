@@ -179,6 +179,7 @@ function CustomerPage() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+      {step === "form" ? (
       <section className="surface-card p-5">
         <h2 className="font-display text-2xl tracking-wide text-secondary">New booking</h2>
         <p className="text-sm text-muted-foreground">Faridabad only · transparent flat fare</p>
@@ -195,6 +196,29 @@ function CustomerPage() {
               setStage({ type: "confirm", mode: "pickup" });
             }}
           />
+
+          <WaypointManager
+            stops={stops}
+            onAdd={() => setStopStage({ type: "search" })}
+            onRemove={(i) => setStops((prev) => prev.filter((_, idx) => idx !== i))}
+            onMoveUp={(i) =>
+              setStops((prev) => {
+                if (i === 0) return prev;
+                const next = [...prev];
+                [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                return next;
+              })
+            }
+            onMoveDown={(i) =>
+              setStops((prev) => {
+                if (i === prev.length - 1) return prev;
+                const next = [...prev];
+                [next[i + 1], next[i]] = [next[i], next[i + 1]];
+                return next;
+              })
+            }
+          />
+
           <LocationRow
             label="Drop"
             dotClass="text-success"
@@ -210,24 +234,9 @@ function CustomerPage() {
 
           <div>
             <Label>Vehicle</Label>
-            <div className="mt-1 grid gap-2">
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
               {VEHICLES.map((v) => (
-                <button
-                  key={v.id}
-                  type="button"
-                  onClick={() => setVehicle(v.id)}
-                  className={`flex items-center justify-between rounded-md border p-3 text-left transition-colors ${
-                    vehicle === v.id ? "border-primary bg-accent" : "border-border hover:bg-muted"
-                  }`}
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-secondary">{v.label}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Up to {v.capacity} · ₹{v.perKm}/km
-                    </p>
-                  </div>
-                  <span className="text-xs font-semibold text-muted-foreground">Base ₹{v.base}</span>
-                </button>
+                <VehicleCard key={v.id} id={v.id} selected={vehicle === v.id} onSelect={() => setVehicle(v.id)} />
               ))}
             </div>
           </div>
@@ -243,6 +252,13 @@ function CustomerPage() {
               maxLength={300}
             />
           </div>
+
+          <GstinSelect
+            enabled={gstinEnabled}
+            setEnabled={setGstinEnabled}
+            selectedId={gstinId}
+            setSelectedId={setGstinId}
+          />
 
           <CheckoutExtras
             fare={baseFare}
@@ -265,14 +281,36 @@ function CustomerPage() {
                   <p className="text-xs opacity-80">Base ₹{baseFare} − ₹{discount} off</p>
                 )}
               </div>
-              <Button onClick={() => create.mutate()} disabled={create.isPending} className="h-11">
-                {create.isPending ? "Booking…" : "Book now"}
+              <Button
+                onClick={() => setStep("review")}
+                disabled={!pickup || !drop || distanceKm <= 0}
+                className="h-11"
+              >
+                Review booking
               </Button>
             </div>
           </div>
         </div>
       </section>
-
+      ) : (
+        pickup && drop && (
+          <ReviewBooking
+            pickup={pickup}
+            drop={drop}
+            stops={stops}
+            vehicle={vehicle}
+            distanceKm={distanceKm}
+            baseFare={baseFare}
+            discount={discount}
+            fare={fare}
+            notes={notes}
+            gstin={selectedGstin}
+            onBack={() => setStep("form")}
+            onConfirm={() => create.mutate()}
+            submitting={create.isPending}
+          />
+        )
+      )}
 
       <section>
         <h2 className="mb-3 font-display text-2xl tracking-wide text-secondary">Your bookings</h2>

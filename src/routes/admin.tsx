@@ -74,6 +74,7 @@ function AdminPage() {
   const { role, loading } = useAuth();
   const qc = useQueryClient();
   const [tab, setTab] = useState("overview");
+  const [drill, setDrill] = useState<{ kind: "bookings" | "profiles"; title: string; rows: any[]; showCommission?: boolean } | null>(null);
 
   const bookings = useQuery({
     queryKey: ["admin-bookings"],
@@ -890,19 +891,57 @@ function statusTone(s: string) {
     default: return "bg-destructive text-destructive-foreground hover:bg-destructive";
   }
 }
-function Stat({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: React.ReactNode; tone: "warning" | "primary" | "success" | "ink" }) {
+function Stat({ icon, label, value, tone, onClick }: { icon: React.ReactNode; label: string; value: React.ReactNode; tone: "warning" | "primary" | "success" | "ink"; onClick?: () => void }) {
   const map = {
     warning: "bg-warning text-warning-foreground",
     primary: "bg-primary text-primary-foreground",
     success: "bg-success text-success-foreground",
     ink: "bg-secondary text-secondary-foreground",
   } as const;
+  const Comp = onClick ? "button" : "div";
   return (
-    <div className={`rounded-lg p-4 ${map[tone]}`}>
+    <Comp
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      className={`rounded-lg p-4 text-left ${map[tone]} ${onClick ? "cursor-pointer transition-transform hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring" : ""}`}
+    >
       <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider opacity-90">{icon}{label}</div>
       <p className="font-display text-3xl">{value}</p>
-    </div>
+    </Comp>
   );
+}
+
+/* ============================== Drill-down column helpers ============================== */
+const profileDrillColumns: DrillDownColumn<Profile>[] = [
+  { key: "name", header: "Name", render: (p) => <span className="font-semibold text-secondary">{p.name} <span className="ml-1 font-normal text-muted-foreground">{p.phone}</span></span> },
+  { key: "status", header: "Status", render: (p) => <span className="text-xs text-muted-foreground">{p.is_online ? "Online" : "Offline"} · {p.active_mode}</span> },
+];
+
+function bookingDrillColumns(showCommission?: boolean): DrillDownColumn<Booking>[] {
+  return [
+    {
+      key: "route",
+      header: "Route",
+      render: (b) => (
+        <div>
+          <p className="truncate text-sm font-medium text-secondary">{b.pickup_address} → {b.drop_address}</p>
+          <p className="text-xs text-muted-foreground">
+            {vehicleLabel(b.vehicle_type)} · {b.distance_km} km · {b.status} · {new Date(b.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: "amount",
+      header: "Amount",
+      render: (b) => (
+        <div className="text-right">
+          <p className="font-display text-lg text-secondary">₹{Number(b.fare).toFixed(0)}</p>
+          {showCommission && <p className="text-xs text-muted-foreground">comm. ₹{Number(b.commission_amount ?? 0).toFixed(0)}</p>}
+        </div>
+      ),
+    },
+  ];
 }
 function tone(t: "warning" | "primary" | "success" | "muted" | "destructive") {
   switch (t) {

@@ -511,6 +511,11 @@ function ActiveJobCard({
           : `Payment Mode: Online — ₹${net.toFixed(0)} will be added to your wallet`}
       </div>
 
+      {job.status === "in_progress" && (
+        <LoadingTimerCard vehicleType={job.vehicle_type} startedAt={job.pickup_verified_at} />
+      )}
+
+
       <div className="mt-3 flex flex-wrap gap-2">
         <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
           <a
