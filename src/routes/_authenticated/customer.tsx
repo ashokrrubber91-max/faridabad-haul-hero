@@ -471,6 +471,26 @@ function CustomerPage() {
           setStage(null);
         }}
       />
+      <LocationSearchOverlay
+        open={stopStage?.type === "search"}
+        onOpenChange={(v) => !v && setStopStage(null)}
+        mode="drop"
+        onPick={(p) => {
+          setPendingStop(p);
+          setStopStage({ type: "confirm" });
+        }}
+      />
+      <MapPinConfirm
+        open={stopStage?.type === "confirm"}
+        onOpenChange={(v) => !v && setStopStage(null)}
+        mode="drop"
+        initial={pendingStop}
+        onConfirm={(p) => {
+          setStops((prev) => [...prev, p]);
+          setPendingStop(null);
+          setStopStage(null);
+        }}
+      />
       <SupportChat role="customer" />
     </div>
   );
