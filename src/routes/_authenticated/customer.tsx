@@ -9,7 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { VEHICLES, estimateFare, vehicleLabel, STATUS_META, type VehicleId } from "@/lib/booking";
+import { VEHICLES, estimateFare, vehicleLabel, STATUS_META, routeDistanceKm, type VehicleId } from "@/lib/booking";
+import { VehicleCard } from "@/components/booking/VehicleCard";
+import { WaypointManager } from "@/components/booking/WaypointManager";
+import { GstinSelect, type CustomerGstin } from "@/components/booking/GstinSelect";
+import { ReviewBooking } from "@/components/booking/ReviewBooking";
 import { LocationSearchOverlay, type PlacePick } from "@/components/booking/LocationSearchOverlay";
 import { MapPinConfirm } from "@/components/booking/MapPinConfirm";
 import { LiveTripMap } from "@/components/booking/LiveTripMap";
@@ -26,17 +30,6 @@ export const Route = createFileRoute("/_authenticated/customer")({
 
 type Stage = { type: "search" | "confirm"; mode: "pickup" | "drop" } | null;
 
-function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const R = 6371;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(s));
-}
-
 function CustomerPage() {
   const { user, role, roles, activeMode, loading } = useAuth();
   const qc = useQueryClient();
@@ -52,12 +45,17 @@ function CustomerPage() {
   const [cancelTarget, setCancelTarget] = useState<{ id: string; addr: string } | null>(null);
   const [cancelReason, setCancelReason] = useState("Driver taking too long");
   const [cancelNote, setCancelNote] = useState("");
+  const [stops, setStops] = useState<PlacePick[]>([]);
+  const [stopStage, setStopStage] = useState<null | { type: "search" | "confirm" }>(null);
+  const [pendingStop, setPendingStop] = useState<PlacePick | null>(null);
+  const [step, setStep] = useState<"form" | "review">("form");
+  const [gstinEnabled, setGstinEnabled] = useState(false);
+  const [gstinId, setGstinId] = useState<string | null>(null);
 
   const distanceKm = useMemo(() => {
     if (!pickup || !drop) return 0;
-    // road factor ~1.3 over straight-line distance
-    return Math.max(0.5, +(haversineKm(pickup, drop) * 1.3).toFixed(1));
-  }, [pickup, drop]);
+    return routeDistanceKm([pickup, ...stops, drop]);
+  }, [pickup, drop, stops]);
   const baseFare = estimateFare(vehicle, distanceKm);
   const discount = Math.min(baseFare, (promo?.discount ?? 0) + coins);
   const fare = Math.max(0, baseFare - discount);

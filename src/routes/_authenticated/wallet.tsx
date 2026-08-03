@@ -10,6 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
+function formatMoney(n: number) {
+  const abs = Math.abs(n).toFixed(2);
+  return n < 0 ? `-₹${abs}` : `₹${abs}`;
+}
+
 export const Route = createFileRoute("/_authenticated/wallet")({
   head: () => ({
     meta: [
@@ -114,9 +119,16 @@ function WalletPage() {
           </p>
           <div className="mt-1 flex items-baseline gap-2">
             <Wallet className="h-6 w-6 text-primary" />
-            <p className="font-display text-4xl text-secondary">₹{cash.toFixed(2)}</p>
+            <p className={`font-display text-4xl ${cash < 0 ? "text-destructive" : "text-secondary"}`}>
+              {formatMoney(cash)}
+            </p>
           </div>
-          {isDriver && cash < 100 && (
+          {cash < 0 && (
+            <p className="mt-2 rounded-md bg-destructive/15 px-3 py-2 text-xs text-destructive">
+              Amount due — recover from next trips / cancellation charge.
+            </p>
+          )}
+          {isDriver && cash >= 0 && cash < 100 && (
             <p className="mt-2 rounded-md bg-warning/15 px-3 py-2 text-xs text-warning-foreground">
               Keep at least ₹100 in your wallet to keep receiving cash-on-delivery jobs.
             </p>
@@ -143,10 +155,19 @@ function WalletPage() {
           </p>
           <div className="mt-1 flex items-baseline gap-2">
             <Coins className="h-6 w-6 text-warning" />
-            <p className="font-display text-4xl text-secondary">
-              {isDriver ? `₹${monthNet.toFixed(0)}` : coins.toFixed(0)}
+            <p
+              className={`font-display text-4xl ${
+                (isDriver ? monthNet : coins) < 0 ? "text-destructive" : "text-secondary"
+              }`}
+            >
+              {isDriver ? formatMoney(monthNet) : (coins < 0 ? `-${Math.abs(coins).toFixed(0)}` : coins.toFixed(0))}
             </p>
           </div>
+          {(isDriver ? monthNet : coins) < 0 && (
+            <p className="mt-2 rounded-md bg-destructive/15 px-3 py-2 text-xs text-destructive">
+              Amount due — recover from next trips / cancellation charge.
+            </p>
+          )}
           <p className="mt-2 text-xs text-muted-foreground">
             {isDriver
               ? "Trip earnings and incentives credited since the 1st, after MiniPort commission."
@@ -217,7 +238,7 @@ function WalletPage() {
                     </div>
                   </div>
                   <p className={`font-display text-lg ${positive ? "text-success" : "text-destructive"}`}>
-                    {positive ? "+" : ""}₹{Number(t.delta).toFixed(0)}
+                    {positive ? `+₹${Number(t.delta).toFixed(0)}` : formatMoney(Number(t.delta))}
                   </p>
                 </div>
               );
