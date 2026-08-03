@@ -20,6 +20,8 @@ import { LiveTripMap } from "@/components/booking/LiveTripMap";
 import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
 import { SupportChat } from "@/components/support/SupportChat";
 import { FARIDABAD_CENTER } from "@/lib/google-maps";
+import { LoadingTimerCard } from "@/components/booking/LoadingTimerCard";
+import { canCancel, cancellationQuote } from "@/lib/cancellation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
