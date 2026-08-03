@@ -376,18 +376,30 @@ function CustomerPage() {
                       )}
                     </div>
                   )}
-                  {(b.status === "pending" || b.status === "accepted") && (
-                    <div className="mt-3 flex justify-end">
+                  {canCancel(b.status) && (
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs text-muted-foreground">
+                        {cancellationQuote(b.status, b.fare, b.updated_at).label}
+                      </p>
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => setCancelTarget({ id: b.id, addr: b.pickup_address })}
+                        onClick={() =>
+                          setCancelTarget({
+                            id: b.id,
+                            addr: b.pickup_address,
+                            status: b.status,
+                            fare: Number(b.fare) || 0,
+                            since: b.updated_at ?? b.created_at,
+                          })
+                        }
                         disabled={cancel.isPending}
                       >
                         <X className="h-3.5 w-3.5" /> Cancel Booking
                       </Button>
                     </div>
                   )}
+
                 </div>
               );
             })}
