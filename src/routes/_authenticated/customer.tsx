@@ -157,22 +157,36 @@ function CustomerPage() {
   });
 
   const cancel = useMutation({
-    mutationFn: async ({ id, reason, existingNotes }: { id: string; reason: string; existingNotes: string | null }) => {
-      const noteLine = `Cancelled by customer: ${reason}`;
+    mutationFn: async ({
+      id,
+      reason,
+      existingNotes,
+      fee,
+    }: {
+      id: string;
+      reason: string;
+      existingNotes: string | null;
+      fee: number;
+    }) => {
+      const noteLine =
+        `Cancelled by customer: ${reason}` + (fee > 0 ? ` · Cancellation charge ₹${fee}` : " · No charge");
       const nextNotes = existingNotes ? `${existingNotes} · ${noteLine}` : noteLine;
       const { error } = await supabase
         .from("bookings")
         .update({ status: "cancelled", notes: nextNotes })
         .eq("id", id);
       if (error) throw error;
+      return fee;
     },
-    onSuccess: () => {
-      toast.success("Booking cancelled");
+    onSuccess: (fee) => {
+      toast.success(fee > 0 ? `Booking cancelled — ₹${fee} cancellation charge applied` : "Booking cancelled — no charge");
       setCancelTarget(null);
       setCancelNote("");
+      qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   if (loading) return <CenterLoader />;
   if (role && role !== "customer" && role !== "admin") {
