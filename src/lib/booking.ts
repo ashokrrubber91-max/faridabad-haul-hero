@@ -23,3 +23,44 @@ export const STATUS_META: Record<string, { label: string; tone: "warning" | "pri
   completed: { label: "Completed", tone: "success" },
   cancelled: { label: "Cancelled", tone: "destructive" },
 };
+
+export type LatLng = { lat: number; lng: number };
+
+export function haversineKm(a: LatLng, b: LatLng): number {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+/** Road-adjusted distance across a route with intermediate waypoints (pickup -> stops -> drop). */
+export function routeDistanceKm(points: LatLng[]): number {
+  if (points.length < 2) return 0;
+  let total = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    total += haversineKm(points[i], points[i + 1]);
+  }
+  return Math.max(0.5, +(total * 1.3).toFixed(1));
+}
+
+export const VEHICLE_DETAILS: Record<VehicleId, { weightLimit: string; loadArea: string; goodTor: string[] }> = {
+  tata_ace: {
+    weightLimit: "750 kg",
+    loadArea: "6.5 x 4.5 ft open bed",
+    goodTor: ["Small household shifting", "Boxes & cartons", "Appliances"],
+  },
+  pickup_8ft: {
+    weightLimit: "1.2 ton",
+    loadArea: "8 x 5 ft open bed",
+    goodTor: ["Furniture", "Construction material", "Multi-room shifting"],
+  },
+  tata_407: {
+    weightLimit: "2.5 ton",
+    loadArea: "9 x 5.5 ft closed body",
+    goodTor: ["Bulk goods", "Commercial cargo", "Office relocation"],
+  },
+};
