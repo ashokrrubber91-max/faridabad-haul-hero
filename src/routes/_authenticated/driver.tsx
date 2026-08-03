@@ -27,6 +27,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META } from "@/lib/booking";
 import { SupportChat } from "@/components/support/SupportChat";
 import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
+import { LoadingTimerCard } from "@/components/booking/LoadingTimerCard";
 
 export const Route = createFileRoute("/_authenticated/driver")({
   head: () => ({ meta: [{ title: "Driver — MiniPort" }] }),
@@ -509,6 +510,11 @@ function ActiveJobCard({
           ? `Payment Mode: Cash — Collect ₹${Number(job.fare).toFixed(0)} from customer`
           : `Payment Mode: Online — ₹${net.toFixed(0)} will be added to your wallet`}
       </div>
+
+      {job.status === "in_progress" && (
+        <LoadingTimerCard vehicleType={job.vehicle_type} startedAt={job.pickup_verified_at} />
+      )}
+
 
       <div className="mt-3 flex flex-wrap gap-2">
         <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">

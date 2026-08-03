@@ -9,13 +9,19 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { VEHICLES, estimateFare, vehicleLabel, STATUS_META, type VehicleId } from "@/lib/booking";
+import { VEHICLES, estimateFare, vehicleLabel, STATUS_META, routeDistanceKm, type VehicleId } from "@/lib/booking";
+import { VehicleCard } from "@/components/booking/VehicleCard";
+import { WaypointManager } from "@/components/booking/WaypointManager";
+import { GstinSelect, type CustomerGstin } from "@/components/booking/GstinSelect";
+import { ReviewBooking } from "@/components/booking/ReviewBooking";
 import { LocationSearchOverlay, type PlacePick } from "@/components/booking/LocationSearchOverlay";
 import { MapPinConfirm } from "@/components/booking/MapPinConfirm";
 import { LiveTripMap } from "@/components/booking/LiveTripMap";
 import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
 import { SupportChat } from "@/components/support/SupportChat";
 import { FARIDABAD_CENTER } from "@/lib/google-maps";
+import { LoadingTimerCard } from "@/components/booking/LoadingTimerCard";
+import { canCancel, cancellationQuote } from "@/lib/cancellation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
@@ -25,17 +31,6 @@ export const Route = createFileRoute("/_authenticated/customer")({
 });
 
 type Stage = { type: "search" | "confirm"; mode: "pickup" | "drop" } | null;
-
-function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const R = 6371;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(s));
-}
 
 function CustomerPage() {
   const { user, role, roles, activeMode, loading } = useAuth();
@@ -49,18 +44,40 @@ function CustomerPage() {
   const [promo, setPromo] = useState<{ code: string; discount: number } | null>(null);
   const [coins, setCoins] = useState(0);
   const [method, setMethod] = useState<PaymentMethod>("cod");
-  const [cancelTarget, setCancelTarget] = useState<{ id: string; addr: string } | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<{
+    id: string;
+    addr: string;
+    status: string;
+    fare: number;
+    since: string;
+  } | null>(null);
   const [cancelReason, setCancelReason] = useState("Driver taking too long");
   const [cancelNote, setCancelNote] = useState("");
+  const [stops, setStops] = useState<PlacePick[]>([]);
+  const [stopStage, setStopStage] = useState<null | { type: "search" | "confirm" }>(null);
+  const [pendingStop, setPendingStop] = useState<PlacePick | null>(null);
+  const [step, setStep] = useState<"form" | "review">("form");
+  const [gstinEnabled, setGstinEnabled] = useState(false);
+  const [gstinId, setGstinId] = useState<string | null>(null);
 
   const distanceKm = useMemo(() => {
     if (!pickup || !drop) return 0;
-    // road factor ~1.3 over straight-line distance
-    return Math.max(0.5, +(haversineKm(pickup, drop) * 1.3).toFixed(1));
-  }, [pickup, drop]);
+    return routeDistanceKm([pickup, ...stops, drop]);
+  }, [pickup, drop, stops]);
   const baseFare = estimateFare(vehicle, distanceKm);
   const discount = Math.min(baseFare, (promo?.discount ?? 0) + coins);
   const fare = Math.max(0, baseFare - discount);
+
+  const gstins = useQuery({
+    queryKey: ["customer-gstins", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("customer_gstins").select("*").order("is_default", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as CustomerGstin[];
+    },
+  });
+  const selectedGstin = gstinEnabled ? (gstins.data ?? []).find((g) => g.id === gstinId) ?? null : null;
 
   const bookings = useQuery({
     queryKey: ["my-bookings", user?.id],
@@ -112,8 +129,10 @@ function CustomerPage() {
         notes:
           [
             notes.trim(),
+            stops.length > 0 && `Stops: ${stops.map((s) => s.address).join(" → ")}`,
             pickup.contactName && `Sender: ${pickup.contactName} (${pickup.contactPhone ?? ""})`,
             drop.contactName && `Receiver: ${drop.contactName} (${drop.contactPhone ?? ""})`,
+            selectedGstin && `Billed to GSTIN ${selectedGstin.gstin} (${selectedGstin.business_name})`,
           ]
             .filter(Boolean)
             .join(" · ") || null,
@@ -124,9 +143,13 @@ function CustomerPage() {
       toast.success("Booking placed — finding a driver");
       setPickup(null);
       setDrop(null);
+      setStops([]);
       setNotes("");
       setPromo(null);
       setCoins(0);
+      setGstinEnabled(false);
+      setGstinId(null);
+      setStep("form");
       qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
       qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
     },
@@ -134,22 +157,36 @@ function CustomerPage() {
   });
 
   const cancel = useMutation({
-    mutationFn: async ({ id, reason, existingNotes }: { id: string; reason: string; existingNotes: string | null }) => {
-      const noteLine = `Cancelled by customer: ${reason}`;
+    mutationFn: async ({
+      id,
+      reason,
+      existingNotes,
+      fee,
+    }: {
+      id: string;
+      reason: string;
+      existingNotes: string | null;
+      fee: number;
+    }) => {
+      const noteLine =
+        `Cancelled by customer: ${reason}` + (fee > 0 ? ` · Cancellation charge ₹${fee}` : " · No charge");
       const nextNotes = existingNotes ? `${existingNotes} · ${noteLine}` : noteLine;
       const { error } = await supabase
         .from("bookings")
         .update({ status: "cancelled", notes: nextNotes })
         .eq("id", id);
       if (error) throw error;
+      return fee;
     },
-    onSuccess: () => {
-      toast.success("Booking cancelled");
+    onSuccess: (fee) => {
+      toast.success(fee > 0 ? `Booking cancelled — ₹${fee} cancellation charge applied` : "Booking cancelled — no charge");
       setCancelTarget(null);
       setCancelNote("");
+      qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   if (loading) return <CenterLoader />;
   if (role && role !== "customer" && role !== "admin") {
@@ -164,6 +201,7 @@ function CustomerPage() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+      {step === "form" ? (
       <section className="surface-card p-5">
         <h2 className="font-display text-2xl tracking-wide text-secondary">New booking</h2>
         <p className="text-sm text-muted-foreground">Faridabad only · transparent flat fare</p>
@@ -180,6 +218,29 @@ function CustomerPage() {
               setStage({ type: "confirm", mode: "pickup" });
             }}
           />
+
+          <WaypointManager
+            stops={stops}
+            onAdd={() => setStopStage({ type: "search" })}
+            onRemove={(i) => setStops((prev) => prev.filter((_, idx) => idx !== i))}
+            onMoveUp={(i) =>
+              setStops((prev) => {
+                if (i === 0) return prev;
+                const next = [...prev];
+                [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                return next;
+              })
+            }
+            onMoveDown={(i) =>
+              setStops((prev) => {
+                if (i === prev.length - 1) return prev;
+                const next = [...prev];
+                [next[i + 1], next[i]] = [next[i], next[i + 1]];
+                return next;
+              })
+            }
+          />
+
           <LocationRow
             label="Drop"
             dotClass="text-success"
@@ -195,24 +256,9 @@ function CustomerPage() {
 
           <div>
             <Label>Vehicle</Label>
-            <div className="mt-1 grid gap-2">
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
               {VEHICLES.map((v) => (
-                <button
-                  key={v.id}
-                  type="button"
-                  onClick={() => setVehicle(v.id)}
-                  className={`flex items-center justify-between rounded-md border p-3 text-left transition-colors ${
-                    vehicle === v.id ? "border-primary bg-accent" : "border-border hover:bg-muted"
-                  }`}
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-secondary">{v.label}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Up to {v.capacity} · ₹{v.perKm}/km
-                    </p>
-                  </div>
-                  <span className="text-xs font-semibold text-muted-foreground">Base ₹{v.base}</span>
-                </button>
+                <VehicleCard key={v.id} id={v.id} selected={vehicle === v.id} onSelect={() => setVehicle(v.id)} />
               ))}
             </div>
           </div>
@@ -228,6 +274,13 @@ function CustomerPage() {
               maxLength={300}
             />
           </div>
+
+          <GstinSelect
+            enabled={gstinEnabled}
+            setEnabled={setGstinEnabled}
+            selectedId={gstinId}
+            setSelectedId={setGstinId}
+          />
 
           <CheckoutExtras
             fare={baseFare}
@@ -250,14 +303,36 @@ function CustomerPage() {
                   <p className="text-xs opacity-80">Base ₹{baseFare} − ₹{discount} off</p>
                 )}
               </div>
-              <Button onClick={() => create.mutate()} disabled={create.isPending} className="h-11">
-                {create.isPending ? "Booking…" : "Book now"}
+              <Button
+                onClick={() => setStep("review")}
+                disabled={!pickup || !drop || distanceKm <= 0}
+                className="h-11"
+              >
+                Review booking
               </Button>
             </div>
           </div>
         </div>
       </section>
-
+      ) : (
+        pickup && drop && (
+          <ReviewBooking
+            pickup={pickup}
+            drop={drop}
+            stops={stops}
+            vehicle={vehicle}
+            distanceKm={distanceKm}
+            baseFare={baseFare}
+            discount={discount}
+            fare={fare}
+            notes={notes}
+            gstin={selectedGstin}
+            onBack={() => setStep("form")}
+            onConfirm={() => create.mutate()}
+            submitting={create.isPending}
+          />
+        )
+      )}
 
       <section>
         <h2 className="mb-3 font-display text-2xl tracking-wide text-secondary">Your bookings</h2>
@@ -305,6 +380,10 @@ function CustomerPage() {
                       distanceKm={Number(b.distance_km) || 0}
                     />
                   )}
+                  {b.status === "in_progress" && (
+                    <LoadingTimerCard vehicleType={b.vehicle_type} startedAt={b.pickup_verified_at} />
+                  )}
+
                   {(b.status === "accepted" || b.status === "in_progress") && (b.pickup_otp || b.drop_otp) && (
                     <div className="mt-3 grid gap-2 rounded-md bg-primary/5 p-3 sm:grid-cols-2">
                       {b.pickup_otp && (
@@ -323,18 +402,30 @@ function CustomerPage() {
                       )}
                     </div>
                   )}
-                  {(b.status === "pending" || b.status === "accepted") && (
-                    <div className="mt-3 flex justify-end">
+                  {canCancel(b.status) && (
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs text-muted-foreground">
+                        {cancellationQuote(b.status, b.fare, b.updated_at).label}
+                      </p>
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => setCancelTarget({ id: b.id, addr: b.pickup_address })}
+                        onClick={() =>
+                          setCancelTarget({
+                            id: b.id,
+                            addr: b.pickup_address,
+                            status: b.status,
+                            fare: Number(b.fare) || 0,
+                            since: b.updated_at ?? b.created_at,
+                          })
+                        }
                         disabled={cancel.isPending}
                       >
                         <X className="h-3.5 w-3.5" /> Cancel Booking
                       </Button>
                     </div>
                   )}
+
                 </div>
               );
             })}
@@ -356,6 +447,25 @@ function CustomerPage() {
             <DialogTitle>Cancel this booking?</DialogTitle>
             <DialogDescription className="truncate">{cancelTarget?.addr}</DialogDescription>
           </DialogHeader>
+          {cancelTarget && (() => {
+            const q = cancellationQuote(cancelTarget.status, cancelTarget.fare, cancelTarget.since);
+            return (
+              <div
+                className={`rounded-md border p-3 text-sm ${
+                  q.fee > 0 ? "border-destructive/40 bg-destructive/5" : "border-success/40 bg-success/5"
+                }`}
+              >
+                <p className={`font-semibold ${q.fee > 0 ? "text-destructive" : "text-success"}`}>{q.label}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{q.detail}</p>
+                {q.fee > 0 && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    The charge is settled from your wallet and may show a negative balance (e.g. −₹{q.fee}) until your
+                    next booking.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
           <RadioGroup value={cancelReason} onValueChange={setCancelReason} className="space-y-2">
             {[
               "Driver taking too long",
@@ -387,11 +497,13 @@ function CustomerPage() {
                 if (!cancelTarget) return;
                 const reason = cancelReason === "Other" && cancelNote.trim() ? cancelNote.trim() : cancelReason;
                 const existing = (bookings.data ?? []).find((x) => x.id === cancelTarget.id)?.notes ?? null;
-                cancel.mutate({ id: cancelTarget.id, reason, existingNotes: existing });
+                const { fee } = cancellationQuote(cancelTarget.status, cancelTarget.fare, cancelTarget.since);
+                cancel.mutate({ id: cancelTarget.id, reason, existingNotes: existing, fee });
               }}
             >
               Confirm cancel
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -416,6 +528,26 @@ function CustomerPage() {
           else setDrop(p);
           setPending(null);
           setStage(null);
+        }}
+      />
+      <LocationSearchOverlay
+        open={stopStage?.type === "search"}
+        onOpenChange={(v) => !v && setStopStage(null)}
+        mode="drop"
+        onPick={(p) => {
+          setPendingStop(p);
+          setStopStage({ type: "confirm" });
+        }}
+      />
+      <MapPinConfirm
+        open={stopStage?.type === "confirm"}
+        onOpenChange={(v) => !v && setStopStage(null)}
+        mode="drop"
+        initial={pendingStop}
+        onConfirm={(p) => {
+          setStops((prev) => [...prev, p]);
+          setPendingStop(null);
+          setStopStage(null);
         }}
       />
       <SupportChat role="customer" />

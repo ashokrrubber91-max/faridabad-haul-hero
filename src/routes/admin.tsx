@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META, VEHICLES } from "@/lib/booking";
 import { KycReviewTab } from "@/components/admin/KycReviewTab";
+import { DrillDownDialog, type DrillDownColumn } from "@/components/admin/DrillDownDialog";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — MiniPort" }] }),
@@ -72,6 +73,7 @@ function AdminPage() {
   const { role, loading } = useAuth();
   const qc = useQueryClient();
   const [tab, setTab] = useState("overview");
+  const [drill, setDrill] = useState<{ kind: "bookings" | "profiles"; title: string; rows: any[]; showCommission?: boolean } | null>(null);
 
   const bookings = useQuery({
     queryKey: ["admin-bookings"],
@@ -219,14 +221,22 @@ function AdminPage() {
         {/* OVERVIEW */}
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat icon={<IndianRupee className="h-4 w-4" />} label="Revenue Today" value={`₹${revenueToday.toFixed(0)}`} tone="primary" />
-            <Stat icon={<IndianRupee className="h-4 w-4" />} label="Commission (all)" value={`₹${commissionAll.toFixed(0)}`} tone="success" />
-            <Stat icon={<Truck className="h-4 w-4" />} label="Live trips" value={active.length} tone="warning" />
-            <Stat icon={<Truck className="h-4 w-4" />} label="Completed today" value={completedToday.length} tone="ink" />
-            <Stat icon={<Users className="h-4 w-4" />} label="Drivers" value={`${onlineDrivers}/${drivers.length}`} tone="primary" />
-            <Stat icon={<Users className="h-4 w-4" />} label="Customers" value={customers.length} tone="ink" />
-            <Stat icon={<Truck className="h-4 w-4" />} label="Pending req." value={pending} tone="warning" />
-            <Stat icon={<IndianRupee className="h-4 w-4" />} label="Lifetime revenue" value={`₹${revenueAll.toFixed(0)}`} tone="success" />
+            <Stat icon={<IndianRupee className="h-4 w-4" />} label="Revenue Today" value={`₹${revenueToday.toFixed(0)}`} tone="primary"
+              onClick={() => setDrill({ kind: "bookings", title: "Revenue today — bookings", rows: completedToday })} />
+            <Stat icon={<IndianRupee className="h-4 w-4" />} label="Commission (all)" value={`₹${commissionAll.toFixed(0)}`} tone="success"
+              onClick={() => setDrill({ kind: "bookings", title: "Commission — completed bookings", rows: completedAll, showCommission: true })} />
+            <Stat icon={<Truck className="h-4 w-4" />} label="Live trips" value={active.length} tone="warning"
+              onClick={() => setDrill({ kind: "bookings", title: "Live trips", rows: active })} />
+            <Stat icon={<Truck className="h-4 w-4" />} label="Completed today" value={completedToday.length} tone="ink"
+              onClick={() => setDrill({ kind: "bookings", title: "Completed today", rows: completedToday })} />
+            <Stat icon={<Users className="h-4 w-4" />} label="Drivers" value={`${onlineDrivers}/${drivers.length}`} tone="primary"
+              onClick={() => setDrill({ kind: "profiles", title: "Drivers", rows: drivers })} />
+            <Stat icon={<Users className="h-4 w-4" />} label="Customers" value={customers.length} tone="ink"
+              onClick={() => setDrill({ kind: "profiles", title: "Customers", rows: customers })} />
+            <Stat icon={<Truck className="h-4 w-4" />} label="Pending req." value={pending} tone="warning"
+              onClick={() => setDrill({ kind: "bookings", title: "Pending requests", rows: all.filter((b) => b.status === "pending") })} />
+            <Stat icon={<IndianRupee className="h-4 w-4" />} label="Lifetime revenue" value={`₹${revenueAll.toFixed(0)}`} tone="success"
+              onClick={() => setDrill({ kind: "bookings", title: "Lifetime revenue — completed bookings", rows: completedAll })} />
           </div>
 
           <section className="surface-card">
@@ -235,6 +245,34 @@ function AdminPage() {
             </div>
             <BookingsList bookings={all.slice(0, 15)} profileMap={profileMap} />
           </section>
+
+          <DrillDownDialog
+            open={!!drill}
+            onOpenChange={(o) => !o && setDrill(null)}
+            title={drill?.title ?? ""}
+            rows={drill?.rows ?? []}
+            columns={
+              (drill?.kind === "profiles"
+                ? profileDrillColumns
+                : bookingDrillColumns(drill?.showCommission)) as DrillDownColumn<any>[]
+            }
+            searchFn={
+              drill?.kind === "profiles"
+                ? (row: any, q: string) => row.name?.toLowerCase().includes(q.toLowerCase()) || row.phone?.includes(q)
+                : (row: any, q: string) => {
+                    const query = q.toLowerCase();
+                    const customer = profileMap.get(row.customer_id);
+                    const driver = row.driver_id ? profileMap.get(row.driver_id) : null;
+                    return (
+                      row.pickup_address?.toLowerCase().includes(query) ||
+                      row.drop_address?.toLowerCase().includes(query) ||
+                      customer?.name?.toLowerCase().includes(query) ||
+                      driver?.name?.toLowerCase().includes(query) ||
+                      row.status?.toLowerCase().includes(query)
+                    );
+                  }
+            }
+          />
         </TabsContent>
 
         {/* DRIVERS */}
@@ -599,14 +637,22 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
   const [rides, setRides] = useState("");
   const [bonus, setBonus] = useState("");
   const [label, setLabel] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [editTier, setEditTier] = useState<any | null>(null);
+  const [editRides, setEditRides] = useState("");
+  const [editBonus, setEditBonus] = useState("");
+  const [editLabel, setEditLabel] = useState("");
+  const [editBusy, setEditBusy] = useState(false);
 
   const add = async () => {
     const r = Number(rides), b = Number(bonus);
     if (!r || !b || !label) return toast.error("Fill all fields");
+    setBusy(true);
     const { error } = await supabase.from("driver_incentive_config")
       .upsert({ rides_required: r, bonus_amount: b, label, active: true }, { onConflict: "rides_required" });
+    setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Incentive saved");
+    toast.success("Incentive tier saved");
     setRides(""); setBonus(""); setLabel(""); onChanged();
   };
 
@@ -614,24 +660,45 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
     const { error } = await supabase.from("driver_incentive_config")
       .update({ active: !t.active }).eq("id", t.id);
     if (error) return toast.error(error.message);
+    toast.success(t.active ? "Tier paused" : "Tier activated");
     onChanged();
+  };
+
+  const openEdit = (t: any) => {
+    setEditTier(t);
+    setEditRides(String(t.rides_required));
+    setEditBonus(String(t.bonus_amount));
+    setEditLabel(t.label);
+  };
+
+  const saveEdit = async () => {
+    if (!editTier) return;
+    const r = Number(editRides), b = Number(editBonus);
+    if (!r || !b || !editLabel) return toast.error("Fill all fields");
+    setEditBusy(true);
+    const { error } = await supabase.from("driver_incentive_config")
+      .update({ rides_required: r, bonus_amount: b, label: editLabel }).eq("id", editTier.id);
+    setEditBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Tier updated");
+    setEditTier(null); onChanged();
   };
 
   return (
     <div className="space-y-4">
       <section className="surface-card p-4">
-        <h3 className="font-display text-xl tracking-wide text-secondary">Add / update tier</h3>
+        <h3 className="font-display text-xl tracking-wide text-secondary">Add tier</h3>
         <div className="mt-3 grid gap-2 sm:grid-cols-[100px_120px_1fr_auto] sm:items-end">
           <div><Label className="text-xs">Rides</Label><Input type="number" value={rides} onChange={(e) => setRides(e.target.value)} /></div>
           <div><Label className="text-xs">Bonus (₹)</Label><Input type="number" value={bonus} onChange={(e) => setBonus(e.target.value)} /></div>
           <div><Label className="text-xs">Label</Label><Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. 10 rides = ₹200" /></div>
-          <Button onClick={add}>Save tier</Button>
+          <Button onClick={add} disabled={busy}>{busy ? "Saving..." : "Save tier"}</Button>
         </div>
       </section>
 
       <section className="surface-card">
         <div className="border-b border-border px-4 py-3">
-          <h3 className="font-display text-xl tracking-wide text-secondary">Active tiers</h3>
+          <h3 className="font-display text-xl tracking-wide text-secondary">Incentive tiers</h3>
         </div>
         <div className="divide-y divide-border">
           {tiers.length === 0 && <p className="px-4 py-8 text-center text-sm text-muted-foreground">No incentive tiers yet.</p>}
@@ -641,7 +708,8 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
                 <p className="text-sm font-semibold text-secondary">{t.label}</p>
                 <p className="text-xs text-muted-foreground">{t.rides_required} rides → ₹{Number(t.bonus_amount).toFixed(0)}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                <Button size="sm" variant="outline" onClick={() => openEdit(t)}>Edit</Button>
                 <span className="text-xs text-muted-foreground">{t.active ? "Active" : "Paused"}</span>
                 <Switch checked={t.active} onCheckedChange={() => toggle(t)} />
               </div>
@@ -649,41 +717,95 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
           ))}
         </div>
       </section>
+
+      <Dialog open={!!editTier} onOpenChange={(o) => !o && setEditTier(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit tier</DialogTitle></DialogHeader>
+          <div className="grid gap-2">
+            <div><Label className="text-xs">Rides required</Label><Input type="number" value={editRides} onChange={(e) => setEditRides(e.target.value)} /></div>
+            <div><Label className="text-xs">Bonus (₹)</Label><Input type="number" value={editBonus} onChange={(e) => setEditBonus(e.target.value)} /></div>
+            <div><Label className="text-xs">Label</Label><Input value={editLabel} onChange={(e) => setEditLabel(e.target.value)} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTier(null)}>Cancel</Button>
+            <Button onClick={saveEdit} disabled={editBusy}>{editBusy ? "Saving..." : "Save changes"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 /* ============================== Coupons ============================== */
+type CouponForm = {
+  code: string; kind: "flat" | "percent"; value: string; minFare: string;
+  maxDiscount: string; maxUses: string; expiresAt: string;
+};
+const emptyCouponForm: CouponForm = { code: "", kind: "flat", value: "", minFare: "0", maxDiscount: "", maxUses: "", expiresAt: "" };
+
 function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => void }) {
-  const [code, setCode] = useState("");
-  const [kind, setKind] = useState<"flat" | "percent">("flat");
-  const [value, setValue] = useState("");
-  const [minFare, setMinFare] = useState("0");
+  const [form, setForm] = useState<CouponForm>(emptyCouponForm);
+  const [busy, setBusy] = useState(false);
+  const [editCoupon, setEditCoupon] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState<CouponForm>(emptyCouponForm);
+  const [editBusy, setEditBusy] = useState(false);
+
+  const buildPayload = (f: CouponForm) => ({
+    code: f.code.trim().toUpperCase(),
+    kind: f.kind,
+    value: Number(f.value),
+    min_fare: Number(f.minFare || 0),
+    max_discount: f.maxDiscount ? Number(f.maxDiscount) : null,
+    max_uses: f.maxUses ? Number(f.maxUses) : null,
+    expires_at: f.expiresAt ? new Date(f.expiresAt).toISOString() : null,
+  });
 
   const add = async () => {
-    if (!code || !value) return toast.error("Fill code and value");
-    const { error } = await supabase.from("coupons").insert({
-      code: code.toUpperCase(), kind, value: Number(value), min_fare: Number(minFare), active: true,
-    });
+    if (!form.code || !form.value) return toast.error("Fill code and value");
+    setBusy(true);
+    const { error } = await supabase.from("coupons").insert({ ...buildPayload(form), active: true });
+    setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Coupon created");
-    setCode(""); setValue(""); setMinFare("0"); onChanged();
+    setForm(emptyCouponForm); onChanged();
   };
 
   const toggle = async (c: any) => {
     const { error } = await supabase.from("coupons").update({ active: !c.active }).eq("id", c.id);
     if (error) return toast.error(error.message);
+    toast.success(c.active ? "Coupon deactivated" : "Coupon activated");
     onChanged();
+  };
+
+  const openEdit = (c: any) => {
+    setEditCoupon(c);
+    setEditForm({
+      code: c.code, kind: c.kind, value: String(c.value), minFare: String(c.min_fare ?? 0),
+      maxDiscount: c.max_discount != null ? String(c.max_discount) : "",
+      maxUses: c.max_uses != null ? String(c.max_uses) : "",
+      expiresAt: c.expires_at ? new Date(c.expires_at).toISOString().slice(0, 10) : "",
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editCoupon) return;
+    if (!editForm.code || !editForm.value) return toast.error("Fill code and value");
+    setEditBusy(true);
+    const { error } = await supabase.from("coupons").update(buildPayload(editForm)).eq("id", editCoupon.id);
+    setEditBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Coupon updated");
+    setEditCoupon(null); onChanged();
   };
 
   return (
     <div className="space-y-4">
       <section className="surface-card p-4">
         <h3 className="font-display text-xl tracking-wide text-secondary">Create coupon</h3>
-        <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_120px_120px_120px_auto] sm:items-end">
-          <div><Label className="text-xs">Code</Label><Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="SAVE20" /></div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <div><Label className="text-xs">Code</Label><Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="SAVE20" /></div>
           <div><Label className="text-xs">Kind</Label>
-            <Select value={kind} onValueChange={(v) => setKind(v as any)}>
+            <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v as any })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="flat">Flat ₹</SelectItem>
@@ -691,9 +813,12 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
               </SelectContent>
             </Select>
           </div>
-          <div><Label className="text-xs">Value</Label><Input type="number" value={value} onChange={(e) => setValue(e.target.value)} /></div>
-          <div><Label className="text-xs">Min fare</Label><Input type="number" value={minFare} onChange={(e) => setMinFare(e.target.value)} /></div>
-          <Button onClick={add}>Create</Button>
+          <div><Label className="text-xs">Value</Label><Input type="number" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} /></div>
+          <div><Label className="text-xs">Min fare</Label><Input type="number" value={form.minFare} onChange={(e) => setForm({ ...form, minFare: e.target.value })} /></div>
+          <div><Label className="text-xs">Max discount (₹, optional)</Label><Input type="number" value={form.maxDiscount} onChange={(e) => setForm({ ...form, maxDiscount: e.target.value })} /></div>
+          <div><Label className="text-xs">Max uses (optional)</Label><Input type="number" value={form.maxUses} onChange={(e) => setForm({ ...form, maxUses: e.target.value })} /></div>
+          <div><Label className="text-xs">Expires on (optional)</Label><Input type="date" value={form.expiresAt} onChange={(e) => setForm({ ...form, expiresAt: e.target.value })} /></div>
+          <div className="flex items-end"><Button onClick={add} disabled={busy} className="w-full">{busy ? "Creating..." : "Create coupon"}</Button></div>
         </div>
       </section>
 
@@ -704,19 +829,50 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
         <div className="divide-y divide-border">
           {coupons.length === 0 && <p className="px-4 py-8 text-center text-sm text-muted-foreground">No coupons yet.</p>}
           {coupons.map((c) => (
-            <div key={c.id} className="flex items-center justify-between px-4 py-3">
-              <div>
+            <div key={c.id} className="flex items-center justify-between gap-2 px-4 py-3">
+              <div className="min-w-0">
                 <p className="text-sm font-semibold text-secondary">{c.code}
                   <span className="ml-2 text-xs font-normal text-muted-foreground">
                     {c.kind === "flat" ? `₹${c.value} off` : `${c.value}% off`} · min ₹{c.min_fare} · used {c.uses}{c.max_uses ? `/${c.max_uses}` : ""}
+                    {c.max_discount ? ` · cap ₹${c.max_discount}` : ""}{c.expires_at ? ` · expires ${new Date(c.expires_at).toLocaleDateString("en-IN")}` : ""}
                   </span>
                 </p>
               </div>
-              <Switch checked={c.active} onCheckedChange={() => toggle(c)} />
+              <div className="flex shrink-0 items-center gap-3">
+                <Button size="sm" variant="outline" onClick={() => openEdit(c)}>Edit</Button>
+                <Switch checked={c.active} onCheckedChange={() => toggle(c)} />
+              </div>
             </div>
           ))}
         </div>
       </section>
+
+      <Dialog open={!!editCoupon} onOpenChange={(o) => !o && setEditCoupon(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit coupon — {editCoupon?.code}</DialogTitle></DialogHeader>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div><Label className="text-xs">Code</Label><Input value={editForm.code} onChange={(e) => setEditForm({ ...editForm, code: e.target.value })} /></div>
+            <div><Label className="text-xs">Kind</Label>
+              <Select value={editForm.kind} onValueChange={(v) => setEditForm({ ...editForm, kind: v as any })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="flat">Flat ₹</SelectItem>
+                  <SelectItem value="percent">Percent %</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label className="text-xs">Value</Label><Input type="number" value={editForm.value} onChange={(e) => setEditForm({ ...editForm, value: e.target.value })} /></div>
+            <div><Label className="text-xs">Min fare</Label><Input type="number" value={editForm.minFare} onChange={(e) => setEditForm({ ...editForm, minFare: e.target.value })} /></div>
+            <div><Label className="text-xs">Max discount</Label><Input type="number" value={editForm.maxDiscount} onChange={(e) => setEditForm({ ...editForm, maxDiscount: e.target.value })} /></div>
+            <div><Label className="text-xs">Max uses</Label><Input type="number" value={editForm.maxUses} onChange={(e) => setEditForm({ ...editForm, maxUses: e.target.value })} /></div>
+            <div className="sm:col-span-2"><Label className="text-xs">Expires on</Label><Input type="date" value={editForm.expiresAt} onChange={(e) => setEditForm({ ...editForm, expiresAt: e.target.value })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditCoupon(null)}>Cancel</Button>
+            <Button onClick={saveEdit} disabled={editBusy}>{editBusy ? "Saving..." : "Save changes"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -852,19 +1008,57 @@ function statusTone(s: string) {
     default: return "bg-destructive text-destructive-foreground hover:bg-destructive";
   }
 }
-function Stat({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: React.ReactNode; tone: "warning" | "primary" | "success" | "ink" }) {
+function Stat({ icon, label, value, tone, onClick }: { icon: React.ReactNode; label: string; value: React.ReactNode; tone: "warning" | "primary" | "success" | "ink"; onClick?: () => void }) {
   const map = {
     warning: "bg-warning text-warning-foreground",
     primary: "bg-primary text-primary-foreground",
     success: "bg-success text-success-foreground",
     ink: "bg-secondary text-secondary-foreground",
   } as const;
+  const Comp = onClick ? "button" : "div";
   return (
-    <div className={`rounded-lg p-4 ${map[tone]}`}>
+    <Comp
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      className={`rounded-lg p-4 text-left ${map[tone]} ${onClick ? "cursor-pointer transition-transform hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring" : ""}`}
+    >
       <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider opacity-90">{icon}{label}</div>
       <p className="font-display text-3xl">{value}</p>
-    </div>
+    </Comp>
   );
+}
+
+/* ============================== Drill-down column helpers ============================== */
+const profileDrillColumns: DrillDownColumn<Profile>[] = [
+  { key: "name", header: "Name", render: (p) => <span className="font-semibold text-secondary">{p.name} <span className="ml-1 font-normal text-muted-foreground">{p.phone}</span></span> },
+  { key: "status", header: "Status", render: (p) => <span className="text-xs text-muted-foreground">{p.is_online ? "Online" : "Offline"} · {p.active_mode}</span> },
+];
+
+function bookingDrillColumns(showCommission?: boolean): DrillDownColumn<Booking>[] {
+  return [
+    {
+      key: "route",
+      header: "Route",
+      render: (b) => (
+        <div>
+          <p className="truncate text-sm font-medium text-secondary">{b.pickup_address} → {b.drop_address}</p>
+          <p className="text-xs text-muted-foreground">
+            {vehicleLabel(b.vehicle_type)} · {b.distance_km} km · {b.status} · {new Date(b.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: "amount",
+      header: "Amount",
+      render: (b) => (
+        <div className="text-right">
+          <p className="font-display text-lg text-secondary">₹{Number(b.fare).toFixed(0)}</p>
+          {showCommission && <p className="text-xs text-muted-foreground">comm. ₹{Number(b.commission_amount ?? 0).toFixed(0)}</p>}
+        </div>
+      ),
+    },
+  ];
 }
 function tone(t: "warning" | "primary" | "success" | "muted" | "destructive") {
   switch (t) {

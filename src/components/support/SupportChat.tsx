@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { MessageCircle, X, Send, Loader2, Headphones } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { MessageCircle, X, Send, Loader2, Headphones, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { sendSupportChat } from "@/lib/chat.functions";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { detectLang, useVoiceInput, useVoiceOutput } from "@/hooks/useVoiceChat";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -25,7 +28,60 @@ const QUICK: Record<"customer" | "driver", string[]> = {
   ],
 };
 
+async function buildClientContext(role: "customer" | "driver", userId?: string): Promise<string> {
+  if (!userId) return "";
+  try {
+    const parts: string[] = [];
+    const { data: wallet } = await supabase
+      .from("wallet_accounts")
+      .select("cash_balance,coins_balance")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (wallet) {
+      parts.push(
+        role === "driver"
+          ? `Driver cash balance: ₹${Number(wallet.cash_balance ?? 0).toFixed(2)}, coins: ${Number(wallet.coins_balance ?? 0)}.`
+          : `Wallet coins balance: ${Number(wallet.coins_balance ?? 0)}, cash balance: ₹${Number(wallet.cash_balance ?? 0).toFixed(2)}.`,
+      );
+    }
+
+    const bookingCol = role === "driver" ? "driver_id" : "customer_id";
+    const { data: latest } = await supabase
+      .from("bookings")
+      .select("id,status,pickup_address,drop_address,fare,vehicle_type,created_at")
+      .eq(bookingCol, userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (latest) {
+      parts.push(
+        `Latest order: id ${String(latest.id).slice(0, 8)}, status ${latest.status}, from "${latest.pickup_address}" to "${latest.drop_address}", fare ₹${latest.fare ?? "?"}.`,
+      );
+    } else {
+      parts.push("No orders/bookings yet.");
+    }
+
+    if (role === "driver") {
+      const { data: kyc } = await supabase
+        .from("driver_kyc")
+        .select("status,rejection_reason")
+        .eq("driver_id", userId)
+        .maybeSingle();
+      parts.push(
+        kyc
+          ? `Driver KYC status: ${kyc.status}${kyc.rejection_reason ? ` (reason: ${kyc.rejection_reason})` : ""}.`
+          : "Driver KYC: not submitted yet.",
+      );
+    }
+
+    return parts.join(" ");
+  } catch {
+    return "";
+  }
+}
+
 export function SupportChat({ role }: { role: "customer" | "driver" }) {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [msgs, setMsgs] = useState<Msg[]>([
@@ -41,6 +97,14 @@ export function SupportChat({ role }: { role: "customer" | "driver" }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const call = useServerFn(sendSupportChat);
+
+  const voiceOut = useVoiceOutput();
+  const handleVoiceResult = useCallback((text: string) => {
+    setInput(text);
+    setTimeout(() => send(text), 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const voiceIn = useVoiceInput(handleVoiceResult);
 
   useEffect(() => {
     scrollerRef.current?.scrollTo({ top: scrollerRef.current.scrollHeight, behavior: "smooth" });
@@ -58,8 +122,16 @@ export function SupportChat({ role }: { role: "customer" | "driver" }) {
     setMsgs(next);
     setBusy(true);
     try {
-      const res = await call({ data: { role, messages: next.map(({ role, content }) => ({ role, content })) } });
+      const clientContext = await buildClientContext(role, user?.id);
+      const res = await call({
+        data: {
+          role,
+          clientContext,
+          messages: next.map(({ role, content }) => ({ role, content })),
+        },
+      });
       setMsgs((m) => [...m, { role: "assistant", content: res.reply }]);
+      voiceOut.speak(res.reply, detectLang(trimmed));
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
       toast.error(msg);
@@ -101,9 +173,30 @@ export function SupportChat({ role }: { role: "customer" | "driver" }) {
                   </p>
                 </div>
               </div>
-              <button onClick={() => setOpen(false)} className="rounded-md p-1 hover:bg-muted" aria-label="Close">
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                {voiceOut.supported && (
+                  <button
+                    onClick={() => {
+                      voiceOut.setMuted((m) => {
+                        if (!m) voiceOut.stop();
+                        return !m;
+                      });
+                    }}
+                    className="rounded-md p-1.5 hover:bg-muted"
+                    aria-label={voiceOut.muted ? "Unmute voice replies" : "Mute voice replies"}
+                    title={voiceOut.muted ? "Unmute voice replies" : "Mute voice replies"}
+                  >
+                    {voiceOut.muted ? (
+                      <VolumeX className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Volume2 className="h-4 w-4 text-primary" />
+                    )}
+                  </button>
+                )}
+                <button onClick={() => setOpen(false)} className="rounded-md p-1 hover:bg-muted" aria-label="Close">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </header>
 
             <div ref={scrollerRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
@@ -165,12 +258,27 @@ export function SupportChat({ role }: { role: "customer" | "driver" }) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={
-                  role === "customer"
-                    ? "Type your problem here…"
-                    : "Apni dikkat yahan likhein…"
+                  voiceIn.listening
+                    ? "Listening…"
+                    : role === "customer"
+                      ? "Type your problem here…"
+                      : "Apni dikkat yahan likhein…"
                 }
                 disabled={busy}
               />
+              {voiceIn.supported && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant={voiceIn.listening ? "destructive" : "outline"}
+                  disabled={busy}
+                  onClick={() => (voiceIn.listening ? voiceIn.stop() : voiceIn.start())}
+                  aria-label={voiceIn.listening ? "Stop recording" : "Speak your message"}
+                  title={voiceIn.listening ? "Stop recording" : "Speak your message"}
+                >
+                  {voiceIn.listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </Button>
+              )}
               <Button type="submit" size="icon" disabled={busy || !input.trim()}>
                 <Send className="h-4 w-4" />
               </Button>
