@@ -20,7 +20,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META, VEHICLES } from "@/lib/booking";
 import { KycReviewTab } from "@/components/admin/KycReviewTab";
 import { DrillDownDialog, type DrillDownColumn } from "@/components/admin/DrillDownDialog";
-import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — MiniPort" }] }),
@@ -253,9 +252,9 @@ function AdminPage() {
             title={drill?.title ?? ""}
             rows={drill?.rows ?? []}
             columns={
-              drill?.kind === "profiles"
+              (drill?.kind === "profiles"
                 ? profileDrillColumns
-                : bookingDrillColumns(drill?.showCommission)
+                : bookingDrillColumns(drill?.showCommission)) as DrillDownColumn<any>[]
             }
             searchFn={
               drill?.kind === "profiles"
