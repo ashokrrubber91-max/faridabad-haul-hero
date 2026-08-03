@@ -380,6 +380,10 @@ function CustomerPage() {
                       distanceKm={Number(b.distance_km) || 0}
                     />
                   )}
+                  {b.status === "in_progress" && (
+                    <LoadingTimerCard vehicleType={b.vehicle_type} startedAt={b.pickup_verified_at} />
+                  )}
+
                   {(b.status === "accepted" || b.status === "in_progress") && (b.pickup_otp || b.drop_otp) && (
                     <div className="mt-3 grid gap-2 rounded-md bg-primary/5 p-3 sm:grid-cols-2">
                       {b.pickup_otp && (
