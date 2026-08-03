@@ -60,6 +60,17 @@ function CustomerPage() {
   const discount = Math.min(baseFare, (promo?.discount ?? 0) + coins);
   const fare = Math.max(0, baseFare - discount);
 
+  const gstins = useQuery({
+    queryKey: ["customer-gstins", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("customer_gstins").select("*").order("is_default", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as CustomerGstin[];
+    },
+  });
+  const selectedGstin = gstinEnabled ? (gstins.data ?? []).find((g) => g.id === gstinId) ?? null : null;
+
   const bookings = useQuery({
     queryKey: ["my-bookings", user?.id],
     enabled: !!user,
@@ -110,8 +121,10 @@ function CustomerPage() {
         notes:
           [
             notes.trim(),
+            stops.length > 0 && `Stops: ${stops.map((s) => s.address).join(" → ")}`,
             pickup.contactName && `Sender: ${pickup.contactName} (${pickup.contactPhone ?? ""})`,
             drop.contactName && `Receiver: ${drop.contactName} (${drop.contactPhone ?? ""})`,
+            selectedGstin && `Billed to GSTIN ${selectedGstin.gstin} (${selectedGstin.business_name})`,
           ]
             .filter(Boolean)
             .join(" · ") || null,
@@ -122,9 +135,13 @@ function CustomerPage() {
       toast.success("Booking placed — finding a driver");
       setPickup(null);
       setDrop(null);
+      setStops([]);
       setNotes("");
       setPromo(null);
       setCoins(0);
+      setGstinEnabled(false);
+      setGstinId(null);
+      setStep("form");
       qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
       qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
     },
