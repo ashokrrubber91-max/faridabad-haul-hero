@@ -145,7 +145,7 @@ export function ReviewBooking({
         </label>
 
         <Button
-          onClick={onConfirm}
+          onClick={() => setOtpOpen(true)}
           disabled={!checklistDone || submitting}
           className="h-11 w-full"
         >
@@ -159,6 +159,37 @@ export function ReviewBooking({
         onOpenChange={setChecklistOpen}
         onConfirmed={() => setChecklistDone(true)}
       />
+
+      <Dialog open={otpOpen} onOpenChange={setOtpOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-primary" /> Verify to confirm
+            </DialogTitle>
+            <DialogDescription>
+              For checkout security, enter the last 4 digits of your registered mobile number ({maskedPhone}).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="book-otp">4-digit code</Label>
+              <Input
+                id="book-otp"
+                inputMode="numeric"
+                maxLength={4}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="••••"
+                className="text-center text-lg tracking-[0.5em]"
+              />
+            </div>
+            <Button onClick={verifyAndBook} disabled={submitting} className="h-11 w-full">
+              {submitting ? "Booking…" : `Verify & book · ₹${fare}`}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
