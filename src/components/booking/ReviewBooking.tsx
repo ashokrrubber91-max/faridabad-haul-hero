@@ -42,9 +42,35 @@ export function ReviewBooking({
   onConfirm: () => void;
   submitting: boolean;
 }) {
+  const { profile } = useAuth();
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [checklistDone, setChecklistDone] = useState(false);
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [otp, setOtp] = useState("");
   const v = VEHICLES.find((x) => x.id === vehicle);
+
+  const registeredPhone = (profile?.phone ?? "").replace(/\D/g, "");
+  const expected = registeredPhone.slice(-4);
+  const maskedPhone = registeredPhone
+    ? `${"•".repeat(Math.max(0, registeredPhone.length - 4))}${expected}`
+    : "your registered number";
+
+  const verifyAndBook = () => {
+    if (!expected) {
+      // No phone on file — nothing to verify against.
+      setOtpOpen(false);
+      onConfirm();
+      return;
+    }
+    if (otp !== expected) {
+      toast.error("Incorrect code. Enter the last 4 digits of your mobile number.");
+      return;
+    }
+    setOtpOpen(false);
+    setOtp("");
+    onConfirm();
+  };
+
 
   return (
     <div className="surface-card p-5">
