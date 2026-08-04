@@ -30,9 +30,11 @@ const ADMIN_PASSCODE = "miniport2026";
 const ADMIN_KEY = "miniport_admin_ok";
 
 function AdminGate() {
-  const [ok, setOk] = useState<boolean>(() =>
-    typeof window !== "undefined" && window.localStorage.getItem(ADMIN_KEY) === "1",
-  );
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.localStorage.getItem(ADMIN_KEY) === "1") setOk(true);
+  }, []);
+
   const [code, setCode] = useState("");
   const unlock = () => {
     if (code === ADMIN_PASSCODE) {

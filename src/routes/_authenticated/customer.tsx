@@ -256,7 +256,7 @@ function CustomerPage() {
 
           <div>
             <Label>Vehicle</Label>
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="mt-2 flex flex-col gap-2">
               {VEHICLES.map((v) => (
                 <VehicleCard key={v.id} id={v.id} selected={vehicle === v.id} onSelect={() => setVehicle(v.id)} />
               ))}
