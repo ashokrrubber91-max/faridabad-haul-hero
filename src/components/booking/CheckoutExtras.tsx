@@ -12,11 +12,11 @@ import { useAuth } from "@/hooks/useAuth";
 export type PaymentMethod = "cod" | "wallet" | "upi" | "card" | "netbanking";
 
 const METHODS: { id: PaymentMethod; label: string; hint: string; available: boolean }[] = [
+  { id: "upi", label: "UPI", hint: "GPay · PhonePe · Paytm", available: true },
+  { id: "card", label: "Credit / Debit card", hint: "Visa · Mastercard · RuPay", available: true },
+  { id: "netbanking", label: "Netbanking", hint: "All major banks", available: true },
+  { id: "wallet", label: "Wallet / Miniport Coins", hint: "Use coin balance", available: true },
   { id: "cod", label: "Cash on delivery", hint: "Pay driver in cash", available: true },
-  { id: "wallet", label: "Miniport Wallet", hint: "Coins balance", available: true },
-  { id: "upi", label: "UPI", hint: "Coming soon", available: false },
-  { id: "card", label: "Credit / Debit card", hint: "Coming soon", available: false },
-  { id: "netbanking", label: "Netbanking", hint: "Coming soon", available: false },
 ];
 
 export function CheckoutExtras({

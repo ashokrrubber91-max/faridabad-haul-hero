@@ -54,12 +54,12 @@ export const VEHICLE_DETAILS: Record<VehicleId, { weightLimit: string; loadArea:
     goodTor: ["Small household shifting", "Boxes & cartons", "Appliances"],
   },
   pickup_8ft: {
-    weightLimit: "1.2 ton",
+    weightLimit: "1200 kg",
     loadArea: "8 x 5 ft open bed",
     goodTor: ["Furniture", "Construction material", "Multi-room shifting"],
   },
   tata_407: {
-    weightLimit: "2.5 ton",
+    weightLimit: "2500 kg",
     loadArea: "9 x 5.5 ft closed body",
     goodTor: ["Bulk goods", "Commercial cargo", "Office relocation"],
   },
