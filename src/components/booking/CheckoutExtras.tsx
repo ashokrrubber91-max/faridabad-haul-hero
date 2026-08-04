@@ -100,16 +100,36 @@ export function CheckoutExtras({
           <span className="text-xs text-muted-foreground">Balance: {balance}</span>
         </div>
         {maxCoins > 0 ? (
-          <div className="mt-2 flex items-center gap-3">
-            <Slider value={[coins]} min={0} max={maxCoins} step={1} onValueChange={(v) => setCoins(v[0])} className="flex-1" />
-            <span className="w-16 text-right text-sm font-semibold">−₹{coins}</span>
-          </div>
+          <>
+            <div className="mt-2 flex items-center gap-3">
+              <Slider value={[coins]} min={0} max={maxCoins} step={1} onValueChange={(v) => setCoins(v[0])} className="flex-1" />
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={maxCoins}
+                value={coins === 0 ? "" : coins}
+                placeholder="0"
+                onChange={(e) => {
+                  const raw = Math.floor(Number(e.target.value.replace(/\D/g, "")) || 0);
+                  setCoins(Math.max(0, Math.min(maxCoins, raw)));
+                }}
+                className="w-24 text-right"
+                aria-label="Coins to redeem"
+              />
+            </div>
+            <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+              <span>Enter any amount up to {maxCoins} coins (50% of fare)</span>
+              <span className="font-semibold text-success">−₹{coins}</span>
+            </div>
+          </>
         ) : (
           <p className="mt-1 text-xs text-muted-foreground">
             {balance === 0 ? "Complete a trip to earn coins (2% cashback)." : "Enter pickup/drop to redeem coins."}
           </p>
         )}
       </div>
+
 
       {/* Payment method */}
       <div>
