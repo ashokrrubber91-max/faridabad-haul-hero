@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, MapPin, Package } from "lucide-react";
+import { ArrowLeft, ArrowRight, MapPin, Package, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/useAuth";
 import { VEHICLES, vehicleLabel, type VehicleId } from "@/lib/booking";
 import type { PlacePick } from "@/components/booking/LocationSearchOverlay";
 import type { CustomerGstin } from "@/components/booking/GstinSelect";
 import { GoodsChecklist } from "@/components/booking/GoodsChecklist";
+
 
 export function ReviewBooking({
   pickup,
