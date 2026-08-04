@@ -32,7 +32,7 @@ function AuthPage() {
   const search = useSearch({ from: "/auth" });
   const navigate = useNavigate();
   const { user, role, loading } = useAuth();
-  const [tab, setTab] = useState<"signin" | "signup">(search.mode ?? "signin");
+  const [tab, setTab] = useState<"signin" | "otp" | "signup">(search.mode ?? "signin");
 
   useEffect(() => {
     if (loading || !user) return;
@@ -55,13 +55,19 @@ function AuthPage() {
       <main className="mx-auto w-full max-w-md px-5 pb-12 pt-4">
         <div className="surface-card p-6">
           <h1 className="font-display text-3xl tracking-wide text-secondary">Welcome</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Use your phone number and a password to continue.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Sign in with an OTP or with your phone number and password.</p>
 
-          <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")} className="mt-5">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign in</TabsTrigger>
-              <TabsTrigger value="signup">Create account</TabsTrigger>
+          <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "otp" | "signup")} className="mt-5">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="otp">OTP</TabsTrigger>
+              <TabsTrigger value="signin">Password</TabsTrigger>
+              <TabsTrigger value="signup">Sign up</TabsTrigger>
             </TabsList>
+            <TabsContent value="otp" className="pt-5 space-y-5">
+              <OtpSignInForm />
+              <OrDivider />
+              <SocialAuthButtons />
+            </TabsContent>
             <TabsContent value="signin" className="pt-5 space-y-5">
               <SignInForm />
               <OrDivider />
@@ -75,12 +81,104 @@ function AuthPage() {
           </Tabs>
         </div>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Real OTP sign-in can be enabled later by connecting an SMS provider.
+          OTP delivery needs an SMS provider connected to your backend — until then, use password sign-in.
         </p>
       </main>
     </div>
   );
 }
+
+function OtpSignInForm() {
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const e164 = (raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(-10);
+    return `+91${digits}`;
+  };
+
+  const sendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (phone.replace(/\D/g, "").length < 10) return toast.error("Enter a 10-digit phone number");
+    setBusy(true);
+    const { error } = await supabase.auth.signInWithOtp({ phone: e164(phone) });
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setSent(true);
+    toast.success("OTP sent to your phone");
+  };
+
+  const verifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (code.length < 4) return toast.error("Enter the OTP you received");
+    setBusy(true);
+    const { error } = await supabase.auth.verifyOtp({ phone: e164(phone), token: code, type: "sms" });
+    setBusy(false);
+    if (error) toast.error(error.message);
+    else toast.success("Signed in");
+  };
+
+  if (!sent) {
+    return (
+      <form onSubmit={sendOtp} className="space-y-4">
+        <div>
+          <Label htmlFor="otp-phone">Phone number</Label>
+          <Input
+            id="otp-phone"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="98xxxxxxxx"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+          />
+          <p className="mt-1 text-xs text-muted-foreground">We&rsquo;ll text a one-time code to +91 {phone.replace(/\D/g, "").slice(-10)}</p>
+        </div>
+        <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
+          {busy ? "Sending\u2026" : "Send OTP"}
+        </Button>
+      </form>
+    );
+  }
+
+  return (
+    <form onSubmit={verifyOtp} className="space-y-4">
+      <div>
+        <Label htmlFor="otp-code">Enter OTP</Label>
+        <Input
+          id="otp-code"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          value={code}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+          placeholder="••••••"
+          className="text-center text-lg tracking-[0.4em]"
+          required
+        />
+      </div>
+      <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
+        {busy ? "Verifying\u2026" : "Verify & sign in"}
+      </Button>
+      <button
+        type="button"
+        onClick={() => {
+          setSent(false);
+          setCode("");
+        }}
+        className="w-full text-center text-xs text-muted-foreground underline"
+      >
+        Change number
+      </button>
+    </form>
+  );
+}
+
 
 function SignInForm() {
   const [phone, setPhone] = useState("");
