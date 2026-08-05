@@ -182,6 +182,36 @@ export type Database = {
         }
         Relationships: []
       }
+      device_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          last_seen_at: string
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          platform?: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       driver_bank_accounts: {
         Row: {
           account_holder: string
@@ -343,6 +373,65 @@ export type Database = {
           vehicle_photo_url?: string | null
         }
         Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          booking_id: string | null
+          created_at: string
+          currency: string
+          customer_id: string
+          error: string | null
+          id: string
+          method: string | null
+          provider: string
+          provider_order_id: string
+          provider_payment_id: string | null
+          provider_signature: string | null
+          state: Database["public"]["Enums"]["payment_state"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          booking_id?: string | null
+          created_at?: string
+          currency?: string
+          customer_id: string
+          error?: string | null
+          id?: string
+          method?: string | null
+          provider?: string
+          provider_order_id: string
+          provider_payment_id?: string | null
+          provider_signature?: string | null
+          state?: Database["public"]["Enums"]["payment_state"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          booking_id?: string | null
+          created_at?: string
+          currency?: string
+          customer_id?: string
+          error?: string | null
+          id?: string
+          method?: string | null
+          provider?: string
+          provider_order_id?: string
+          provider_payment_id?: string | null
+          provider_signature?: string | null
+          state?: Database["public"]["Enums"]["payment_state"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -624,6 +713,7 @@ export type Database = {
       coupon_kind: "flat" | "percent"
       kyc_status: "not_submitted" | "pending" | "approved" | "rejected"
       payment_method: "cod" | "wallet" | "upi" | "card" | "netbanking"
+      payment_state: "created" | "paid" | "failed" | "refunded"
       payment_status: "pending" | "paid" | "failed" | "refunded"
       sms_event: "accepted" | "started" | "completed"
       sms_recipient: "customer" | "driver"
@@ -769,6 +859,7 @@ export const Constants = {
       coupon_kind: ["flat", "percent"],
       kyc_status: ["not_submitted", "pending", "approved", "rejected"],
       payment_method: ["cod", "wallet", "upi", "card", "netbanking"],
+      payment_state: ["created", "paid", "failed", "refunded"],
       payment_status: ["pending", "paid", "failed", "refunded"],
       sms_event: ["accepted", "started", "completed"],
       sms_recipient: ["customer", "driver"],
