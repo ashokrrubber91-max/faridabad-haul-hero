@@ -38,7 +38,7 @@ export const Route = createFileRoute("/_authenticated/customer")({
 type Stage = { type: "search" | "confirm"; mode: "pickup" | "drop" } | null;
 
 function CustomerPage() {
-  const { user, role, roles, activeMode, loading } = useAuth();
+  const { user, role, roles, activeMode, loading, profile } = useAuth();
   const qc = useQueryClient();
   const [vehicle, setVehicle] = useState<VehicleId>("tata_ace");
   const [pickup, setPickup] = useState<PlacePick | null>(null);
