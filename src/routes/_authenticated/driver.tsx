@@ -250,6 +250,10 @@ function DriverPage() {
         />
       </section>
 
+      <PushAlertToggle />
+
+
+
 
       {/* Stats */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
