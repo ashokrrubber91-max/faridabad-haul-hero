@@ -24,6 +24,11 @@ import { LoadingTimerCard } from "@/components/booking/LoadingTimerCard";
 import { canCancel, cancellationQuote } from "@/lib/cancellation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { createTripOrder, confirmTripPayment } from "@/lib/payments.functions";
+import { notifyDriversOfNewBooking } from "@/lib/push.functions";
+import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
+
+const ONLINE_METHODS: PaymentMethod[] = ["upi", "card", "netbanking"];
 
 export const Route = createFileRoute("/_authenticated/customer")({
   head: () => ({ meta: [{ title: "Book a truck — MiniPort" }] }),
