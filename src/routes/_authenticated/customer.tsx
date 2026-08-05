@@ -24,6 +24,11 @@ import { LoadingTimerCard } from "@/components/booking/LoadingTimerCard";
 import { canCancel, cancellationQuote } from "@/lib/cancellation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { createTripOrder, confirmTripPayment } from "@/lib/payments.functions";
+import { notifyDriversOfNewBooking } from "@/lib/push.functions";
+import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
+
+const ONLINE_METHODS: PaymentMethod[] = ["upi", "card", "netbanking"];
 
 export const Route = createFileRoute("/_authenticated/customer")({
   head: () => ({ meta: [{ title: "Book a truck — MiniPort" }] }),
@@ -33,7 +38,7 @@ export const Route = createFileRoute("/_authenticated/customer")({
 type Stage = { type: "search" | "confirm"; mode: "pickup" | "drop" } | null;
 
 function CustomerPage() {
-  const { user, role, roles, activeMode, loading } = useAuth();
+  const { user, role, roles, activeMode, loading, profile } = useAuth();
   const qc = useQueryClient();
   const [vehicle, setVehicle] = useState<VehicleId>("tata_ace");
   const [pickup, setPickup] = useState<PlacePick | null>(null);
@@ -115,32 +120,87 @@ function CustomerPage() {
       if (!pickup) throw new Error("Choose pickup location");
       if (!drop) throw new Error("Choose drop location");
       if (distanceKm <= 0) throw new Error("Invalid distance");
-      const { error } = await supabase.from("bookings").insert({
-        customer_id: user!.id,
-        pickup_address: pickup.address,
-        drop_address: drop.address,
-        vehicle_type: vehicle,
-        distance_km: distanceKm,
-        fare,
-        coupon_code: promo?.code ?? null,
-        coupon_discount: promo?.discount ?? 0,
-        coins_redeemed: coins,
-        payment_method: method,
-        notes:
-          [
-            notes.trim(),
-            stops.length > 0 && `Stops: ${stops.map((s) => s.address).join(" → ")}`,
-            pickup.contactName && `Sender: ${pickup.contactName} (${pickup.contactPhone ?? ""})`,
-            drop.contactName && `Receiver: ${drop.contactName} (${drop.contactPhone ?? ""})`,
-            selectedGstin && `Billed to GSTIN ${selectedGstin.gstin} (${selectedGstin.business_name})`,
-          ]
-            .filter(Boolean)
-            .join(" · ") || null,
-      });
+      const { data: booking, error } = await supabase
+        .from("bookings")
+        .insert({
+          customer_id: user!.id,
+          pickup_address: pickup.address,
+          drop_address: drop.address,
+          vehicle_type: vehicle,
+          distance_km: distanceKm,
+          fare,
+          coupon_code: promo?.code ?? null,
+          coupon_discount: promo?.discount ?? 0,
+          coins_redeemed: coins,
+          payment_method: method,
+          notes:
+            [
+              notes.trim(),
+              stops.length > 0 && `Stops: ${stops.map((s) => s.address).join(" → ")}`,
+              pickup.contactName && `Sender: ${pickup.contactName} (${pickup.contactPhone ?? ""})`,
+              drop.contactName && `Receiver: ${drop.contactName} (${drop.contactPhone ?? ""})`,
+              selectedGstin && `Billed to GSTIN ${selectedGstin.gstin} (${selectedGstin.business_name})`,
+            ]
+              .filter(Boolean)
+              .join(" · ") || null,
+        })
+        .select("id, fare")
+        .single();
       if (error) throw error;
+
+      // Online methods must be paid before the trip goes out to drivers.
+      if (ONLINE_METHODS.includes(method)) {
+        try {
+          const order = await createTripOrder({ data: { bookingId: booking.id } });
+          const result = await openRazorpayCheckout({
+            keyId: order.keyId,
+            orderId: order.orderId,
+            amountRupees: order.amount,
+            currency: order.currency,
+            customerName: profile?.name,
+            customerPhone: profile?.phone,
+            description: `${pickup.address.slice(0, 40)} → ${drop.address.slice(0, 40)}`,
+          });
+          if (!result) {
+            await supabase
+              .from("bookings")
+              .update({ status: "cancelled", cancellation_reason: "Payment not completed" })
+              .eq("id", booking.id);
+            throw new Error("Payment cancelled — the trip was not booked");
+          }
+          await confirmTripPayment({
+            data: {
+              orderId: result.razorpay_order_id,
+              paymentId: result.razorpay_payment_id,
+              signature: result.razorpay_signature,
+            },
+          });
+        } catch (paymentError) {
+          await supabase
+            .from("bookings")
+            .update({
+              status: "cancelled",
+              cancellation_reason:
+                paymentError instanceof Error ? paymentError.message.slice(0, 180) : "Payment failed",
+            })
+            .eq("id", booking.id);
+          throw paymentError;
+        }
+      }
+
+      // Ring every online, verified driver. Never let a push failure break booking.
+      try {
+        await notifyDriversOfNewBooking({ data: { bookingId: booking.id } });
+      } catch {
+        /* alerts are best-effort */
+      }
+
+      return { paid: ONLINE_METHODS.includes(method), fare: Number(booking.fare) };
     },
-    onSuccess: () => {
-      toast.success("Booking placed — finding a driver");
+    onSuccess: (result) => {
+      toast.success(
+        result.paid ? "Payment received — finding a driver" : "Booking placed — finding a driver",
+      );
       setPickup(null);
       setDrop(null);
       setStops([]);
@@ -153,7 +213,10 @@ function CustomerPage() {
       qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
       qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      toast.error(e.message);
+      qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
+    },
   });
 
   const cancel = useMutation({
