@@ -26,22 +26,35 @@ export const Route = createFileRoute("/admin")({
   component: AdminGate,
 });
 
-const ADMIN_PASSCODE = "miniport2026";
-const ADMIN_KEY = "miniport_admin_ok";
-
 function AdminGate() {
   const [ok, setOk] = useState(false);
+  const [checking, setChecking] = useState(true);
+
   useEffect(() => {
-    if (typeof window !== "undefined" && window.localStorage.getItem(ADMIN_KEY) === "1") setOk(true);
+    const saved = getAdminPasscode();
+    if (!saved) {
+      setChecking(false);
+      return;
+    }
+    verifyAdminPasscode(saved).then((valid) => {
+      setOk(valid);
+      setChecking(false);
+    });
   }, []);
 
   const [code, setCode] = useState("");
-  const unlock = () => {
-    if (code === ADMIN_PASSCODE) {
-      window.localStorage.setItem(ADMIN_KEY, "1");
-      setOk(true);
-    } else toast.error("Wrong passcode");
+  const [busy, setBusy] = useState(false);
+  const unlock = async () => {
+    setBusy(true);
+    const valid = await verifyAdminPasscode(code);
+    setBusy(false);
+    if (!valid) return toast.error("Wrong passcode");
+    setAdminPasscode(code);
+    setOk(true);
   };
+
+  if (checking) return <Center><Loader2 className="h-5 w-5 animate-spin text-primary" /></Center>;
+
   if (!ok) {
     return (
       <div className="mx-auto mt-24 max-w-sm rounded-lg border bg-card p-6 shadow-sm">
@@ -53,9 +66,11 @@ function AdminGate() {
           onChange={(e) => setCode(e.target.value)}
           placeholder="Passcode"
           className="mt-4"
-          onKeyDown={(e) => { if (e.key === "Enter") unlock(); }}
+          onKeyDown={(e) => { if (e.key === "Enter") void unlock(); }}
         />
-        <Button className="mt-3 w-full" onClick={unlock}>Unlock</Button>
+        <Button className="mt-3 w-full" onClick={() => void unlock()} disabled={busy}>
+          {busy ? "Checking..." : "Unlock"}
+        </Button>
         <p className="mt-3 text-center text-xs text-muted-foreground">Default: miniport2026</p>
       </div>
     );
@@ -69,7 +84,10 @@ type Booking = {
   distance_km: number; fare: number; status: string; created_at: string;
   commission_amount: number; driver_net_earning: number; payment_method: string;
 };
-type Profile = { id: string; name: string; phone: string; active_mode: string; is_online: boolean };
+type Profile = {
+  id: string; name: string; phone: string; active_mode: string; is_online: boolean;
+  kyc_status?: string;
+};
 
 function AdminPage() {
   const { role, loading } = useAuth();
@@ -79,6 +97,7 @@ function AdminPage() {
 
   const bookings = useQuery({
     queryKey: ["admin-bookings"],
+    refetchInterval: 10000,
     queryFn: async () => {
       const { data, error } = await adminDb.from("bookings").select("*")
         .order("created_at", { ascending: false }).limit(500);
@@ -89,13 +108,15 @@ function AdminPage() {
 
   const profiles = useQuery({
     queryKey: ["admin-profiles"],
+    refetchInterval: 20000,
     queryFn: async () => {
       const { data, error } = await adminDb.from("profiles")
-        .select("id, name, phone, active_mode, is_online");
+        .select("id, name, phone, active_mode, is_online, kyc_status");
       if (error) throw error;
       return (data ?? []) as Profile[];
     },
   });
+
 
   const userRoles = useQuery({
     queryKey: ["admin-user-roles"],
