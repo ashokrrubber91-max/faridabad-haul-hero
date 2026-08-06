@@ -5,7 +5,7 @@ import { Loader2, ShieldCheck, ShieldX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
+import { adminDb } from "@/lib/admin-db";
 
 const DOCS = [
   ["dl_front_url", "Licence front"],
