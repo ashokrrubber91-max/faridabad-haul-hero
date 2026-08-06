@@ -26,7 +26,7 @@ export function KycReviewTab() {
   const kyc = useQuery({
     queryKey: ["admin-kyc", filter],
     queryFn: async () => {
-      let q = supabase.from("driver_kyc").select("*").order("submitted_at", { ascending: false });
+      let q = adminDb.from("driver_kyc").select("*").order("submitted_at", { ascending: false });
       if (filter === "pending") q = q.eq("status", "pending");
       const { data, error } = await q;
       if (error) throw error;

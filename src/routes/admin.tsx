@@ -80,7 +80,7 @@ function AdminPage() {
   const bookings = useQuery({
     queryKey: ["admin-bookings"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("bookings").select("*")
+      const { data, error } = await adminDb.from("bookings").select("*")
         .order("created_at", { ascending: false }).limit(500);
       if (error) throw error;
       return (data ?? []) as Booking[];
@@ -90,7 +90,7 @@ function AdminPage() {
   const profiles = useQuery({
     queryKey: ["admin-profiles"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles")
+      const { data, error } = await adminDb.from("profiles")
         .select("id, name, phone, active_mode, is_online");
       if (error) throw error;
       return (data ?? []) as Profile[];
@@ -100,7 +100,7 @@ function AdminPage() {
   const userRoles = useQuery({
     queryKey: ["admin-user-roles"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("user_roles").select("user_id, role");
+      const { data, error } = await adminDb.from("user_roles").select("user_id, role");
       if (error) throw error;
       return data ?? [];
     },
@@ -109,7 +109,7 @@ function AdminPage() {
   const wallets = useQuery({
     queryKey: ["admin-wallets"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("wallet_accounts")
+      const { data, error } = await adminDb.from("wallet_accounts")
         .select("user_id, cash_balance, coins_balance");
       if (error) throw error;
       return data ?? [];
@@ -119,7 +119,7 @@ function AdminPage() {
   const smsLogs = useQuery({
     queryKey: ["admin-sms-logs"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("sms_logs").select("*")
+      const { data, error } = await adminDb.from("sms_logs").select("*")
         .order("created_at", { ascending: false }).limit(100);
       if (error) throw error;
       return data ?? [];
@@ -129,7 +129,7 @@ function AdminPage() {
   const incentives = useQuery({
     queryKey: ["admin-incentives"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("driver_incentive_config")
+      const { data, error } = await adminDb.from("driver_incentive_config")
         .select("*").order("rides_required");
       if (error) throw error;
       return data ?? [];
@@ -139,7 +139,7 @@ function AdminPage() {
   const coupons = useQuery({
     queryKey: ["admin-coupons"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("coupons").select("*")
+      const { data, error } = await adminDb.from("coupons").select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -352,7 +352,7 @@ function DriversTab({
 
   const toggleBlock = async (d: Profile) => {
     // "Block" = force offline
-    const { error } = await supabase.from("profiles").update({ is_online: false }).eq("id", d.id);
+    const { error } = await adminDb.from("profiles").update({ is_online: false }).eq("id", d.id);
     if (error) return toast.error(error.message);
     toast.success(`${d.name} taken offline`);
     onChanged();
@@ -365,13 +365,13 @@ function DriversTab({
     setBusy(true);
     const existing = walletMap.get(topupFor.id);
     const newBalance = Number(existing?.cash_balance ?? 0) + delta;
-    const { error } = await supabase.from("wallet_accounts").upsert({
+    const { error } = await adminDb.from("wallet_accounts").upsert({
       user_id: topupFor.id,
       cash_balance: newBalance,
       coins_balance: existing?.coins_balance ?? 0,
     }, { onConflict: "user_id" });
     if (!error) {
-      await supabase.from("wallet_transactions").insert({
+      await adminDb.from("wallet_transactions").insert({
         user_id: topupFor.id, delta,
         reason: delta > 0 ? "Admin top-up" : "Admin adjustment",
       });
@@ -497,7 +497,7 @@ function LiveTripsTab({
 
   const cancel = async (b: Booking) => {
     if (!confirm("Cancel this trip?")) return;
-    const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", b.id);
+    const { error } = await adminDb.from("bookings").update({ status: "cancelled" }).eq("id", b.id);
     if (error) return toast.error(error.message);
     toast.success("Trip cancelled");
     onChanged();
@@ -505,7 +505,7 @@ function LiveTripsTab({
 
   const assign = async () => {
     if (!assignFor || !driverId) return;
-    const { error } = await supabase.from("bookings")
+    const { error } = await adminDb.from("bookings")
       .update({ driver_id: driverId, status: "accepted" }).eq("id", assignFor.id);
     if (error) return toast.error(error.message);
     toast.success("Driver assigned");
@@ -650,7 +650,7 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
     const r = Number(rides), b = Number(bonus);
     if (!r || !b || !label) return toast.error("Fill all fields");
     setBusy(true);
-    const { error } = await supabase.from("driver_incentive_config")
+    const { error } = await adminDb.from("driver_incentive_config")
       .upsert({ rides_required: r, bonus_amount: b, label, active: true }, { onConflict: "rides_required" });
     setBusy(false);
     if (error) return toast.error(error.message);
@@ -659,7 +659,7 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
   };
 
   const toggle = async (t: any) => {
-    const { error } = await supabase.from("driver_incentive_config")
+    const { error } = await adminDb.from("driver_incentive_config")
       .update({ active: !t.active }).eq("id", t.id);
     if (error) return toast.error(error.message);
     toast.success(t.active ? "Tier paused" : "Tier activated");
@@ -678,7 +678,7 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
     const r = Number(editRides), b = Number(editBonus);
     if (!r || !b || !editLabel) return toast.error("Fill all fields");
     setEditBusy(true);
-    const { error } = await supabase.from("driver_incentive_config")
+    const { error } = await adminDb.from("driver_incentive_config")
       .update({ rides_required: r, bonus_amount: b, label: editLabel }).eq("id", editTier.id);
     setEditBusy(false);
     if (error) return toast.error(error.message);
@@ -765,7 +765,7 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
   const add = async () => {
     if (!form.code || !form.value) return toast.error("Fill code and value");
     setBusy(true);
-    const { error } = await supabase.from("coupons").insert({ ...buildPayload(form), active: true });
+    const { error } = await adminDb.from("coupons").insert({ ...buildPayload(form), active: true });
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Coupon created");
@@ -773,7 +773,7 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
   };
 
   const toggle = async (c: any) => {
-    const { error } = await supabase.from("coupons").update({ active: !c.active }).eq("id", c.id);
+    const { error } = await adminDb.from("coupons").update({ active: !c.active }).eq("id", c.id);
     if (error) return toast.error(error.message);
     toast.success(c.active ? "Coupon deactivated" : "Coupon activated");
     onChanged();
@@ -793,7 +793,7 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
     if (!editCoupon) return;
     if (!editForm.code || !editForm.value) return toast.error("Fill code and value");
     setEditBusy(true);
-    const { error } = await supabase.from("coupons").update(buildPayload(editForm)).eq("id", editCoupon.id);
+    const { error } = await adminDb.from("coupons").update(buildPayload(editForm)).eq("id", editCoupon.id);
     setEditBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Coupon updated");
