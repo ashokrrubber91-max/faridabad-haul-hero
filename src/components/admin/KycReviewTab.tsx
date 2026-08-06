@@ -74,7 +74,7 @@ function KycCard({ row, onChanged }: { row: Kyc; onChanged: () => void }) {
       return;
     }
     setBusy(true);
-    const { error } = await supabase
+    const { error } = await adminDb
       .from("driver_kyc")
       .update({
         status,
@@ -92,12 +92,12 @@ function KycCard({ row, onChanged }: { row: Kyc; onChanged: () => void }) {
   };
 
   const openDoc = async (path: string) => {
-    const { data, error } = await supabase.storage.from("driver-kyc").createSignedUrl(path, 300);
+    const { data, error } = await adminDb.signedUrl("driver-kyc", path);
     if (error || !data) {
-      toast.error("Could not open document");
+      toast.error(error?.message ?? "Could not open document");
       return;
     }
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    window.open(data.url, "_blank", "noopener,noreferrer");
   };
 
   const tone =
