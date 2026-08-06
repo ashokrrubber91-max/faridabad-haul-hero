@@ -15,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { supabase } from "@/integrations/supabase/client";
+import { adminDb, getAdminPasscode, setAdminPasscode, verifyAdminPasscode } from "@/lib/admin-db";
 import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META, VEHICLES } from "@/lib/booking";
 import { KycReviewTab } from "@/components/admin/KycReviewTab";
