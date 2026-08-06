@@ -5,7 +5,7 @@ import { Loader2, ShieldCheck, ShieldX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
+import { adminDb } from "@/lib/admin-db";
 
 const DOCS = [
   ["dl_front_url", "Licence front"],
@@ -25,8 +25,9 @@ export function KycReviewTab() {
 
   const kyc = useQuery({
     queryKey: ["admin-kyc", filter],
+    refetchInterval: 15000,
     queryFn: async () => {
-      let q = supabase.from("driver_kyc").select("*").order("submitted_at", { ascending: false });
+      let q = adminDb.from("driver_kyc").select("*").order("submitted_at", { ascending: false });
       if (filter === "pending") q = q.eq("status", "pending");
       const { data, error } = await q;
       if (error) throw error;
@@ -74,7 +75,7 @@ function KycCard({ row, onChanged }: { row: Kyc; onChanged: () => void }) {
       return;
     }
     setBusy(true);
-    const { error } = await supabase
+    const { error } = await adminDb
       .from("driver_kyc")
       .update({
         status,
@@ -92,12 +93,12 @@ function KycCard({ row, onChanged }: { row: Kyc; onChanged: () => void }) {
   };
 
   const openDoc = async (path: string) => {
-    const { data, error } = await supabase.storage.from("driver-kyc").createSignedUrl(path, 300);
+    const { data, error } = await adminDb.signedUrl("driver-kyc", path);
     if (error || !data) {
-      toast.error("Could not open document");
+      toast.error(error?.message ?? "Could not open document");
       return;
     }
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    window.open(data.url, "_blank", "noopener,noreferrer");
   };
 
   const tone =

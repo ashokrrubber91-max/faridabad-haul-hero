@@ -15,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { supabase } from "@/integrations/supabase/client";
+import { adminDb, getAdminPasscode, setAdminPasscode, verifyAdminPasscode } from "@/lib/admin-db";
 import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META, VEHICLES } from "@/lib/booking";
 import { KycReviewTab } from "@/components/admin/KycReviewTab";
@@ -26,22 +26,35 @@ export const Route = createFileRoute("/admin")({
   component: AdminGate,
 });
 
-const ADMIN_PASSCODE = "miniport2026";
-const ADMIN_KEY = "miniport_admin_ok";
-
 function AdminGate() {
   const [ok, setOk] = useState(false);
+  const [checking, setChecking] = useState(true);
+
   useEffect(() => {
-    if (typeof window !== "undefined" && window.localStorage.getItem(ADMIN_KEY) === "1") setOk(true);
+    const saved = getAdminPasscode();
+    if (!saved) {
+      setChecking(false);
+      return;
+    }
+    verifyAdminPasscode(saved).then((valid) => {
+      setOk(valid);
+      setChecking(false);
+    });
   }, []);
 
   const [code, setCode] = useState("");
-  const unlock = () => {
-    if (code === ADMIN_PASSCODE) {
-      window.localStorage.setItem(ADMIN_KEY, "1");
-      setOk(true);
-    } else toast.error("Wrong passcode");
+  const [busy, setBusy] = useState(false);
+  const unlock = async () => {
+    setBusy(true);
+    const valid = await verifyAdminPasscode(code);
+    setBusy(false);
+    if (!valid) return toast.error("Wrong passcode");
+    setAdminPasscode(code);
+    setOk(true);
   };
+
+  if (checking) return <Center><Loader2 className="h-5 w-5 animate-spin text-primary" /></Center>;
+
   if (!ok) {
     return (
       <div className="mx-auto mt-24 max-w-sm rounded-lg border bg-card p-6 shadow-sm">
@@ -53,9 +66,11 @@ function AdminGate() {
           onChange={(e) => setCode(e.target.value)}
           placeholder="Passcode"
           className="mt-4"
-          onKeyDown={(e) => { if (e.key === "Enter") unlock(); }}
+          onKeyDown={(e) => { if (e.key === "Enter") void unlock(); }}
         />
-        <Button className="mt-3 w-full" onClick={unlock}>Unlock</Button>
+        <Button className="mt-3 w-full" onClick={() => void unlock()} disabled={busy}>
+          {busy ? "Checking..." : "Unlock"}
+        </Button>
         <p className="mt-3 text-center text-xs text-muted-foreground">Default: miniport2026</p>
       </div>
     );
@@ -69,7 +84,10 @@ type Booking = {
   distance_km: number; fare: number; status: string; created_at: string;
   commission_amount: number; driver_net_earning: number; payment_method: string;
 };
-type Profile = { id: string; name: string; phone: string; active_mode: string; is_online: boolean };
+type Profile = {
+  id: string; name: string; phone: string; active_mode: string; is_online: boolean;
+  kyc_status?: string;
+};
 
 function AdminPage() {
   const { role, loading } = useAuth();
@@ -79,8 +97,9 @@ function AdminPage() {
 
   const bookings = useQuery({
     queryKey: ["admin-bookings"],
+    refetchInterval: 10000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("bookings").select("*")
+      const { data, error } = await adminDb.from("bookings").select("*")
         .order("created_at", { ascending: false }).limit(500);
       if (error) throw error;
       return (data ?? []) as Booking[];
@@ -89,74 +108,67 @@ function AdminPage() {
 
   const profiles = useQuery({
     queryKey: ["admin-profiles"],
+    refetchInterval: 20000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles")
-        .select("id, name, phone, active_mode, is_online");
+      const { data, error } = await adminDb.from("profiles")
+        .select("id, name, phone, active_mode, is_online, kyc_status");
       if (error) throw error;
       return (data ?? []) as Profile[];
     },
   });
 
+
   const userRoles = useQuery({
     queryKey: ["admin-user-roles"],
+    refetchInterval: 20000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("user_roles").select("user_id, role");
+      const { data, error } = await adminDb.from("user_roles").select("user_id, role");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as Array<{ user_id: string; role: string }>;
     },
   });
 
   const wallets = useQuery({
     queryKey: ["admin-wallets"],
+    refetchInterval: 30000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("wallet_accounts")
+      const { data, error } = await adminDb.from("wallet_accounts")
         .select("user_id, cash_balance, coins_balance");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as Array<{ user_id: string; cash_balance: number; coins_balance: number }>;
     },
   });
 
   const smsLogs = useQuery({
     queryKey: ["admin-sms-logs"],
+    refetchInterval: 30000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("sms_logs").select("*")
+      const { data, error } = await adminDb.from("sms_logs").select("*")
         .order("created_at", { ascending: false }).limit(100);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as any[];
     },
   });
 
   const incentives = useQuery({
     queryKey: ["admin-incentives"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("driver_incentive_config")
+      const { data, error } = await adminDb.from("driver_incentive_config")
         .select("*").order("rides_required");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as any[];
     },
   });
 
   const coupons = useQuery({
     queryKey: ["admin-coupons"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("coupons").select("*")
+      const { data, error } = await adminDb.from("coupons").select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as any[];
     },
   });
-
-  useEffect(() => {
-    const ch = supabase.channel("admin-feed")
-      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () =>
-        qc.invalidateQueries({ queryKey: ["admin-bookings"] }))
-      .on("postgres_changes", { event: "*", schema: "public", table: "sms_logs" }, () =>
-        qc.invalidateQueries({ queryKey: ["admin-sms-logs"] }))
-      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () =>
-        qc.invalidateQueries({ queryKey: ["admin-profiles"] }))
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [qc]);
 
   const profileMap = useMemo(() => {
     const m = new Map<string, Profile>();
@@ -179,6 +191,7 @@ function AdminPage() {
     (wallets.data ?? []).forEach((w) => m.set(w.user_id, w));
     return m;
   }, [wallets.data]);
+
 
   if (loading) return <Center><Loader2 className="h-5 w-5 animate-spin text-primary" /></Center>;
   // Passcode-gated in AdminGate above; no role redirect here.
@@ -352,7 +365,7 @@ function DriversTab({
 
   const toggleBlock = async (d: Profile) => {
     // "Block" = force offline
-    const { error } = await supabase.from("profiles").update({ is_online: false }).eq("id", d.id);
+    const { error } = await adminDb.from("profiles").update({ is_online: false }).eq("id", d.id);
     if (error) return toast.error(error.message);
     toast.success(`${d.name} taken offline`);
     onChanged();
@@ -365,13 +378,13 @@ function DriversTab({
     setBusy(true);
     const existing = walletMap.get(topupFor.id);
     const newBalance = Number(existing?.cash_balance ?? 0) + delta;
-    const { error } = await supabase.from("wallet_accounts").upsert({
+    const { error } = await adminDb.from("wallet_accounts").upsert({
       user_id: topupFor.id,
       cash_balance: newBalance,
       coins_balance: existing?.coins_balance ?? 0,
     }, { onConflict: "user_id" });
     if (!error) {
-      await supabase.from("wallet_transactions").insert({
+      await adminDb.from("wallet_transactions").insert({
         user_id: topupFor.id, delta,
         reason: delta > 0 ? "Admin top-up" : "Admin adjustment",
       });
@@ -497,7 +510,7 @@ function LiveTripsTab({
 
   const cancel = async (b: Booking) => {
     if (!confirm("Cancel this trip?")) return;
-    const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", b.id);
+    const { error } = await adminDb.from("bookings").update({ status: "cancelled" }).eq("id", b.id);
     if (error) return toast.error(error.message);
     toast.success("Trip cancelled");
     onChanged();
@@ -505,7 +518,7 @@ function LiveTripsTab({
 
   const assign = async () => {
     if (!assignFor || !driverId) return;
-    const { error } = await supabase.from("bookings")
+    const { error } = await adminDb.from("bookings")
       .update({ driver_id: driverId, status: "accepted" }).eq("id", assignFor.id);
     if (error) return toast.error(error.message);
     toast.success("Driver assigned");
@@ -650,7 +663,7 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
     const r = Number(rides), b = Number(bonus);
     if (!r || !b || !label) return toast.error("Fill all fields");
     setBusy(true);
-    const { error } = await supabase.from("driver_incentive_config")
+    const { error } = await adminDb.from("driver_incentive_config")
       .upsert({ rides_required: r, bonus_amount: b, label, active: true }, { onConflict: "rides_required" });
     setBusy(false);
     if (error) return toast.error(error.message);
@@ -659,7 +672,7 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
   };
 
   const toggle = async (t: any) => {
-    const { error } = await supabase.from("driver_incentive_config")
+    const { error } = await adminDb.from("driver_incentive_config")
       .update({ active: !t.active }).eq("id", t.id);
     if (error) return toast.error(error.message);
     toast.success(t.active ? "Tier paused" : "Tier activated");
@@ -678,7 +691,7 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
     const r = Number(editRides), b = Number(editBonus);
     if (!r || !b || !editLabel) return toast.error("Fill all fields");
     setEditBusy(true);
-    const { error } = await supabase.from("driver_incentive_config")
+    const { error } = await adminDb.from("driver_incentive_config")
       .update({ rides_required: r, bonus_amount: b, label: editLabel }).eq("id", editTier.id);
     setEditBusy(false);
     if (error) return toast.error(error.message);
@@ -765,7 +778,7 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
   const add = async () => {
     if (!form.code || !form.value) return toast.error("Fill code and value");
     setBusy(true);
-    const { error } = await supabase.from("coupons").insert({ ...buildPayload(form), active: true });
+    const { error } = await adminDb.from("coupons").insert({ ...buildPayload(form), active: true });
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Coupon created");
@@ -773,7 +786,7 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
   };
 
   const toggle = async (c: any) => {
-    const { error } = await supabase.from("coupons").update({ active: !c.active }).eq("id", c.id);
+    const { error } = await adminDb.from("coupons").update({ active: !c.active }).eq("id", c.id);
     if (error) return toast.error(error.message);
     toast.success(c.active ? "Coupon deactivated" : "Coupon activated");
     onChanged();
@@ -793,7 +806,7 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
     if (!editCoupon) return;
     if (!editForm.code || !editForm.value) return toast.error("Fill code and value");
     setEditBusy(true);
-    const { error } = await supabase.from("coupons").update(buildPayload(editForm)).eq("id", editCoupon.id);
+    const { error } = await adminDb.from("coupons").update(buildPayload(editForm)).eq("id", editCoupon.id);
     setEditBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Coupon updated");
