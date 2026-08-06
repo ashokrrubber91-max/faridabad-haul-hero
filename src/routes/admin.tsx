@@ -99,30 +99,33 @@ function AdminPage() {
 
   const userRoles = useQuery({
     queryKey: ["admin-user-roles"],
+    refetchInterval: 20000,
     queryFn: async () => {
       const { data, error } = await adminDb.from("user_roles").select("user_id, role");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as Array<{ user_id: string; role: string }>;
     },
   });
 
   const wallets = useQuery({
     queryKey: ["admin-wallets"],
+    refetchInterval: 30000,
     queryFn: async () => {
       const { data, error } = await adminDb.from("wallet_accounts")
         .select("user_id, cash_balance, coins_balance");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as Array<{ user_id: string; cash_balance: number; coins_balance: number }>;
     },
   });
 
   const smsLogs = useQuery({
     queryKey: ["admin-sms-logs"],
+    refetchInterval: 30000,
     queryFn: async () => {
       const { data, error } = await adminDb.from("sms_logs").select("*")
         .order("created_at", { ascending: false }).limit(100);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as any[];
     },
   });
 
@@ -132,7 +135,7 @@ function AdminPage() {
       const { data, error } = await adminDb.from("driver_incentive_config")
         .select("*").order("rides_required");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as any[];
     },
   });
 
@@ -142,21 +145,9 @@ function AdminPage() {
       const { data, error } = await adminDb.from("coupons").select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as any[];
     },
   });
-
-  useEffect(() => {
-    const ch = supabase.channel("admin-feed")
-      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () =>
-        qc.invalidateQueries({ queryKey: ["admin-bookings"] }))
-      .on("postgres_changes", { event: "*", schema: "public", table: "sms_logs" }, () =>
-        qc.invalidateQueries({ queryKey: ["admin-sms-logs"] }))
-      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () =>
-        qc.invalidateQueries({ queryKey: ["admin-profiles"] }))
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [qc]);
 
   const profileMap = useMemo(() => {
     const m = new Map<string, Profile>();
@@ -179,6 +170,7 @@ function AdminPage() {
     (wallets.data ?? []).forEach((w) => m.set(w.user_id, w));
     return m;
   }, [wallets.data]);
+
 
   if (loading) return <Center><Loader2 className="h-5 w-5 animate-spin text-primary" /></Center>;
   // Passcode-gated in AdminGate above; no role redirect here.
