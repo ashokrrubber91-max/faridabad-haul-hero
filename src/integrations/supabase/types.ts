@@ -692,6 +692,10 @@ export type Database = {
           rides: number
         }[]
       }
+      shares_booking_with: {
+        Args: { _a: string; _b: string }
+        Returns: boolean
+      }
       validate_coupon: {
         Args: { _code: string; _fare: number }
         Returns: {
