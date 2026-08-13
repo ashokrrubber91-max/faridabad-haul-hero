@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
@@ -15,7 +15,6 @@ export interface AuthState {
   profile: { name: string; phone: string; active_mode: ActiveMode; is_online: boolean; kyc_status: KycStatus } | null;
   activeMode: ActiveMode;
   setActiveMode: (m: ActiveMode) => Promise<void>;
-  refresh: () => Promise<void>;
 }
 
 export function useAuth(): AuthState {
@@ -23,92 +22,60 @@ export function useAuth(): AuthState {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [profile, setProfile] = useState<{ name: string; phone: string; active_mode: ActiveMode; is_online: boolean; kyc_status: KycStatus } | null>(null);
   const [loading, setLoading] = useState(true);
-  const userRef = useRef<User | null>(null);
-  const activeRef = useRef(true);
-
-  const loadFor = useCallback(async (u: User | null) => {
-    if (!u) {
-      if (!activeRef.current) return;
-      setRoles([]);
-      setProfile(null);
-      setLoading(false);
-      return;
-    }
-    const [{ data: roleRows }, { data: profileRow }] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", u.id),
-      supabase.from("profiles").select("name, phone, active_mode, is_online, kyc_status").eq("id", u.id).maybeSingle(),
-    ]);
-    if (!activeRef.current) return;
-    const metadataRole = (() => {
-      const role = u.user_metadata?.role;
-      return role === "customer" || role === "driver" || role === "admin" ? (role as AppRole) : null;
-    })();
-    const dbRoles = (roleRows ?? []).map((r) => r.role as AppRole);
-    setRoles(dbRoles.length > 0 ? dbRoles : metadataRole ? [metadataRole] : []);
-    setProfile(
-      profileRow
-        ? {
-            ...profileRow,
-            active_mode: (profileRow.active_mode as ActiveMode) ?? "customer",
-            is_online: profileRow.is_online ?? false,
-            kyc_status: ((profileRow as { kyc_status?: KycStatus }).kyc_status ?? "not_submitted") as KycStatus,
-          }
-        : null,
-    );
-    setLoading(false);
-  }, []);
 
   useEffect(() => {
-    activeRef.current = true;
+    let active = true;
+
+    const metadataRole = (u: User): AppRole | null => {
+      const role = u.user_metadata?.role;
+      return role === "customer" || role === "driver" || role === "admin" ? role : null;
+    };
+
+    const loadFor = async (u: User | null) => {
+      if (!u) {
+        if (!active) return;
+        setRoles([]);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+      const [{ data: roleRows }, { data: profileRow }] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", u.id),
+        supabase.from("profiles").select("name, phone, active_mode, is_online, kyc_status").eq("id", u.id).maybeSingle(),
+      ]);
+      if (!active) return;
+      const dbRoles = (roleRows ?? []).map((r) => r.role as AppRole);
+      const fallbackRole = metadataRole(u);
+      setRoles(dbRoles.length > 0 ? dbRoles : fallbackRole ? [fallbackRole] : []);
+      setProfile(
+        profileRow
+          ? {
+              ...profileRow,
+              active_mode: (profileRow.active_mode as ActiveMode) ?? "customer",
+              is_online: profileRow.is_online ?? false,
+              kyc_status: ((profileRow as { kyc_status?: KycStatus }).kyc_status ?? "not_submitted") as KycStatus,
+            }
+          : null,
+      );
+      setLoading(false);
+    };
 
     supabase.auth.getSession().then(({ data }) => {
-      const u = data.session?.user ?? null;
-      userRef.current = u;
-      setUser(u);
-      loadFor(u);
+      setUser(data.session?.user ?? null);
+      loadFor(data.session?.user ?? null);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      const u = session?.user ?? null;
-      userRef.current = u;
-      setUser(u);
+      setUser(session?.user ?? null);
       setLoading(true);
-      loadFor(u);
+      loadFor(session?.user ?? null);
     });
 
     return () => {
-      activeRef.current = false;
+      active = false;
       sub.subscription.unsubscribe();
     };
-  }, [loadFor]);
-
-  // Keep role / KYC status fresh: admin approvals happen outside this session, so
-  // the driver's own view must pick them up without a manual sign-out.
-  useEffect(() => {
-    if (!user) return;
-    const reload = () => loadFor(userRef.current);
-
-    const channel = supabase
-      .channel(`self-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "profiles", filter: `id=eq.${user.id}` }, reload)
-      .on("postgres_changes", { event: "*", schema: "public", table: "driver_kyc", filter: `driver_id=eq.${user.id}` }, reload)
-      .on("postgres_changes", { event: "*", schema: "public", table: "user_roles", filter: `user_id=eq.${user.id}` }, reload)
-      .subscribe();
-
-    const onVisible = () => {
-      if (document.visibilityState === "visible") reload();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("focus", onVisible);
-    const poll = window.setInterval(reload, 30000);
-
-    return () => {
-      supabase.removeChannel(channel);
-      document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("focus", onVisible);
-      window.clearInterval(poll);
-    };
-  }, [user, loadFor]);
+  }, []);
 
   const role: AppRole | null =
     roles.includes("admin") ? "admin" : roles.includes("driver") ? "driver" : roles.includes("customer") ? "customer" : null;
@@ -129,11 +96,7 @@ export function useAuth(): AuthState {
     [user],
   );
 
-  const refresh = useCallback(async () => {
-    await loadFor(userRef.current);
-  }, [loadFor]);
-
-  return { user, role, roles, profile, activeMode, setActiveMode, loading, refresh };
+  return { user, role, roles, profile, activeMode, setActiveMode, loading };
 }
 
 /** Turn a phone number into the synthetic email we use for Supabase email/password auth. */
