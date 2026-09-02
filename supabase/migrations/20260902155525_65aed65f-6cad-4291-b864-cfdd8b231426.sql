@@ -1,0 +1,12 @@
+REVOKE EXECUTE ON FUNCTION public.bookings_enforce_insert_financials() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.bookings_protect_financials() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.driver_kyc_force_pending_on_insert() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.driver_kyc_protect_review() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.shares_booking_with(uuid, uuid) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.is_kyc_approved(uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.validate_coupon(text, numeric) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.settle_daily_incentives(date) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_kyc_approved(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.validate_coupon(text, numeric) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.settle_daily_incentives(date) TO authenticated;
