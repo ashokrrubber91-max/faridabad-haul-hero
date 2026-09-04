@@ -1,12 +1,7 @@
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, MapPin, Package, ShieldCheck } from "lucide-react";
-import { toast } from "sonner";
+import { ArrowLeft, ArrowRight, MapPin, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { useAuth } from "@/hooks/useAuth";
 import { VEHICLES, vehicleLabel, type VehicleId } from "@/lib/booking";
 import type { PlacePick } from "@/components/booking/LocationSearchOverlay";
 import type { CustomerGstin } from "@/components/booking/GstinSelect";
@@ -42,34 +37,9 @@ export function ReviewBooking({
   onConfirm: () => void;
   submitting: boolean;
 }) {
-  const { profile } = useAuth();
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [checklistDone, setChecklistDone] = useState(false);
-  const [otpOpen, setOtpOpen] = useState(false);
-  const [otp, setOtp] = useState("");
   const v = VEHICLES.find((x) => x.id === vehicle);
-
-  const registeredPhone = (profile?.phone ?? "").replace(/\D/g, "");
-  const expected = registeredPhone.slice(-4);
-  const maskedPhone = registeredPhone
-    ? `${"•".repeat(Math.max(0, registeredPhone.length - 4))}${expected}`
-    : "your registered number";
-
-  const verifyAndBook = () => {
-    if (!expected) {
-      // No phone on file — nothing to verify against.
-      setOtpOpen(false);
-      onConfirm();
-      return;
-    }
-    if (otp !== expected) {
-      toast.error("Incorrect code. Enter the last 4 digits of your mobile number.");
-      return;
-    }
-    setOtpOpen(false);
-    setOtp("");
-    onConfirm();
-  };
 
 
   return (
@@ -145,7 +115,7 @@ export function ReviewBooking({
         </label>
 
         <Button
-          onClick={() => setOtpOpen(true)}
+          onClick={onConfirm}
           disabled={!checklistDone || submitting}
           className="h-11 w-full"
         >
@@ -159,37 +129,6 @@ export function ReviewBooking({
         onOpenChange={setChecklistOpen}
         onConfirmed={() => setChecklistDone(true)}
       />
-
-      <Dialog open={otpOpen} onOpenChange={setOtpOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-primary" /> Verify to confirm
-            </DialogTitle>
-            <DialogDescription>
-              For checkout security, enter the last 4 digits of your registered mobile number ({maskedPhone}).
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="book-otp">4-digit code</Label>
-              <Input
-                id="book-otp"
-                inputMode="numeric"
-                maxLength={4}
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                placeholder="••••"
-                className="text-center text-lg tracking-[0.5em]"
-              />
-            </div>
-            <Button onClick={verifyAndBook} disabled={submitting} className="h-11 w-full">
-              {submitting ? "Booking…" : `Verify & book · ₹${fare}`}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
     </div>
   );
 }
