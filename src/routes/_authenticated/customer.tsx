@@ -126,6 +126,10 @@ function CustomerPage() {
           customer_id: user!.id,
           pickup_address: pickup.address,
           drop_address: drop.address,
+           pickup_lat: pickup.lat,
+           pickup_lng: pickup.lng,
+           drop_lat: drop.lat,
+           drop_lng: drop.lng,
           vehicle_type: vehicle,
           distance_km: distanceKm,
           fare,
@@ -439,13 +443,30 @@ function CustomerPage() {
                     <LiveTripMap
                       pickupAddress={b.pickup_address}
                       dropAddress={b.drop_address}
+                       pickupLat={b.pickup_lat}
+                       pickupLng={b.pickup_lng}
+                       dropLat={b.drop_lat}
+                       dropLng={b.drop_lng}
                       phase={b.status === "accepted" ? "accepted" : "in_progress"}
                       distanceKm={Number(b.distance_km) || 0}
                     />
                   )}
-                  {b.status === "in_progress" && (
-                    <LoadingTimerCard vehicleType={b.vehicle_type} startedAt={b.pickup_verified_at} />
-                  )}
+                   {b.loading_started_at && (
+                     <LoadingTimerCard
+                       vehicleType={b.vehicle_type}
+                       phase="loading"
+                       startedAt={b.loading_started_at}
+                       stoppedAt={b.loading_stopped_at}
+                     />
+                   )}
+                   {b.unloading_started_at && (
+                     <LoadingTimerCard
+                       vehicleType={b.vehicle_type}
+                       phase="unloading"
+                       startedAt={b.unloading_started_at}
+                       stoppedAt={b.unloading_stopped_at}
+                     />
+                   )}
 
                   {(b.status === "accepted" || b.status === "in_progress") && (b.pickup_otp || b.drop_otp) && (
                     <div className="mt-3 grid gap-2 rounded-md bg-primary/5 p-3 sm:grid-cols-2">
