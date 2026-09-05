@@ -1,5 +1,5 @@
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -60,8 +60,7 @@ function DriverPage() {
       const { data, error } = await supabase
         .from("bookings")
         .select("*")
-        .or(`status.eq.pending,driver_id.eq.${user!.id}`)
-        .or(`status.neq.pending,created_at.gte.${new Date(Date.now() - REQUEST_WINDOW_MS).toISOString()}`)
+        .or(`and(status.eq.pending,created_at.gte.${new Date(Date.now() - REQUEST_WINDOW_MS).toISOString()}),driver_id.eq.${user!.id}`)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -151,10 +150,18 @@ function DriverPage() {
       const otpOk = !!expected && otp.trim() === expected;
       if (!otpOk && !(next === "completed" && podPath)) throw new Error("Wrong OTP");
       const now = new Date().toISOString();
-      const patch =
-        next === "in_progress"
-          ? { status: next, pickup_verified_at: now }
-          : { status: next, drop_verified_at: now, ...(podPath ? { pod_photo_url: podPath } : {}) };
+      const patch = next === "in_progress"
+        ? {
+            status: next,
+            pickup_verified_at: now,
+            loading_stopped_at: now,
+          }
+        : {
+            status: next,
+            drop_verified_at: now,
+            unloading_stopped_at: now,
+            ...(podPath ? { pod_photo_url: podPath } : {}),
+          };
       const { error } = await supabase.from("bookings").update(patch).eq("id", id);
       if (error) throw error;
     },
@@ -169,7 +176,7 @@ function DriverPage() {
     return <Navigate to="/customer" />;
   }
 
-  const pending = (queue.data ?? []).filter((b) => b.status === "pending");
+  const pending = (queue.data ?? []).filter((b) => b.status === "pending" && !dismissed.includes(b.id));
   const mine = (queue.data ?? []).filter((b) => b.driver_id === user?.id && b.status !== "pending");
   const isOnline = setOnline.variables ?? profile?.is_online ?? false;
 
@@ -364,7 +371,15 @@ function DriverPage() {
           </div>
         ) : (
           <div className="grid gap-3">
-            {pending.map((b) => <PendingJob key={b.id} job={b} onAccept={() => accept.mutate(b.id)} pending={accept.isPending} />)}
+            {pending.map((b) => (
+              <PendingJob
+                key={b.id}
+                job={b}
+                onAccept={() => accept.mutate(b.id)}
+                onDecline={() => setDismissed((items) => [...items, b.id])}
+                pending={accept.isPending}
+              />
+            ))}
           </div>
         )}
       </section>
@@ -433,13 +448,15 @@ function StatCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PendingJob({ job, onAccept, pending }: { job: any; onAccept: () => void; pending: boolean }) {
-  const [secs, setSecs] = useState(30);
+function PendingJob({ job, onAccept, onDecline, pending }: { job: any; onAccept: () => void; onDecline: () => void; pending: boolean }) {
+  const [secs, setSecs] = useState(() => Math.max(0, 30 - Math.floor((Date.now() - new Date(job.created_at).getTime()) / 1000)));
   useEffect(() => {
+    const remaining = Math.max(0, 30 - Math.floor((Date.now() - new Date(job.created_at).getTime()) / 1000));
+    setSecs(remaining);
     if (secs <= 0) return;
     const t = setTimeout(() => setSecs((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [secs]);
+  }, [job.created_at, secs]);
   const commission = Math.round(Number(job.fare) * 0.1);
   const net = Number(job.fare) - commission;
   return (
@@ -469,7 +486,7 @@ function PendingJob({ job, onAccept, pending }: { job: any; onAccept: () => void
         <Button size="sm" className="flex-1" onClick={onAccept} disabled={pending || secs <= 0}>
           Accept Ride {secs > 0 ? `(${secs}s)` : "(expired)"}
         </Button>
-        <Button size="sm" variant="outline" onClick={() => setSecs(0)}>
+        <Button size="sm" variant="outline" onClick={onDecline}>
           Pass / Decline
         </Button>
       </div>
