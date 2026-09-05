@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { vehicleLabel, STATUS_META } from "@/lib/booking";
+import { haversineKm, vehicleLabel, STATUS_META } from "@/lib/booking";
 import { SupportChat } from "@/components/support/SupportChat";
 import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 import { LoadingTimerCard } from "@/components/booking/LoadingTimerCard";
@@ -41,6 +41,7 @@ function DriverPage() {
   const { user, role, roles, activeMode, profile, loading } = useAuth();
   const qc = useQueryClient();
   const [dismissed, setDismissed] = useState<string[]>([]);
+  const REQUEST_WINDOW_MS = 30_000;
 
   const setOnline = useMutation({
     mutationFn: async (next: boolean) => {
@@ -60,6 +61,7 @@ function DriverPage() {
         .from("bookings")
         .select("*")
         .or(`status.eq.pending,driver_id.eq.${user!.id}`)
+        .or(`status.neq.pending,created_at.gte.${new Date(Date.now() - REQUEST_WINDOW_MS).toISOString()}`)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -110,6 +112,7 @@ function DriverPage() {
         .update({ driver_id: user!.id, status: "accepted" })
         .eq("id", id)
         .eq("status", "pending")
+        .gte("created_at", new Date(Date.now() - REQUEST_WINDOW_MS).toISOString())
         .select()
         .maybeSingle();
       if (error) throw error;
@@ -117,6 +120,16 @@ function DriverPage() {
       return data;
     },
     onSuccess: () => toast.success("You've got the job!"),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const timer = useMutation({
+    mutationFn: async ({ id, phase, action }: { id: string; phase: "loading" | "unloading"; action: "start" | "stop" }) => {
+      const field = `${phase}_${action === "start" ? "started" : "stopped"}_at` as "loading_started_at" | "loading_stopped_at" | "unloading_started_at" | "unloading_stopped_at";
+      const { error } = await supabase.from("bookings").update({ [field]: new Date().toISOString() }).eq("id", id).eq("driver_id", user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] }),
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -317,7 +330,7 @@ function DriverPage() {
       </section>
 
       {activeJob && (
-        <ActiveJobCard
+          <ActiveJobCard
           job={activeJob}
           onVerify={(otp, next, podPath) =>
             verifyOtp.mutate({
@@ -329,6 +342,8 @@ function DriverPage() {
             })
           }
           pending={verifyOtp.isPending}
+           onTimer={(phase, action) => timer.mutate({ id: activeJob.id, phase, action })}
+           timerPending={timer.isPending}
         />
       )}
 
@@ -466,14 +481,41 @@ function ActiveJobCard({
   job,
   onVerify,
   pending,
+  onTimer,
+  timerPending,
 }: {
   job: any;
   onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null) => void;
   pending: boolean;
+  onTimer: (phase: "loading" | "unloading", action: "start" | "stop") => void;
+  timerPending: boolean;
 }) {
   const [otp, setOtp] = useState("");
   const [podPath, setPodPath] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const autoStarted = useRef<string | null>(null);
+
+  useEffect(() => {
+    const phase = job.status === "accepted" ? "loading" : job.status === "in_progress" ? "unloading" : null;
+    if (!phase || !navigator.geolocation) return;
+    const startedAt = job[`${phase}_started_at`];
+    if (startedAt || autoStarted.current === `${job.id}:${phase}`) return;
+    const lat = phase === "loading" ? job.pickup_lat : job.drop_lat;
+    const lng = phase === "loading" ? job.pickup_lng : job.drop_lng;
+    if (lat == null || lng == null) return;
+    const watch = navigator.geolocation.watchPosition(
+      (position) => {
+        const distance = haversineKm({ lat: position.coords.latitude, lng: position.coords.longitude }, { lat: Number(lat), lng: Number(lng) });
+        if (distance <= 0.15) {
+          autoStarted.current = `${job.id}:${phase}`;
+          onTimer(phase, "start");
+        }
+      },
+      () => undefined,
+      { enableHighAccuracy: true, maximumAge: 5_000, timeout: 10_000 },
+    );
+    return () => navigator.geolocation.clearWatch(watch);
+  }, [job, onTimer]);
 
   const uploadProof = async (file: File) => {
     setUploading(true);
@@ -496,6 +538,9 @@ function ActiveJobCard({
     toast.success("Proof photo attached");
   };
   const next = job.status === "accepted" ? "in_progress" : "completed";
+  const timerPhase = job.status === "accepted" ? "loading" : "unloading";
+  const timerStarted = job[`${timerPhase}_started_at`] as string | null | undefined;
+  const timerStopped = job[`${timerPhase}_stopped_at`] as string | null | undefined;
   const label = next === "in_progress" ? "Verify Pickup OTP" : "Verify Drop OTP";
   const contact = extractContact(job.notes, next === "in_progress" ? "Sender" : "Receiver");
   const commission = Math.round(Number(job.fare) * 0.1);
@@ -516,16 +561,35 @@ function ActiveJobCard({
           : `Payment Mode: Online — ₹${net.toFixed(0)} will be added to your wallet`}
       </div>
 
-      {job.status === "in_progress" && (
-        <LoadingTimerCard vehicleType={job.vehicle_type} startedAt={job.pickup_verified_at} />
+      {timerStarted && (
+        <LoadingTimerCard vehicleType={job.vehicle_type} phase={timerPhase} startedAt={timerStarted} stoppedAt={timerStopped} />
       )}
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 p-3">
+        <p className="mr-auto text-xs text-muted-foreground">
+          {timerPhase === "loading" ? "At pickup: loading timer" : "At drop-off: unloading timer"}
+        </p>
+        {!timerStarted && (
+          <Button size="sm" onClick={() => onTimer(timerPhase, "start")} disabled={timerPending}>
+            Start {timerPhase}
+          </Button>
+        )}
+        {timerStarted && !timerStopped && (
+          <Button size="sm" variant="outline" onClick={() => onTimer(timerPhase, "stop")} disabled={timerPending}>
+            Stop {timerPhase}
+          </Button>
+        )}
+        {timerStopped && <span className="text-xs font-medium text-success">Timer stopped</span>}
+      </div>
 
 
       <div className="mt-3 flex flex-wrap gap-2">
         <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
           <a
             href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-              next === "in_progress" ? job.pickup_address : job.drop_address,
+               next === "in_progress"
+                 ? job.pickup_lat != null && job.pickup_lng != null ? `${job.pickup_lat},${job.pickup_lng}` : job.pickup_address
+                 : job.drop_lat != null && job.drop_lng != null ? `${job.drop_lat},${job.drop_lng}` : job.drop_address,
             )}&travelmode=driving`}
             target="_blank"
             rel="noopener noreferrer"

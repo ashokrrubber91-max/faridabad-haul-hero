@@ -59,11 +59,9 @@ export function LiveTripMap({ pickupAddress, dropAddress, pickupLat, pickupLng, 
     };
   }, [pickupAddress, dropAddress, pickupLat, pickupLng, dropLat, dropLng]);
 
-  const legFrom: LatLng | null = pickup && drop
-    ? phase === "accepted"
-      ? { lat: pickup.lat + 0.018, lng: pickup.lng - 0.014 }
-      : pickup
-    : null;
+  // Until a driver GPS coordinate is available, keep the route anchored to the
+  // exact customer pin instead of inventing an offset location.
+  const legFrom: LatLng | null = pickup && drop ? pickup : null;
   const legTo: LatLng | null = phase === "accepted" ? pickup : drop;
   const legDistance = phase === "accepted" ? Math.max(0.4, distanceKm * 0.35) : Math.max(0.5, distanceKm);
   const eta = Math.max(2, Math.round(legDistance * (1 - progress) * 3));
