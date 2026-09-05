@@ -24,7 +24,7 @@ export function LoadingTimerCard({
     return () => clearInterval(t);
   }, []);
 
-  const state = computeLoadingTimer(vehicleType, startedAt, stoppedAt, now);
+  const state = computeLoadingTimer(vehicleType, startedAt, stoppedAt ?? null, now);
   if (!state) return null;
 
   const over = state.overtimeMinutes > 0;
