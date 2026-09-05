@@ -124,8 +124,11 @@ function DriverPage() {
 
   const timer = useMutation({
     mutationFn: async ({ id, phase, action }: { id: string; phase: "loading" | "unloading"; action: "start" | "stop" }) => {
-      const field = `${phase}_${action === "start" ? "started" : "stopped"}_at` as "loading_started_at" | "loading_stopped_at" | "unloading_started_at" | "unloading_stopped_at";
-      const { error } = await supabase.from("bookings").update({ [field]: new Date().toISOString() }).eq("id", id).eq("driver_id", user!.id);
+      const timestamp = new Date().toISOString();
+      const patch = phase === "loading"
+        ? action === "start" ? { loading_started_at: timestamp } : { loading_stopped_at: timestamp }
+        : action === "start" ? { unloading_started_at: timestamp } : { unloading_stopped_at: timestamp };
+      const { error } = await supabase.from("bookings").update(patch).eq("id", id).eq("driver_id", user!.id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] }),
@@ -377,6 +380,7 @@ function DriverPage() {
                 job={b}
                 onAccept={() => accept.mutate(b.id)}
                 onDecline={() => setDismissed((items) => [...items, b.id])}
+                onExpire={() => setDismissed((items) => items.includes(b.id) ? items : [...items, b.id])}
                 pending={accept.isPending}
               />
             ))}
@@ -448,15 +452,18 @@ function StatCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PendingJob({ job, onAccept, onDecline, pending }: { job: any; onAccept: () => void; onDecline: () => void; pending: boolean }) {
+function PendingJob({ job, onAccept, onDecline, onExpire, pending }: { job: any; onAccept: () => void; onDecline: () => void; onExpire: () => void; pending: boolean }) {
   const [secs, setSecs] = useState(() => Math.max(0, 30 - Math.floor((Date.now() - new Date(job.created_at).getTime()) / 1000)));
   useEffect(() => {
     const remaining = Math.max(0, 30 - Math.floor((Date.now() - new Date(job.created_at).getTime()) / 1000));
     setSecs(remaining);
-    if (secs <= 0) return;
+    if (remaining <= 0) {
+      onExpire();
+      return;
+    }
     const t = setTimeout(() => setSecs((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [job.created_at, secs]);
+  }, [job.created_at, secs, onExpire]);
   const commission = Math.round(Number(job.fare) * 0.1);
   const net = Number(job.fare) - commission;
   return (
