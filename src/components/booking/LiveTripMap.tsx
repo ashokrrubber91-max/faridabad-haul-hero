@@ -5,10 +5,6 @@ import { Navigation, Loader2 } from "lucide-react";
 interface Props {
   pickupAddress: string;
   dropAddress: string;
-  pickupLat?: number | null;
-  pickupLng?: number | null;
-  dropLat?: number | null;
-  dropLng?: number | null;
   /** "accepted" → driver → pickup; "in_progress" → pickup → drop */
   phase: "accepted" | "in_progress";
   distanceKm: number;
@@ -17,7 +13,7 @@ interface Props {
 type LatLng = { lat: number; lng: number };
 
 /** Interactive map that renders the current active leg with a simulated driver marker. */
-export function LiveTripMap({ pickupAddress, dropAddress, pickupLat, pickupLng, dropLat, dropLng, phase, distanceKm }: Props) {
+export function LiveTripMap({ pickupAddress, dropAddress, phase, distanceKm }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const routeRef = useRef<google.maps.Polyline | null>(null);
@@ -42,13 +38,7 @@ export function LiveTripMap({ pickupAddress, dropAddress, pickupLat, pickupLng, 
           return FARIDABAD_CENTER;
         }
       };
-       const pPromise = pickupLat != null && pickupLng != null
-         ? Promise.resolve({ lat: pickupLat, lng: pickupLng })
-         : geo(pickupAddress);
-       const dPromise = dropLat != null && dropLng != null
-         ? Promise.resolve({ lat: dropLat, lng: dropLng })
-         : geo(dropAddress);
-       const [p, d] = await Promise.all([pPromise, dPromise]);
+      const [p, d] = await Promise.all([geo(pickupAddress), geo(dropAddress)]);
       if (!cancelled) {
         setPickup(p);
         setDrop(d);
@@ -57,11 +47,13 @@ export function LiveTripMap({ pickupAddress, dropAddress, pickupLat, pickupLng, 
     return () => {
       cancelled = true;
     };
-  }, [pickupAddress, dropAddress, pickupLat, pickupLng, dropLat, dropLng]);
+  }, [pickupAddress, dropAddress]);
 
-  // Until a driver GPS coordinate is available, keep the route anchored to the
-  // exact customer pin instead of inventing an offset location.
-  const legFrom: LatLng | null = pickup && drop ? pickup : null;
+  const legFrom: LatLng | null = pickup && drop
+    ? phase === "accepted"
+      ? { lat: pickup.lat + 0.018, lng: pickup.lng - 0.014 }
+      : pickup
+    : null;
   const legTo: LatLng | null = phase === "accepted" ? pickup : drop;
   const legDistance = phase === "accepted" ? Math.max(0.4, distanceKm * 0.35) : Math.max(0.5, distanceKm);
   const eta = Math.max(2, Math.round(legDistance * (1 - progress) * 3));
@@ -79,7 +71,7 @@ export function LiveTripMap({ pickupAddress, dropAddress, pickupLat, pickupLng, 
         zoomControl: true,
         gestureHandling: "greedy",
       });
-       pickupMarker.current = new g.maps.Marker({
+      pickupMarker.current = new g.maps.Marker({
         position: pickup,
         map: mapInstance.current,
         label: { text: "P", color: "#fff", fontSize: "11px", fontWeight: "700" },
@@ -96,7 +88,7 @@ export function LiveTripMap({ pickupAddress, dropAddress, pickupLat, pickupLng, 
         strokeWeight: 4,
         map: mapInstance.current,
       });
-       driverMarker.current = new g.maps.Marker({
+      driverMarker.current = new g.maps.Marker({
         position: legFrom,
         map: mapInstance.current,
         icon: {
