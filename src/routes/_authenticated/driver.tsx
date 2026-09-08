@@ -59,11 +59,14 @@ function DriverPage() {
       const { data, error } = await supabase
         .from("bookings")
         .select("*")
-        .or(`status.eq.pending,driver_id.eq.${user!.id}`)
+        .or(`and(status.eq.pending,driver_id.is.null,cancelled_at.is.null),driver_id.eq.${user!.id}`)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
   });
 
   const wallet = useQuery({
@@ -95,28 +98,57 @@ function DriverPage() {
     if (!user) return;
     const ch = supabase
       .channel("driver-bookings")
-      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, (payload) => {
         qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
         qc.invalidateQueries({ queryKey: ["driver-wallet", user.id] });
+        const next = payload.new as { status?: string; driver_id?: string | null; service_zone?: string };
+        if (payload.eventType === "INSERT" && next.status === "pending" && !next.driver_id) {
+          toast.info("New ride request", { description: `${next.service_zone ?? "Faridabad"} zone · open Live requests` });
+          playRideAlert();
+        }
       })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          void queue.refetch();
+        }
+      });
+
+    const recover = () => void queue.refetch();
+    window.addEventListener("online", recover);
+    document.addEventListener("visibilitychange", recover);
+    return () => {
+      window.removeEventListener("online", recover);
+      document.removeEventListener("visibilitychange", recover);
+      supabase.removeChannel(ch);
+    };
   }, [user, qc]);
 
   const accept = useMutation({
     mutationFn: async (id: string) => {
-      const { data, error } = await supabase
-        .from("bookings")
-        .update({ driver_id: user!.id, status: "accepted" })
-        .eq("id", id)
-        .eq("status", "pending")
-        .select()
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("accept_booking", { _booking_id: id });
       if (error) throw error;
-      if (!data) throw new Error("Already taken by another driver");
       return data;
     },
-    onSuccess: () => toast.success("You've got the job!"),
+    onSuccess: () => {
+      toast.success("You've got the job!");
+      void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
+    },
+    onError: (e: Error) => {
+      toast.error(e.message.includes("already") ? "Ride already accepted or closed" : e.message);
+      void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
+    },
+  });
+
+  const decline = useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.rpc("decline_booking", { _booking_id: id });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Ride passed");
+      void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -156,7 +188,9 @@ function DriverPage() {
     return <Navigate to="/customer" />;
   }
 
-  const pending = (queue.data ?? []).filter((b) => b.status === "pending");
+  const pending = (queue.data ?? []).filter(
+    (b) => b.status === "pending" && !b.driver_id && !b.cancelled_at,
+  );
   const mine = (queue.data ?? []).filter((b) => b.driver_id === user?.id && b.status !== "pending");
   const isOnline = setOnline.variables ?? profile?.is_online ?? false;
 
@@ -349,7 +383,15 @@ function DriverPage() {
           </div>
         ) : (
           <div className="grid gap-3">
-            {pending.map((b) => <PendingJob key={b.id} job={b} onAccept={() => accept.mutate(b.id)} pending={accept.isPending} />)}
+             {pending.map((b) => (
+               <PendingJob
+                 key={b.id}
+                 job={b}
+                 onAccept={() => accept.mutate(b.id)}
+                 onDecline={() => decline.mutate(b.id)}
+                 pending={accept.isPending || decline.isPending}
+               />
+             ))}
           </div>
         )}
       </section>
@@ -363,6 +405,7 @@ function DriverPage() {
             setDismissed((d) => [...d, id]);
             accept.mutate(id);
           }}
+          onDecline={() => decline.mutate(incoming.id)}
           onDismiss={() => setDismissed((d) => [...d, incoming.id])}
         />
       )}
@@ -418,7 +461,17 @@ function StatCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PendingJob({ job, onAccept, pending }: { job: any; onAccept: () => void; pending: boolean }) {
+function PendingJob({
+  job,
+  onAccept,
+  onDecline,
+  pending,
+}: {
+  job: any;
+  onAccept: () => void;
+  onDecline: () => void;
+  pending: boolean;
+}) {
   const [secs, setSecs] = useState(30);
   useEffect(() => {
     if (secs <= 0) return;
@@ -451,15 +504,40 @@ function PendingJob({ job, onAccept, pending }: { job: any; onAccept: () => void
         </div>
       </div>
       <div className="mt-3 flex gap-2">
-        <Button size="sm" className="flex-1" onClick={onAccept} disabled={pending || secs <= 0}>
-          Accept Ride {secs > 0 ? `(${secs}s)` : "(expired)"}
+        <Button size="sm" className="flex-1" onClick={onAccept} disabled={pending}>
+          Accept Ride
         </Button>
-        <Button size="sm" variant="outline" onClick={() => setSecs(0)}>
+        <Button size="sm" variant="outline" onClick={onDecline} disabled={pending}>
           Pass / Decline
         </Button>
       </div>
+      <p className="mt-2 text-[11px] text-muted-foreground">
+        {secs > 0 ? `New request · ${secs}s alert timer` : "Still available · alert timer ended"}. Passing hides it for you only.
+      </p>
     </div>
   );
+}
+
+function playRideAlert() {
+  if (typeof window === "undefined") return;
+  const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Ctor) return;
+  try {
+    const context = new Ctor();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.18, context.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.28);
+    oscillator.connect(gain).connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.3);
+    oscillator.addEventListener("ended", () => void context.close());
+  } catch {
+    // Browsers may block audio until the driver has interacted with the page.
+  }
 }
 
 function ActiveJobCard({
