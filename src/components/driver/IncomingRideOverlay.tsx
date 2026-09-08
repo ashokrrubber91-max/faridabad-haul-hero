@@ -69,11 +69,13 @@ function useRingtone(active: boolean, muted: boolean) {
 export function IncomingRideOverlay({
   job,
   onAccept,
+  onDecline,
   onDismiss,
   accepting,
 }: {
   job: Job;
   onAccept: () => void;
+  onDecline: () => void;
   onDismiss: () => void;
   accepting: boolean;
 }) {
@@ -86,10 +88,7 @@ export function IncomingRideOverlay({
   }, [job.id]);
 
   useEffect(() => {
-    if (secs <= 0) {
-      onDismiss();
-      return;
-    }
+    if (secs <= 0) return;
     const t = setTimeout(() => setSecs((s) => s - 1), 1000);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -145,11 +144,14 @@ export function IncomingRideOverlay({
       </div>
 
       <div className="mt-auto grid gap-2 pt-6">
-        <Button className="h-14 w-full text-lg" onClick={onAccept} disabled={accepting || secs <= 0}>
+        <Button className="h-14 w-full text-lg" onClick={onAccept} disabled={accepting}>
           {accepting ? "Accepting…" : "Accept ride"}
         </Button>
-        <Button variant="outline" className="h-11 w-full border-white/30 bg-transparent text-white hover:bg-white/10" onClick={onDismiss}>
+        <Button variant="outline" className="h-11 w-full border-white/30 bg-transparent text-white hover:bg-white/10" onClick={onDecline}>
           Decline
+        </Button>
+        <Button variant="ghost" className="h-9 w-full text-white/70 hover:bg-white/10 hover:text-white" onClick={onDismiss}>
+          Keep in live requests
         </Button>
       </div>
     </div>

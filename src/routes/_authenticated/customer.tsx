@@ -126,6 +126,11 @@ function CustomerPage() {
           customer_id: user!.id,
           pickup_address: pickup.address,
           drop_address: drop.address,
+           pickup_lat: pickup.lat,
+           pickup_lng: pickup.lng,
+           drop_lat: drop.lat,
+           drop_lng: drop.lng,
+           service_zone: "Faridabad",
           vehicle_type: vehicle,
           distance_km: distanceKm,
           fare,
@@ -164,7 +169,7 @@ function CustomerPage() {
           if (!result) {
             await supabase
               .from("bookings")
-              .update({ status: "cancelled", cancellation_reason: "Payment not completed" })
+              .update({ status: "cancelled", cancelled_at: new Date().toISOString(), cancellation_reason: "Payment not completed" })
               .eq("id", booking.id);
             throw new Error("Payment cancelled — the trip was not booked");
           }
@@ -180,6 +185,7 @@ function CustomerPage() {
             .from("bookings")
             .update({
               status: "cancelled",
+              cancelled_at: new Date().toISOString(),
               cancellation_reason:
                 paymentError instanceof Error ? paymentError.message.slice(0, 180) : "Payment failed",
             })
@@ -236,7 +242,7 @@ function CustomerPage() {
       const nextNotes = existingNotes ? `${existingNotes} · ${noteLine}` : noteLine;
       const { error } = await supabase
         .from("bookings")
-        .update({ status: "cancelled", notes: nextNotes })
+        .update({ status: "cancelled", cancelled_at: new Date().toISOString(), notes: nextNotes })
         .eq("id", id);
       if (error) throw error;
       return fee;

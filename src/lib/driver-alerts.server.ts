@@ -6,17 +6,18 @@ export async function alertDriversAboutBooking(bookingId: string): Promise<{ sen
 
   const { data: booking } = await supabaseAdmin
     .from("bookings")
-    .select("id, pickup_address, drop_address, fare, vehicle_type, distance_km, status")
+    .select("id, pickup_address, drop_address, fare, vehicle_type, distance_km, status, service_zone, driver_id, cancelled_at")
     .eq("id", bookingId)
     .maybeSingle();
-  if (!booking || booking.status !== "pending") return { sent: 0, failed: 0 };
+  if (!booking || booking.status !== "pending" || booking.driver_id || booking.cancelled_at) return { sent: 0, failed: 0 };
 
   // Online drivers with approved KYC.
   const { data: driverProfiles } = await supabaseAdmin
     .from("profiles")
     .select("id")
     .eq("is_online", true)
-    .eq("kyc_status", "approved");
+    .eq("kyc_status", "approved")
+    .eq("service_zone", booking.service_zone);
   const driverIds = (driverProfiles ?? []).map((p) => p.id);
   if (driverIds.length === 0) return { sent: 0, failed: 0 };
 
