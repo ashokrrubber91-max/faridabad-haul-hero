@@ -771,6 +771,12 @@ function DriversTab({
               onChange={(e) => setAmount(e.target.value)}
               placeholder="e.g. 500"
             />
+            <Label>Reason (recorded in the activity log)</Label>
+            <Input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Refund for cancelled trip #1234"
+            />
             <p className="text-xs text-muted-foreground">
               Current cash: ₹
               {Number(walletMap.get(topupFor?.id ?? "")?.cash_balance ?? 0).toFixed(0)}
@@ -780,10 +786,11 @@ function DriversTab({
             <Button variant="outline" onClick={() => setTopupFor(null)}>
               Cancel
             </Button>
-            <Button onClick={doTopup} disabled={busy}>
+            <Button onClick={doTopup} disabled={busy || !amount || !reason.trim()}>
               {busy ? "Saving..." : "Apply"}
             </Button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
     </section>
