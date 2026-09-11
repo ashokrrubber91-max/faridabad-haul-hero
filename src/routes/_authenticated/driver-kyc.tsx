@@ -26,7 +26,7 @@ const DOC_LABELS: Record<DocKey, string> = {
 const DOC_ORDER: DocKey[] = ["dl_front", "dl_back", "rc", "id_proof", "vehicle_photo"];
 
 function DriverKycPage() {
-  const { user, role, roles, loading } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [fullName, setFullName] = useState("");
