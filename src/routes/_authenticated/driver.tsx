@@ -62,8 +62,9 @@ function DriverPage() {
     enabled: !!user,
     queryFn: async () => {
       // Sweep requests whose validity window has passed so the feed never shows
-      // a request the backend would refuse to assign.
-      await supabase.rpc("expire_stale_bookings");
+      // a request the backend would refuse to assign. Runs server-side: the
+      // cleanup function is not directly executable by signed-in users.
+      await sweepStale({ data: undefined }).catch(() => undefined);
       const { data, error } = await supabase
         .from("bookings")
         .select(BOOKING_FIELDS)
