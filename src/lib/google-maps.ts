@@ -26,7 +26,7 @@ export function loadGoogleMaps(): Promise<typeof google> {
     const params = new URLSearchParams({
       key,
       v: "weekly",
-      libraries: "places,marker",
+      libraries: "places,marker,geometry",
       loading: "async",
       callback: "__miniportMapsInit",
     });
