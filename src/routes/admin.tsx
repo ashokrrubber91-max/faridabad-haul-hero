@@ -1,6 +1,7 @@
 import type { AnyRow } from "@/lib/rows";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { processSmsQueue } from "@/lib/notifications.functions";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -1693,16 +1694,46 @@ function BookingsList({
 }
 
 function SmsLogsSection({ logs }: { logs: AnyRow[] }) {
+  const qc = useQueryClient();
+  const drain = useServerFn(processSmsQueue);
+  const [running, setRunning] = useState(false);
+
+  const runQueue = async () => {
+    setRunning(true);
+    try {
+      const r = await drain({ data: { limit: 20 } });
+      if (!r.providerConfigured) {
+        toast.error("SMS provider is not configured — queued messages stay pending");
+      } else {
+        toast.success(`Sent ${r.sent} · retrying ${r.retrying} · failed ${r.failed}`);
+      }
+      await qc.invalidateQueries({ queryKey: ["admin-sms-logs"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not process the queue");
+    } finally {
+      setRunning(false);
+    }
+  };
+
   return (
     <section className="surface-card">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
         <h3 className="flex items-center gap-2 font-display text-xl tracking-wide text-secondary">
           <MessageSquare className="h-4 w-4 text-primary" /> SMS delivery log
         </h3>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <SmsCount logs={logs as { status: string }[]} status="queued" label="queued" />
+          <SmsCount logs={logs as { status: string }[]} status="sending" label="sending" />
           <SmsCount logs={logs as { status: string }[]} status="sent" label="sent" />
           <SmsCount logs={logs as { status: string }[]} status="failed" label="failed" />
+          <SmsCount
+            logs={logs as { status: string }[]}
+            status="not_configured"
+            label="not configured"
+          />
+          <Button size="sm" variant="outline" onClick={runQueue} disabled={running}>
+            {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send queued"}
+          </Button>
         </div>
       </div>
       <div className="divide-y divide-border">
@@ -1728,7 +1759,13 @@ function SmsLogsSection({ logs }: { logs: AnyRow[] }) {
                 </span>
               </div>
               <p className="truncate text-sm text-secondary">{s.body}</p>
-              {s.error && <p className="text-xs text-destructive">{s.error}</p>}
+              <p className="text-xs text-muted-foreground">
+                attempt {String(s.attempts ?? 0)} of {String(s.max_attempts ?? 5)}
+                {s.last_attempt_at
+                  ? ` · last tried ${new Date(String(s.last_attempt_at)).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })}`
+                  : ""}
+              </p>
+              {s.error && <p className="text-xs text-destructive">{String(s.error)}</p>}
             </div>
             <Badge className={smsTone(s.status)}>{s.status}</Badge>
           </div>
@@ -1759,6 +1796,7 @@ function smsTone(s: string) {
     case "sent":
       return "bg-success text-success-foreground hover:bg-success";
     case "failed":
+    case "not_configured":
       return "bg-destructive text-destructive-foreground hover:bg-destructive";
     default:
       return "bg-warning text-warning-foreground hover:bg-warning";
