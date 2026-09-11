@@ -1002,12 +1002,52 @@ function LiveTripsTab({
             <Button variant="outline" onClick={() => setAssignFor(null)}>
               Cancel
             </Button>
-            <Button onClick={assign} disabled={!driverId}>
-              Assign
+            <Button onClick={assign} disabled={!driverId || busy}>
+              {busy ? "Assigning..." : "Assign"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog
+        open={!!cancelFor}
+        onOpenChange={(o) => {
+          if (!o) {
+            setCancelFor(null);
+            setCancelReason("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel this trip?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {cancelFor?.pickup_address} → {cancelFor?.drop_address}
+            </p>
+            <Label>Reason (shared with the customer and recorded)</Label>
+            <Input
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="e.g. No driver available in the area"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelFor(null)}>
+              Keep trip
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={doCancel}
+              disabled={busy || cancelReason.trim().length < 4}
+            >
+              {busy ? "Cancelling..." : "Cancel trip"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </section>
   );
 }
