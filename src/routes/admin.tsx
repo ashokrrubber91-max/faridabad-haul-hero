@@ -1058,7 +1058,7 @@ function IncentivesTab({ tiers, onChanged }: { tiers: AnyRow[]; onChanged: () =>
   const [bonus, setBonus] = useState("");
   const [label, setLabel] = useState("");
   const [busy, setBusy] = useState(false);
-  const [editTier, setEditTier] = useState<any | null>(null);
+  const [editTier, setEditTier] = useState<AnyRow | null>(null);
   const [editRides, setEditRides] = useState("");
   const [editBonus, setEditBonus] = useState("");
   const [editLabel, setEditLabel] = useState("");
@@ -1084,7 +1084,7 @@ function IncentivesTab({ tiers, onChanged }: { tiers: AnyRow[]; onChanged: () =>
     onChanged();
   };
 
-  const toggle = async (t: any) => {
+  const toggle = async (t: AnyRow) => {
     const { error } = await supabase
       .from("driver_incentive_config")
       .update({ active: !t.active })
@@ -1094,7 +1094,7 @@ function IncentivesTab({ tiers, onChanged }: { tiers: AnyRow[]; onChanged: () =>
     onChanged();
   };
 
-  const openEdit = (t: any) => {
+  const openEdit = (t: AnyRow) => {
     setEditTier(t);
     setEditRides(String(t.rides_required));
     setEditBonus(String(t.bonus_amount));
@@ -1243,7 +1243,7 @@ const emptyCouponForm: CouponForm = {
 function CouponsTab({ coupons, onChanged }: { coupons: AnyRow[]; onChanged: () => void }) {
   const [form, setForm] = useState<CouponForm>(emptyCouponForm);
   const [busy, setBusy] = useState(false);
-  const [editCoupon, setEditCoupon] = useState<any | null>(null);
+  const [editCoupon, setEditCoupon] = useState<AnyRow | null>(null);
   const [editForm, setEditForm] = useState<CouponForm>(emptyCouponForm);
   const [editBusy, setEditBusy] = useState(false);
 
@@ -1271,14 +1271,14 @@ function CouponsTab({ coupons, onChanged }: { coupons: AnyRow[]; onChanged: () =
     onChanged();
   };
 
-  const toggle = async (c: any) => {
+  const toggle = async (c: AnyRow) => {
     const { error } = await supabase.from("coupons").update({ active: !c.active }).eq("id", c.id);
     if (error) return toast.error(error.message);
     toast.success(c.active ? "Coupon deactivated" : "Coupon activated");
     onChanged();
   };
 
-  const openEdit = (c: any) => {
+  const openEdit = (c: AnyRow) => {
     setEditCoupon(c);
     setEditForm({
       code: c.code,
@@ -1322,7 +1322,7 @@ function CouponsTab({ coupons, onChanged }: { coupons: AnyRow[]; onChanged: () =
           </div>
           <div>
             <Label className="text-xs">Kind</Label>
-            <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v as any })}>
+            <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v as "flat" | "percent" })}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -1442,7 +1442,7 @@ function CouponsTab({ coupons, onChanged }: { coupons: AnyRow[]; onChanged: () =
               <Label className="text-xs">Kind</Label>
               <Select
                 value={editForm.kind}
-                onValueChange={(v) => setEditForm({ ...editForm, kind: v as any })}
+                onValueChange={(v) => setEditForm({ ...editForm, kind: v as "flat" | "percent" })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -1542,7 +1542,7 @@ function BroadcastTab({ drivers, customers }: { drivers: Profile[]; customers: P
       <div className="mt-3 space-y-2">
         <div>
           <Label className="text-xs">Audience</Label>
-          <Select value={audience} onValueChange={(v) => setAudience(v as any)}>
+          <Select value={audience} onValueChange={(v) => setAudience(v as "all" | "customer" | "driver")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
