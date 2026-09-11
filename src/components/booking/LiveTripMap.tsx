@@ -69,8 +69,9 @@ export function LiveTripMap({ pickupAddress, dropAddress, phase, distanceKm }: P
 
   useEffect(() => {
     if (!driverId) { setDriverLocation(null); return; }
+    const db = supabase as any;
     let cancelled = false;
-    supabase.from("driver_locations").select("latitude,longitude,updated_at,accuracy_m").eq("driver_id", driverId).maybeSingle().then(({ data }) => {
+    db.from("driver_locations").select("latitude,longitude,updated_at,accuracy_m").eq("driver_id", driverId).maybeSingle().then(({ data }: { data?: { latitude: number; longitude: number; updated_at: string; accuracy_m: number | null } }) => {
       if (!cancelled && data) setDriverLocation({ lat: data.latitude, lng: data.longitude, updated_at: data.updated_at, accuracy_m: data.accuracy_m });
     });
     const channel = supabase.channel(`driver-location-${driverId}`)
@@ -115,7 +116,7 @@ export function LiveTripMap({ pickupAddress, dropAddress, phase, distanceKm }: P
     if (!mapInstance.current || !pickup || !drop) return;
     loadGoogleMaps().then((g) => {
       const service = new g.maps.DirectionsService();
-      const origin = phase === "accepted" && driverLocation ? driverLocation : phase === "in_progress" && driverLocation ? driverLocation : pickup;
+      const origin = driverLocation ?? pickup;
       const destination = phase === "accepted" ? pickup : drop;
       service.route({ origin, destination, travelMode: g.maps.TravelMode.DRIVING, provideRouteAlternatives: false }, (result, status) => {
         if (status !== "OK" || !result?.routes[0]) return;
@@ -142,7 +143,7 @@ export function LiveTripMap({ pickupAddress, dropAddress, phase, distanceKm }: P
 
   const displayKm = routeKm ?? distanceKm;
   const displayEta = etaMin;
-  const gpsLive = driverLocation && (gpsAge ?? 999999) <= 30;
+  const gpsLive = !!driverLocation && (gpsAge ?? 999999) <= 30;
 
   return (
     <div className="mt-3 overflow-hidden rounded-md border border-primary/30">
