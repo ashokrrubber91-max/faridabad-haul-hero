@@ -16,7 +16,9 @@ export function loadGoogleMaps(): Promise<typeof google> {
   if (loadPromise) return loadPromise;
 
   const key = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined;
-  const channel = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID as string | undefined;
+  const channel = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID as
+    | string
+    | undefined;
   if (!key) return Promise.reject(new Error("Google Maps browser key missing"));
 
   loadPromise = new Promise((resolve, reject) => {
@@ -41,6 +43,6 @@ export function loadGoogleMaps(): Promise<typeof google> {
 
 export const FARIDABAD_CENTER = { lat: 28.4089, lng: 77.3178 };
 export const FARIDABAD_BOUNDS = {
-  low: { latitude: 28.30, longitude: 77.20 },
+  low: { latitude: 28.3, longitude: 77.2 },
   high: { latitude: 28.55, longitude: 77.45 },
 };

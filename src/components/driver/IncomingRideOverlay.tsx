@@ -25,7 +25,9 @@ function useRingtone(active: boolean, muted: boolean) {
 
     const start = () => {
       if (cancelled) return;
-      const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      const Ctor =
+        window.AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!Ctor) return;
       const ctx = ctxRef.current ?? new Ctor();
       ctxRef.current = ctx;
@@ -121,7 +123,8 @@ export function IncomingRideOverlay({
       <div className="mt-auto">
         <p className="font-display text-6xl leading-none">{secs}s</p>
         <p className="mt-1 text-xs uppercase tracking-widest text-white/60">
-          {vehicleLabel(job.vehicle_type)} · {job.distance_km} km · {job.payment_method === "cod" ? "Cash" : "Online"}
+          {vehicleLabel(job.vehicle_type)} · {job.distance_km} km ·{" "}
+          {job.payment_method === "cod" ? "Cash" : "Online"}
         </p>
 
         <div className="mt-5 space-y-2">
@@ -139,7 +142,9 @@ export function IncomingRideOverlay({
         <div className="mt-6 rounded-lg bg-white/10 p-4">
           <p className="text-[11px] uppercase tracking-widest text-white/60">You will earn</p>
           <p className="font-display text-4xl">₹{net}</p>
-          <p className="text-[11px] text-white/50">Fare ₹{Number(job.fare).toFixed(0)} − 10% commission</p>
+          <p className="text-[11px] text-white/50">
+            Fare ₹{Number(job.fare).toFixed(0)} − 10% commission
+          </p>
         </div>
       </div>
 
@@ -147,10 +152,18 @@ export function IncomingRideOverlay({
         <Button className="h-14 w-full text-lg" onClick={onAccept} disabled={accepting}>
           {accepting ? "Accepting…" : "Accept ride"}
         </Button>
-        <Button variant="outline" className="h-11 w-full border-white/30 bg-transparent text-white hover:bg-white/10" onClick={onDecline}>
+        <Button
+          variant="outline"
+          className="h-11 w-full border-white/30 bg-transparent text-white hover:bg-white/10"
+          onClick={onDecline}
+        >
           Decline
         </Button>
-        <Button variant="ghost" className="h-9 w-full text-white/70 hover:bg-white/10 hover:text-white" onClick={onDismiss}>
+        <Button
+          variant="ghost"
+          className="h-9 w-full text-white/70 hover:bg-white/10 hover:text-white"
+          onClick={onDismiss}
+        >
           Keep in live requests
         </Button>
       </div>

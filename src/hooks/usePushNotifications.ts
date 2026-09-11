@@ -43,7 +43,9 @@ export function usePushNotifications() {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         setState("denied");
-        toast.error("Notifications blocked. Allow them in your browser settings to get ride alerts.");
+        toast.error(
+          "Notifications blocked. Allow them in your browser settings to get ride alerts.",
+        );
         return;
       }
 

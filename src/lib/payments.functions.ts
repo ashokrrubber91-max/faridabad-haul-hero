@@ -91,9 +91,8 @@ export const confirmTripPayment = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { getRazorpayCredentials, verifyCheckoutSignature, fetchRazorpayPayment } = await import(
-      "@/lib/razorpay.server"
-    );
+    const { getRazorpayCredentials, verifyCheckoutSignature, fetchRazorpayPayment } =
+      await import("@/lib/razorpay.server");
     const creds = getRazorpayCredentials();
     if (!creds) throw new Error("Online payments are not configured yet.");
 
@@ -111,8 +110,10 @@ export const confirmTripPayment = createServerFn({ method: "POST" })
       .select("id, booking_id, customer_id, amount, state, currency")
       .eq("provider_order_id", data.orderId)
       .maybeSingle();
-    if (!record || record.customer_id !== context.userId) throw new Error("Payment record not found");
-    if (record.currency && record.currency !== "INR") throw new Error("Unsupported payment currency");
+    if (!record || record.customer_id !== context.userId)
+      throw new Error("Payment record not found");
+    if (record.currency && record.currency !== "INR")
+      throw new Error("Unsupported payment currency");
     // Duplicate confirmation (double-click, webhook race) is a no-op.
     if (record.state === "paid") return { ok: true, bookingId: record.booking_id };
 

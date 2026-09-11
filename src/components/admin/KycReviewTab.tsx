@@ -39,10 +39,18 @@ export function KycReviewTab() {
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2">
-        <Button size="sm" variant={filter === "pending" ? "default" : "outline"} onClick={() => setFilter("pending")}>
+        <Button
+          size="sm"
+          variant={filter === "pending" ? "default" : "outline"}
+          onClick={() => setFilter("pending")}
+        >
           Awaiting review
         </Button>
-        <Button size="sm" variant={filter === "all" ? "default" : "outline"} onClick={() => setFilter("all")}>
+        <Button
+          size="sm"
+          variant={filter === "all" ? "default" : "outline"}
+          onClick={() => setFilter("all")}
+        >
           All submissions
         </Button>
       </div>
@@ -52,7 +60,9 @@ export function KycReviewTab() {
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
       ) : rows.length === 0 ? (
-        <p className="surface-card p-6 text-center text-sm text-muted-foreground">No submissions here.</p>
+        <p className="surface-card p-6 text-center text-sm text-muted-foreground">
+          No submissions here.
+        </p>
       ) : (
         <div className="grid gap-3">
           {rows.map((r) => (
@@ -87,7 +97,9 @@ function KycCard({ row, onChanged }: { row: Kyc; onChanged: () => void }) {
       toast.error(error.message);
       return;
     }
-    toast.success(status === "approved" ? "Driver verified — can now accept rides" : "Submission rejected");
+    toast.success(
+      status === "approved" ? "Driver verified — can now accept rides" : "Submission rejected",
+    );
     onChanged();
   };
 
@@ -101,7 +113,11 @@ function KycCard({ row, onChanged }: { row: Kyc; onChanged: () => void }) {
   };
 
   const tone =
-    row.status === "approved" ? "bg-success text-success-foreground" : row.status === "rejected" ? "bg-destructive text-destructive-foreground" : "bg-warning text-warning-foreground";
+    row.status === "approved"
+      ? "bg-success text-success-foreground"
+      : row.status === "rejected"
+        ? "bg-destructive text-destructive-foreground"
+        : "bg-warning text-warning-foreground";
 
   return (
     <article className="surface-card p-4">
@@ -113,7 +129,11 @@ function KycCard({ row, onChanged }: { row: Kyc; onChanged: () => void }) {
             {row.vehicle_number ? ` · ${row.vehicle_number}` : ""}
           </p>
           <p className="text-xs text-muted-foreground">
-            Submitted {new Date(row.submitted_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+            Submitted{" "}
+            {new Date(row.submitted_at).toLocaleString("en-IN", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
           </p>
         </div>
         <Badge className={tone}>{row.status}</Badge>
@@ -142,7 +162,12 @@ function KycCard({ row, onChanged }: { row: Kyc; onChanged: () => void }) {
           <Button size="sm" onClick={() => decide("approved")} disabled={busy}>
             <ShieldCheck className="h-3.5 w-3.5" /> Approve
           </Button>
-          <Button size="sm" variant="destructive" onClick={() => decide("rejected")} disabled={busy}>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => decide("rejected")}
+            disabled={busy}
+          >
             <ShieldX className="h-3.5 w-3.5" /> Reject
           </Button>
         </div>

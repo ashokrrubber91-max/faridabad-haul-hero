@@ -16,7 +16,10 @@ export function vehicleLabel(id: string): string {
   return VEHICLES.find((v) => v.id === id)?.label ?? id;
 }
 
-export const STATUS_META: Record<string, { label: string; tone: "warning" | "primary" | "success" | "muted" | "destructive" }> = {
+export const STATUS_META: Record<
+  string,
+  { label: string; tone: "warning" | "primary" | "success" | "muted" | "destructive" }
+> = {
   pending: { label: "Awaiting driver", tone: "warning" },
   accepted: { label: "Driver assigned", tone: "primary" },
   in_progress: { label: "On the way", tone: "primary" },
@@ -47,7 +50,10 @@ export function routeDistanceKm(points: LatLng[]): number {
   return Math.max(0.5, +(total * 1.3).toFixed(1));
 }
 
-export const VEHICLE_DETAILS: Record<VehicleId, { weightLimit: string; loadArea: string; goodTor: string[] }> = {
+export const VEHICLE_DETAILS: Record<
+  VehicleId,
+  { weightLimit: string; loadArea: string; goodTor: string[] }
+> = {
   tata_ace: {
     weightLimit: "750 kg",
     loadArea: "6.5 x 4.5 ft open bed",

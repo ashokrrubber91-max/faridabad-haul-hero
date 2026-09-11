@@ -27,7 +27,8 @@ export function getWebPushConfig(): { config: Record<string, string>; vapidKey: 
   if (!raw || !vapidKey) return null;
   try {
     const config = JSON.parse(raw) as Record<string, string>;
-    if (!config.apiKey || !config.projectId || !config.messagingSenderId || !config.appId) return null;
+    if (!config.apiKey || !config.projectId || !config.messagingSenderId || !config.appId)
+      return null;
     return { config, vapidKey };
   } catch {
     return null;
@@ -96,7 +97,9 @@ async function getAccessToken(account: ServiceAccount): Promise<string> {
   });
   const body = (await res.json()) as { access_token?: string; error_description?: string };
   if (!res.ok || !body.access_token) {
-    throw new Error(body.error_description ?? "Could not authenticate with the notification service");
+    throw new Error(
+      body.error_description ?? "Could not authenticate with the notification service",
+    );
   }
   cachedToken = { value: body.access_token, expiresAt: Date.now() + 3500 * 1000 };
   return body.access_token;
@@ -115,7 +118,10 @@ export interface PushResult {
   invalidTokens: string[];
 }
 
-export async function sendPushToTokens(tokens: string[], message: PushMessage): Promise<PushResult> {
+export async function sendPushToTokens(
+  tokens: string[],
+  message: PushMessage,
+): Promise<PushResult> {
   const account = getServiceAccount();
   const result: PushResult = { sent: 0, failed: 0, invalidTokens: [] };
   if (!account || tokens.length === 0) return result;
@@ -153,9 +159,9 @@ export async function sendPushToTokens(tokens: string[], message: PushMessage): 
           return;
         }
         result.failed += 1;
-        const detail = (await res.json().catch(() => null)) as
-          | { error?: { status?: string } }
-          | null;
+        const detail = (await res.json().catch(() => null)) as {
+          error?: { status?: string };
+        } | null;
         const status = detail?.error?.status;
         if (res.status === 404 || status === "NOT_FOUND" || status === "INVALID_ARGUMENT") {
           result.invalidTokens.push(token);

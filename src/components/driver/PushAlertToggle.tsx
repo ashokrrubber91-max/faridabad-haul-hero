@@ -29,7 +29,8 @@ export function PushAlertToggle() {
     },
   }[state];
 
-  const Icon = state === "enabled" ? BellRing : state === "denied" || state === "unsupported" ? BellOff : Bell;
+  const Icon =
+    state === "enabled" ? BellRing : state === "denied" || state === "unsupported" ? BellOff : Bell;
 
   return (
     <section className="surface-card flex flex-wrap items-center justify-between gap-3 p-4">

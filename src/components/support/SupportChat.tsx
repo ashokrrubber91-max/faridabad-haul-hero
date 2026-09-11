@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { MessageCircle, X, Send, Loader2, Headphones, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import {
+  MessageCircle,
+  X,
+  Send,
+  Loader2,
+  Headphones,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -193,7 +203,11 @@ export function SupportChat({ role }: { role: "customer" | "driver" }) {
                     )}
                   </button>
                 )}
-                <button onClick={() => setOpen(false)} className="rounded-md p-1 hover:bg-muted" aria-label="Close">
+                <button
+                  onClick={() => setOpen(false)}
+                  className="rounded-md p-1 hover:bg-muted"
+                  aria-label="Close"
+                >
                   <X className="h-4 w-4" />
                 </button>
               </div>

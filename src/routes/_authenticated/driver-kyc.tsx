@@ -56,7 +56,12 @@ function DriverKycPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (loading) return <Center><Loader2 className="h-5 w-5 animate-spin text-primary" /></Center>;
+  if (loading)
+    return (
+      <Center>
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      </Center>
+    );
   if (role && role !== "driver" && role !== "admin" && !roles.includes("driver")) {
     return <Navigate to="/customer" />;
   }
@@ -103,24 +108,22 @@ function DriverKycPage() {
         if (error) throw error;
         urls[key] = path;
       }
-      const { error: insertErr } = await supabase.from("driver_kyc" as never).upsert(
-        {
-          driver_id: user.id,
-          full_name: fullName.trim(),
-          city: city.trim() || "Faridabad",
-          vehicle_id: vehicleId,
-          dl_front_url: urls.dl_front,
-          dl_back_url: urls.dl_back,
-          rc_url: urls.rc,
-          id_proof_url: urls.id_proof,
-          vehicle_photo_url: urls.vehicle_photo,
-          status: "pending",
-          rejection_reason: null,
-          submitted_at: new Date().toISOString(),
-          reviewed_at: null,
-          reviewed_by: null,
-        } as never,
-      );
+      const { error: insertErr } = await supabase.from("driver_kyc" as never).upsert({
+        driver_id: user.id,
+        full_name: fullName.trim(),
+        city: city.trim() || "Faridabad",
+        vehicle_id: vehicleId,
+        dl_front_url: urls.dl_front,
+        dl_back_url: urls.dl_back,
+        rc_url: urls.rc,
+        id_proof_url: urls.id_proof,
+        vehicle_photo_url: urls.vehicle_photo,
+        status: "pending",
+        rejection_reason: null,
+        submitted_at: new Date().toISOString(),
+        reviewed_at: null,
+        reviewed_by: null,
+      } as never);
       if (insertErr) throw insertErr;
       toast.success("KYC submitted — admin will review within 24 hours");
       navigate({ to: "/driver" });
@@ -137,18 +140,25 @@ function DriverKycPage() {
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
-            <h1 className="font-display text-2xl tracking-wide text-secondary">Driver verification</h1>
+            <h1 className="font-display text-2xl tracking-wide text-secondary">
+              Driver verification
+            </h1>
           </div>
           <p className="text-xs text-muted-foreground">Step {step} of 3</p>
         </div>
         <div className="mb-5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(step / 3) * 100}%` }} />
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${(step / 3) * 100}%` }}
+          />
         </div>
 
         {status === "rejected" && (
           <div className="mb-4 rounded-md border border-destructive bg-destructive/5 p-3 text-sm">
             <p className="font-semibold text-destructive">Your previous submission was rejected</p>
-            <p className="text-muted-foreground">{existing.data?.rejection_reason ?? "Please re-upload correct documents."}</p>
+            <p className="text-muted-foreground">
+              {existing.data?.rejection_reason ?? "Please re-upload correct documents."}
+            </p>
           </div>
         )}
 
@@ -157,11 +167,21 @@ function DriverKycPage() {
             <p className="text-sm font-semibold text-secondary">Personal details</p>
             <div>
               <Label htmlFor="fname">Full name (as on ID)</Label>
-              <Input id="fname" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={80} />
+              <Input
+                id="fname"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                maxLength={80}
+              />
             </div>
             <div>
               <Label htmlFor="city">City</Label>
-              <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} maxLength={40} />
+              <Input
+                id="city"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                maxLength={40}
+              />
             </div>
           </div>
         )}
@@ -180,7 +200,9 @@ function DriverKycPage() {
                   }`}
                 >
                   <p className="text-sm font-semibold text-secondary">{v.label}</p>
-                  <p className="text-xs text-muted-foreground">Up to {v.capacity} · ₹{v.perKm}/km</p>
+                  <p className="text-xs text-muted-foreground">
+                    Up to {v.capacity} · ₹{v.perKm}/km
+                  </p>
                 </button>
               ))}
             </div>
@@ -205,13 +227,18 @@ function DriverKycPage() {
         )}
 
         <div className="mt-6 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={step === 1 || submitting}>
+          <Button
+            variant="ghost"
+            onClick={() => setStep((s) => Math.max(1, s - 1))}
+            disabled={step === 1 || submitting}
+          >
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
           {step < 3 ? (
             <Button
               onClick={() => {
-                if (step === 1 && fullName.trim().length < 2) return toast.error("Enter your full name");
+                if (step === 1 && fullName.trim().length < 2)
+                  return toast.error("Enter your full name");
                 setStep((s) => s + 1);
               }}
             >
@@ -228,7 +255,15 @@ function DriverKycPage() {
   );
 }
 
-function DocSlot({ label, preview, onFile }: { label: string; preview?: string; onFile: (f: File | null) => void }) {
+function DocSlot({
+  label,
+  preview,
+  onFile,
+}: {
+  label: string;
+  preview?: string;
+  onFile: (f: File | null) => void;
+}) {
   return (
     <label className="flex cursor-pointer flex-col rounded-md border border-dashed border-border bg-background p-3 hover:bg-muted">
       <p className="text-xs font-semibold text-secondary">{label}</p>
@@ -269,7 +304,13 @@ function DocSlot({ label, preview, onFile }: { label: string; preview?: string; 
   );
 }
 
-function StatusScreen({ status, rejectionReason }: { status: string; rejectionReason: string | null }) {
+function StatusScreen({
+  status,
+  rejectionReason,
+}: {
+  status: string;
+  rejectionReason: string | null;
+}) {
   const isApproved = status === "approved";
   return (
     <div className="mx-auto max-w-md">
@@ -288,7 +329,9 @@ function StatusScreen({ status, rejectionReason }: { status: string; rejectionRe
             : "Admin will review your submission within 24 hours. We'll notify you once you're approved."}
         </p>
         {rejectionReason && (
-          <p className="mt-3 rounded-md bg-destructive/10 p-3 text-xs text-destructive">{rejectionReason}</p>
+          <p className="mt-3 rounded-md bg-destructive/10 p-3 text-xs text-destructive">
+            {rejectionReason}
+          </p>
         )}
       </div>
     </div>

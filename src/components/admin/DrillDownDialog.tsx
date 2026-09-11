@@ -1,7 +1,11 @@
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -25,7 +29,14 @@ interface DrillDownDialogProps<T> {
 }
 
 export function DrillDownDialog<T>({
-  open, onOpenChange, title, description, rows, columns, searchFn, emptyLabel,
+  open,
+  onOpenChange,
+  title,
+  description,
+  rows,
+  columns,
+  searchFn,
+  emptyLabel,
 }: DrillDownDialogProps<T>) {
   const [q, setQ] = useState("");
 
@@ -59,14 +70,24 @@ export function DrillDownDialog<T>({
               </p>
             )}
             {filtered.map((row, i) => (
-              <div key={i} className="grid gap-1 py-2.5 text-sm sm:grid-cols-[1fr_auto] sm:items-center">
+              <div
+                key={i}
+                className="grid gap-1 py-2.5 text-sm sm:grid-cols-[1fr_auto] sm:items-center"
+              >
                 <div className="min-w-0 space-y-0.5">
                   {columns.slice(0, -1).map((c) => (
-                    <div key={c.key} className={c.className}>{c.render(row)}</div>
+                    <div key={c.key} className={c.className}>
+                      {c.render(row)}
+                    </div>
                   ))}
                 </div>
                 {columns.length > 0 && (
-                  <div className={columns[columns.length - 1].className ?? "text-right font-display text-lg text-secondary"}>
+                  <div
+                    className={
+                      columns[columns.length - 1].className ??
+                      "text-right font-display text-lg text-secondary"
+                    }
+                  >
                     {columns[columns.length - 1].render(row)}
                   </div>
                 )}
@@ -74,7 +95,9 @@ export function DrillDownDialog<T>({
             ))}
           </div>
         </ScrollArea>
-        <p className="text-xs text-muted-foreground">{filtered.length} of {rows.length} records</p>
+        <p className="text-xs text-muted-foreground">
+          {filtered.length} of {rows.length} records
+        </p>
       </DialogContent>
     </Dialog>
   );

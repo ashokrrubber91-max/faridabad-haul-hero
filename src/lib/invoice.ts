@@ -28,7 +28,11 @@ export function invoiceNumber(bookingId: string, createdAt: string): string {
 }
 
 /** Build a printable tax invoice (CGST/SGST split — Faridabad intra-state). */
-export function buildInvoiceHtml(b: InvoiceBooking, party: InvoiceParty, vehicleName: string): string {
+export function buildInvoiceHtml(
+  b: InvoiceBooking,
+  party: InvoiceParty,
+  vehicleName: string,
+): string {
   const total = Number(b.fare) || 0;
   const taxable = +(total / (1 + GST_RATE)).toFixed(2);
   const gst = +(total - taxable).toFixed(2);
@@ -111,7 +115,8 @@ export function openInvoice(html: string): boolean {
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c,
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c,
   );
 }

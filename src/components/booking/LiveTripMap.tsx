@@ -49,9 +49,13 @@ export function LiveTripMap({
   const dropMarker = useRef<google.maps.Marker | null>(null);
 
   const exactPickup: LatLng | null =
-    typeof pickupLat === "number" && typeof pickupLng === "number" ? { lat: pickupLat, lng: pickupLng } : null;
+    typeof pickupLat === "number" && typeof pickupLng === "number"
+      ? { lat: pickupLat, lng: pickupLng }
+      : null;
   const exactDrop: LatLng | null =
-    typeof dropLat === "number" && typeof dropLng === "number" ? { lat: dropLat, lng: dropLng } : null;
+    typeof dropLat === "number" && typeof dropLng === "number"
+      ? { lat: dropLat, lng: dropLng }
+      : null;
 
   const [pickup, setPickup] = useState<LatLng | null>(exactPickup);
   const [drop, setDrop] = useState<LatLng | null>(exactDrop);
@@ -113,7 +117,12 @@ export function LiveTripMap({
       .channel(`driver-loc-${driverId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "driver_locations", filter: `driver_id=eq.${driverId}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "driver_locations",
+          filter: `driver_id=eq.${driverId}`,
+        },
         () => void location.refetch(),
       )
       .subscribe();
@@ -137,7 +146,8 @@ export function LiveTripMap({
 
   const target = phase === "accepted" ? pickup : drop;
   const remainingKm = driverPos && target ? haversineKm(driverPos, target) * 1.3 : null;
-  const eta = remainingKm !== null ? Math.max(1, Math.round((remainingKm / AVG_SPEED_KMH) * 60)) : null;
+  const eta =
+    remainingKm !== null ? Math.max(1, Math.round((remainingKm / AVG_SPEED_KMH) * 60)) : null;
 
   // Draw the map once both ends are known.
   useEffect(() => {
@@ -232,7 +242,11 @@ export function LiveTripMap({
     <div className="mt-3 overflow-hidden rounded-md border border-primary/30">
       <div className="flex items-center justify-between gap-2 bg-primary/10 px-3 py-2 text-primary">
         <div className="flex items-center gap-2">
-          {driverPos ? <Navigation className="h-4 w-4 animate-pulse" /> : <MapPin className="h-4 w-4" />}
+          {driverPos ? (
+            <Navigation className="h-4 w-4 animate-pulse" />
+          ) : (
+            <MapPin className="h-4 w-4" />
+          )}
           <p className="text-sm font-semibold">{headline}</p>
         </div>
       </div>
