@@ -145,7 +145,7 @@ function KycCard({ row, onChanged }: { row: Kyc; onChanged: () => void }) {
 
       <div className="mt-3 flex flex-wrap gap-2">
         {DOCS.filter(([k]) => row[k]).map(([k, label]) => (
-          <Button key={k} size="sm" variant="outline" onClick={() => openDoc(row[k])}>
+          <Button key={k} size="sm" variant="outline" onClick={() => openDoc(row[k] ?? "")}>
             {label}
           </Button>
         ))}
