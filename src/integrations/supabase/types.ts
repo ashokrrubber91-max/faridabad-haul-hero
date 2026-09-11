@@ -716,12 +716,16 @@ export type Database = {
       }
       sms_logs: {
         Row: {
+          attempts: number
           body: string
           booking_id: string
           created_at: string
           error: string | null
           event: Database["public"]["Enums"]["sms_event"]
           id: string
+          last_attempt_at: string | null
+          max_attempts: number
+          next_attempt_at: string
           phone: string
           provider_sid: string | null
           recipient: Database["public"]["Enums"]["sms_recipient"]
@@ -731,12 +735,16 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attempts?: number
           body: string
           booking_id: string
           created_at?: string
           error?: string | null
           event: Database["public"]["Enums"]["sms_event"]
           id?: string
+          last_attempt_at?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
           phone: string
           provider_sid?: string | null
           recipient: Database["public"]["Enums"]["sms_recipient"]
@@ -746,12 +754,16 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attempts?: number
           body?: string
           booking_id?: string
           created_at?: string
           error?: string | null
           event?: Database["public"]["Enums"]["sms_event"]
           id?: string
+          last_attempt_at?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
           phone?: string
           provider_sid?: string | null
           recipient?: Database["public"]["Enums"]["sms_recipient"]
@@ -1074,9 +1086,14 @@ export type Database = {
       payment_method: "cod" | "wallet" | "upi" | "card" | "netbanking"
       payment_state: "created" | "paid" | "failed" | "refunded"
       payment_status: "pending" | "paid" | "failed" | "refunded"
-      sms_event: "accepted" | "started" | "completed"
+      sms_event:
+        | "accepted"
+        | "started"
+        | "completed"
+        | "cancelled"
+        | "payment_received"
       sms_recipient: "customer" | "driver"
-      sms_status: "queued" | "sent" | "failed"
+      sms_status: "queued" | "sent" | "failed" | "sending" | "not_configured"
       vehicle_type: "tata_ace" | "pickup_8ft" | "tata_407"
       withdrawal_status: "requested" | "paid" | "rejected"
     }
@@ -1221,9 +1238,15 @@ export const Constants = {
       payment_method: ["cod", "wallet", "upi", "card", "netbanking"],
       payment_state: ["created", "paid", "failed", "refunded"],
       payment_status: ["pending", "paid", "failed", "refunded"],
-      sms_event: ["accepted", "started", "completed"],
+      sms_event: [
+        "accepted",
+        "started",
+        "completed",
+        "cancelled",
+        "payment_received",
+      ],
       sms_recipient: ["customer", "driver"],
-      sms_status: ["queued", "sent", "failed"],
+      sms_status: ["queued", "sent", "failed", "sending", "not_configured"],
       vehicle_type: ["tata_ace", "pickup_8ft", "tata_407"],
       withdrawal_status: ["requested", "paid", "rejected"],
     },
