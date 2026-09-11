@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.sync_driver_role_on_kyc() FROM PUBLIC, anon, authenticated;
