@@ -6,20 +6,49 @@ import { createFileRoute } from "@tanstack/react-router";
  * in the Razorpay dashboard and set the same signing secret as
  * RAZORPAY_WEBHOOK_SECRET.
  */
+/** Every response is JSON so a browser/proxy never renders a blank error page. */
+function json(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+    },
+  });
+}
+
 export const Route = createFileRoute("/api/public/razorpay-webhook")({
   server: {
     handlers: {
+      // Health probe: lets ops confirm the endpoint exists and whether the
+      // signing secret is configured, without a blank-screen error.
+      GET: async () =>
+        json({
+          endpoint: "razorpay-webhook",
+          method: "POST",
+          configured: Boolean(process.env["RAZORPAY_WEBHOOK_SECRET"]),
+        }),
       POST: async ({ request }) => {
         const secret = process.env["RAZORPAY_WEBHOOK_SECRET"];
-        if (!secret) return new Response("Webhook not configured", { status: 503 });
+        if (!secret) {
+          return json(
+            {
+              ok: false,
+              error: "webhook_not_configured",
+              message:
+                "Razorpay webhook signing secret is not configured, so payment callbacks are rejected safely.",
+            },
+            503,
+          );
+        }
 
         const signature = request.headers.get("x-razorpay-signature");
         const rawBody = await request.text();
-        if (!signature) return new Response("Missing signature", { status: 401 });
+        if (!signature) return json({ ok: false, error: "missing_signature" }, 401);
 
         const { verifyWebhookSignature } = await import("@/lib/razorpay.server");
         if (!(await verifyWebhookSignature(secret, rawBody, signature))) {
-          return new Response("Invalid signature", { status: 401 });
+          return json({ ok: false, error: "invalid_signature" }, 401);
         }
 
         type Entity = {
@@ -38,7 +67,7 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
         try {
           event = JSON.parse(rawBody);
         } catch {
-          return new Response("Bad payload", { status: 400 });
+          return json({ ok: false, error: "bad_payload" }, 400);
         }
 
         const kind = event.event ?? "";
@@ -66,8 +95,8 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
         if (dedupeError) {
           // Unique violation => already handled. Anything else is a real failure:
           // return 500 so Razorpay retries later.
-          if (dedupeError.code === "23505") return new Response("duplicate");
-          return new Response("Could not record event", { status: 500 });
+          if (dedupeError.code === "23505") return json({ ok: true, duplicate: true });
+          return json({ ok: false, error: "event_not_recorded" }, 500);
         }
 
         // ---------- Refunds ----------
@@ -77,7 +106,7 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
             .select("id, booking_id, state")
             .eq("provider_payment_id", refund.payment_id)
             .maybeSingle();
-          if (!record) return new Response("ok");
+          if (!record) return json({ ok: true });
           if (kind === "refund.processed" && record.state !== "refunded") {
             await supabaseAdmin.from("payments").update({ state: "refunded" }).eq("id", record.id);
             if (record.booking_id) {
@@ -87,17 +116,17 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
                 .eq("id", record.booking_id);
             }
           }
-          return new Response("ok");
+          return json({ ok: true });
         }
 
-        if (!payment?.order_id) return new Response("ok");
+        if (!payment?.order_id) return json({ ok: true });
 
         const { data: record } = await supabaseAdmin
           .from("payments")
           .select("id, booking_id, customer_id, amount, currency, state")
           .eq("provider_order_id", payment.order_id)
           .maybeSingle();
-        if (!record) return new Response("ok");
+        if (!record) return json({ ok: true });
 
         if (kind === "payment.captured") {
           // The captured amount and currency must match what we stored for this order.
@@ -115,7 +144,7 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
               })
               .eq("id", record.id)
               .eq("state", "created");
-            return new Response("ok");
+            return json({ ok: true });
           }
 
           if (record.state !== "paid") {
@@ -150,7 +179,7 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
           }
         }
 
-        return new Response("ok");
+        return json({ ok: true });
       },
     },
   },
