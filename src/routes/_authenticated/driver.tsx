@@ -737,7 +737,7 @@ function ActiveJobCard({
               />
             </label>
             {podPath && (
-              <p className="mt-1 text-xs text-success">Photo proof ready — you can complete the trip without the OTP.</p>
+              <p className="mt-1 text-xs text-success">Photo attached — it will be saved with the trip. The drop OTP is still required.</p>
             )}
           </div>
         )}
