@@ -1758,7 +1758,13 @@ function SmsLogsSection({ logs }: { logs: AnyRow[] }) {
                 </span>
               </div>
               <p className="truncate text-sm text-secondary">{s.body}</p>
-              {s.error && <p className="text-xs text-destructive">{s.error}</p>}
+              <p className="text-xs text-muted-foreground">
+                attempt {String(s.attempts ?? 0)} of {String(s.max_attempts ?? 5)}
+                {s.last_attempt_at
+                  ? ` · last tried ${new Date(String(s.last_attempt_at)).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })}`
+                  : ""}
+              </p>
+              {s.error && <p className="text-xs text-destructive">{String(s.error)}</p>}
             </div>
             <Badge className={smsTone(s.status)}>{s.status}</Badge>
           </div>
