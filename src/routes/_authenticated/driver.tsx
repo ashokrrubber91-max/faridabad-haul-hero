@@ -188,12 +188,15 @@ function DriverPage() {
       podPath?: string | null;
     }) => {
       const code = otp.replace(/\D/g, "");
-      if (!code && next === "completed" && podPath) {
-        const { error } = await supabase.rpc("complete_booking_with_pod", { _booking_id: id, _pod_path: podPath });
-        if (error) throw error;
-        return;
-      }
       if (code.length !== 4) throw new Error("Enter the 4-digit code from the customer");
+      // The photo is evidence only — it can never replace the customer's code.
+      if (podPath) {
+        const { error: podError } = await supabase.rpc("attach_delivery_photo", {
+          _booking_id: id,
+          _pod_path: podPath,
+        });
+        if (podError) throw podError;
+      }
       const { error } = await supabase.rpc("verify_booking_otp", {
         _booking_id: id,
         _stage: next === "in_progress" ? "pickup" : "drop",
