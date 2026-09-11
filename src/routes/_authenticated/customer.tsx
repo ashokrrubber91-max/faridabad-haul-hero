@@ -687,3 +687,52 @@ function CenterLoader() {
     </div>
   );
 }
+
+/**
+ * Trip codes are fetched on demand for the customer only. They are never part of
+ * the booking rows the app loads, so a driver's app can never read them.
+ */
+function TripCodes({ bookingId, status }: { bookingId: string; status: string }) {
+  const codes = useQuery({
+    queryKey: ["trip-codes", bookingId, status],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_booking_otps", { _booking_id: bookingId });
+      if (error) throw error;
+      const row = (data ?? [])[0];
+      return { pickup: row?.pickup_otp ?? null, drop: row?.drop_otp ?? null };
+    },
+    staleTime: 30_000,
+  });
+
+  if (codes.isLoading) {
+    return <p className="mt-3 text-xs text-muted-foreground">Loading your trip codes…</p>;
+  }
+  if (codes.isError) {
+    return (
+      <div className="mt-3 flex items-center justify-between gap-2 rounded-md bg-muted/50 p-3">
+        <p className="text-xs text-muted-foreground">Couldn’t load your trip codes.</p>
+        <Button size="sm" variant="outline" onClick={() => void codes.refetch()}>Retry</Button>
+      </div>
+    );
+  }
+  if (!codes.data?.pickup && !codes.data?.drop) return null;
+
+  return (
+    <div className="mt-3 grid gap-2 rounded-md bg-primary/5 p-3 sm:grid-cols-2">
+      {codes.data.pickup && (
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Pickup OTP</p>
+          <p className="font-display text-2xl tracking-widest text-primary">{codes.data.pickup}</p>
+          <p className="text-[10px] text-muted-foreground">Share with driver at pickup</p>
+        </div>
+      )}
+      {codes.data.drop && (
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Drop OTP</p>
+          <p className="font-display text-2xl tracking-widest text-primary">{codes.data.drop}</p>
+          <p className="text-[10px] text-muted-foreground">Share only after delivery</p>
+        </div>
+      )}
+    </div>
+  );
+}
