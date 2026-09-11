@@ -108,10 +108,13 @@ export const confirmTripPayment = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: record } = await supabaseAdmin
       .from("payments")
-      .select("id, booking_id, customer_id, amount, state")
+      .select("id, booking_id, customer_id, amount, state, currency")
       .eq("provider_order_id", data.orderId)
       .maybeSingle();
     if (!record || record.customer_id !== context.userId) throw new Error("Payment record not found");
+    if (record.currency && record.currency !== "INR") throw new Error("Unsupported payment currency");
+    // Duplicate confirmation (double-click, webhook race) is a no-op.
+    if (record.state === "paid") return { ok: true, bookingId: record.booking_id };
 
     const payment = await fetchRazorpayPayment(creds, data.paymentId);
     const paidRupees = payment.amount / 100;
