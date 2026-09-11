@@ -1322,7 +1322,10 @@ function CouponsTab({ coupons, onChanged }: { coupons: AnyRow[]; onChanged: () =
           </div>
           <div>
             <Label className="text-xs">Kind</Label>
-            <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v as "flat" | "percent" })}>
+            <Select
+              value={form.kind}
+              onValueChange={(v) => setForm({ ...form, kind: v as "flat" | "percent" })}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -1542,7 +1545,10 @@ function BroadcastTab({ drivers, customers }: { drivers: Profile[]; customers: P
       <div className="mt-3 space-y-2">
         <div>
           <Label className="text-xs">Audience</Label>
-          <Select value={audience} onValueChange={(v) => setAudience(v as "all" | "customer" | "driver")}>
+          <Select
+            value={audience}
+            onValueChange={(v) => setAudience(v as "all" | "customer" | "driver")}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>

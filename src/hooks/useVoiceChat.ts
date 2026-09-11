@@ -13,8 +13,8 @@ type SpeechRecognitionLike = {
   interimResults: boolean;
   start: () => void;
   stop: () => void;
-  onresult: ((e: any) => void) | null;
-  onerror: ((e: any) => void) | null;
+  onresult: ((e: unknown) => void) | null;
+  onerror: ((e: unknown) => void) | null;
   onend: (() => void) | null;
 };
 
@@ -44,7 +44,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
     rec.lang = "hi-IN";
     rec.continuous = false;
     rec.interimResults = false;
-    rec.onresult = (e: any) => {
+    rec.onresult = (e: unknown) => {
       const transcript = e.results?.[0]?.[0]?.transcript ?? "";
       if (transcript) onResult(transcript);
     };
@@ -84,7 +84,7 @@ export function useVoiceOutput() {
     (text: string, lang: DetectedLang) => {
       if (muted || !isVoiceOutputSupported() || !text.trim()) return;
       const plain = text
-        .replace(/[*_`#>\-]/g, " ")
+        .replace(/[*_`#>-]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
       if (!plain) return;
