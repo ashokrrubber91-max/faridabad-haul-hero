@@ -33,18 +33,40 @@ export const createTripOrder = createServerFn({ method: "POST" })
     const amount = Number(booking.fare);
     if (!(amount > 0)) throw new Error("Nothing to pay for this trip");
 
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Idempotency: a retried checkout for the same unpaid trip reuses the open order.
+    const { data: existing } = await supabaseAdmin
+      .from("payments")
+      .select("provider_order_id, amount, state, currency")
+      .eq("booking_id", booking.id)
+      .eq("customer_id", context.userId)
+      .eq("state", "created")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existing && Math.abs(Number(existing.amount) - amount) < 0.01) {
+      return {
+        orderId: existing.provider_order_id,
+        amount,
+        keyId: creds.keyId,
+        currency: existing.currency ?? "INR",
+      };
+    }
+
     const order = await createRazorpayOrder(creds, {
       amountRupees: amount,
       receipt: `mp_${booking.id.slice(0, 30)}`,
       notes: { booking_id: booking.id, customer_id: context.userId },
     });
+    if (order.currency !== "INR") throw new Error("Unsupported payment currency");
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error: insertError } = await supabaseAdmin.from("payments").insert({
       booking_id: booking.id,
       customer_id: context.userId,
       provider_order_id: order.id,
       amount,
+      currency: order.currency,
       state: "created",
       method: booking.payment_method,
     });
