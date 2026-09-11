@@ -155,8 +155,14 @@ function DriverPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  type TimerPatch = {
+    loading_started_at?: string;
+    loading_stopped_at?: string;
+    unloading_started_at?: string;
+    unloading_stopped_at?: string;
+  };
   const setTimer = useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, string> }) => {
+    mutationFn: async ({ id, patch }: { id: string; patch: TimerPatch }) => {
       const { error } = await supabase.from("bookings").update(patch).eq("id", id);
       if (error) throw error;
     },
@@ -382,7 +388,7 @@ function DriverPage() {
               podPath,
             })
           }
-          onTimer={(patch) => setTimer.mutate({ id: activeJob.id, patch })}
+          onTimer={(patch) => setTimer.mutate({ id: activeJob.id, patch: patch as never })}
           pending={verifyOtp.isPending}
         />
       )}
