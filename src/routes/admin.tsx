@@ -26,40 +26,45 @@ export const Route = createFileRoute("/admin")({
   component: AdminGate,
 });
 
-const ADMIN_PASSCODE = "miniport2026";
-const ADMIN_KEY = "miniport_admin_ok";
-
+/**
+ * Access is decided by the account's stored role, not by a shared passcode.
+ * Every admin action is additionally checked by the database itself.
+ */
 function AdminGate() {
-  const [ok, setOk] = useState(false);
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.localStorage.getItem(ADMIN_KEY) === "1") setOk(true);
-  }, []);
+  const { loading, user, roles } = useAuth();
 
-  const [code, setCode] = useState("");
-  const unlock = () => {
-    if (code === ADMIN_PASSCODE) {
-      window.localStorage.setItem(ADMIN_KEY, "1");
-      setOk(true);
-    } else toast.error("Wrong passcode");
-  };
-  if (!ok) {
+  if (loading) {
     return (
-      <div className="mx-auto mt-24 max-w-sm rounded-lg border bg-card p-6 shadow-sm">
-        <h1 className="font-display text-2xl tracking-wide text-secondary">Admin access</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Enter the admin passcode to continue.</p>
-        <Input
-          type="password"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          placeholder="Passcode"
-          className="mt-4"
-          onKeyDown={(e) => { if (e.key === "Enter") unlock(); }}
-        />
-        <Button className="mt-3 w-full" onClick={unlock}>Unlock</Button>
-        <p className="mt-3 text-center text-xs text-muted-foreground">Default: miniport2026</p>
+      <div className="mt-24 flex justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
       </div>
     );
   }
+
+  if (!user) {
+    return (
+      <div className="mx-auto mt-24 max-w-sm rounded-lg border bg-card p-6 text-center shadow-sm">
+        <ShieldCheck className="mx-auto mb-2 h-6 w-6 text-primary" />
+        <h1 className="font-display text-2xl tracking-wide text-secondary">Team sign-in required</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Sign in with your MiniPort team account to open the control room.</p>
+        <Button className="mt-4 w-full" onClick={() => { window.location.href = "/auth"; }}>Sign in</Button>
+      </div>
+    );
+  }
+
+  if (!roles.includes("admin")) {
+    return (
+      <div className="mx-auto mt-24 max-w-sm rounded-lg border bg-card p-6 text-center shadow-sm">
+        <Ban className="mx-auto mb-2 h-6 w-6 text-destructive" />
+        <h1 className="font-display text-2xl tracking-wide text-secondary">Not authorised</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          This area is limited to MiniPort team accounts. Ask an existing admin to grant you access.
+        </p>
+        <Button variant="outline" className="mt-4 w-full" onClick={() => { window.location.href = "/"; }}>Back to home</Button>
+      </div>
+    );
+  }
+
   return <AdminPage />;
 }
 
