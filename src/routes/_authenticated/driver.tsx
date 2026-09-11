@@ -1,5 +1,6 @@
 import type { AnyRow } from "@/lib/rows";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ import { vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
 import { SupportChat } from "@/components/support/SupportChat";
 import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 import { LoadingTimerCard } from "@/components/booking/LoadingTimerCard";
+import { sweepStaleBookings } from "@/lib/notifications.functions";
 
 export const Route = createFileRoute("/_authenticated/driver")({
   head: () => ({ meta: [{ title: "Driver — MiniPort" }] }),
@@ -56,6 +58,8 @@ function DriverPage() {
     onSuccess: (next) => toast.success(next ? "You're online — receiving jobs" : "You're offline"),
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const sweepStale = useServerFn(sweepStaleBookings);
 
   const queue = useQuery({
     queryKey: ["driver-feed", user?.id],
