@@ -660,31 +660,24 @@ function DriversTab({
     if (!topupFor) return;
     const delta = Number(amount);
     if (!Number.isFinite(delta) || delta === 0) return toast.error("Enter a non-zero amount");
+    if (!reason.trim()) return toast.error("Add a reason for this adjustment");
     setBusy(true);
-    const existing = walletMap.get(topupFor.id);
-    const newBalance = Number(existing?.cash_balance ?? 0) + delta;
-    const { error } = await supabase.from("wallet_accounts").upsert(
-      {
-        user_id: topupFor.id,
-        cash_balance: newBalance,
-        coins_balance: existing?.coins_balance ?? 0,
-      },
-      { onConflict: "user_id" },
-    );
-    if (!error) {
-      await supabase.from("wallet_transactions").insert({
-        user_id: topupFor.id,
-        delta,
-        reason: delta > 0 ? "Admin top-up" : "Admin adjustment",
-      });
-    }
+    // The balance change is applied inside the database so the amount can never
+    // be decided by the browser, and every adjustment is recorded.
+    const { data, error } = await supabase.rpc("admin_adjust_wallet", {
+      _user_id: topupFor.id,
+      _delta: delta,
+      _reason: reason.trim(),
+    });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success(`Wallet updated by ₹${delta}`);
+    toast.success(`Wallet updated by ₹${delta} · new balance ₹${Number(data ?? 0).toFixed(0)}`);
     setTopupFor(null);
     setAmount("");
+    setReason("");
     onChanged();
   };
+
 
   return (
     <section className="surface-card">
