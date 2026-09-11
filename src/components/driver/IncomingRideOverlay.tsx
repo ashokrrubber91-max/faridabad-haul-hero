@@ -93,7 +93,6 @@ export function IncomingRideOverlay({
     if (secs <= 0) return;
     const t = setTimeout(() => setSecs((s) => s - 1), 1000);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [secs]);
 
   const commission = Math.round(Number(job.fare) * 0.1);
