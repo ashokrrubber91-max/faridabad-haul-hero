@@ -398,7 +398,15 @@ export function DisputesTab({
                           size="sm"
                           variant="outline"
                           disabled={refund.isPending}
-                          onClick={() => refund.mutate(b.id)}
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Mark ${money(b.fare)} as refunded for this trip? This is recorded in the activity log.`,
+                              )
+                            ) {
+                              refund.mutate(b.id);
+                            }
+                          }}
                         >
                           <BadgeIndianRupee className="h-3.5 w-3.5" /> Mark refunded
                         </Button>

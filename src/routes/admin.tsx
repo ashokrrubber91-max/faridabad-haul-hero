@@ -637,6 +637,7 @@ function DriversTab({
   const [q, setQ] = useState("");
   const [topupFor, setTopupFor] = useState<Profile | null>(null);
   const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
 
   const filtered = drivers.filter(
@@ -660,29 +661,21 @@ function DriversTab({
     if (!topupFor) return;
     const delta = Number(amount);
     if (!Number.isFinite(delta) || delta === 0) return toast.error("Enter a non-zero amount");
+    if (!reason.trim()) return toast.error("Add a reason for this adjustment");
     setBusy(true);
-    const existing = walletMap.get(topupFor.id);
-    const newBalance = Number(existing?.cash_balance ?? 0) + delta;
-    const { error } = await supabase.from("wallet_accounts").upsert(
-      {
-        user_id: topupFor.id,
-        cash_balance: newBalance,
-        coins_balance: existing?.coins_balance ?? 0,
-      },
-      { onConflict: "user_id" },
-    );
-    if (!error) {
-      await supabase.from("wallet_transactions").insert({
-        user_id: topupFor.id,
-        delta,
-        reason: delta > 0 ? "Admin top-up" : "Admin adjustment",
-      });
-    }
+    // The balance change is applied inside the database so the amount can never
+    // be decided by the browser, and every adjustment is recorded.
+    const { data, error } = await supabase.rpc("admin_adjust_wallet", {
+      _user_id: topupFor.id,
+      _delta: delta,
+      _reason: reason.trim(),
+    });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success(`Wallet updated by ₹${delta}`);
+    toast.success(`Wallet updated by ₹${delta} · new balance ₹${Number(data ?? 0).toFixed(0)}`);
     setTopupFor(null);
     setAmount("");
+    setReason("");
     onChanged();
   };
 
@@ -776,6 +769,12 @@ function DriversTab({
               onChange={(e) => setAmount(e.target.value)}
               placeholder="e.g. 500"
             />
+            <Label>Reason (recorded in the activity log)</Label>
+            <Input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Refund for cancelled trip #1234"
+            />
             <p className="text-xs text-muted-foreground">
               Current cash: ₹
               {Number(walletMap.get(topupFor?.id ?? "")?.cash_balance ?? 0).toFixed(0)}
@@ -785,7 +784,7 @@ function DriversTab({
             <Button variant="outline" onClick={() => setTopupFor(null)}>
               Cancel
             </Button>
-            <Button onClick={doTopup} disabled={busy}>
+            <Button onClick={doTopup} disabled={busy || !amount || !reason.trim()}>
               {busy ? "Saving..." : "Apply"}
             </Button>
           </DialogFooter>
@@ -871,24 +870,35 @@ function LiveTripsTab({
   );
   const [assignFor, setAssignFor] = useState<Booking | null>(null);
   const [driverId, setDriverId] = useState<string>("");
+  const [cancelFor, setCancelFor] = useState<Booking | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const cancel = async (b: Booking) => {
-    if (!confirm("Cancel this trip?")) return;
-    const { error } = await supabase
-      .from("bookings")
-      .update({ status: "cancelled" })
-      .eq("id", b.id);
+  const doCancel = async () => {
+    if (!cancelFor || cancelReason.trim().length < 4) return;
+    setBusy(true);
+    // Cancellation runs in the database: it refuses closed trips and records who cancelled.
+    const { error } = await supabase.rpc("admin_cancel_booking", {
+      _booking_id: cancelFor.id,
+      _reason: cancelReason.trim(),
+    });
+    setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Trip cancelled");
+    setCancelFor(null);
+    setCancelReason("");
     onChanged();
   };
 
   const assign = async () => {
     if (!assignFor || !driverId) return;
-    const { error } = await supabase
-      .from("bookings")
-      .update({ driver_id: driverId, status: "accepted" })
-      .eq("id", assignFor.id);
+    setBusy(true);
+    // Eligibility (approved, free driver) is checked in the database, not here.
+    const { error } = await supabase.rpc("admin_assign_driver", {
+      _booking_id: assignFor.id,
+      _driver_id: driverId,
+    });
+    setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Driver assigned");
     setAssignFor(null);
@@ -952,7 +962,7 @@ function LiveTripsTab({
                     Assign driver
                   </Button>
                 )}
-                <Button size="sm" variant="ghost" onClick={() => cancel(b)}>
+                <Button size="sm" variant="ghost" onClick={() => setCancelFor(b)}>
                   Cancel
                 </Button>
               </div>
@@ -987,8 +997,47 @@ function LiveTripsTab({
             <Button variant="outline" onClick={() => setAssignFor(null)}>
               Cancel
             </Button>
-            <Button onClick={assign} disabled={!driverId}>
-              Assign
+            <Button onClick={assign} disabled={!driverId || busy}>
+              {busy ? "Assigning..." : "Assign"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!cancelFor}
+        onOpenChange={(o) => {
+          if (!o) {
+            setCancelFor(null);
+            setCancelReason("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel this trip?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {cancelFor?.pickup_address} → {cancelFor?.drop_address}
+            </p>
+            <Label>Reason (shared with the customer and recorded)</Label>
+            <Input
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="e.g. No driver available in the area"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelFor(null)}>
+              Keep trip
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={doCancel}
+              disabled={busy || cancelReason.trim().length < 4}
+            >
+              {busy ? "Cancelling..." : "Cancel trip"}
             </Button>
           </DialogFooter>
         </DialogContent>
