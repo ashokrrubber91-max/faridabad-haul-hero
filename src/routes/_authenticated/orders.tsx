@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { STATUS_META, vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
 import { buildInvoiceHtml, invoiceNumber, openInvoice } from "@/lib/invoice";
+import { TripDetailDialog } from "@/components/booking/TripDetailDialog";
 
 export const Route = createFileRoute("/_authenticated/orders")({
   head: () => ({
@@ -49,6 +50,7 @@ function OrdersPage() {
   const [filter, setFilter] = useState<Filter>("active");
   const [shown, setShown] = useState(10);
   const [rateTarget, setRateTarget] = useState<{ id: string; addr: string } | null>(null);
+  const [detail, setDetail] = useState<string | null>(null);
   const [stars, setStars] = useState(5);
   const [review, setReview] = useState("");
 
@@ -133,7 +135,7 @@ function OrdersPage() {
       ? ["pending", "accepted", "in_progress"].includes(o.status)
       : filter === "completed"
         ? o.status === "completed"
-        : o.status === "cancelled",
+        : o.status === "cancelled" || o.status === "expired",
   );
 
   const downloadInvoice = (b: (typeof all)[number]) => {
@@ -238,6 +240,9 @@ function OrdersPage() {
                 )}
 
                 <div className="mt-3 flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setDetail(b.id)}>
+                    View details
+                  </Button>
                   {b.status === "completed" && (
                     <Button size="sm" variant="outline" onClick={() => downloadInvoice(b)}>
                       <Download className="h-3.5 w-3.5" /> Invoice{" "}
@@ -276,6 +281,11 @@ function OrdersPage() {
           )}
         </div>
       )}
+
+      <TripDetailDialog
+        booking={all.find((o) => o.id === detail) ?? null}
+        onClose={() => setDetail(null)}
+      />
 
       <Dialog open={!!rateTarget} onOpenChange={(v) => !v && setRateTarget(null)}>
         <DialogContent>

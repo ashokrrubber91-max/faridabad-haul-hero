@@ -26,7 +26,7 @@ const DOC_LABELS: Record<DocKey, string> = {
 const DOC_ORDER: DocKey[] = ["dl_front", "dl_back", "rc", "id_proof", "vehicle_photo"];
 
 function DriverKycPage() {
-  const { user, role, roles, loading } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [fullName, setFullName] = useState("");
@@ -62,11 +62,17 @@ function DriverKycPage() {
         <Loader2 className="h-5 w-5 animate-spin text-primary" />
       </Center>
     );
-  if (role && role !== "driver" && role !== "admin" && !roles.includes("driver")) {
-    return <Navigate to="/customer" />;
-  }
+  // Anyone signed in may apply to drive. Driver access is granted only after
+  // the MiniPort team approves the submission.
+  if (!user) return <Navigate to="/auth" />;
 
   const status = existing.data?.status;
+  if (existing.isLoading)
+    return (
+      <Center>
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      </Center>
+    );
   if (status === "pending" || status === "approved") {
     return <StatusScreen status={status} rejectionReason={null} />;
   }
