@@ -1,5 +1,5 @@
 import type { AnyRow } from "@/lib/rows";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { processSmsQueue } from "@/lib/notifications.functions";
 import { useEffect, useMemo, useState } from "react";
