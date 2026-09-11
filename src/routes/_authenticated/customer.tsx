@@ -88,10 +88,23 @@ function CustomerPage() {
   const [gstinEnabled, setGstinEnabled] = useState(false);
   const [gstinId, setGstinId] = useState<string | null>(null);
 
-  const distanceKm = useMemo(() => {
-    if (!pickup || !drop) return 0;
-    return routeDistanceKm([pickup, ...stops, drop]);
-  }, [pickup, drop, stops]);
+  // Distance always comes from the Routes API on the server — never a
+  // straight-line estimate — because the fare is derived from it.
+  const routePoints = useMemo(
+    () =>
+      pickup && drop
+        ? [pickup, ...stops, drop].map((p) => ({ lat: p.lat, lng: p.lng }))
+        : null,
+    [pickup, drop, stops],
+  );
+  const routeQuote = useQuery({
+    queryKey: ["route-quote", routePoints],
+    enabled: !!routePoints,
+    staleTime: 60_000,
+    retry: 1,
+    queryFn: () => computeRoadRoute({ data: { points: routePoints! } }),
+  });
+  const distanceKm = routeQuote.data?.distanceKm ?? 0;
   const baseFare = estimateFare(vehicle, distanceKm);
   const discount = Math.min(baseFare, (promo?.discount ?? 0) + coins);
   const fare = Math.max(0, baseFare - discount);
