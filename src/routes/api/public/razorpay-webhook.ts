@@ -47,6 +47,20 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+        // Razorpay retries deliveries; process each event exactly once.
+        const eventId =
+          request.headers.get("x-razorpay-event-id") ??
+          `${kind}:${payment?.id ?? refund?.id ?? "unknown"}`;
+        const { error: dedupeError } = await supabaseAdmin
+          .from("webhook_events")
+          .insert({ provider: "razorpay", event_id: eventId, event_type: kind });
+        if (dedupeError) {
+          // Unique violation => already handled. Anything else is a real failure:
+          // return 500 so Razorpay retries later.
+          if (dedupeError.code === "23505") return new Response("duplicate");
+          return new Response("Could not record event", { status: 500 });
+        }
+
         // ---------- Refunds ----------
         if (kind.startsWith("refund.") && refund?.payment_id) {
           const { data: record } = await supabaseAdmin
