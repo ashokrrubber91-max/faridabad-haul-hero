@@ -637,7 +637,9 @@ function DriversTab({
   const [q, setQ] = useState("");
   const [topupFor, setTopupFor] = useState<Profile | null>(null);
   const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+
 
   const filtered = drivers.filter(
     (d) => !q || d.name.toLowerCase().includes(q.toLowerCase()) || d.phone.includes(q),
