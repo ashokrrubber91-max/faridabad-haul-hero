@@ -102,7 +102,10 @@ function DriverPage() {
         qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
         qc.invalidateQueries({ queryKey: ["driver-wallet", user.id] });
         const next = payload.new as { status?: string; driver_id?: string | null; service_zone?: string };
-        if (payload.eventType === "INSERT" && next.status === "pending" && !next.driver_id) {
+        const eligibleForAlert = profile?.is_online === true
+          && profile.kyc_status === "approved"
+          && profile.service_zone === (next.service_zone ?? "Faridabad");
+        if (payload.eventType === "INSERT" && next.status === "pending" && !next.driver_id && eligibleForAlert) {
           toast.info("New ride request", { description: `${next.service_zone ?? "Faridabad"} zone · open Live requests` });
           playRideAlert();
         }
@@ -121,7 +124,7 @@ function DriverPage() {
       document.removeEventListener("visibilitychange", recover);
       supabase.removeChannel(ch);
     };
-  }, [user, qc]);
+  }, [user, profile, qc]);
 
   const accept = useMutation({
     mutationFn: async (id: string) => {
@@ -405,7 +408,10 @@ function DriverPage() {
             setDismissed((d) => [...d, id]);
             accept.mutate(id);
           }}
-          onDecline={() => decline.mutate(incoming.id)}
+          onDecline={() => {
+            setDismissed((d) => [...d, incoming.id]);
+            decline.mutate(incoming.id);
+          }}
           onDismiss={() => setDismissed((d) => [...d, incoming.id])}
         />
       )}
