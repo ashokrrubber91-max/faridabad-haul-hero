@@ -56,10 +56,12 @@ export function useAuth(): AuthState {
     return () => { active = false; sub.subscription.unsubscribe(); };
   }, []);
 
-  // Real driver GPS: while online, publish the phone's position every time the
-  // browser reports movement. No simulated coordinates are generated here.
+  // Real driver GPS. Location is stored privately and is only readable by the
+  // driver, admins, or a customer with an active booking assigned to that driver.
+  // Tracking starts for an approved driver so a newly-toggled-online session does
+  // not depend on a stale profile state inside this auth hook.
   useEffect(() => {
-    if (!user || !roles.includes("driver") || !profile?.is_online || profile.kyc_status !== "approved") return;
+    if (!user || !roles.includes("driver") || profile?.kyc_status !== "approved") return;
     if (!navigator.geolocation) return;
 
     const watchId = navigator.geolocation.watchPosition(
@@ -79,7 +81,7 @@ export function useAuth(): AuthState {
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
     );
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [user, roles, profile?.is_online, profile?.kyc_status]);
+  }, [user, roles, profile?.kyc_status]);
 
   const role: AppRole | null = roles.includes("admin") ? "admin" : roles.includes("driver") ? "driver" : roles.includes("customer") ? "customer" : null;
   const activeMode: ActiveMode = profile?.active_mode ?? "customer";
