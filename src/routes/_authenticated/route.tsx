@@ -1,10 +1,16 @@
-import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  Link,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import { Truck, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "@/components/nav/BottomNav";
-
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -68,29 +74,33 @@ function AuthedLayout() {
         </div>
         {tabs.filter((t) => t.show).length > 1 && (
           <nav className="mx-auto flex max-w-5xl gap-1 px-4 pb-2">
-            {tabs.filter((t) => t.show).map((t) => {
-              const active = pathname.startsWith(t.to);
-              return (
-                <Link
-                  key={t.to}
-                  to={t.to}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                    active ? "bg-secondary text-secondary-foreground" : "text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  {t.label}
-                </Link>
-              );
-            })}
+            {tabs
+              .filter((t) => t.show)
+              .map((t) => {
+                const active = pathname.startsWith(t.to);
+                return (
+                  <Link
+                    key={t.to}
+                    to={t.to}
+                    className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                      active
+                        ? "bg-secondary text-secondary-foreground"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {t.label}
+                  </Link>
+                );
+              })}
           </nav>
         )}
       </header>
       <main className="mx-auto max-w-5xl px-4 pb-24 pt-6">
         <Outlet />
       </main>
-      {role && <BottomNav variant={role === "driver" || activeMode === "driver" ? "driver" : "customer"} />}
+      {role && (
+        <BottomNav variant={role === "driver" || activeMode === "driver" ? "driver" : "customer"} />
+      )}
     </div>
-
   );
 }
-

@@ -17,7 +17,11 @@ export function cancellationQuote(
   const amount = Number(fare) || 0;
 
   if (status === "pending") {
-    return { fee: 0, label: "Free cancellation", detail: "No driver assigned yet — nothing will be charged." };
+    return {
+      fee: 0,
+      label: "Free cancellation",
+      detail: "No driver assigned yet — nothing will be charged.",
+    };
   }
 
   if (status === "accepted") {
@@ -33,7 +37,8 @@ export function cancellationQuote(
     return {
       fee,
       label: `Cancellation charge ₹${fee}`,
-      detail: "Your driver is already on the way — 10% of the fare (₹25–₹50) covers their trip to pickup.",
+      detail:
+        "Your driver is already on the way — 10% of the fare (₹25–₹50) covers their trip to pickup.",
     };
   }
 

@@ -6,7 +6,14 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -19,9 +26,16 @@ export const Route = createFileRoute("/_authenticated/wallet")({
   head: () => ({
     meta: [
       { title: "Wallet & earnings — MiniPort" },
-      { name: "description", content: "MiniPort wallet: coin rewards, trip earnings, bank payouts and your full transaction ledger." },
+      {
+        name: "description",
+        content:
+          "MiniPort wallet: coin rewards, trip earnings, bank payouts and your full transaction ledger.",
+      },
       { property: "og:title", content: "Wallet & earnings — MiniPort" },
-      { property: "og:description", content: "Track MiniPort coins, cash balance, payouts and every wallet transaction." },
+      {
+        property: "og:description",
+        content: "Track MiniPort coins, cash balance, payouts and every wallet transaction.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -106,9 +120,13 @@ function WalletPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="font-display text-3xl tracking-wide text-secondary">{isDriver ? "Earnings" : "Wallet"}</h1>
+        <h1 className="font-display text-3xl tracking-wide text-secondary">
+          {isDriver ? "Earnings" : "Wallet"}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          {isDriver ? "Trip payouts, commission deductions and withdrawals." : "MiniPort coins and payment history."}
+          {isDriver
+            ? "Trip payouts, commission deductions and withdrawals."
+            : "MiniPort coins and payment history."}
         </p>
       </header>
 
@@ -119,7 +137,9 @@ function WalletPage() {
           </p>
           <div className="mt-1 flex items-baseline gap-2">
             <Wallet className="h-6 w-6 text-primary" />
-            <p className={`font-display text-4xl ${cash < 0 ? "text-destructive" : "text-secondary"}`}>
+            <p
+              className={`font-display text-4xl ${cash < 0 ? "text-destructive" : "text-secondary"}`}
+            >
               {formatMoney(cash)}
             </p>
           </div>
@@ -143,7 +163,10 @@ function WalletPage() {
               }}
             />
           ) : (
-            <Button className="mt-4 w-full sm:w-auto" onClick={() => toast.info("UPI & card top-ups are coming soon")}>
+            <Button
+              className="mt-4 w-full sm:w-auto"
+              onClick={() => toast.info("UPI & card top-ups are coming soon")}
+            >
               <Plus className="h-4 w-4" /> Add money
             </Button>
           )}
@@ -160,7 +183,11 @@ function WalletPage() {
                 (isDriver ? monthNet : coins) < 0 ? "text-destructive" : "text-secondary"
               }`}
             >
-              {isDriver ? formatMoney(monthNet) : (coins < 0 ? `-${Math.abs(coins).toFixed(0)}` : coins.toFixed(0))}
+              {isDriver
+                ? formatMoney(monthNet)
+                : coins < 0
+                  ? `-${Math.abs(coins).toFixed(0)}`
+                  : coins.toFixed(0)}
             </p>
           </div>
           {(isDriver ? monthNet : coins) < 0 && (
@@ -176,17 +203,23 @@ function WalletPage() {
         </section>
       </div>
 
-      {isDriver && <BankAccounts userId={user?.id} accounts={banks.data ?? []} loading={banks.isLoading} />}
+      {isDriver && (
+        <BankAccounts userId={user?.id} accounts={banks.data ?? []} loading={banks.isLoading} />
+      )}
 
       {isDriver && (withdrawals.data ?? []).length > 0 && (
         <section className="surface-card p-5">
-          <h2 className="mb-3 font-display text-xl tracking-wide text-secondary">Withdrawal requests</h2>
+          <h2 className="mb-3 font-display text-xl tracking-wide text-secondary">
+            Withdrawal requests
+          </h2>
           <ul className="divide-y divide-border">
             {(withdrawals.data ?? []).map((w) => (
               <li key={w.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                 <div>
                   <p className="font-semibold text-secondary">₹{Number(w.amount).toFixed(0)}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(w.created_at).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(w.created_at).toLocaleString()}
+                  </p>
                 </div>
                 <span
                   className={`rounded-md px-2 py-1 text-xs font-semibold ${
@@ -206,14 +239,18 @@ function WalletPage() {
       )}
 
       <section>
-        <h2 className="mb-3 font-display text-2xl tracking-wide text-secondary">Transaction history</h2>
+        <h2 className="mb-3 font-display text-2xl tracking-wide text-secondary">
+          Transaction history
+        </h2>
         {txns.isLoading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
           </div>
         ) : (txns.data ?? []).length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            {isDriver ? "No transactions yet. Complete a trip to start earning." : "No transactions yet. Book a trip to earn coins."}
+            {isDriver
+              ? "No transactions yet. Complete a trip to start earning."
+              : "No transactions yet. Book a trip to earn coins."}
           </p>
         ) : (
           <div className="divide-y divide-border overflow-hidden rounded-md border border-border bg-background">
@@ -224,10 +261,16 @@ function WalletPage() {
                   <div className="flex items-center gap-3">
                     <div
                       className={`flex h-9 w-9 items-center justify-center rounded-full ${
-                        positive ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"
+                        positive
+                          ? "bg-success/15 text-success"
+                          : "bg-destructive/15 text-destructive"
                       }`}
                     >
-                      {positive ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                      {positive ? (
+                        <ArrowDownLeft className="h-4 w-4" />
+                      ) : (
+                        <ArrowUpRight className="h-4 w-4" />
+                      )}
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-secondary">{t.reason}</p>
@@ -237,7 +280,9 @@ function WalletPage() {
                       </p>
                     </div>
                   </div>
-                  <p className={`font-display text-lg ${positive ? "text-success" : "text-destructive"}`}>
+                  <p
+                    className={`font-display text-lg ${positive ? "text-success" : "text-destructive"}`}
+                  >
                     {positive ? `+₹${Number(t.delta).toFixed(0)}` : formatMoney(Number(t.delta))}
                   </p>
                 </div>
@@ -260,7 +305,15 @@ type Bank = {
   is_default: boolean;
 };
 
-function BankAccounts({ userId, accounts, loading }: { userId?: string; accounts: Bank[]; loading: boolean }) {
+function BankAccounts({
+  userId,
+  accounts,
+  loading,
+}: {
+  userId?: string;
+  accounts: Bank[];
+  loading: boolean;
+}) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [holder, setHolder] = useState("");
@@ -274,9 +327,11 @@ function BankAccounts({ userId, accounts, loading }: { userId?: string; accounts
       if (holder.trim().length < 2) throw new Error("Enter the account holder name");
       if (bankName.trim().length < 2) throw new Error("Enter the bank name");
       if (acc.trim().length < 8) throw new Error("Enter a valid account number");
-      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc.trim().toUpperCase())) throw new Error("Enter a valid IFSC code");
+      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc.trim().toUpperCase()))
+        throw new Error("Enter a valid IFSC code");
       const upiId = upi.trim();
-      if (upiId && !/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(upiId)) throw new Error("Enter a valid UPI ID");
+      if (upiId && !/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(upiId))
+        throw new Error("Enter a valid UPI ID");
       const { error } = await supabase.from("driver_bank_accounts").insert({
         driver_id: userId!,
         account_holder: holder.trim(),
@@ -322,17 +377,32 @@ function BankAccounts({ userId, accounts, loading }: { userId?: string; accounts
             <div className="space-y-3">
               <div>
                 <Label htmlFor="b-holder">Account holder name</Label>
-                <Input id="b-holder" value={holder} onChange={(e) => setHolder(e.target.value)} maxLength={60} />
+                <Input
+                  id="b-holder"
+                  value={holder}
+                  onChange={(e) => setHolder(e.target.value)}
+                  maxLength={60}
+                />
               </div>
               <div>
                 <Label htmlFor="b-bank">Bank name</Label>
-                <Input id="b-bank" value={bankName} onChange={(e) => setBankName(e.target.value)} maxLength={60} />
+                <Input
+                  id="b-bank"
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                  maxLength={60}
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
-
                 <div>
                   <Label htmlFor="b-acc">Account number</Label>
-                  <Input id="b-acc" inputMode="numeric" value={acc} onChange={(e) => setAcc(e.target.value)} maxLength={20} />
+                  <Input
+                    id="b-acc"
+                    inputMode="numeric"
+                    value={acc}
+                    onChange={(e) => setAcc(e.target.value)}
+                    maxLength={20}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="b-ifsc">IFSC</Label>
@@ -347,7 +417,13 @@ function BankAccounts({ userId, accounts, loading }: { userId?: string; accounts
               </div>
               <div>
                 <Label htmlFor="b-upi">or UPI ID</Label>
-                <Input id="b-upi" value={upi} onChange={(e) => setUpi(e.target.value)} maxLength={60} placeholder="name@upi" />
+                <Input
+                  id="b-upi"
+                  value={upi}
+                  onChange={(e) => setUpi(e.target.value)}
+                  maxLength={60}
+                  placeholder="name@upi"
+                />
               </div>
             </div>
             <DialogFooter>
@@ -361,14 +437,18 @@ function BankAccounts({ userId, accounts, loading }: { userId?: string; accounts
       {loading ? (
         <Loader2 className="h-4 w-4 animate-spin text-primary" />
       ) : accounts.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Add a bank account or UPI ID to withdraw your earnings.</p>
+        <p className="text-sm text-muted-foreground">
+          Add a bank account or UPI ID to withdraw your earnings.
+        </p>
       ) : (
         <ul className="divide-y divide-border">
           {accounts.map((b) => (
             <li key={b.id} className="py-2.5 text-sm">
               <p className="font-semibold text-secondary">{b.account_holder}</p>
               <p className="text-xs text-muted-foreground">
-                {b.upi_id ? b.upi_id : `${(b.account_number ?? "").replace(/.(?=.{4})/g, "•")} · ${b.ifsc}`}
+                {b.upi_id
+                  ? b.upi_id
+                  : `${(b.account_number ?? "").replace(/.(?=.{4})/g, "•")} · ${b.ifsc}`}
                 {b.is_default ? " · default" : ""}
               </p>
             </li>
@@ -379,7 +459,15 @@ function BankAccounts({ userId, accounts, loading }: { userId?: string; accounts
   );
 }
 
-function WithdrawDialog({ cash, banks, onDone }: { cash: number; banks: Bank[]; onDone: () => void }) {
+function WithdrawDialog({
+  cash,
+  banks,
+  onDone,
+}: {
+  cash: number;
+  banks: Bank[];
+  onDone: () => void;
+}) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
@@ -422,8 +510,15 @@ function WithdrawDialog({ cash, banks, onDone }: { cash: number; banks: Bank[]; 
         </DialogHeader>
         <div>
           <Label htmlFor="w-amt">Amount (₹)</Label>
-          <Input id="w-amt" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} />
-          <p className="mt-1 text-xs text-muted-foreground">Available ₹{cash.toFixed(2)} · minimum ₹100</p>
+          <Input
+            id="w-amt"
+            inputMode="numeric"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Available ₹{cash.toFixed(2)} · minimum ₹100
+          </p>
         </div>
         <DialogFooter>
           <Button onClick={() => submit.mutate()} disabled={submit.isPending}>

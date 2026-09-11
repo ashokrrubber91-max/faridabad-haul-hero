@@ -5,13 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { VEHICLES, vehicleLabel, type VehicleId } from "@/lib/booking";
 import type { PlacePick } from "@/components/booking/LocationSearchOverlay";
 import type { CustomerGstin } from "@/components/booking/GstinSelect";
 import { GoodsChecklist } from "@/components/booking/GoodsChecklist";
-
 
 export function ReviewBooking({
   pickup,
@@ -71,7 +76,6 @@ export function ReviewBooking({
     onConfirm();
   };
 
-
   return (
     <div className="surface-card p-5">
       <div className="flex items-center gap-2">
@@ -93,7 +97,9 @@ export function ReviewBooking({
         <div className="flex items-center justify-between rounded-md border p-3">
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground">Vehicle</p>
-            <p className="text-sm font-semibold text-secondary">{v?.label ?? vehicleLabel(vehicle)}</p>
+            <p className="text-sm font-semibold text-secondary">
+              {v?.label ?? vehicleLabel(vehicle)}
+            </p>
           </div>
           <Badge variant="secondary">{distanceKm} km</Badge>
         </div>
@@ -109,7 +115,9 @@ export function ReviewBooking({
 
         {gstin && (
           <div className="rounded-md border p-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Billed to (GSTIN)</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+              Billed to (GSTIN)
+            </p>
             <p className="text-sm font-semibold text-secondary">{gstin.business_name}</p>
             <p className="text-xs text-muted-foreground">{gstin.gstin}</p>
           </div>
@@ -167,7 +175,8 @@ export function ReviewBooking({
               <ShieldCheck className="h-4 w-4 text-primary" /> Verify to confirm
             </DialogTitle>
             <DialogDescription>
-              For checkout security, enter the last 4 digits of your registered mobile number ({maskedPhone}).
+              For checkout security, enter the last 4 digits of your registered mobile number (
+              {maskedPhone}).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -189,7 +198,6 @@ export function ReviewBooking({
           </div>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }

@@ -12,9 +12,15 @@ export const Route = createFileRoute("/_authenticated/driver-rides")({
   head: () => ({
     meta: [
       { title: "My Rides — MiniPort Driver" },
-      { name: "description", content: "Your complete MiniPort ride history with fares, commission and net earnings." },
+      {
+        name: "description",
+        content: "Your complete MiniPort ride history with fares, commission and net earnings.",
+      },
       { property: "og:title", content: "My Rides — MiniPort Driver" },
-      { property: "og:description", content: "Every trip you've completed, with earnings and proof of delivery." },
+      {
+        property: "og:description",
+        content: "Every trip you've completed, with earnings and proof of delivery.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -82,7 +88,9 @@ function RideCard({ ride }: { ride: Record<string, any> }) {
 
   const viewProof = async () => {
     setBusy(true);
-    const { data, error } = await supabase.storage.from("delivery-proof").createSignedUrl(ride.pod_photo_url, 300);
+    const { data, error } = await supabase.storage
+      .from("delivery-proof")
+      .createSignedUrl(ride.pod_photo_url, 300);
     setBusy(false);
     if (!error && data) setProofUrl(data.signedUrl);
   };
@@ -92,15 +100,20 @@ function RideCard({ ride }: { ride: Record<string, any> }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs text-muted-foreground">
-            {new Date(ride.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })} ·{" "}
-            {vehicleLabel(ride.vehicle_type)} · {ride.distance_km} km
+            {new Date(ride.created_at).toLocaleString("en-IN", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}{" "}
+            · {vehicleLabel(ride.vehicle_type)} · {ride.distance_km} km
           </p>
           <p className="truncate text-sm font-medium text-secondary">{ride.pickup_address}</p>
           <p className="flex items-center gap-1 truncate text-sm text-muted-foreground">
             <ArrowRight className="h-3 w-3" /> {ride.drop_address}
           </p>
         </div>
-        <Badge variant={ride.status === "cancelled" ? "destructive" : "default"}>{meta.label}</Badge>
+        <Badge variant={ride.status === "cancelled" ? "destructive" : "default"}>
+          {meta.label}
+        </Badge>
       </div>
 
       {ride.status === "completed" && (
@@ -123,7 +136,12 @@ function RideCard({ ride }: { ride: Record<string, any> }) {
       {ride.pod_photo_url && (
         <div className="mt-3">
           {proofUrl ? (
-            <img src={proofUrl} alt="Proof of delivery photo" loading="lazy" className="max-h-56 rounded-md border border-border object-cover" />
+            <img
+              src={proofUrl}
+              alt="Proof of delivery photo"
+              loading="lazy"
+              className="max-h-56 rounded-md border border-border object-cover"
+            />
           ) : (
             <Button size="sm" variant="outline" onClick={viewProof} disabled={busy}>
               <Camera className="h-3.5 w-3.5" /> {busy ? "Loading…" : "View proof of delivery"}

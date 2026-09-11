@@ -8,7 +8,11 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "MiniPort \u2014 Mini truck booking in Faridabad" },
-      { name: "description", content: "Book a Tata Ace, Pickup or Tata 407 anywhere in Faridabad. Live driver assignment, transparent fares." },
+      {
+        name: "description",
+        content:
+          "Book a Tata Ace, Pickup or Tata 407 anywhere in Faridabad. Live driver assignment, transparent fares.",
+      },
     ],
   }),
   component: Index,
@@ -35,7 +39,9 @@ function Index() {
           <span className="font-display text-2xl tracking-wide text-secondary">MINIPORT</span>
         </div>
         <Link to="/auth">
-          <Button variant="outline" size="sm">Sign in</Button>
+          <Button variant="outline" size="sm">
+            Sign in
+          </Button>
         </Link>
       </header>
 
@@ -46,18 +52,24 @@ function Index() {
               <MapPin className="h-3.5 w-3.5" /> Faridabad
             </span>
             <h1 className="mt-4 font-display text-5xl leading-[0.95] tracking-wide text-secondary sm:text-7xl">
-              Mini trucks,<br />
+              Mini trucks,
+              <br />
               <span className="text-primary">on demand.</span>
             </h1>
             <p className="mt-5 max-w-md text-base text-muted-foreground sm:text-lg">
-              Book a Tata Ace, 8ft Pickup or Tata 407 anywhere across Faridabad. Drivers accept within minutes, fares are flat-rate and shown upfront.
+              Book a Tata Ace, 8ft Pickup or Tata 407 anywhere across Faridabad. Drivers accept
+              within minutes, fares are flat-rate and shown upfront.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/auth" search={{ mode: "signup", as: "customer" }}>
-                <Button size="lg" className="h-12 px-6 text-base">Book a truck</Button>
+                <Button size="lg" className="h-12 px-6 text-base">
+                  Book a truck
+                </Button>
               </Link>
               <Link to="/auth" search={{ mode: "signup", as: "driver" }}>
-                <Button size="lg" variant="secondary" className="h-12 px-6 text-base">Drive with MiniPort</Button>
+                <Button size="lg" variant="secondary" className="h-12 px-6 text-base">
+                  Drive with MiniPort
+                </Button>
               </Link>
             </div>
           </div>
@@ -65,7 +77,9 @@ function Index() {
           <div className="surface-card relative p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sector 21 → NIT</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Sector 21 → NIT
+                </p>
                 <p className="font-display text-3xl text-secondary">₹ 374</p>
               </div>
               <div className="brand-gradient rounded-lg p-3">

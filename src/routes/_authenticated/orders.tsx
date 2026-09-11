@@ -7,7 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { STATUS_META, vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
@@ -17,9 +24,16 @@ export const Route = createFileRoute("/_authenticated/orders")({
   head: () => ({
     meta: [
       { title: "My orders — MiniPort" },
-      { name: "description", content: "Every MiniPort trip you have booked, with invoices, driver details and one-tap re-booking." },
+      {
+        name: "description",
+        content:
+          "Every MiniPort trip you have booked, with invoices, driver details and one-tap re-booking.",
+      },
       { property: "og:title", content: "My orders — MiniPort" },
-      { property: "og:description", content: "Track past and active mini-truck bookings, download tax invoices and book again." },
+      {
+        property: "og:description",
+        content: "Track past and active mini-truck bookings, download tax invoices and book again.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -33,6 +47,7 @@ function OrdersPage() {
   const { user, profile } = useAuth();
   const qc = useQueryClient();
   const [filter, setFilter] = useState<Filter>("active");
+  const [shown, setShown] = useState(10);
   const [rateTarget, setRateTarget] = useState<{ id: string; addr: string } | null>(null);
   const [stars, setStars] = useState(5);
   const [review, setReview] = useState("");
@@ -59,7 +74,8 @@ function OrdersPage() {
   });
 
   const driverIds = useMemo(
-    () => Array.from(new Set((orders.data ?? []).map((o) => o.driver_id).filter(Boolean))) as string[],
+    () =>
+      Array.from(new Set((orders.data ?? []).map((o) => o.driver_id).filter(Boolean))) as string[],
     [orders.data],
   );
 
@@ -67,7 +83,10 @@ function OrdersPage() {
     queryKey: ["order-drivers", driverIds.join(",")],
     enabled: driverIds.length > 0,
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("id, name, phone").in("id", driverIds);
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, name, phone")
+        .in("id", driverIds);
       const map: Record<string, { name: string; phone: string }> = {};
       (data ?? []).forEach((d) => (map[d.id] = { name: d.name, phone: d.phone }));
       return map;
@@ -78,7 +97,10 @@ function OrdersPage() {
     queryKey: ["order-driver-vehicles", driverIds.join(",")],
     enabled: driverIds.length > 0,
     queryFn: async () => {
-      const { data } = await supabase.from("driver_kyc").select("driver_id, vehicle_number").in("driver_id", driverIds);
+      const { data } = await supabase
+        .from("driver_kyc")
+        .select("driver_id, vehicle_number")
+        .in("driver_id", driverIds);
       const map: Record<string, string> = {};
       (data ?? []).forEach((d) => {
         if (d.vehicle_number) map[d.driver_id] = d.vehicle_number;
@@ -132,7 +154,13 @@ function OrdersPage() {
         <p className="text-sm text-muted-foreground">Every booking from the last 2 years.</p>
       </header>
 
-      <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
+      <Tabs
+        value={filter}
+        onValueChange={(v) => {
+          setFilter(v as Filter);
+          setShown(10);
+        }}
+      >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="active">Active</TabsTrigger>
           <TabsTrigger value="completed">Completed</TabsTrigger>
@@ -144,6 +172,16 @@ function OrdersPage() {
         <div className="flex justify-center py-10">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
+      ) : orders.isError ? (
+        <div className="surface-card p-8 text-center text-sm">
+          <Package className="mx-auto mb-2 h-5 w-5 text-destructive" />
+          <p className="text-muted-foreground">
+            We couldn&apos;t load your rides. Check your connection and try again.
+          </p>
+          <Button size="sm" variant="outline" className="mt-3" onClick={() => orders.refetch()}>
+            Retry
+          </Button>
+        </div>
       ) : list.length === 0 ? (
         <div className="surface-card p-8 text-center text-sm text-muted-foreground">
           <Package className="mx-auto mb-2 h-5 w-5" />
@@ -151,7 +189,7 @@ function OrdersPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {list.map((b) => {
+          {list.slice(0, shown).map((b) => {
             const meta = STATUS_META[b.status] ?? STATUS_META.pending;
             const driver = b.driver_id ? drivers.data?.[b.driver_id] : null;
             const vehicleNumber = b.driver_id ? kycByDriver.data?.[b.driver_id] : null;
@@ -160,9 +198,12 @@ function OrdersPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      CRN {b.id.slice(0, 8).toUpperCase()} · {new Date(b.created_at).toLocaleDateString("en-IN")}
+                      CRN {b.id.slice(0, 8).toUpperCase()} ·{" "}
+                      {new Date(b.created_at).toLocaleDateString("en-IN")}
                     </p>
-                    <p className="mt-1 truncate text-sm font-medium text-secondary">{b.pickup_address}</p>
+                    <p className="mt-1 truncate text-sm font-medium text-secondary">
+                      {b.pickup_address}
+                    </p>
                     <p className="flex items-center gap-1 truncate text-sm text-muted-foreground">
                       <ArrowRight className="h-3 w-3 shrink-0" /> {b.drop_address}
                     </p>
@@ -171,8 +212,13 @@ function OrdersPage() {
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="font-display text-xl text-secondary">₹{Number(b.fare).toFixed(0)}</p>
-                    <Badge variant={meta.tone === "destructive" ? "destructive" : "secondary"} className={tone(meta.tone)}>
+                    <p className="font-display text-xl text-secondary">
+                      ₹{Number(b.fare).toFixed(0)}
+                    </p>
+                    <Badge
+                      variant={meta.tone === "destructive" ? "destructive" : "secondary"}
+                      className={tone(meta.tone)}
+                    >
                       {meta.label}
                     </Badge>
                   </div>
@@ -182,7 +228,9 @@ function OrdersPage() {
                   <div className="mt-3 flex items-center gap-2 rounded-md bg-muted/40 px-3 py-2 text-xs text-secondary">
                     <Truck className="h-3.5 w-3.5 text-primary" />
                     <span className="font-semibold">{driver.name}</span>
-                    {vehicleNumber && <span className="text-muted-foreground">· {vehicleNumber}</span>}
+                    {vehicleNumber && (
+                      <span className="text-muted-foreground">· {vehicleNumber}</span>
+                    )}
                     <a href={`tel:${driver.phone}`} className="ml-auto font-medium text-primary">
                       {driver.phone}
                     </a>
@@ -192,11 +240,15 @@ function OrdersPage() {
                 <div className="mt-3 flex flex-wrap gap-2">
                   {b.status === "completed" && (
                     <Button size="sm" variant="outline" onClick={() => downloadInvoice(b)}>
-                      <Download className="h-3.5 w-3.5" /> Invoice {invoiceNumber(b.id, b.created_at).split("/").pop()}
+                      <Download className="h-3.5 w-3.5" /> Invoice{" "}
+                      {invoiceNumber(b.id, b.created_at).split("/").pop()}
                     </Button>
                   )}
                   {b.status === "completed" && !b.rating && (
-                    <Button size="sm" onClick={() => setRateTarget({ id: b.id, addr: b.drop_address })}>
+                    <Button
+                      size="sm"
+                      onClick={() => setRateTarget({ id: b.id, addr: b.drop_address })}
+                    >
                       <Star className="h-3.5 w-3.5" /> Rate trip
                     </Button>
                   )}
@@ -217,6 +269,11 @@ function OrdersPage() {
               </article>
             );
           })}
+          {list.length > shown && (
+            <Button variant="outline" className="w-full" onClick={() => setShown((n) => n + 10)}>
+              Show older rides ({list.length - shown} more)
+            </Button>
+          )}
         </div>
       )}
 
@@ -248,7 +305,9 @@ function OrdersPage() {
             </Button>
             <Button
               disabled={rate.isPending}
-              onClick={() => rateTarget && rate.mutate({ id: rateTarget.id, rating: stars, text: review })}
+              onClick={() =>
+                rateTarget && rate.mutate({ id: rateTarget.id, rating: stars, text: review })
+              }
             >
               {rate.isPending ? "Saving…" : "Submit rating"}
             </Button>

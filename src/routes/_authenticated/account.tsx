@@ -19,7 +19,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { SupportChat } from "@/components/support/SupportChat";
@@ -30,9 +37,15 @@ export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
     meta: [
       { title: "My account — MiniPort" },
-      { name: "description", content: "Manage your MiniPort profile, saved addresses, GST numbers and monthly invoices." },
+      {
+        name: "description",
+        content: "Manage your MiniPort profile, saved addresses, GST numbers and monthly invoices.",
+      },
       { property: "og:title", content: "My account — MiniPort" },
-      { property: "og:description", content: "Profile, saved addresses, GSTIN management and bulk invoice downloads." },
+      {
+        property: "og:description",
+        content: "Profile, saved addresses, GSTIN management and bulk invoice downloads.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -89,7 +102,8 @@ function AccountPage() {
   const addGstin = useMutation({
     mutationFn: async () => {
       const code = gstin.trim().toUpperCase();
-      if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]{3}$/.test(code)) throw new Error("Enter a valid 15-character GSTIN");
+      if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]{3}$/.test(code))
+        throw new Error("Enter a valid 15-character GSTIN");
       if (bizName.trim().length < 2) throw new Error("Enter the business name");
       const { error } = await supabase.from("customer_gstins").insert({
         user_id: user!.id,
@@ -114,7 +128,10 @@ function AccountPage() {
   const setDefaultGstin = useMutation({
     mutationFn: async (id: string) => {
       await supabase.from("customer_gstins").update({ is_default: false }).eq("user_id", user!.id);
-      const { error } = await supabase.from("customer_gstins").update({ is_default: true }).eq("id", id);
+      const { error } = await supabase
+        .from("customer_gstins")
+        .update({ is_default: true })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["gstins", user?.id] }),
@@ -197,7 +214,9 @@ function AccountPage() {
             <UserIcon className="h-6 w-6 text-white" />
           </div>
           <div className="min-w-0">
-            <p className="truncate font-display text-xl tracking-wide text-secondary">{profile?.name ?? "MiniPort user"}</p>
+            <p className="truncate font-display text-xl tracking-wide text-secondary">
+              {profile?.name ?? "MiniPort user"}
+            </p>
             <p className="text-sm text-muted-foreground">{profile?.phone}</p>
             <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
           </div>
@@ -249,11 +268,21 @@ function AccountPage() {
                 </div>
                 <div>
                   <Label htmlFor="g-biz">Business name</Label>
-                  <Input id="g-biz" value={bizName} onChange={(e) => setBizName(e.target.value)} maxLength={80} />
+                  <Input
+                    id="g-biz"
+                    value={bizName}
+                    onChange={(e) => setBizName(e.target.value)}
+                    maxLength={80}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="g-addr">Business address (optional)</Label>
-                  <Input id="g-addr" value={bizAddr} onChange={(e) => setBizAddr(e.target.value)} maxLength={160} />
+                  <Input
+                    id="g-addr"
+                    value={bizAddr}
+                    onChange={(e) => setBizAddr(e.target.value)}
+                    maxLength={160}
+                  />
                 </div>
               </div>
               <DialogFooter>
@@ -288,7 +317,12 @@ function AccountPage() {
                     Set default
                   </Button>
                 )}
-                <Button size="sm" variant="ghost" onClick={() => removeGstin.mutate(g.id)} aria-label="Remove GSTIN">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => removeGstin.mutate(g.id)}
+                  aria-label="Remove GSTIN"
+                >
                   <Trash2 className="h-3.5 w-3.5 text-destructive" />
                 </Button>
               </li>
@@ -313,10 +347,17 @@ function AccountPage() {
               <li key={a.id} className="flex items-center gap-3 py-2.5">
                 <Home className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-secondary">{a.alias || a.kind}</p>
+                  <p className="truncate text-sm font-semibold text-secondary">
+                    {a.alias || a.kind}
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">{a.address}</p>
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => removeAddress.mutate(a.id)} aria-label="Remove address">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => removeAddress.mutate(a.id)}
+                  aria-label="Remove address"
+                >
                   <Trash2 className="h-3.5 w-3.5 text-destructive" />
                 </Button>
               </li>

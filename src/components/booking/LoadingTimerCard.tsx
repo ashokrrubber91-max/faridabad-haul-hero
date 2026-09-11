@@ -41,7 +41,8 @@ export function LoadingTimerCard({
       <div className="flex items-center justify-between gap-3">
         <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           <Timer className={`h-3.5 w-3.5 ${over ? "text-destructive" : "text-primary"}`} />
-          {title}{stoppedAt ? " (stopped)" : ""}
+          {title}
+          {stoppedAt ? " (stopped)" : ""}
         </p>
         <p className={`font-display text-2xl ${over ? "text-destructive" : "text-secondary"}`}>
           {over ? `+${state.overtimeMinutes}m` : state.countdown}
@@ -51,12 +52,13 @@ export function LoadingTimerCard({
         {over ? (
           <>
             Free {state.freeMinutes} min used up — overtime charge{" "}
-            <span className="font-semibold text-destructive">₹{state.overtimeCharge}</span> ({state.overtimeMinutes} min
-            × ₹{OVERTIME_RATE_PER_MIN}/min) will be added to the fare.
+            <span className="font-semibold text-destructive">₹{state.overtimeCharge}</span> (
+            {state.overtimeMinutes} min × ₹{OVERTIME_RATE_PER_MIN}/min) will be added to the fare.
           </>
         ) : (
           <>
-            {state.freeMinutes} min free included. After that ₹{OVERTIME_RATE_PER_MIN}/min waiting charge applies.
+            {state.freeMinutes} min free included. After that ₹{OVERTIME_RATE_PER_MIN}/min waiting
+            charge applies.
           </>
         )}
       </p>

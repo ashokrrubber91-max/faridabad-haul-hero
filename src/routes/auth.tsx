@@ -22,7 +22,10 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in \u2014 MiniPort" },
-      { name: "description", content: "Sign in or create your MiniPort account to book a mini truck or accept rides." },
+      {
+        name: "description",
+        content: "Sign in or create your MiniPort account to book a mini truck or accept rides.",
+      },
     ],
   }),
   component: AuthPage,
@@ -55,9 +58,15 @@ function AuthPage() {
       <main className="mx-auto w-full max-w-md px-5 pb-12 pt-4">
         <div className="surface-card p-6">
           <h1 className="font-display text-3xl tracking-wide text-secondary">Welcome</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Sign in with an OTP or with your phone number and password.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Sign in with an OTP or with your phone number and password.
+          </p>
 
-          <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "otp" | "signup")} className="mt-5">
+          <Tabs
+            value={tab}
+            onValueChange={(v) => setTab(v as "signin" | "otp" | "signup")}
+            className="mt-5"
+          >
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="otp">OTP</TabsTrigger>
               <TabsTrigger value="signin">Password</TabsTrigger>
@@ -81,7 +90,8 @@ function AuthPage() {
           </Tabs>
         </div>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          OTP delivery needs an SMS provider connected to your backend — until then, use password sign-in.
+          OTP delivery needs an SMS provider connected to your backend — until then, use password
+          sign-in.
         </p>
       </main>
     </div>
@@ -117,7 +127,11 @@ function OtpSignInForm() {
     e.preventDefault();
     if (code.length < 4) return toast.error("Enter the OTP you received");
     setBusy(true);
-    const { error } = await supabase.auth.verifyOtp({ phone: e164(phone), token: code, type: "sms" });
+    const { error } = await supabase.auth.verifyOtp({
+      phone: e164(phone),
+      token: code,
+      type: "sms",
+    });
     setBusy(false);
     if (error) toast.error(error.message);
     else toast.success("Signed in");
@@ -137,7 +151,9 @@ function OtpSignInForm() {
             onChange={(e) => setPhone(e.target.value)}
             required
           />
-          <p className="mt-1 text-xs text-muted-foreground">We&rsquo;ll text a one-time code to +91 {phone.replace(/\D/g, "").slice(-10)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            We&rsquo;ll text a one-time code to +91 {phone.replace(/\D/g, "").slice(-10)}
+          </p>
         </div>
         <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
           {busy ? "Sending\u2026" : "Send OTP"}
@@ -179,7 +195,6 @@ function OtpSignInForm() {
   );
 }
 
-
 function SignInForm() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -205,11 +220,27 @@ function SignInForm() {
     <form onSubmit={submit} className="space-y-4">
       <div>
         <Label htmlFor="signin-phone">Phone number</Label>
-        <Input id="signin-phone" inputMode="tel" autoComplete="tel" placeholder="98xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+        <Input
+          id="signin-phone"
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="98xxxxxxxx"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          required
+        />
       </div>
       <div>
         <Label htmlFor="signin-pw">Password</Label>
-        <Input id="signin-pw" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+        <Input
+          id="signin-pw"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={6}
+        />
       </div>
       <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
         {busy ? "Signing in\u2026" : "Sign in"}
@@ -260,13 +291,23 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
     <form onSubmit={submit} className="space-y-4">
       <div>
         <Label>I want to</Label>
-        <RadioGroup value={role} onValueChange={(v) => setRole(v as "customer" | "driver")} className="mt-2 grid grid-cols-2 gap-2">
-          <label htmlFor="r-cust" className={`cursor-pointer rounded-md border p-3 text-sm ${role === "customer" ? "border-primary bg-accent" : "border-border"}`}>
+        <RadioGroup
+          value={role}
+          onValueChange={(v) => setRole(v as "customer" | "driver")}
+          className="mt-2 grid grid-cols-2 gap-2"
+        >
+          <label
+            htmlFor="r-cust"
+            className={`cursor-pointer rounded-md border p-3 text-sm ${role === "customer" ? "border-primary bg-accent" : "border-border"}`}
+          >
             <RadioGroupItem id="r-cust" value="customer" className="sr-only" />
             <p className="font-semibold text-secondary">Book trucks</p>
             <p className="text-xs text-muted-foreground">I&rsquo;m a customer</p>
           </label>
-          <label htmlFor="r-drv" className={`cursor-pointer rounded-md border p-3 text-sm ${role === "driver" ? "border-primary bg-accent" : "border-border"}`}>
+          <label
+            htmlFor="r-drv"
+            className={`cursor-pointer rounded-md border p-3 text-sm ${role === "driver" ? "border-primary bg-accent" : "border-border"}`}
+          >
             <RadioGroupItem id="r-drv" value="driver" className="sr-only" />
             <p className="font-semibold text-secondary">Drive & earn</p>
             <p className="text-xs text-muted-foreground">I&rsquo;m a driver</p>
@@ -275,15 +316,37 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
       </div>
       <div>
         <Label htmlFor="su-name">Full name</Label>
-        <Input id="su-name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={60} />
+        <Input
+          id="su-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          maxLength={60}
+        />
       </div>
       <div>
         <Label htmlFor="su-phone">Phone number</Label>
-        <Input id="su-phone" inputMode="tel" autoComplete="tel" placeholder="98xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+        <Input
+          id="su-phone"
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="98xxxxxxxx"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          required
+        />
       </div>
       <div>
         <Label htmlFor="su-pw">Password</Label>
-        <Input id="su-pw" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+        <Input
+          id="su-pw"
+          type="password"
+          autoComplete="new-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={6}
+        />
       </div>
       <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
         {busy ? "Creating\u2026" : "Create account"}
@@ -308,7 +371,9 @@ function SocialAuthButtons() {
   const signInWith = async (provider: "google" | "apple") => {
     setBusy(provider);
     try {
-      const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin });
+      const result = await lovable.auth.signInWithOAuth(provider, {
+        redirect_uri: window.location.origin,
+      });
       if (result.error) {
         toast.error(result.error.message ?? "Sign-in failed");
         return;
@@ -349,10 +414,22 @@ function SocialAuthButtons() {
 function GoogleGlyph() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-      <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.47c-.28 1.5-1.13 2.77-2.4 3.62v3h3.88c2.27-2.09 3.54-5.17 3.54-8.65z" />
-      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.92l-3.88-3c-1.08.72-2.45 1.16-4.05 1.16-3.11 0-5.75-2.1-6.69-4.93H1.3v3.09C3.26 21.3 7.31 24 12 24z" />
-      <path fill="#FBBC05" d="M5.31 14.31c-.24-.72-.38-1.49-.38-2.31s.14-1.59.38-2.31V6.6H1.3A11.98 11.98 0 0 0 0 12c0 1.94.46 3.77 1.3 5.4l4.01-3.09z" />
-      <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.94 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.3 6.6l4.01 3.09c.94-2.83 3.58-4.94 6.69-4.94z" />
+      <path
+        fill="#4285F4"
+        d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.47c-.28 1.5-1.13 2.77-2.4 3.62v3h3.88c2.27-2.09 3.54-5.17 3.54-8.65z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.95-1.08 7.93-2.92l-3.88-3c-1.08.72-2.45 1.16-4.05 1.16-3.11 0-5.75-2.1-6.69-4.93H1.3v3.09C3.26 21.3 7.31 24 12 24z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.31 14.31c-.24-.72-.38-1.49-.38-2.31s.14-1.59.38-2.31V6.6H1.3A11.98 11.98 0 0 0 0 12c0 1.94.46 3.77 1.3 5.4l4.01-3.09z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.94 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.3 6.6l4.01 3.09c.94-2.83 3.58-4.94 6.69-4.94z"
+      />
     </svg>
   );
 }

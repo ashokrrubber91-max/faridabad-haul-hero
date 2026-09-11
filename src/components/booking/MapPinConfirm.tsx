@@ -324,9 +324,15 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-secondary">Save this address</p>
-                  <p className="text-xs text-muted-foreground">Off by default — nothing is stored unless you turn this on.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Off by default — nothing is stored unless you turn this on.
+                  </p>
                 </div>
-                <Switch checked={saveEnabled} onCheckedChange={setSaveEnabled} aria-label="Save this address" />
+                <Switch
+                  checked={saveEnabled}
+                  onCheckedChange={setSaveEnabled}
+                  aria-label="Save this address"
+                />
               </div>
 
               {saveEnabled && (
@@ -369,7 +375,11 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
 
           <footer className="border-t bg-background p-3">
             <Button onClick={handleConfirm} disabled={saving || !pinSet} className="h-11 w-full">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : `Confirm ${mode === "pickup" ? "pickup" : "drop"}`}
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                `Confirm ${mode === "pickup" ? "pickup" : "drop"}`
+              )}
             </Button>
           </footer>
         </div>

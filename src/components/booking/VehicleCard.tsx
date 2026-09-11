@@ -28,7 +28,9 @@ export function VehicleCard({
       onClick={onSelect}
       aria-pressed={selected}
       className={`relative flex w-full items-center gap-3 overflow-hidden rounded-lg border p-3 text-left transition-all ${
-        selected ? "border-primary bg-accent shadow-sm ring-1 ring-primary" : "border-border hover:bg-muted"
+        selected
+          ? "border-primary bg-accent shadow-sm ring-1 ring-primary"
+          : "border-border hover:bg-muted"
       }`}
     >
       <img
@@ -46,7 +48,9 @@ export function VehicleCard({
           <Weight className="h-3.5 w-3.5" /> Up to {details.weightLimit}
         </p>
         <p className="truncate text-xs text-muted-foreground">{details.loadArea}</p>
-        <p className="mt-1 truncate text-xs text-muted-foreground">Best for: {details.goodTor.join(", ")}</p>
+        <p className="mt-1 truncate text-xs text-muted-foreground">
+          Best for: {details.goodTor.join(", ")}
+        </p>
       </div>
 
       <div className="shrink-0 text-right">

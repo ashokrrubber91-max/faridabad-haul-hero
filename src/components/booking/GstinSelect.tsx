@@ -74,7 +74,9 @@ export function GstinSelect({
                 <p className="truncate font-medium text-secondary">{g.business_name}</p>
                 <p className="truncate text-xs text-muted-foreground">{g.gstin}</p>
               </div>
-              {g.is_default && <span className="shrink-0 text-[10px] text-muted-foreground">Default</span>}
+              {g.is_default && (
+                <span className="shrink-0 text-[10px] text-muted-foreground">Default</span>
+              )}
             </button>
           ))}
         </div>

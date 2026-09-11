@@ -45,7 +45,8 @@ export function GoodsChecklist({
             <ShieldAlert className="h-5 w-5 text-warning" /> Goods restrictions
           </DialogTitle>
           <DialogDescription>
-            Please confirm your shipment does not contain any of the following before we book your truck.
+            Please confirm your shipment does not contain any of the following before we book your
+            truck.
           </DialogDescription>
         </DialogHeader>
         <ul className="list-inside list-disc space-y-1.5 rounded-md bg-muted/40 p-3 text-sm text-secondary">
@@ -54,10 +55,14 @@ export function GoodsChecklist({
           ))}
         </ul>
         <label className="flex cursor-pointer items-start gap-2 rounded-md border p-3 text-sm">
-          <Checkbox checked={checked} onCheckedChange={(v) => setChecked(v === true)} className="mt-0.5" />
+          <Checkbox
+            checked={checked}
+            onCheckedChange={(v) => setChecked(v === true)}
+            className="mt-0.5"
+          />
           <span>
-            I confirm my shipment contains none of the above hazardous or prohibited items and complies with
-            MiniPort's transport policy.
+            I confirm my shipment contains none of the above hazardous or prohibited items and
+            complies with MiniPort's transport policy.
           </span>
         </label>
         <DialogFooter>

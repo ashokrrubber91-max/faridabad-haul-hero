@@ -1,15 +1,20 @@
 /** Server-only fan-out of ride alerts to eligible drivers. */
 import { sendPushToTokens } from "./push.server";
 
-export async function alertDriversAboutBooking(bookingId: string): Promise<{ sent: number; failed: number }> {
+export async function alertDriversAboutBooking(
+  bookingId: string,
+): Promise<{ sent: number; failed: number }> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   const { data: booking } = await supabaseAdmin
     .from("bookings")
-    .select("id, pickup_address, drop_address, fare, vehicle_type, distance_km, status, service_zone, driver_id, cancelled_at")
+    .select(
+      "id, pickup_address, drop_address, fare, vehicle_type, distance_km, status, service_zone, driver_id, cancelled_at",
+    )
     .eq("id", bookingId)
     .maybeSingle();
-  if (!booking || booking.status !== "pending" || booking.driver_id || booking.cancelled_at) return { sent: 0, failed: 0 };
+  if (!booking || booking.status !== "pending" || booking.driver_id || booking.cancelled_at)
+    return { sent: 0, failed: 0 };
 
   // Online drivers with approved KYC.
   const { data: driverProfiles } = await supabaseAdmin
@@ -68,5 +73,10 @@ export async function alertCustomerAboutBooking(
     .eq("user_id", booking.customer_id);
   const tokens = (tokenRows ?? []).map((t) => t.token);
   if (tokens.length === 0) return;
-  await sendPushToTokens(tokens, { title, body, link: "/orders", data: { bookingId, kind: "status" } });
+  await sendPushToTokens(tokens, {
+    title,
+    body,
+    link: "/orders",
+    data: { bookingId, kind: "status" },
+  });
 }

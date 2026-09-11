@@ -80,36 +80,44 @@ export function useVoiceOutput() {
     };
   }, []);
 
-  const speak = useCallback((text: string, lang: DetectedLang) => {
-    if (muted || !isVoiceOutputSupported() || !text.trim()) return;
-    const plain = text.replace(/[*_`#>\-]/g, " ").replace(/\s+/g, " ").trim();
-    if (!plain) return;
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(plain);
-    const voices = voicesRef.current.length ? voicesRef.current : window.speechSynthesis.getVoices();
-    const preferredLocales = lang === "hi-IN" ? ["hi-IN", "en-IN"] : ["en-IN", "hi-IN"];
-    let chosen: SpeechSynthesisVoice | undefined;
-    for (const locale of preferredLocales) {
-      chosen = voices.find(
-        (v) => v.lang?.toLowerCase() === locale.toLowerCase() && /female/i.test(v.name),
-      );
-      if (chosen) break;
-    }
-    if (!chosen) {
+  const speak = useCallback(
+    (text: string, lang: DetectedLang) => {
+      if (muted || !isVoiceOutputSupported() || !text.trim()) return;
+      const plain = text
+        .replace(/[*_`#>\-]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!plain) return;
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(plain);
+      const voices = voicesRef.current.length
+        ? voicesRef.current
+        : window.speechSynthesis.getVoices();
+      const preferredLocales = lang === "hi-IN" ? ["hi-IN", "en-IN"] : ["en-IN", "hi-IN"];
+      let chosen: SpeechSynthesisVoice | undefined;
       for (const locale of preferredLocales) {
-        chosen = voices.find((v) => v.lang?.toLowerCase() === locale.toLowerCase());
+        chosen = voices.find(
+          (v) => v.lang?.toLowerCase() === locale.toLowerCase() && /female/i.test(v.name),
+        );
         if (chosen) break;
       }
-    }
-    if (!chosen) {
-      chosen = voices.find((v) => /female/i.test(v.name));
-    }
-    if (chosen) utter.voice = chosen;
-    utter.lang = chosen?.lang ?? lang;
-    utter.pitch = 1;
-    utter.rate = 1;
-    window.speechSynthesis.speak(utter);
-  }, [muted]);
+      if (!chosen) {
+        for (const locale of preferredLocales) {
+          chosen = voices.find((v) => v.lang?.toLowerCase() === locale.toLowerCase());
+          if (chosen) break;
+        }
+      }
+      if (!chosen) {
+        chosen = voices.find((v) => /female/i.test(v.name));
+      }
+      if (chosen) utter.voice = chosen;
+      utter.lang = chosen?.lang ?? lang;
+      utter.pitch = 1;
+      utter.rate = 1;
+      window.speechSynthesis.speak(utter);
+    },
+    [muted],
+  );
 
   const stop = useCallback(() => {
     if (isVoiceOutputSupported()) window.speechSynthesis.cancel();

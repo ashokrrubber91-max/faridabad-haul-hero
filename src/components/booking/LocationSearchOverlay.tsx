@@ -249,7 +249,13 @@ function SavedList({
       </p>
       <ul className="space-y-1">
         {grouped.home.map((a) => (
-          <SavedRow key={a.id} a={a} icon={<Home className="h-4 w-4" />} title="Home" onPick={onPick} />
+          <SavedRow
+            key={a.id}
+            a={a}
+            icon={<Home className="h-4 w-4" />}
+            title="Home"
+            onPick={onPick}
+          />
         ))}
         {grouped.shops.map((a) => (
           <SavedRow

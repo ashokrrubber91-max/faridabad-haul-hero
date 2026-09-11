@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { OfflineBanner } from "@/components/OfflineBanner";
 
 function NotFoundComponent() {
   return (
@@ -79,16 +80,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "MiniPort \u2014 Mini truck booking in Faridabad" },
-      { name: "description", content: "Book a Tata Ace, Pickup or Tata 407 across Faridabad in minutes. Transparent fares, instant driver assignment." },
+      {
+        name: "description",
+        content:
+          "Book a Tata Ace, Pickup or Tata 407 across Faridabad in minutes. Transparent fares, instant driver assignment.",
+      },
       { property: "og:title", content: "MiniPort \u2014 Mini truck booking in Faridabad" },
-      { property: "og:description", content: "Book a Tata Ace, Pickup or Tata 407 across Faridabad in minutes." },
+      {
+        property: "og:description",
+        content: "Book a Tata Ace, Pickup or Tata 407 across Faridabad in minutes.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap",
+      },
       { rel: "stylesheet", href: appCss },
     ],
   }),
@@ -137,6 +148,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Outlet />
       <Toaster richColors position="top-center" />
+      <OfflineBanner />
     </QueryClientProvider>
   );
 }

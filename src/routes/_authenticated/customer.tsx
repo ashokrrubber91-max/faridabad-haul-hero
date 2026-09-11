@@ -2,14 +2,30 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { MapPin, ArrowRight, Package, Loader2, ChevronRight, Map as MapIcon, X } from "lucide-react";
+import {
+  MapPin,
+  ArrowRight,
+  Package,
+  Loader2,
+  ChevronRight,
+  Map as MapIcon,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { VEHICLES, estimateFare, vehicleLabel, STATUS_META, routeDistanceKm, type VehicleId, BOOKING_FIELDS } from "@/lib/booking";
+import {
+  VEHICLES,
+  estimateFare,
+  vehicleLabel,
+  STATUS_META,
+  routeDistanceKm,
+  type VehicleId,
+  BOOKING_FIELDS,
+} from "@/lib/booking";
 import { VehicleCard } from "@/components/booking/VehicleCard";
 import { WaypointManager } from "@/components/booking/WaypointManager";
 import { GstinSelect, type CustomerGstin } from "@/components/booking/GstinSelect";
@@ -22,7 +38,14 @@ import { SupportChat } from "@/components/support/SupportChat";
 import { FARIDABAD_CENTER } from "@/lib/google-maps";
 import { LoadingTimerCard } from "@/components/booking/LoadingTimerCard";
 import { canCancel, cancellationQuote } from "@/lib/cancellation";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { createTripOrder, confirmTripPayment } from "@/lib/payments.functions";
 import { notifyDriversOfNewBooking } from "@/lib/push.functions";
@@ -77,12 +100,17 @@ function CustomerPage() {
     queryKey: ["customer-gstins", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase.from("customer_gstins").select("*").order("is_default", { ascending: false });
+      const { data, error } = await supabase
+        .from("customer_gstins")
+        .select("*")
+        .order("is_default", { ascending: false });
       if (error) throw error;
       return (data ?? []) as CustomerGstin[];
     },
   });
-  const selectedGstin = gstinEnabled ? (gstins.data ?? []).find((g) => g.id === gstinId) ?? null : null;
+  const selectedGstin = gstinEnabled
+    ? ((gstins.data ?? []).find((g) => g.id === gstinId) ?? null)
+    : null;
 
   const bookings = useQuery({
     queryKey: ["my-bookings", user?.id],
@@ -126,11 +154,11 @@ function CustomerPage() {
           customer_id: user!.id,
           pickup_address: pickup.address,
           drop_address: drop.address,
-           pickup_lat: pickup.lat,
-           pickup_lng: pickup.lng,
-           drop_lat: drop.lat,
-           drop_lng: drop.lng,
-           service_zone: "Faridabad",
+          pickup_lat: pickup.lat,
+          pickup_lng: pickup.lng,
+          drop_lat: drop.lat,
+          drop_lng: drop.lng,
+          service_zone: "Faridabad",
           vehicle_type: vehicle,
           distance_km: distanceKm,
           fare,
@@ -144,7 +172,8 @@ function CustomerPage() {
               stops.length > 0 && `Stops: ${stops.map((s) => s.address).join(" → ")}`,
               pickup.contactName && `Sender: ${pickup.contactName} (${pickup.contactPhone ?? ""})`,
               drop.contactName && `Receiver: ${drop.contactName} (${drop.contactPhone ?? ""})`,
-              selectedGstin && `Billed to GSTIN ${selectedGstin.gstin} (${selectedGstin.business_name})`,
+              selectedGstin &&
+                `Billed to GSTIN ${selectedGstin.gstin} (${selectedGstin.business_name})`,
             ]
               .filter(Boolean)
               .join(" · ") || null,
@@ -169,7 +198,11 @@ function CustomerPage() {
           if (!result) {
             await supabase
               .from("bookings")
-              .update({ status: "cancelled", cancelled_at: new Date().toISOString(), cancellation_reason: "Payment not completed" })
+              .update({
+                status: "cancelled",
+                cancelled_at: new Date().toISOString(),
+                cancellation_reason: "Payment not completed",
+              })
               .eq("id", booking.id);
             throw new Error("Payment cancelled — the trip was not booked");
           }
@@ -187,7 +220,9 @@ function CustomerPage() {
               status: "cancelled",
               cancelled_at: new Date().toISOString(),
               cancellation_reason:
-                paymentError instanceof Error ? paymentError.message.slice(0, 180) : "Payment failed",
+                paymentError instanceof Error
+                  ? paymentError.message.slice(0, 180)
+                  : "Payment failed",
             })
             .eq("id", booking.id);
           throw paymentError;
@@ -238,7 +273,8 @@ function CustomerPage() {
       fee: number;
     }) => {
       const noteLine =
-        `Cancelled by customer: ${reason}` + (fee > 0 ? ` · Cancellation charge ₹${fee}` : " · No charge");
+        `Cancelled by customer: ${reason}` +
+        (fee > 0 ? ` · Cancellation charge ₹${fee}` : " · No charge");
       const nextNotes = existingNotes ? `${existingNotes} · ${noteLine}` : noteLine;
       const { error } = await supabase
         .from("bookings")
@@ -248,7 +284,11 @@ function CustomerPage() {
       return fee;
     },
     onSuccess: (fee) => {
-      toast.success(fee > 0 ? `Booking cancelled — ₹${fee} cancellation charge applied` : "Booking cancelled — no charge");
+      toast.success(
+        fee > 0
+          ? `Booking cancelled — ₹${fee} cancellation charge applied`
+          : "Booking cancelled — no charge",
+      );
       setCancelTarget(null);
       setCancelNote("");
       qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
@@ -256,13 +296,17 @@ function CustomerPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-
   if (loading) return <CenterLoader />;
   if (role && role !== "customer" && role !== "admin") {
     return <Navigate to={role === "driver" ? "/driver" : "/admin"} />;
   }
   // Dual-role only: user has BOTH customer and driver roles and switched into driver mode.
-  if (role !== "admin" && roles.includes("driver") && roles.includes("customer") && activeMode === "driver") {
+  if (
+    role !== "admin" &&
+    roles.includes("driver") &&
+    roles.includes("customer") &&
+    activeMode === "driver"
+  ) {
     return <Navigate to="/driver" />;
   }
 
@@ -271,120 +315,127 @@ function CustomerPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
       {step === "form" ? (
-      <section className="surface-card p-5">
-        <h2 className="font-display text-2xl tracking-wide text-secondary">New booking</h2>
-        <p className="text-sm text-muted-foreground">Faridabad only · transparent flat fare</p>
+        <section className="surface-card p-5">
+          <h2 className="font-display text-2xl tracking-wide text-secondary">New booking</h2>
+          <p className="text-sm text-muted-foreground">Faridabad only · transparent flat fare</p>
 
-        <div className="mt-5 space-y-4">
-          <LocationRow
-            label="Pickup"
-            dotClass="text-primary"
-            place={pickup}
-            placeholder="Search pickup location"
-            onSearch={() => openSearch("pickup")}
-            onPickOnMap={() => {
-              setPending(pickup ?? { address: "", ...FARIDABAD_CENTER });
-              setStage({ type: "confirm", mode: "pickup" });
-            }}
-          />
-
-          <WaypointManager
-            stops={stops}
-            onAdd={() => setStopStage({ type: "search" })}
-            onRemove={(i) => setStops((prev) => prev.filter((_, idx) => idx !== i))}
-            onMoveUp={(i) =>
-              setStops((prev) => {
-                if (i === 0) return prev;
-                const next = [...prev];
-                [next[i - 1], next[i]] = [next[i], next[i - 1]];
-                return next;
-              })
-            }
-            onMoveDown={(i) =>
-              setStops((prev) => {
-                if (i === prev.length - 1) return prev;
-                const next = [...prev];
-                [next[i + 1], next[i]] = [next[i], next[i + 1]];
-                return next;
-              })
-            }
-          />
-
-          <LocationRow
-            label="Drop"
-            dotClass="text-success"
-            place={drop}
-            placeholder="Search drop location"
-            onSearch={() => openSearch("drop")}
-            onPickOnMap={() => {
-              setPending(drop ?? { address: "", ...FARIDABAD_CENTER });
-              setStage({ type: "confirm", mode: "drop" });
-            }}
-          />
-
-
-          <div>
-            <Label>Vehicle</Label>
-            <div className="mt-2 flex flex-col gap-2">
-              {VEHICLES.map((v) => (
-                <VehicleCard key={v.id} id={v.id} selected={vehicle === v.id} onSelect={() => setVehicle(v.id)} />
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="notes">Notes for driver (optional)</Label>
-            <Textarea
-              id="notes"
-              rows={2}
-              placeholder="2 mattresses + 1 sofa"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              maxLength={300}
+          <div className="mt-5 space-y-4">
+            <LocationRow
+              label="Pickup"
+              dotClass="text-primary"
+              place={pickup}
+              placeholder="Search pickup location"
+              onSearch={() => openSearch("pickup")}
+              onPickOnMap={() => {
+                setPending(pickup ?? { address: "", ...FARIDABAD_CENTER });
+                setStage({ type: "confirm", mode: "pickup" });
+              }}
             />
-          </div>
 
-          <GstinSelect
-            enabled={gstinEnabled}
-            setEnabled={setGstinEnabled}
-            selectedId={gstinId}
-            setSelectedId={setGstinId}
-          />
+            <WaypointManager
+              stops={stops}
+              onAdd={() => setStopStage({ type: "search" })}
+              onRemove={(i) => setStops((prev) => prev.filter((_, idx) => idx !== i))}
+              onMoveUp={(i) =>
+                setStops((prev) => {
+                  if (i === 0) return prev;
+                  const next = [...prev];
+                  [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                  return next;
+                })
+              }
+              onMoveDown={(i) =>
+                setStops((prev) => {
+                  if (i === prev.length - 1) return prev;
+                  const next = [...prev];
+                  [next[i + 1], next[i]] = [next[i], next[i + 1]];
+                  return next;
+                })
+              }
+            />
 
-          <CheckoutExtras
-            fare={baseFare}
-            promo={promo}
-            setPromo={setPromo}
-            coins={coins}
-            setCoins={setCoins}
-            method={method}
-            setMethod={setMethod}
-          />
+            <LocationRow
+              label="Drop"
+              dotClass="text-success"
+              place={drop}
+              placeholder="Search drop location"
+              onSearch={() => openSearch("drop")}
+              onPickOnMap={() => {
+                setPending(drop ?? { address: "", ...FARIDABAD_CENTER });
+                setStage({ type: "confirm", mode: "drop" });
+              }}
+            />
 
-          <div className="rounded-md bg-secondary/95 px-4 py-3 text-secondary-foreground">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-wider opacity-80">
-                  {distanceKm > 0 ? `${distanceKm} km · total` : "Estimated total"}
-                </p>
-                <p className="font-display text-3xl">₹ {fare || "—"}</p>
-                {discount > 0 && (
-                  <p className="text-xs opacity-80">Base ₹{baseFare} − ₹{discount} off</p>
-                )}
+            <div>
+              <Label>Vehicle</Label>
+              <div className="mt-2 flex flex-col gap-2">
+                {VEHICLES.map((v) => (
+                  <VehicleCard
+                    key={v.id}
+                    id={v.id}
+                    selected={vehicle === v.id}
+                    onSelect={() => setVehicle(v.id)}
+                  />
+                ))}
               </div>
-              <Button
-                onClick={() => setStep("review")}
-                disabled={!pickup || !drop || distanceKm <= 0}
-                className="h-11"
-              >
-                Review booking
-              </Button>
+            </div>
+
+            <div>
+              <Label htmlFor="notes">Notes for driver (optional)</Label>
+              <Textarea
+                id="notes"
+                rows={2}
+                placeholder="2 mattresses + 1 sofa"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                maxLength={300}
+              />
+            </div>
+
+            <GstinSelect
+              enabled={gstinEnabled}
+              setEnabled={setGstinEnabled}
+              selectedId={gstinId}
+              setSelectedId={setGstinId}
+            />
+
+            <CheckoutExtras
+              fare={baseFare}
+              promo={promo}
+              setPromo={setPromo}
+              coins={coins}
+              setCoins={setCoins}
+              method={method}
+              setMethod={setMethod}
+            />
+
+            <div className="rounded-md bg-secondary/95 px-4 py-3 text-secondary-foreground">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-wider opacity-80">
+                    {distanceKm > 0 ? `${distanceKm} km · total` : "Estimated total"}
+                  </p>
+                  <p className="font-display text-3xl">₹ {fare || "—"}</p>
+                  {discount > 0 && (
+                    <p className="text-xs opacity-80">
+                      Base ₹{baseFare} − ₹{discount} off
+                    </p>
+                  )}
+                </div>
+                <Button
+                  onClick={() => setStep("review")}
+                  disabled={!pickup || !drop || distanceKm <= 0}
+                  className="h-11"
+                >
+                  Review booking
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
       ) : (
-        pickup && drop && (
+        pickup &&
+        drop && (
           <ReviewBooking
             pickup={pickup}
             drop={drop}
@@ -426,13 +477,17 @@ function CustomerPage() {
                         <span>·</span>
                         <span>{b.distance_km} km</span>
                       </div>
-                      <p className="mt-1 truncate text-sm font-medium text-secondary">{b.pickup_address}</p>
+                      <p className="mt-1 truncate text-sm font-medium text-secondary">
+                        {b.pickup_address}
+                      </p>
                       <p className="flex items-center gap-1 truncate text-sm text-muted-foreground">
                         <ArrowRight className="h-3 w-3" /> {b.drop_address}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-display text-xl text-secondary">₹{Number(b.fare).toFixed(0)}</p>
+                      <p className="font-display text-xl text-secondary">
+                        ₹{Number(b.fare).toFixed(0)}
+                      </p>
                       <Badge
                         variant={meta.tone === "destructive" ? "destructive" : "secondary"}
                         className={tone(meta.tone)}
@@ -456,7 +511,10 @@ function CustomerPage() {
                     />
                   )}
                   {b.status === "in_progress" && (
-                    <LoadingTimerCard vehicleType={b.vehicle_type} startedAt={b.pickup_verified_at} />
+                    <LoadingTimerCard
+                      vehicleType={b.vehicle_type}
+                      startedAt={b.pickup_verified_at}
+                    />
                   )}
 
                   {(b.status === "accepted" || b.status === "in_progress") && (
@@ -485,7 +543,6 @@ function CustomerPage() {
                       </Button>
                     </div>
                   )}
-
                 </div>
               );
             })}
@@ -507,25 +564,34 @@ function CustomerPage() {
             <DialogTitle>Cancel this booking?</DialogTitle>
             <DialogDescription className="truncate">{cancelTarget?.addr}</DialogDescription>
           </DialogHeader>
-          {cancelTarget && (() => {
-            const q = cancellationQuote(cancelTarget.status, cancelTarget.fare, cancelTarget.since);
-            return (
-              <div
-                className={`rounded-md border p-3 text-sm ${
-                  q.fee > 0 ? "border-destructive/40 bg-destructive/5" : "border-success/40 bg-success/5"
-                }`}
-              >
-                <p className={`font-semibold ${q.fee > 0 ? "text-destructive" : "text-success"}`}>{q.label}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{q.detail}</p>
-                {q.fee > 0 && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    The charge is settled from your wallet and may show a negative balance (e.g. −₹{q.fee}) until your
-                    next booking.
+          {cancelTarget &&
+            (() => {
+              const q = cancellationQuote(
+                cancelTarget.status,
+                cancelTarget.fare,
+                cancelTarget.since,
+              );
+              return (
+                <div
+                  className={`rounded-md border p-3 text-sm ${
+                    q.fee > 0
+                      ? "border-destructive/40 bg-destructive/5"
+                      : "border-success/40 bg-success/5"
+                  }`}
+                >
+                  <p className={`font-semibold ${q.fee > 0 ? "text-destructive" : "text-success"}`}>
+                    {q.label}
                   </p>
-                )}
-              </div>
-            );
-          })()}
+                  <p className="mt-0.5 text-xs text-muted-foreground">{q.detail}</p>
+                  {q.fee > 0 && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      The charge is settled from your wallet and may show a negative balance (e.g.
+                      −₹{q.fee}) until your next booking.
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
           <RadioGroup value={cancelReason} onValueChange={setCancelReason} className="space-y-2">
             {[
               "Driver taking too long",
@@ -534,7 +600,10 @@ function CustomerPage() {
               "Wrong pickup or drop",
               "Other",
             ].map((r) => (
-              <label key={r} className="flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm">
+              <label
+                key={r}
+                className="flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm"
+              >
                 <RadioGroupItem value={r} /> {r}
               </label>
             ))}
@@ -549,25 +618,31 @@ function CustomerPage() {
             />
           )}
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setCancelTarget(null)}>Keep booking</Button>
+            <Button variant="ghost" onClick={() => setCancelTarget(null)}>
+              Keep booking
+            </Button>
             <Button
               variant="destructive"
               disabled={cancel.isPending}
               onClick={() => {
                 if (!cancelTarget) return;
-                const reason = cancelReason === "Other" && cancelNote.trim() ? cancelNote.trim() : cancelReason;
-                const existing = (bookings.data ?? []).find((x) => x.id === cancelTarget.id)?.notes ?? null;
-                const { fee } = cancellationQuote(cancelTarget.status, cancelTarget.fare, cancelTarget.since);
+                const reason =
+                  cancelReason === "Other" && cancelNote.trim() ? cancelNote.trim() : cancelReason;
+                const existing =
+                  (bookings.data ?? []).find((x) => x.id === cancelTarget.id)?.notes ?? null;
+                const { fee } = cancellationQuote(
+                  cancelTarget.status,
+                  cancelTarget.fare,
+                  cancelTarget.since,
+                );
                 cancel.mutate({ id: cancelTarget.id, reason, existingNotes: existing, fee });
               }}
             >
               Confirm cancel
             </Button>
-
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
 
       <LocationSearchOverlay
         open={stage?.type === "search"}
@@ -668,9 +743,6 @@ function LocationRow({
   );
 }
 
-
-
-
 function tone(t: "warning" | "primary" | "success" | "muted" | "destructive") {
   switch (t) {
     case "warning":
@@ -717,7 +789,9 @@ function TripCodes({ bookingId, status }: { bookingId: string; status: string })
     return (
       <div className="mt-3 flex items-center justify-between gap-2 rounded-md bg-muted/50 p-3">
         <p className="text-xs text-muted-foreground">Couldn’t load your trip codes.</p>
-        <Button size="sm" variant="outline" onClick={() => void codes.refetch()}>Retry</Button>
+        <Button size="sm" variant="outline" onClick={() => void codes.refetch()}>
+          Retry
+        </Button>
       </div>
     );
   }
