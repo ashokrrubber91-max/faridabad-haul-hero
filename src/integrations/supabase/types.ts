@@ -894,55 +894,9 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      complete_booking_with_pod: {
+      attach_delivery_photo: {
         Args: { _booking_id: string; _pod_path: string }
-        Returns: {
-          cancellation_reason: string | null
-          cancelled_at: string | null
-          coins_redeemed: number
-          commission_amount: number
-          commission_rate: number
-          coupon_code: string | null
-          coupon_discount: number
-          created_at: string
-          customer_id: string
-          distance_km: number
-          driver_id: string | null
-          driver_net_earning: number
-          drop_address: string
-          drop_lat: number | null
-          drop_lng: number | null
-          drop_otp: string | null
-          drop_verified_at: string | null
-          expires_at: string | null
-          fare: number
-          id: string
-          loading_started_at: string | null
-          loading_stopped_at: string | null
-          notes: string | null
-          payment_method: Database["public"]["Enums"]["payment_method"]
-          payment_status: Database["public"]["Enums"]["payment_status"]
-          pickup_address: string
-          pickup_lat: number | null
-          pickup_lng: number | null
-          pickup_otp: string | null
-          pickup_verified_at: string | null
-          pod_photo_url: string | null
-          rating: number | null
-          review: string | null
-          service_zone: string
-          status: Database["public"]["Enums"]["booking_status"]
-          unloading_started_at: string | null
-          unloading_stopped_at: string | null
-          updated_at: string
-          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
-        }
-        SetofOptions: {
-          from: "*"
-          to: "bookings"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+        Returns: boolean
       }
       decline_booking: { Args: { _booking_id: string }; Returns: boolean }
       get_booking_otps: {

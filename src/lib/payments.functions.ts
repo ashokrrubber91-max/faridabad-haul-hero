@@ -116,17 +116,32 @@ export const confirmTripPayment = createServerFn({ method: "POST" })
     // Duplicate confirmation (double-click, webhook race) is a no-op.
     if (record.state === "paid") return { ok: true, bookingId: record.booking_id };
 
+    // The trip must exist, belong to this customer, and its stored fare must
+    // equal the amount stored on the payment record.
+    if (!record.booking_id) throw new Error("Payment record is not linked to a trip");
+    const { data: booking } = await supabaseAdmin
+      .from("bookings")
+      .select("id, customer_id, fare, payment_status")
+      .eq("id", record.booking_id)
+      .maybeSingle();
+    if (!booking || booking.customer_id !== context.userId) throw new Error("Trip not found");
+    if (Math.abs(Number(booking.fare) - Number(record.amount)) > 0.01) {
+      throw new Error("Payment amount does not match the trip fare");
+    }
+
     const payment = await fetchRazorpayPayment(creds, data.paymentId);
     const paidRupees = payment.amount / 100;
-    const captured = payment.status === "captured" || payment.status === "authorized";
-    if (!captured || payment.order_id !== data.orderId || paidRupees + 0.01 < Number(record.amount)) {
+    const amountMatches = Math.abs(paidRupees - Number(record.amount)) < 0.01;
+    if (payment.status !== "captured" || payment.order_id !== data.orderId || !amountMatches) {
       await supabaseAdmin
         .from("payments")
         .update({ state: "failed", provider_payment_id: data.paymentId, error: payment.status })
-        .eq("id", record.id);
+        .eq("id", record.id)
+        .eq("state", "created");
       throw new Error("Payment was not completed");
     }
 
+    // Settle once: the guard on `state` makes a webhook/click race a no-op.
     await supabaseAdmin
       .from("payments")
       .update({
@@ -135,13 +150,15 @@ export const confirmTripPayment = createServerFn({ method: "POST" })
         provider_signature: data.signature,
         method: payment.method ?? null,
       })
-      .eq("id", record.id);
+      .eq("id", record.id)
+      .eq("state", "created");
 
-    if (record.booking_id) {
+    if (booking.payment_status !== "paid") {
       await supabaseAdmin
         .from("bookings")
         .update({ payment_status: "paid" })
-        .eq("id", record.booking_id);
+        .eq("id", booking.id)
+        .neq("payment_status", "paid");
     }
 
     return { ok: true, bookingId: record.booking_id };

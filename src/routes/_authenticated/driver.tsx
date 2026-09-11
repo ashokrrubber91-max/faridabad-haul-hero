@@ -188,12 +188,15 @@ function DriverPage() {
       podPath?: string | null;
     }) => {
       const code = otp.replace(/\D/g, "");
-      if (!code && next === "completed" && podPath) {
-        const { error } = await supabase.rpc("complete_booking_with_pod", { _booking_id: id, _pod_path: podPath });
-        if (error) throw error;
-        return;
-      }
       if (code.length !== 4) throw new Error("Enter the 4-digit code from the customer");
+      // The photo is evidence only — it can never replace the customer's code.
+      if (podPath) {
+        const { error: podError } = await supabase.rpc("attach_delivery_photo", {
+          _booking_id: id,
+          _pod_path: podPath,
+        });
+        if (podError) throw podError;
+      }
       const { error } = await supabase.rpc("verify_booking_otp", {
         _booking_id: id,
         _stage: next === "in_progress" ? "pickup" : "drop",
@@ -696,7 +699,7 @@ function ActiveJobCard({
         <p className="mt-0.5 text-xs text-muted-foreground">
           {next === "in_progress"
             ? "Ask the sender for the 4-digit pickup OTP to start the trip."
-            : "Ask the receiver for the 4-digit drop OTP — or attach a delivery photo if they can't share it."}
+            : "Ask the receiver for the 4-digit drop OTP to complete the trip. A delivery photo is extra proof, not a substitute."}
         </p>
         <div className="mt-2 flex gap-2">
           <Input
@@ -709,7 +712,7 @@ function ActiveJobCard({
           />
           <Button
             size="sm"
-            disabled={pending || (otp.length !== 4 && !(next === "completed" && podPath))}
+            disabled={pending || otp.length !== 4}
             onClick={() => { onVerify(otp, next, podPath); setOtp(""); }}
           >
             {pending ? "Verifying…" : next === "in_progress" ? "Start trip" : "Complete trip"}
@@ -734,7 +737,7 @@ function ActiveJobCard({
               />
             </label>
             {podPath && (
-              <p className="mt-1 text-xs text-success">Photo proof ready — you can complete the trip without the OTP.</p>
+              <p className="mt-1 text-xs text-success">Photo attached — it will be saved with the trip. The drop OTP is still required.</p>
             )}
           </div>
         )}
