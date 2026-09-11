@@ -416,7 +416,13 @@ function CustomerPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-wider opacity-80">
-                    {distanceKm > 0 ? `${distanceKm} km · total` : "Estimated total"}
+                    {distanceKm > 0
+                      ? `${distanceKm} km by road · total`
+                      : routeQuote.isFetching
+                        ? "Calculating road distance…"
+                        : routeQuote.isError
+                          ? "Road distance unavailable"
+                          : "Estimated total"}
                   </p>
                   <p className="font-display text-3xl">₹ {fare || "—"}</p>
                   {discount > 0 && (
@@ -424,10 +430,19 @@ function CustomerPage() {
                       Base ₹{baseFare} − ₹{discount} off
                     </p>
                   )}
+                  {routeQuote.isError && (
+                    <button
+                      type="button"
+                      onClick={() => void routeQuote.refetch()}
+                      className="mt-1 text-xs underline opacity-90"
+                    >
+                      We couldn&apos;t measure this route. Tap to retry.
+                    </button>
+                  )}
                 </div>
                 <Button
                   onClick={() => setStep("review")}
-                  disabled={!pickup || !drop || distanceKm <= 0}
+                  disabled={!pickup || !drop || distanceKm <= 0 || routeQuote.isFetching}
                   className="h-11"
                 >
                   Review booking
