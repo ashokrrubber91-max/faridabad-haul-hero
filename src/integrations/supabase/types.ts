@@ -961,7 +961,7 @@ export type Database = {
         Args: { _booking_id: string; _pod_path: string }
         Returns: boolean
       }
-      claim_first_admin: { Args: never; Returns: boolean }
+      claim_first_admin: { Args: { _user_id: string }; Returns: boolean }
       decline_booking: { Args: { _booking_id: string }; Returns: boolean }
       expire_stale_bookings: { Args: never; Returns: number }
       get_booking_otps: {
