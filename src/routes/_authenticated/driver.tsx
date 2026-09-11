@@ -1,3 +1,4 @@
+import type { AnyRow } from "@/lib/rows";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -579,7 +580,7 @@ function PendingJob({
   onDecline,
   pending,
 }: {
-  job: any;
+  job: AnyRow;
   onAccept: () => void;
   onDecline: () => void;
   pending: boolean;
@@ -664,7 +665,7 @@ function ActiveJobCard({
   onTimer,
   pending,
 }: {
-  job: any;
+  job: AnyRow;
   onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null) => void;
   onTimer: (patch: Record<string, string>) => void;
   pending: boolean;

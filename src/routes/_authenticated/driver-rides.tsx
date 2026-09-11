@@ -1,3 +1,4 @@
+import type { AnyRow } from "@/lib/rows";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Camera, Loader2, Package } from "lucide-react";
@@ -79,7 +80,7 @@ function DriverRidesPage() {
   );
 }
 
-function RideCard({ ride }: { ride: Record<string, any> }) {
+function RideCard({ ride }: { ride: AnyRow }) {
   const [proofUrl, setProofUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const meta = STATUS_META[ride.status] ?? { label: ride.status };

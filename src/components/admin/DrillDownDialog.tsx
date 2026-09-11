@@ -1,3 +1,4 @@
+import type { AnyRow } from "@/lib/rows";
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import {

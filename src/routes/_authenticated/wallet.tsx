@@ -330,7 +330,7 @@ function BankAccounts({
       if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc.trim().toUpperCase()))
         throw new Error("Enter a valid IFSC code");
       const upiId = upi.trim();
-      if (upiId && !/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(upiId))
+      if (upiId && !/^[\w.-]{2,}@[a-zA-Z]{2,}$/.test(upiId))
         throw new Error("Enter a valid UPI ID");
       const { error } = await supabase.from("driver_bank_accounts").insert({
         driver_id: userId!,

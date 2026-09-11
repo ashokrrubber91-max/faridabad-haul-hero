@@ -1,3 +1,4 @@
+import type { AnyRow } from "@/lib/rows";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -141,7 +142,7 @@ function AdminPage() {
   const [drill, setDrill] = useState<{
     kind: "bookings" | "profiles";
     title: string;
-    rows: any[];
+    rows: AnyRow[];
     showCommission?: boolean;
   } | null>(null);
 
@@ -463,13 +464,13 @@ function AdminPage() {
             columns={
               (drill?.kind === "profiles"
                 ? profileDrillColumns
-                : bookingDrillColumns(drill?.showCommission)) as DrillDownColumn<any>[]
+                : bookingDrillColumns(drill?.showCommission)) as DrillDownColumn<AnyRow>[]
             }
             searchFn={
               drill?.kind === "profiles"
-                ? (row: any, q: string) =>
+                ? (row: AnyRow, q: string) =>
                     row.name?.toLowerCase().includes(q.toLowerCase()) || row.phone?.includes(q)
-                : (row: any, q: string) => {
+                : (row: AnyRow, q: string) => {
                     const query = q.toLowerCase();
                     const customer = profileMap.get(row.customer_id);
                     const driver = row.driver_id ? profileMap.get(row.driver_id) : null;
@@ -1052,7 +1053,7 @@ function FaresTab({ bookings }: { bookings: Booking[] }) {
 }
 
 /* ============================== Incentives ============================== */
-function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => void }) {
+function IncentivesTab({ tiers, onChanged }: { tiers: AnyRow[]; onChanged: () => void }) {
   const [rides, setRides] = useState("");
   const [bonus, setBonus] = useState("");
   const [label, setLabel] = useState("");
@@ -1239,7 +1240,7 @@ const emptyCouponForm: CouponForm = {
   expiresAt: "",
 };
 
-function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => void }) {
+function CouponsTab({ coupons, onChanged }: { coupons: AnyRow[]; onChanged: () => void }) {
   const [form, setForm] = useState<CouponForm>(emptyCouponForm);
   const [busy, setBusy] = useState(false);
   const [editCoupon, setEditCoupon] = useState<any | null>(null);
@@ -1624,7 +1625,7 @@ function BookingsList({
   );
 }
 
-function SmsLogsSection({ logs }: { logs: any[] }) {
+function SmsLogsSection({ logs }: { logs: AnyRow[] }) {
   return (
     <section className="surface-card">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
