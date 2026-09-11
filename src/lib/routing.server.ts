@@ -39,8 +39,7 @@ export async function computeRoadRouteServer(points: RoutePoint[]): Promise<Road
       Authorization: `Bearer ${lovableKey}`,
       "X-Connection-Api-Key": mapsKey,
       "Content-Type": "application/json",
-      "X-Goog-FieldMask":
-        "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline",
+      "X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline",
     },
     body: JSON.stringify({
       origin: latLng(origin),
@@ -76,7 +75,8 @@ export async function computeRoadRouteServer(points: RoutePoint[]): Promise<Road
   const seconds = Number(String(route.duration ?? "0s").replace(/s$/, ""));
   return {
     distanceKm: Math.max(0.5, +(meters / 1000).toFixed(1)),
-    durationMin: Number.isFinite(seconds) && seconds > 0 ? Math.max(1, Math.round(seconds / 60)) : 0,
+    durationMin:
+      Number.isFinite(seconds) && seconds > 0 ? Math.max(1, Math.round(seconds / 60)) : 0,
     polyline: encoded,
   };
 }

@@ -22,7 +22,6 @@ import {
   estimateFare,
   vehicleLabel,
   STATUS_META,
-  
   type VehicleId,
   BOOKING_FIELDS,
 } from "@/lib/booking";
@@ -93,9 +92,7 @@ function CustomerPage() {
   // straight-line estimate — because the fare is derived from it.
   const routePoints = useMemo(
     () =>
-      pickup && drop
-        ? [pickup, ...stops, drop].map((p) => ({ lat: p.lat, lng: p.lng }))
-        : null,
+      pickup && drop ? [pickup, ...stops, drop].map((p) => ({ lat: p.lat, lng: p.lng })) : null,
     [pickup, drop, stops],
   );
   const routeQuote = useQuery({

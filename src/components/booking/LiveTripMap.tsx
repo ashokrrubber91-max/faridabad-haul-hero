@@ -148,8 +148,7 @@ export function LiveTripMap({
   const origin = driverPos ?? pickup;
 
   // Authoritative road route (geometry + distance + ETA) from the Routes API.
-  const roundedKey = (p: LatLng | null) =>
-    p ? `${p.lat.toFixed(3)},${p.lng.toFixed(3)}` : "none";
+  const roundedKey = (p: LatLng | null) => (p ? `${p.lat.toFixed(3)},${p.lng.toFixed(3)}` : "none");
   const road = useQuery({
     queryKey: ["road-route", roundedKey(origin), roundedKey(target)],
     enabled: !!origin && !!target,
