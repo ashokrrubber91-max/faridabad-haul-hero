@@ -239,6 +239,9 @@ function OrdersPage() {
                 )}
 
                 <div className="mt-3 flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setDetail(b.id)}>
+                    View details
+                  </Button>
                   {b.status === "completed" && (
                     <Button size="sm" variant="outline" onClick={() => downloadInvoice(b)}>
                       <Download className="h-3.5 w-3.5" /> Invoice{" "}
