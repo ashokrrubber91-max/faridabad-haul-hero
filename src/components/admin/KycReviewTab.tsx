@@ -20,7 +20,12 @@ const DOCS = [
   ["puc_url", "PUC"],
 ] as const;
 
-type Kyc = Record<string, any>;
+type Kyc = Record<string, string | null> & {
+  driver_id: string;
+  full_name: string;
+  status: string;
+  submitted_at: string;
+};
 
 export function KycReviewTab() {
   const [filter, setFilter] = useState<"pending" | "all">("pending");
