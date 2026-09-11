@@ -48,9 +48,18 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         // Razorpay retries deliveries; process each event exactly once.
+        // Without the provider event id we derive a fingerprint from the exact
+        // payload so two *different* events can never collapse into one key.
+        const bodyDigest = [
+          ...new Uint8Array(
+            await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawBody)),
+          ),
+        ]
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
         const eventId =
           request.headers.get("x-razorpay-event-id") ??
-          `${kind}:${payment?.id ?? refund?.id ?? "unknown"}`;
+          `${kind}:${payment?.id ?? refund?.id ?? "na"}:${bodyDigest}`;
         const { error: dedupeError } = await supabaseAdmin
           .from("webhook_events")
           .insert({ provider: "razorpay", event_id: eventId, event_type: kind });
