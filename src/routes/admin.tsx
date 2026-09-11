@@ -966,9 +966,10 @@ function LiveTripsTab({
                     Assign driver
                   </Button>
                 )}
-                <Button size="sm" variant="ghost" onClick={() => cancel(b)}>
+                <Button size="sm" variant="ghost" onClick={() => setCancelFor(b)}>
                   Cancel
                 </Button>
+
               </div>
             </div>
           );
