@@ -15,6 +15,9 @@ import { phoneToEmail, useAuth } from "@/hooks/useAuth";
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
   as: z.enum(["customer", "driver"]).optional(),
+  // Only a known in-app destination is accepted, so this can never be used to
+  // bounce someone to an external site after signing in.
+  next: z.enum(["/admin"]).optional(),
 });
 
 export const Route = createFileRoute("/auth")({
