@@ -453,23 +453,8 @@ function CustomerPage() {
                     <LoadingTimerCard vehicleType={b.vehicle_type} startedAt={b.pickup_verified_at} />
                   )}
 
-                  {(b.status === "accepted" || b.status === "in_progress") && (b.pickup_otp || b.drop_otp) && (
-                    <div className="mt-3 grid gap-2 rounded-md bg-primary/5 p-3 sm:grid-cols-2">
-                      {b.pickup_otp && (
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Pickup OTP</p>
-                          <p className="font-display text-2xl tracking-widest text-primary">{b.pickup_otp}</p>
-                          <p className="text-[10px] text-muted-foreground">Share with driver at pickup</p>
-                        </div>
-                      )}
-                      {b.drop_otp && (
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Drop OTP</p>
-                          <p className="font-display text-2xl tracking-widest text-primary">{b.drop_otp}</p>
-                          <p className="text-[10px] text-muted-foreground">Share only after delivery</p>
-                        </div>
-                      )}
-                    </div>
+                  {(b.status === "accepted" || b.status === "in_progress") && (
+                    <TripCodes bookingId={b.id} status={b.status} />
                   )}
                   {canCancel(b.status) && (
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
