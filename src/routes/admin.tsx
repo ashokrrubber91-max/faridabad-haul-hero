@@ -640,7 +640,6 @@ function DriversTab({
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
 
-
   const filtered = drivers.filter(
     (d) => !q || d.name.toLowerCase().includes(q.toLowerCase()) || d.phone.includes(q),
   );
@@ -679,7 +678,6 @@ function DriversTab({
     setReason("");
     onChanged();
   };
-
 
   return (
     <section className="surface-card">
@@ -790,7 +788,6 @@ function DriversTab({
               {busy ? "Saving..." : "Apply"}
             </Button>
           </DialogFooter>
-
         </DialogContent>
       </Dialog>
     </section>
@@ -909,7 +906,6 @@ function LiveTripsTab({
     onChanged();
   };
 
-
   const availableDrivers = drivers.filter((d) => d.is_online);
 
   return (
@@ -969,7 +965,6 @@ function LiveTripsTab({
                 <Button size="sm" variant="ghost" onClick={() => setCancelFor(b)}>
                   Cancel
                 </Button>
-
               </div>
             </div>
           );
@@ -1047,7 +1042,6 @@ function LiveTripsTab({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </section>
   );
 }
