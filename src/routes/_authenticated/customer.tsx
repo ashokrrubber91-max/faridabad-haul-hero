@@ -443,8 +443,14 @@ function CustomerPage() {
                   </div>
                   {(b.status === "accepted" || b.status === "in_progress") && (
                     <LiveTripMap
+                      bookingId={b.id}
+                      driverId={b.driver_id}
                       pickupAddress={b.pickup_address}
                       dropAddress={b.drop_address}
+                      pickupLat={b.pickup_lat}
+                      pickupLng={b.pickup_lng}
+                      dropLat={b.drop_lat}
+                      dropLng={b.drop_lng}
                       phase={b.status === "accepted" ? "accepted" : "in_progress"}
                       distanceKm={Number(b.distance_km) || 0}
                     />
