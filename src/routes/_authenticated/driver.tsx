@@ -370,6 +370,7 @@ function DriverPage() {
               podPath,
             })
           }
+          onTimer={(patch) => setTimer.mutate({ id: activeJob.id, patch })}
           pending={verifyOtp.isPending}
         />
       )}
@@ -554,10 +555,12 @@ function playRideAlert() {
 function ActiveJobCard({
   job,
   onVerify,
+  onTimer,
   pending,
 }: {
   job: any;
   onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null) => void;
+  onTimer: (patch: Record<string, string>) => void;
   pending: boolean;
 }) {
   const [otp, setOtp] = useState("");
