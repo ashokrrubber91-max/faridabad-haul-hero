@@ -1,5 +1,6 @@
 import type { AnyRow } from "@/lib/rows";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -50,6 +51,7 @@ import { vehicleLabel, STATUS_META, VEHICLES, BOOKING_FIELDS } from "@/lib/booki
 import { KycReviewTab } from "@/components/admin/KycReviewTab";
 import { DrillDownDialog, type DrillDownColumn } from "@/components/admin/DrillDownDialog";
 import { WithdrawalsTab, DisputesTab, AuditTab } from "@/components/admin/OpsTabs";
+import { getAdminSetupState, claimFirstAdmin } from "@/lib/admin.functions";
 import { SystemStatus } from "@/components/admin/SystemStatus";
 
 export const Route = createFileRoute("/admin")({
