@@ -60,13 +60,17 @@ function DriverPage() {
     queryKey: ["driver-feed", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      // Sweep requests whose validity window has passed so the feed never shows
+      // a request the backend would refuse to assign.
+      await supabase.rpc("expire_stale_bookings");
       const { data, error } = await supabase
         .from("bookings")
         .select(BOOKING_FIELDS)
         .or(
           `and(status.eq.pending,driver_id.is.null,cancelled_at.is.null),driver_id.eq.${user!.id}`,
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(60);
       if (error) throw error;
       return data ?? [];
     },
