@@ -58,16 +58,14 @@ export function useAuth(): AuthState {
 
   // Real driver GPS. Location is stored privately and is only readable by the
   // driver, admins, or a customer with an active booking assigned to that driver.
-  // Tracking starts for an approved driver so a newly-toggled-online session does
-  // not depend on a stale profile state inside this auth hook.
   useEffect(() => {
     if (!user || !roles.includes("driver") || profile?.kyc_status !== "approved") return;
     if (!navigator.geolocation) return;
-
+    const db = supabase as any;
     const watchId = navigator.geolocation.watchPosition(
       async (position) => {
         const { latitude, longitude, accuracy, heading, speed } = position.coords;
-        await supabase.from("driver_locations").upsert({
+        await db.from("driver_locations").upsert({
           driver_id: user.id,
           latitude,
           longitude,
