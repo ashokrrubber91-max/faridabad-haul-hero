@@ -1545,10 +1545,7 @@ function BroadcastTab({ drivers, customers }: { drivers: Profile[]; customers: P
       <div className="mt-3 space-y-2">
         <div>
           <Label className="text-xs">Audience</Label>
-          <Select
-            value={audience}
-            onValueChange={(v) => setAudience(v as "all" | "customer" | "driver")}
-          >
+          <Select value={audience} onValueChange={(v) => setAudience(v as "customer" | "driver")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -1639,9 +1636,9 @@ function SmsLogsSection({ logs }: { logs: AnyRow[] }) {
           <MessageSquare className="h-4 w-4 text-primary" /> SMS delivery log
         </h3>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <SmsCount logs={logs} status="queued" label="queued" />
-          <SmsCount logs={logs} status="sent" label="sent" />
-          <SmsCount logs={logs} status="failed" label="failed" />
+          <SmsCount logs={logs as { status: string }[]} status="queued" label="queued" />
+          <SmsCount logs={logs as { status: string }[]} status="sent" label="sent" />
+          <SmsCount logs={logs as { status: string }[]} status="failed" label="failed" />
         </div>
       </div>
       <div className="divide-y divide-border">
