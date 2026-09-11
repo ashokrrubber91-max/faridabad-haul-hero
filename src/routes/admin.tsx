@@ -1693,9 +1693,30 @@ function BookingsList({
 }
 
 function SmsLogsSection({ logs }: { logs: AnyRow[] }) {
+  const qc = useQueryClient();
+  const drain = useServerFn(processSmsQueue);
+  const [running, setRunning] = useState(false);
+
+  const runQueue = async () => {
+    setRunning(true);
+    try {
+      const r = await drain({ data: { limit: 20 } });
+      if (!r.providerConfigured) {
+        toast.error("SMS provider is not configured — queued messages stay pending");
+      } else {
+        toast.success(`Sent ${r.sent} · retrying ${r.retrying} · failed ${r.failed}`);
+      }
+      await qc.invalidateQueries({ queryKey: ["admin-sms-logs"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not process the queue");
+    } finally {
+      setRunning(false);
+    }
+  };
+
   return (
     <section className="surface-card">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
         <h3 className="flex items-center gap-2 font-display text-xl tracking-wide text-secondary">
           <MessageSquare className="h-4 w-4 text-primary" /> SMS delivery log
         </h3>
