@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  ArrowRight,
+  Timer, ArrowRight,
   Loader2,
   MapPin,
   Truck,
@@ -150,6 +150,18 @@ function DriverPage() {
     },
     onSuccess: () => {
       toast.success("Ride passed");
+      void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const setTimer = useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Record<string, string> }) => {
+      const { error } = await supabase.from("bookings").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Timer updated");
       void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -593,6 +605,15 @@ function ActiveJobCard({
   const commission = Math.round(Number(job.fare) * 0.1);
   const net = Number(job.fare) - commission;
   const isCash = job.payment_method === "cod";
+  // Navigate to the exact pin the customer dropped whenever we have it.
+  const targetLat = next === "in_progress" ? job.pickup_lat : job.drop_lat;
+  const targetLng = next === "in_progress" ? job.pickup_lng : job.drop_lng;
+  const navUrl =
+    typeof targetLat === "number" && typeof targetLng === "number"
+      ? `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}&travelmode=driving`
+      : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+          next === "in_progress" ? job.pickup_address : job.drop_address,
+        )}&travelmode=driving`;
   return (
     <section className="surface-card border-l-4 border-l-primary p-4">
       <p className="text-xs font-semibold uppercase tracking-wider text-primary">Active job</p>
