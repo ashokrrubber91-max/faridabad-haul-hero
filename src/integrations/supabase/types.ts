@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          row_id: string | null
+          table_name: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          row_id?: string | null
+          table_name: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          row_id?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           cancellation_reason: string | null
@@ -435,6 +468,44 @@ export type Database = {
           vehicle_photo_url?: string | null
         }
         Relationships: []
+      }
+      driver_locations: {
+        Row: {
+          accuracy_m: number | null
+          driver_id: string
+          heading_deg: number | null
+          latitude: number
+          longitude: number
+          speed_mps: number | null
+          updated_at: string
+        }
+        Insert: {
+          accuracy_m?: number | null
+          driver_id: string
+          heading_deg?: number | null
+          latitude: number
+          longitude: number
+          speed_mps?: number | null
+          updated_at?: string
+        }
+        Update: {
+          accuracy_m?: number | null
+          driver_id?: string
+          heading_deg?: number | null
+          latitude?: number
+          longitude?: number
+          speed_mps?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_locations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
