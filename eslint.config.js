@@ -14,6 +14,7 @@ export default tseslint.config(
       // Auto-generated integration files must not be edited by hand.
       "src/integrations/supabase/previewAuthStorage.ts",
       "src/integrations/supabase/client.ts",
+      "src/integrations/supabase/types.ts",
       "src/routeTree.gen.ts",
     ],
   },
