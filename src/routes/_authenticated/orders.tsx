@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { STATUS_META, vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
 import { buildInvoiceHtml, invoiceNumber, openInvoice } from "@/lib/invoice";
+import { TripDetailDialog } from "@/components/booking/TripDetailDialog";
 
 export const Route = createFileRoute("/_authenticated/orders")({
   head: () => ({
@@ -280,6 +281,11 @@ function OrdersPage() {
           )}
         </div>
       )}
+
+      <TripDetailDialog
+        booking={all.find((o) => o.id === detail) ?? null}
+        onClose={() => setDetail(null)}
+      />
 
       <Dialog open={!!rateTarget} onOpenChange={(v) => !v && setRateTarget(null)}>
         <DialogContent>
