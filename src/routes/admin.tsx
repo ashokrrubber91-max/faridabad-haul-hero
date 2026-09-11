@@ -1,5 +1,5 @@
 import type { AnyRow } from "@/lib/rows";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { processSmsQueue } from "@/lib/notifications.functions";
 import { useEffect, useMemo, useState } from "react";
@@ -66,30 +66,18 @@ export const Route = createFileRoute("/admin")({
  */
 function AdminGate() {
   const { loading, user, roles } = useAuth();
+  const navigate = useNavigate();
 
-  if (loading) {
+  // Without a session the control room is never rendered: the visitor is sent to
+  // the dedicated team sign-in page.
+  useEffect(() => {
+    if (!loading && !user) navigate({ to: "/admin/login", replace: true });
+  }, [loading, user, navigate]);
+
+  if (loading || !user) {
     return (
       <div className="mt-24 flex justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="mx-auto mt-24 max-w-sm rounded-lg border bg-card p-6 text-center shadow-sm">
-        <ShieldCheck className="mx-auto mb-2 h-6 w-6 text-primary" />
-        <h1 className="font-display text-2xl tracking-wide text-secondary">
-          Team sign-in required
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Sign in with your MiniPort team account to open the control room.
-        </p>
-        <Button asChild className="mt-4 w-full">
-          <Link to="/auth" search={{ mode: "signin", next: "/admin" }}>
-            Sign in
-          </Link>
-        </Button>
       </div>
     );
   }
