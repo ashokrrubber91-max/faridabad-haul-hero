@@ -1720,10 +1720,19 @@ function SmsLogsSection({ logs }: { logs: AnyRow[] }) {
         <h3 className="flex items-center gap-2 font-display text-xl tracking-wide text-secondary">
           <MessageSquare className="h-4 w-4 text-primary" /> SMS delivery log
         </h3>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <SmsCount logs={logs as { status: string }[]} status="queued" label="queued" />
+          <SmsCount logs={logs as { status: string }[]} status="sending" label="sending" />
           <SmsCount logs={logs as { status: string }[]} status="sent" label="sent" />
           <SmsCount logs={logs as { status: string }[]} status="failed" label="failed" />
+          <SmsCount
+            logs={logs as { status: string }[]}
+            status="not_configured"
+            label="not configured"
+          />
+          <Button size="sm" variant="outline" onClick={runQueue} disabled={running}>
+            {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send queued"}
+          </Button>
         </div>
       </div>
       <div className="divide-y divide-border">
