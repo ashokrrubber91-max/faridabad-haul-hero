@@ -1,0 +1,11 @@
+REVOKE EXECUTE ON FUNCTION public.validate_coupon(text, numeric, uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.validate_coupon(text, numeric) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.accept_booking(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.attach_delivery_photo(uuid, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_booking_otps(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.verify_booking_otp(uuid, text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.validate_coupon(text, numeric) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.accept_booking(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.attach_delivery_photo(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_booking_otps(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.verify_booking_otp(uuid, text, text) TO authenticated;

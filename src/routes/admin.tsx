@@ -1225,6 +1225,7 @@ type CouponForm = {
   minFare: string;
   maxDiscount: string;
   maxUses: string;
+  maxUsesPerUser: string;
   expiresAt: string;
 };
 const emptyCouponForm: CouponForm = {
@@ -1234,6 +1235,7 @@ const emptyCouponForm: CouponForm = {
   minFare: "0",
   maxDiscount: "",
   maxUses: "",
+  maxUsesPerUser: "1",
   expiresAt: "",
 };
 
@@ -1251,6 +1253,7 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
     min_fare: Number(f.minFare || 0),
     max_discount: f.maxDiscount ? Number(f.maxDiscount) : null,
     max_uses: f.maxUses ? Number(f.maxUses) : null,
+    max_uses_per_user: Math.max(1, Number(f.maxUsesPerUser || 1)),
     expires_at: f.expiresAt ? new Date(f.expiresAt).toISOString() : null,
   });
 
@@ -1283,6 +1286,7 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
       minFare: String(c.min_fare ?? 0),
       maxDiscount: c.max_discount != null ? String(c.max_discount) : "",
       maxUses: c.max_uses != null ? String(c.max_uses) : "",
+      maxUsesPerUser: String(c.max_uses_per_user ?? 1),
       expiresAt: c.expires_at ? new Date(c.expires_at).toISOString().slice(0, 10) : "",
     });
   };
@@ -1360,6 +1364,15 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
             />
           </div>
           <div>
+            <Label className="text-xs">Uses per customer</Label>
+            <Input
+              type="number"
+              min={1}
+              value={form.maxUsesPerUser}
+              onChange={(e) => setForm({ ...form, maxUsesPerUser: e.target.value })}
+            />
+          </div>
+          <div>
             <Label className="text-xs">Expires on (optional)</Label>
             <Input
               type="date"
@@ -1393,6 +1406,7 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
                     · used {c.uses}
                     {c.max_uses ? `/${c.max_uses}` : ""}
                     {c.max_discount ? ` · cap ₹${c.max_discount}` : ""}
+                    {` · ${String(c.max_uses_per_user ?? 1)}x per customer`}
                     {c.expires_at
                       ? ` · expires ${new Date(c.expires_at).toLocaleDateString("en-IN")}`
                       : ""}
@@ -1468,6 +1482,15 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
                 type="number"
                 value={editForm.maxUses}
                 onChange={(e) => setEditForm({ ...editForm, maxUses: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Uses per customer</Label>
+              <Input
+                type="number"
+                min={1}
+                value={editForm.maxUsesPerUser}
+                onChange={(e) => setEditForm({ ...editForm, maxUsesPerUser: e.target.value })}
               />
             </div>
             <div className="sm:col-span-2">
