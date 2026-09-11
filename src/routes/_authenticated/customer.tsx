@@ -22,7 +22,7 @@ import {
   estimateFare,
   vehicleLabel,
   STATUS_META,
-  routeDistanceKm,
+  
   type VehicleId,
   BOOKING_FIELDS,
 } from "@/lib/booking";
