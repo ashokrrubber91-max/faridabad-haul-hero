@@ -64,3 +64,11 @@ export const VEHICLE_DETAILS: Record<VehicleId, { weightLimit: string; loadArea:
     goodTor: ["Bulk goods", "Commercial cargo", "Office relocation"],
   },
 };
+
+/**
+ * Explicit booking columns for client queries. The 4-digit pickup/drop codes are
+ * intentionally excluded — they are database-protected and only reachable through
+ * the `get_booking_otps` (customer) and `verify_booking_otp` (driver) functions.
+ */
+export const BOOKING_FIELDS =
+  "id, customer_id, driver_id, pickup_address, drop_address, vehicle_type, distance_km, fare, status, notes, created_at, updated_at, coupon_code, coupon_discount, coins_redeemed, payment_method, payment_status, commission_rate, commission_amount, driver_net_earning, pickup_verified_at, drop_verified_at, rating, review, pod_photo_url, cancellation_reason, pickup_lat, pickup_lng, drop_lat, drop_lng, loading_started_at, loading_stopped_at, unloading_started_at, unloading_stopped_at, service_zone, cancelled_at, expires_at";

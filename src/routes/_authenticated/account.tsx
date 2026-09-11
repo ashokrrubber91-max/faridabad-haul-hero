@@ -24,7 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { SupportChat } from "@/components/support/SupportChat";
 import { buildInvoiceHtml, openInvoice } from "@/lib/invoice";
-import { vehicleLabel } from "@/lib/booking";
+import { vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -151,7 +151,7 @@ function AccountPage() {
     start.setHours(0, 0, 0, 0);
     const { data, error } = await supabase
       .from("bookings")
-      .select("*")
+      .select(BOOKING_FIELDS)
       .eq("customer_id", user!.id)
       .eq("status", "completed")
       .gte("created_at", start.toISOString())

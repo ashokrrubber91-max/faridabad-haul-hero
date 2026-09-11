@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { VEHICLES, estimateFare, vehicleLabel, STATUS_META, routeDistanceKm, type VehicleId } from "@/lib/booking";
+import { VEHICLES, estimateFare, vehicleLabel, STATUS_META, routeDistanceKm, type VehicleId, BOOKING_FIELDS } from "@/lib/booking";
 import { VehicleCard } from "@/components/booking/VehicleCard";
 import { WaypointManager } from "@/components/booking/WaypointManager";
 import { GstinSelect, type CustomerGstin } from "@/components/booking/GstinSelect";
@@ -90,7 +90,7 @@ function CustomerPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookings")
-        .select("*")
+        .select(BOOKING_FIELDS)
         .eq("customer_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -443,8 +443,14 @@ function CustomerPage() {
                   </div>
                   {(b.status === "accepted" || b.status === "in_progress") && (
                     <LiveTripMap
+                      bookingId={b.id}
+                      driverId={b.driver_id}
                       pickupAddress={b.pickup_address}
                       dropAddress={b.drop_address}
+                      pickupLat={b.pickup_lat}
+                      pickupLng={b.pickup_lng}
+                      dropLat={b.drop_lat}
+                      dropLng={b.drop_lng}
                       phase={b.status === "accepted" ? "accepted" : "in_progress"}
                       distanceKm={Number(b.distance_km) || 0}
                     />
@@ -453,23 +459,8 @@ function CustomerPage() {
                     <LoadingTimerCard vehicleType={b.vehicle_type} startedAt={b.pickup_verified_at} />
                   )}
 
-                  {(b.status === "accepted" || b.status === "in_progress") && (b.pickup_otp || b.drop_otp) && (
-                    <div className="mt-3 grid gap-2 rounded-md bg-primary/5 p-3 sm:grid-cols-2">
-                      {b.pickup_otp && (
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Pickup OTP</p>
-                          <p className="font-display text-2xl tracking-widest text-primary">{b.pickup_otp}</p>
-                          <p className="text-[10px] text-muted-foreground">Share with driver at pickup</p>
-                        </div>
-                      )}
-                      {b.drop_otp && (
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Drop OTP</p>
-                          <p className="font-display text-2xl tracking-widest text-primary">{b.drop_otp}</p>
-                          <p className="text-[10px] text-muted-foreground">Share only after delivery</p>
-                        </div>
-                      )}
-                    </div>
+                  {(b.status === "accepted" || b.status === "in_progress") && (
+                    <TripCodes bookingId={b.id} status={b.status} />
                   )}
                   {canCancel(b.status) && (
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -699,6 +690,55 @@ function CenterLoader() {
   return (
     <div className="flex justify-center py-10">
       <Loader2 className="h-5 w-5 animate-spin text-primary" />
+    </div>
+  );
+}
+
+/**
+ * Trip codes are fetched on demand for the customer only. They are never part of
+ * the booking rows the app loads, so a driver's app can never read them.
+ */
+function TripCodes({ bookingId, status }: { bookingId: string; status: string }) {
+  const codes = useQuery({
+    queryKey: ["trip-codes", bookingId, status],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_booking_otps", { _booking_id: bookingId });
+      if (error) throw error;
+      const row = (data ?? [])[0];
+      return { pickup: row?.pickup_otp ?? null, drop: row?.drop_otp ?? null };
+    },
+    staleTime: 30_000,
+  });
+
+  if (codes.isLoading) {
+    return <p className="mt-3 text-xs text-muted-foreground">Loading your trip codes…</p>;
+  }
+  if (codes.isError) {
+    return (
+      <div className="mt-3 flex items-center justify-between gap-2 rounded-md bg-muted/50 p-3">
+        <p className="text-xs text-muted-foreground">Couldn’t load your trip codes.</p>
+        <Button size="sm" variant="outline" onClick={() => void codes.refetch()}>Retry</Button>
+      </div>
+    );
+  }
+  if (!codes.data?.pickup && !codes.data?.drop) return null;
+
+  return (
+    <div className="mt-3 grid gap-2 rounded-md bg-primary/5 p-3 sm:grid-cols-2">
+      {codes.data.pickup && (
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Pickup OTP</p>
+          <p className="font-display text-2xl tracking-widest text-primary">{codes.data.pickup}</p>
+          <p className="text-[10px] text-muted-foreground">Share with driver at pickup</p>
+        </div>
+      )}
+      {codes.data.drop && (
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Drop OTP</p>
+          <p className="font-display text-2xl tracking-widest text-primary">{codes.data.drop}</p>
+          <p className="text-[10px] text-muted-foreground">Share only after delivery</p>
+        </div>
+      )}
     </div>
   );
 }

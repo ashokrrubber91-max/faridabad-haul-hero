@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  ArrowRight,
+  Timer, ArrowRight,
   Loader2,
   MapPin,
   Truck,
@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { vehicleLabel, STATUS_META } from "@/lib/booking";
+import { vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
 import { SupportChat } from "@/components/support/SupportChat";
 import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 import { LoadingTimerCard } from "@/components/booking/LoadingTimerCard";
@@ -58,7 +58,7 @@ function DriverPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookings")
-        .select("*")
+        .select(BOOKING_FIELDS)
         .or(`and(status.eq.pending,driver_id.is.null,cancelled_at.is.null),driver_id.eq.${user!.id}`)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -155,32 +155,56 @@ function DriverPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  type TimerPatch = {
+    loading_started_at?: string;
+    loading_stopped_at?: string;
+    unloading_started_at?: string;
+    unloading_stopped_at?: string;
+  };
+  const setTimer = useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: TimerPatch }) => {
+      const { error } = await supabase.from("bookings").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Timer updated");
+      void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // Codes are never sent to the browser: the database checks them, limits wrong
+  // tries and moves the trip forward in one atomic step.
   const verifyOtp = useMutation({
     mutationFn: async ({
       id,
       otp,
-      expected,
       next,
       podPath,
     }: {
       id: string;
       otp: string;
-      expected: string | null;
       next: "in_progress" | "completed";
       podPath?: string | null;
     }) => {
-      // Drop can be closed with the 4-digit OTP or with a photo proof of delivery.
-      const otpOk = !!expected && otp.trim() === expected;
-      if (!otpOk && !(next === "completed" && podPath)) throw new Error("Wrong OTP");
-      const now = new Date().toISOString();
-      const patch =
-        next === "in_progress"
-          ? { status: next, pickup_verified_at: now }
-          : { status: next, drop_verified_at: now, ...(podPath ? { pod_photo_url: podPath } : {}) };
-      const { error } = await supabase.from("bookings").update(patch).eq("id", id);
+      const code = otp.replace(/\D/g, "");
+      if (!code && next === "completed" && podPath) {
+        const { error } = await supabase.rpc("complete_booking_with_pod", { _booking_id: id, _pod_path: podPath });
+        if (error) throw error;
+        return;
+      }
+      if (code.length !== 4) throw new Error("Enter the 4-digit code from the customer");
+      const { error } = await supabase.rpc("verify_booking_otp", {
+        _booking_id: id,
+        _stage: next === "in_progress" ? "pickup" : "drop",
+        _otp: code,
+      });
       if (error) throw error;
     },
-    onSuccess: (_d, v) => toast.success(v.next === "in_progress" ? "Pickup verified — trip started" : "Delivery confirmed — trip completed 🎉"),
+    onSuccess: (_d, v) => {
+      toast.success(v.next === "in_progress" ? "Pickup verified — trip started" : "Delivery confirmed — trip completed 🎉");
+      void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -360,11 +384,11 @@ function DriverPage() {
             verifyOtp.mutate({
               id: activeJob.id,
               otp,
-              expected: next === "in_progress" ? activeJob.pickup_otp : activeJob.drop_otp,
               next,
               podPath,
             })
           }
+          onTimer={(patch) => setTimer.mutate({ id: activeJob.id, patch: patch as never })}
           pending={verifyOtp.isPending}
         />
       )}
@@ -549,10 +573,12 @@ function playRideAlert() {
 function ActiveJobCard({
   job,
   onVerify,
+  onTimer,
   pending,
 }: {
   job: any;
   onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null) => void;
+  onTimer: (patch: Record<string, string>) => void;
   pending: boolean;
 }) {
   const [otp, setOtp] = useState("");
@@ -585,6 +611,15 @@ function ActiveJobCard({
   const commission = Math.round(Number(job.fare) * 0.1);
   const net = Number(job.fare) - commission;
   const isCash = job.payment_method === "cod";
+  // Navigate to the exact pin the customer dropped whenever we have it.
+  const targetLat = next === "in_progress" ? job.pickup_lat : job.drop_lat;
+  const targetLng = next === "in_progress" ? job.pickup_lng : job.drop_lng;
+  const navUrl =
+    typeof targetLat === "number" && typeof targetLng === "number"
+      ? `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}&travelmode=driving`
+      : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+          next === "in_progress" ? job.pickup_address : job.drop_address,
+        )}&travelmode=driving`;
   return (
     <section className="surface-card border-l-4 border-l-primary p-4">
       <p className="text-xs font-semibold uppercase tracking-wider text-primary">Active job</p>
@@ -600,17 +635,27 @@ function ActiveJobCard({
           : `Payment Mode: Online — ₹${net.toFixed(0)} will be added to your wallet`}
       </div>
 
-      {job.status === "in_progress" && (
-        <LoadingTimerCard vehicleType={job.vehicle_type} startedAt={job.pickup_verified_at} />
+      {job.status === "accepted" && job.loading_started_at && (
+        <LoadingTimerCard
+          vehicleType={job.vehicle_type}
+          startedAt={job.loading_started_at}
+          stoppedAt={job.loading_stopped_at}
+          title="Loading time at pickup"
+        />
       )}
-
+      {job.status === "in_progress" && job.unloading_started_at && (
+        <LoadingTimerCard
+          vehicleType={job.vehicle_type}
+          startedAt={job.unloading_started_at}
+          stoppedAt={job.unloading_stopped_at}
+          title="Unloading time at drop"
+        />
+      )}
 
       <div className="mt-3 flex flex-wrap gap-2">
         <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
           <a
-            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-              next === "in_progress" ? job.pickup_address : job.drop_address,
-            )}&travelmode=driving`}
+            href={navUrl}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -622,6 +667,26 @@ function ActiveJobCard({
             <a href={`tel:${contact.phone}`}>
               <Phone className="h-3.5 w-3.5" /> Call {contact.name || (next === "in_progress" ? "sender" : "receiver")}
             </a>
+          </Button>
+        )}
+        {job.status === "accepted" && !job.loading_started_at && (
+          <Button size="sm" variant="outline" onClick={() => onTimer({ loading_started_at: new Date().toISOString() })}>
+            <Timer className="h-3.5 w-3.5" /> Arrived — start loading timer
+          </Button>
+        )}
+        {job.status === "accepted" && job.loading_started_at && !job.loading_stopped_at && (
+          <Button size="sm" variant="outline" onClick={() => onTimer({ loading_stopped_at: new Date().toISOString() })}>
+            <Timer className="h-3.5 w-3.5" /> Stop loading timer
+          </Button>
+        )}
+        {job.status === "in_progress" && !job.unloading_started_at && (
+          <Button size="sm" variant="outline" onClick={() => onTimer({ unloading_started_at: new Date().toISOString() })}>
+            <Timer className="h-3.5 w-3.5" /> Reached drop — start unloading timer
+          </Button>
+        )}
+        {job.status === "in_progress" && job.unloading_started_at && !job.unloading_stopped_at && (
+          <Button size="sm" variant="outline" onClick={() => onTimer({ unloading_stopped_at: new Date().toISOString() })}>
+            <Timer className="h-3.5 w-3.5" /> Stop unloading timer
           </Button>
         )}
       </div>

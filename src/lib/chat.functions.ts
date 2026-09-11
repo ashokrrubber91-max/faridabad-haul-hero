@@ -31,7 +31,7 @@ export const sendSupportChat = createServerFn({ method: "POST" })
     if (data.role === "customer") {
       const { data: bk } = await supabase
         .from("bookings")
-        .select("id,status,pickup_address,drop_address,fare,vehicle_type,driver_id,created_at,pickup_otp,drop_otp")
+        .select("id,status,pickup_address,drop_address,fare,vehicle_type,driver_id,created_at")
         .eq("customer_id", userId)
         .order("created_at", { ascending: false })
         .limit(3);

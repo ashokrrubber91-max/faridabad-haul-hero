@@ -10,7 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { STATUS_META, vehicleLabel } from "@/lib/booking";
+import { STATUS_META, vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
 import { buildInvoiceHtml, invoiceNumber, openInvoice } from "@/lib/invoice";
 
 export const Route = createFileRoute("/_authenticated/orders")({
@@ -49,7 +49,7 @@ function OrdersPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookings")
-        .select("*")
+        .select(BOOKING_FIELDS)
         .eq("customer_id", user!.id)
         .gte("created_at", twoYearsAgo)
         .order("created_at", { ascending: false });

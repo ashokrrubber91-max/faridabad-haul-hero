@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { STATUS_META, vehicleLabel } from "@/lib/booking";
+import { STATUS_META, vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
 
 export const Route = createFileRoute("/_authenticated/driver-rides")({
   head: () => ({
@@ -31,7 +31,7 @@ function DriverRidesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookings")
-        .select("*")
+        .select(BOOKING_FIELDS)
         .eq("driver_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(500);
