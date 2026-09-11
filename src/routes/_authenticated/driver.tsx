@@ -1,3 +1,4 @@
+import type { AnyRow } from "@/lib/rows";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -60,13 +61,17 @@ function DriverPage() {
     queryKey: ["driver-feed", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      // Sweep requests whose validity window has passed so the feed never shows
+      // a request the backend would refuse to assign.
+      await supabase.rpc("expire_stale_bookings");
       const { data, error } = await supabase
         .from("bookings")
         .select(BOOKING_FIELDS)
         .or(
           `and(status.eq.pending,driver_id.is.null,cancelled_at.is.null),driver_id.eq.${user!.id}`,
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(60);
       if (error) throw error;
       return data ?? [];
     },
@@ -575,7 +580,7 @@ function PendingJob({
   onDecline,
   pending,
 }: {
-  job: any;
+  job: AnyRow;
   onAccept: () => void;
   onDecline: () => void;
   pending: boolean;
@@ -660,7 +665,7 @@ function ActiveJobCard({
   onTimer,
   pending,
 }: {
-  job: any;
+  job: AnyRow;
   onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null) => void;
   onTimer: (patch: Record<string, string>) => void;
   pending: boolean;

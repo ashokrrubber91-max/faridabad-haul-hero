@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { reviewDriverKyc } from "@/lib/admin.functions";
 import { toast } from "sonner";
 import { Loader2, ShieldCheck, ShieldX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +20,12 @@ const DOCS = [
   ["puc_url", "PUC"],
 ] as const;
 
-type Kyc = Record<string, any>;
+type Kyc = Record<string, string | null> & {
+  driver_id: string;
+  full_name: string;
+  status: string;
+  submitted_at: string;
+};
 
 export function KycReviewTab() {
   const [filter, setFilter] = useState<"pending" | "all">("pending");
@@ -77,6 +84,7 @@ export function KycReviewTab() {
 function KycCard({ row, onChanged }: { row: Kyc; onChanged: () => void }) {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const review = useServerFn(reviewDriverKyc);
 
   const decide = async (status: "approved" | "rejected") => {
     if (status === "rejected" && reason.trim().length < 4) {
@@ -84,23 +92,19 @@ function KycCard({ row, onChanged }: { row: Kyc; onChanged: () => void }) {
       return;
     }
     setBusy(true);
-    const { error } = await supabase
-      .from("driver_kyc")
-      .update({
-        status,
-        rejection_reason: status === "rejected" ? reason.trim() : null,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq("driver_id", row.driver_id);
-    setBusy(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await review({
+        data: { driverId: row.driver_id, decision: status, reason: reason.trim() || undefined },
+      });
+      toast.success(
+        status === "approved" ? "Driver verified — can now accept rides" : "Submission rejected",
+      );
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save the decision");
+    } finally {
+      setBusy(false);
     }
-    toast.success(
-      status === "approved" ? "Driver verified — can now accept rides" : "Submission rejected",
-    );
-    onChanged();
   };
 
   const openDoc = async (path: string) => {
@@ -141,7 +145,7 @@ function KycCard({ row, onChanged }: { row: Kyc; onChanged: () => void }) {
 
       <div className="mt-3 flex flex-wrap gap-2">
         {DOCS.filter(([k]) => row[k]).map(([k, label]) => (
-          <Button key={k} size="sm" variant="outline" onClick={() => openDoc(row[k])}>
+          <Button key={k} size="sm" variant="outline" onClick={() => openDoc(row[k] ?? "")}>
             {label}
           </Button>
         ))}

@@ -92,7 +92,7 @@ export function useAuth(): AuthState {
   useEffect(() => {
     if (!user || !roles.includes("driver") || profile?.kyc_status !== "approved") return;
     if (!navigator.geolocation) return;
-    const db = supabase as any;
+    const db = supabase;
     const watchId = navigator.geolocation.watchPosition(
       async (position) => {
         const { latitude, longitude, accuracy, heading, speed } = position.coords;

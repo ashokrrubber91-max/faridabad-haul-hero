@@ -1,3 +1,4 @@
+import type { AnyRow } from "@/lib/rows";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -141,7 +142,7 @@ function AdminPage() {
   const [drill, setDrill] = useState<{
     kind: "bookings" | "profiles";
     title: string;
-    rows: any[];
+    rows: AnyRow[];
     showCommission?: boolean;
   } | null>(null);
 
@@ -463,13 +464,13 @@ function AdminPage() {
             columns={
               (drill?.kind === "profiles"
                 ? profileDrillColumns
-                : bookingDrillColumns(drill?.showCommission)) as DrillDownColumn<any>[]
+                : bookingDrillColumns(drill?.showCommission)) as DrillDownColumn<AnyRow>[]
             }
             searchFn={
               drill?.kind === "profiles"
-                ? (row: any, q: string) =>
+                ? (row: AnyRow, q: string) =>
                     row.name?.toLowerCase().includes(q.toLowerCase()) || row.phone?.includes(q)
-                : (row: any, q: string) => {
+                : (row: AnyRow, q: string) => {
                     const query = q.toLowerCase();
                     const customer = profileMap.get(row.customer_id);
                     const driver = row.driver_id ? profileMap.get(row.driver_id) : null;
@@ -1052,12 +1053,12 @@ function FaresTab({ bookings }: { bookings: Booking[] }) {
 }
 
 /* ============================== Incentives ============================== */
-function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => void }) {
+function IncentivesTab({ tiers, onChanged }: { tiers: AnyRow[]; onChanged: () => void }) {
   const [rides, setRides] = useState("");
   const [bonus, setBonus] = useState("");
   const [label, setLabel] = useState("");
   const [busy, setBusy] = useState(false);
-  const [editTier, setEditTier] = useState<any | null>(null);
+  const [editTier, setEditTier] = useState<AnyRow | null>(null);
   const [editRides, setEditRides] = useState("");
   const [editBonus, setEditBonus] = useState("");
   const [editLabel, setEditLabel] = useState("");
@@ -1083,7 +1084,7 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
     onChanged();
   };
 
-  const toggle = async (t: any) => {
+  const toggle = async (t: AnyRow) => {
     const { error } = await supabase
       .from("driver_incentive_config")
       .update({ active: !t.active })
@@ -1093,7 +1094,7 @@ function IncentivesTab({ tiers, onChanged }: { tiers: any[]; onChanged: () => vo
     onChanged();
   };
 
-  const openEdit = (t: any) => {
+  const openEdit = (t: AnyRow) => {
     setEditTier(t);
     setEditRides(String(t.rides_required));
     setEditBonus(String(t.bonus_amount));
@@ -1239,10 +1240,10 @@ const emptyCouponForm: CouponForm = {
   expiresAt: "",
 };
 
-function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => void }) {
+function CouponsTab({ coupons, onChanged }: { coupons: AnyRow[]; onChanged: () => void }) {
   const [form, setForm] = useState<CouponForm>(emptyCouponForm);
   const [busy, setBusy] = useState(false);
-  const [editCoupon, setEditCoupon] = useState<any | null>(null);
+  const [editCoupon, setEditCoupon] = useState<AnyRow | null>(null);
   const [editForm, setEditForm] = useState<CouponForm>(emptyCouponForm);
   const [editBusy, setEditBusy] = useState(false);
 
@@ -1270,14 +1271,14 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
     onChanged();
   };
 
-  const toggle = async (c: any) => {
+  const toggle = async (c: AnyRow) => {
     const { error } = await supabase.from("coupons").update({ active: !c.active }).eq("id", c.id);
     if (error) return toast.error(error.message);
     toast.success(c.active ? "Coupon deactivated" : "Coupon activated");
     onChanged();
   };
 
-  const openEdit = (c: any) => {
+  const openEdit = (c: AnyRow) => {
     setEditCoupon(c);
     setEditForm({
       code: c.code,
@@ -1321,7 +1322,10 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
           </div>
           <div>
             <Label className="text-xs">Kind</Label>
-            <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v as any })}>
+            <Select
+              value={form.kind}
+              onValueChange={(v) => setForm({ ...form, kind: v as "flat" | "percent" })}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -1441,7 +1445,7 @@ function CouponsTab({ coupons, onChanged }: { coupons: any[]; onChanged: () => v
               <Label className="text-xs">Kind</Label>
               <Select
                 value={editForm.kind}
-                onValueChange={(v) => setEditForm({ ...editForm, kind: v as any })}
+                onValueChange={(v) => setEditForm({ ...editForm, kind: v as "flat" | "percent" })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -1541,7 +1545,7 @@ function BroadcastTab({ drivers, customers }: { drivers: Profile[]; customers: P
       <div className="mt-3 space-y-2">
         <div>
           <Label className="text-xs">Audience</Label>
-          <Select value={audience} onValueChange={(v) => setAudience(v as any)}>
+          <Select value={audience} onValueChange={(v) => setAudience(v as "customer" | "driver")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -1624,7 +1628,7 @@ function BookingsList({
   );
 }
 
-function SmsLogsSection({ logs }: { logs: any[] }) {
+function SmsLogsSection({ logs }: { logs: AnyRow[] }) {
   return (
     <section className="surface-card">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -1632,9 +1636,9 @@ function SmsLogsSection({ logs }: { logs: any[] }) {
           <MessageSquare className="h-4 w-4 text-primary" /> SMS delivery log
         </h3>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <SmsCount logs={logs} status="queued" label="queued" />
-          <SmsCount logs={logs} status="sent" label="sent" />
-          <SmsCount logs={logs} status="failed" label="failed" />
+          <SmsCount logs={logs as { status: string }[]} status="queued" label="queued" />
+          <SmsCount logs={logs as { status: string }[]} status="sent" label="sent" />
+          <SmsCount logs={logs as { status: string }[]} status="failed" label="failed" />
         </div>
       </div>
       <div className="divide-y divide-border">

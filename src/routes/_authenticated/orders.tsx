@@ -69,7 +69,8 @@ function OrdersPage() {
         .select(BOOKING_FIELDS)
         .eq("customer_id", user!.id)
         .gte("created_at", twoYearsAgo)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(200);
       if (error) throw error;
       return data ?? [];
     },

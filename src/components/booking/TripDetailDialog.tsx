@@ -1,3 +1,4 @@
+import type { AnyRow } from "@/lib/rows";
 import {
   Dialog,
   DialogContent,

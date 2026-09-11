@@ -7,21 +7,23 @@ export function detectLang(text: string): DetectedLang {
   return /[\u0900-\u097F]/.test(text) ? "hi-IN" : "en-IN";
 }
 
+type SpeechResultLike = { results?: { [k: number]: { [k: number]: { transcript?: string } } } };
+
 type SpeechRecognitionLike = {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
   start: () => void;
   stop: () => void;
-  onresult: ((e: any) => void) | null;
-  onerror: ((e: any) => void) | null;
+  onresult: ((e: SpeechResultLike) => void) | null;
+  onerror: ((e: unknown) => void) | null;
   onend: (() => void) | null;
 };
 
 function getSpeechRecognitionCtor(): (new () => SpeechRecognitionLike) | null {
   if (typeof window === "undefined") return null;
-  const w = window as any;
-  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+  const w = window as unknown as Record<string, new () => SpeechRecognitionLike>;
+  return w["SpeechRecognition"] ?? w["webkitSpeechRecognition"] ?? null;
 }
 
 export function isVoiceInputSupported() {
@@ -44,7 +46,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
     rec.lang = "hi-IN";
     rec.continuous = false;
     rec.interimResults = false;
-    rec.onresult = (e: any) => {
+    rec.onresult = (e: SpeechResultLike) => {
       const transcript = e.results?.[0]?.[0]?.transcript ?? "";
       if (transcript) onResult(transcript);
     };
@@ -84,7 +86,7 @@ export function useVoiceOutput() {
     (text: string, lang: DetectedLang) => {
       if (muted || !isVoiceOutputSupported() || !text.trim()) return;
       const plain = text
-        .replace(/[*_`#>\-]/g, " ")
+        .replace(/[*_`#>-]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
       if (!plain) return;
