@@ -49,6 +49,7 @@ function OrdersPage() {
   const [filter, setFilter] = useState<Filter>("active");
   const [shown, setShown] = useState(10);
   const [rateTarget, setRateTarget] = useState<{ id: string; addr: string } | null>(null);
+  const [detail, setDetail] = useState<string | null>(null);
   const [stars, setStars] = useState(5);
   const [review, setReview] = useState("");
 
@@ -133,7 +134,7 @@ function OrdersPage() {
       ? ["pending", "accepted", "in_progress"].includes(o.status)
       : filter === "completed"
         ? o.status === "completed"
-        : o.status === "cancelled",
+        : o.status === "cancelled" || o.status === "expired",
   );
 
   const downloadInvoice = (b: (typeof all)[number]) => {
