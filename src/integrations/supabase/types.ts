@@ -961,6 +961,7 @@ export type Database = {
         Returns: boolean
       }
       decline_booking: { Args: { _booking_id: string }; Returns: boolean }
+      expire_stale_bookings: { Args: never; Returns: number }
       get_booking_otps: {
         Args: { _booking_id: string }
         Returns: {
