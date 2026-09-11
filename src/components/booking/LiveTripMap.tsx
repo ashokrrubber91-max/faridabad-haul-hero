@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { loadGoogleMaps, FARIDABAD_CENTER } from "@/lib/google-maps";
 import { supabase } from "@/integrations/supabase/client";
-import { haversineKm } from "@/lib/booking";
-import { Navigation, Loader2, MapPin } from "lucide-react";
+import { computeRoadRoute } from "@/lib/routing.functions";
+import { Navigation, Loader2, MapPin, AlertTriangle } from "lucide-react";
 
 interface Props {
   bookingId: string;
@@ -23,11 +23,11 @@ type LatLng = { lat: number; lng: number };
 
 /** A GPS fix older than this is treated as unavailable rather than shown as live. */
 const FRESH_MS = 120_000;
-const AVG_SPEED_KMH = 22;
 
 /**
- * Live trip map driven by the driver's real GPS reports. When no recent fix is
- * available it says so instead of showing an invented position.
+ * Live trip map driven by the driver's real GPS reports and authoritative road
+ * routing from the Routes API. When GPS or routing is unavailable it says so
+ * instead of drawing an invented straight line or estimated distance.
  */
 export function LiveTripMap({
   bookingId,
@@ -145,9 +145,20 @@ export function LiveTripMap({
   }, [location.data]);
 
   const target = phase === "accepted" ? pickup : drop;
-  const remainingKm = driverPos && target ? haversineKm(driverPos, target) * 1.3 : null;
-  const eta =
-    remainingKm !== null ? Math.max(1, Math.round((remainingKm / AVG_SPEED_KMH) * 60)) : null;
+  const origin = driverPos ?? pickup;
+
+  // Authoritative road route (geometry + distance + ETA) from the Routes API.
+  const roundedKey = (p: LatLng | null) => (p ? `${p.lat.toFixed(3)},${p.lng.toFixed(3)}` : "none");
+  const road = useQuery({
+    queryKey: ["road-route", roundedKey(origin), roundedKey(target)],
+    enabled: !!origin && !!target,
+    staleTime: 30_000,
+    retry: 1,
+    queryFn: () => computeRoadRoute({ data: { points: [origin!, target!] } }),
+  });
+
+  const remainingKm = driverPos && road.data ? road.data.distanceKm : null;
+  const eta = driverPos && road.data?.durationMin ? road.data.durationMin : null;
 
   // Draw the map once both ends are known.
   useEffect(() => {
@@ -173,13 +184,6 @@ export function LiveTripMap({
         map: mapInstance.current,
         label: { text: "D", color: "#fff", fontSize: "11px", fontWeight: "700" },
       });
-      routeRef.current = new g.maps.Polyline({
-        path: [pickup, drop],
-        strokeColor: "#F97316",
-        strokeOpacity: 0.75,
-        strokeWeight: 4,
-        map: mapInstance.current,
-      });
       const bounds = new g.maps.LatLngBounds();
       bounds.extend(pickup);
       bounds.extend(drop);
@@ -194,11 +198,37 @@ export function LiveTripMap({
       driverMarker.current?.setMap(null);
       pickupMarker.current?.setMap(null);
       dropMarker.current?.setMap(null);
+      routeRef.current = null;
       driverMarker.current = null;
       mapInstance.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickup, drop]);
+
+  // Draw only real road geometry returned by the Routes API.
+  useEffect(() => {
+    const encoded = road.data?.polyline;
+    if (!encoded) {
+      routeRef.current?.setMap(null);
+      routeRef.current = null;
+      return;
+    }
+    void loadGoogleMaps().then((g) => {
+      if (!mapInstance.current) return;
+      const path = g.maps.geometry.encoding.decodePath(encoded);
+      routeRef.current?.setMap(null);
+      routeRef.current = new g.maps.Polyline({
+        path,
+        strokeColor: "#F97316",
+        strokeOpacity: 0.85,
+        strokeWeight: 5,
+        map: mapInstance.current,
+      });
+      const bounds = new g.maps.LatLngBounds();
+      path.forEach((pt) => bounds.extend(pt));
+      mapInstance.current.fitBounds(bounds, 60);
+    });
+  }, [road.data?.polyline]);
 
   // Move the driver marker to the real reported position only.
   useEffect(() => {
@@ -230,19 +260,26 @@ export function LiveTripMap({
     });
   }, [driverPos]);
 
+  const routeFailed = road.isError;
   const headline = driverPos
-    ? phase === "accepted"
-      ? `Driver is ${remainingKm!.toFixed(1)} km away · Arriving in ~${eta} min`
-      : `On the way to drop · ${remainingKm!.toFixed(1)} km · ~${eta} min`
+    ? remainingKm !== null
+      ? phase === "accepted"
+        ? `Driver is ${remainingKm.toFixed(1)} km away by road${eta ? ` · Arriving in ~${eta} min` : ""}`
+        : `On the way to drop · ${remainingKm.toFixed(1)} km by road${eta ? ` · ~${eta} min` : ""}`
+      : routeFailed
+        ? "Live location received · road distance unavailable right now"
+        : "Calculating road route…"
     : phase === "accepted"
       ? "Waiting for the driver's live location…"
-      : `Trip in progress · ${Math.max(0.5, distanceKm).toFixed(1)} km route`;
+      : `Trip in progress · ${Math.max(0.5, distanceKm).toFixed(1)} km booked route`;
 
   return (
     <div className="mt-3 overflow-hidden rounded-md border border-primary/30">
       <div className="flex items-center justify-between gap-2 bg-primary/10 px-3 py-2 text-primary">
         <div className="flex items-center gap-2">
-          {driverPos ? (
+          {routeFailed ? (
+            <AlertTriangle className="h-4 w-4" />
+          ) : driverPos ? (
             <Navigation className="h-4 w-4 animate-pulse" />
           ) : (
             <MapPin className="h-4 w-4" />
@@ -259,9 +296,11 @@ export function LiveTripMap({
         )}
       </div>
       <p className="border-t bg-background px-3 py-1.5 text-[11px] text-muted-foreground">
-        {driverPos
-          ? "Live driver location · updates automatically"
-          : "Driver location appears once their app shares GPS (location permission needed)."}
+        {routeFailed
+          ? "Road route could not be loaded, so no route line is shown. Pickup and drop pins are exact."
+          : driverPos
+            ? "Live driver location and road route · updates automatically"
+            : "Driver location appears once their app shares GPS (location permission needed)."}
       </p>
     </div>
   );

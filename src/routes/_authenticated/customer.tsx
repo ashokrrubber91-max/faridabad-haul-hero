@@ -22,7 +22,6 @@ import {
   estimateFare,
   vehicleLabel,
   STATUS_META,
-  routeDistanceKm,
   type VehicleId,
   BOOKING_FIELDS,
 } from "@/lib/booking";
@@ -50,6 +49,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { createTripOrder, confirmTripPayment } from "@/lib/payments.functions";
 import { notifyDriversOfNewBooking } from "@/lib/push.functions";
 import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
+import { computeRoadRoute, createBooking } from "@/lib/routing.functions";
 
 const ONLINE_METHODS: PaymentMethod[] = ["upi", "card", "netbanking"];
 
@@ -88,10 +88,21 @@ function CustomerPage() {
   const [gstinEnabled, setGstinEnabled] = useState(false);
   const [gstinId, setGstinId] = useState<string | null>(null);
 
-  const distanceKm = useMemo(() => {
-    if (!pickup || !drop) return 0;
-    return routeDistanceKm([pickup, ...stops, drop]);
-  }, [pickup, drop, stops]);
+  // Distance always comes from the Routes API on the server — never a
+  // straight-line estimate — because the fare is derived from it.
+  const routePoints = useMemo(
+    () =>
+      pickup && drop ? [pickup, ...stops, drop].map((p) => ({ lat: p.lat, lng: p.lng })) : null,
+    [pickup, drop, stops],
+  );
+  const routeQuote = useQuery({
+    queryKey: ["route-quote", routePoints],
+    enabled: !!routePoints,
+    staleTime: 60_000,
+    retry: 1,
+    queryFn: () => computeRoadRoute({ data: { points: routePoints! } }),
+  });
+  const distanceKm = routeQuote.data?.distanceKm ?? 0;
   const baseFare = estimateFare(vehicle, distanceKm);
   const discount = Math.min(baseFare, (promo?.discount ?? 0) + coins);
   const fare = Math.max(0, baseFare - discount);
@@ -147,25 +158,16 @@ function CustomerPage() {
     mutationFn: async () => {
       if (!pickup) throw new Error("Choose pickup location");
       if (!drop) throw new Error("Choose drop location");
-      if (distanceKm <= 0) throw new Error("Invalid distance");
-      const { data: booking, error } = await supabase
-        .from("bookings")
-        .insert({
-          customer_id: user!.id,
-          pickup_address: pickup.address,
-          drop_address: drop.address,
-          pickup_lat: pickup.lat,
-          pickup_lng: pickup.lng,
-          drop_lat: drop.lat,
-          drop_lng: drop.lng,
-          service_zone: "Faridabad",
-          vehicle_type: vehicle,
-          distance_km: distanceKm,
-          fare,
-          coupon_code: promo?.code ?? null,
-          coupon_discount: promo?.discount ?? 0,
-          coins_redeemed: coins,
-          payment_method: method,
+      if (distanceKm <= 0) throw new Error("Road distance is still being calculated");
+      const booking = await createBooking({
+        data: {
+          pickup: { address: pickup.address, lat: pickup.lat, lng: pickup.lng },
+          drop: { address: drop.address, lat: drop.lat, lng: drop.lng },
+          stops: stops.map((s) => ({ address: s.address, lat: s.lat, lng: s.lng })),
+          vehicle,
+          couponCode: promo?.code ?? null,
+          coins,
+          paymentMethod: method,
           notes:
             [
               notes.trim(),
@@ -177,10 +179,8 @@ function CustomerPage() {
             ]
               .filter(Boolean)
               .join(" · ") || null,
-        })
-        .select("id, fare")
-        .single();
-      if (error) throw error;
+        },
+      });
 
       // Online methods must be paid before the trip goes out to drivers.
       if (ONLINE_METHODS.includes(method)) {
@@ -413,7 +413,13 @@ function CustomerPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-wider opacity-80">
-                    {distanceKm > 0 ? `${distanceKm} km · total` : "Estimated total"}
+                    {distanceKm > 0
+                      ? `${distanceKm} km by road · total`
+                      : routeQuote.isFetching
+                        ? "Calculating road distance…"
+                        : routeQuote.isError
+                          ? "Road distance unavailable"
+                          : "Estimated total"}
                   </p>
                   <p className="font-display text-3xl">₹ {fare || "—"}</p>
                   {discount > 0 && (
@@ -421,10 +427,19 @@ function CustomerPage() {
                       Base ₹{baseFare} − ₹{discount} off
                     </p>
                   )}
+                  {routeQuote.isError && (
+                    <button
+                      type="button"
+                      onClick={() => void routeQuote.refetch()}
+                      className="mt-1 text-xs underline opacity-90"
+                    >
+                      We couldn&apos;t measure this route. Tap to retry.
+                    </button>
+                  )}
                 </div>
                 <Button
                   onClick={() => setStep("review")}
-                  disabled={!pickup || !drop || distanceKm <= 0}
+                  disabled={!pickup || !drop || distanceKm <= 0 || routeQuote.isFetching}
                   className="h-11"
                 >
                   Review booking

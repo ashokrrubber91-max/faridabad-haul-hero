@@ -40,16 +40,6 @@ export function haversineKm(a: LatLng, b: LatLng): number {
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
-/** Road-adjusted distance across a route with intermediate waypoints (pickup -> stops -> drop). */
-export function routeDistanceKm(points: LatLng[]): number {
-  if (points.length < 2) return 0;
-  let total = 0;
-  for (let i = 0; i < points.length - 1; i++) {
-    total += haversineKm(points[i], points[i + 1]);
-  }
-  return Math.max(0.5, +(total * 1.3).toFixed(1));
-}
-
 export const VEHICLE_DETAILS: Record<
   VehicleId,
   { weightLimit: string; loadArea: string; goodTor: string[] }
