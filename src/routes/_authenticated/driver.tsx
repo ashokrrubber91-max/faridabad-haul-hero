@@ -699,7 +699,7 @@ function ActiveJobCard({
         <p className="mt-0.5 text-xs text-muted-foreground">
           {next === "in_progress"
             ? "Ask the sender for the 4-digit pickup OTP to start the trip."
-            : "Ask the receiver for the 4-digit drop OTP — or attach a delivery photo if they can't share it."}
+            : "Ask the receiver for the 4-digit drop OTP to complete the trip. A delivery photo is extra proof, not a substitute."}
         </p>
         <div className="mt-2 flex gap-2">
           <Input
@@ -712,7 +712,7 @@ function ActiveJobCard({
           />
           <Button
             size="sm"
-            disabled={pending || (otp.length !== 4 && !(next === "completed" && podPath))}
+            disabled={pending || otp.length !== 4}
             onClick={() => { onVerify(otp, next, podPath); setOtp(""); }}
           >
             {pending ? "Verifying…" : next === "in_progress" ? "Start trip" : "Complete trip"}
