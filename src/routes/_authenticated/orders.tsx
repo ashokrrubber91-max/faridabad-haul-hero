@@ -82,16 +82,24 @@ function OrdersPage() {
     [orders.data],
   );
 
+  // Driver name/number come from a guarded lookup: the phone number is only
+  // returned while the trip is actually running, never from the profile table.
+  const bookingIdsWithDriver = useMemo(
+    () => (orders.data ?? []).filter((o) => o.driver_id).map((o) => o.id),
+    [orders.data],
+  );
   const drivers = useQuery({
-    queryKey: ["order-drivers", driverIds.join(",")],
-    enabled: driverIds.length > 0,
+    queryKey: ["order-driver-contacts", bookingIdsWithDriver.join(",")],
+    enabled: bookingIdsWithDriver.length > 0,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, name, phone")
-        .in("id", driverIds);
-      const map: Record<string, { name: string; phone: string }> = {};
-      (data ?? []).forEach((d) => (map[d.id] = { name: d.name, phone: d.phone }));
+      const { data, error } = await supabase.rpc("booking_contacts", {
+        _booking_ids: bookingIdsWithDriver,
+      });
+      if (error) throw error;
+      const map: Record<string, { name: string; phone: string | null }> = {};
+      (data ?? []).forEach((r) => {
+        map[r.booking_id] = { name: r.name, phone: r.phone };
+      });
       return map;
     },
   });
@@ -194,7 +202,7 @@ function OrdersPage() {
         <div className="space-y-3">
           {list.slice(0, shown).map((b) => {
             const meta = STATUS_META[b.status] ?? STATUS_META.pending;
-            const driver = b.driver_id ? drivers.data?.[b.driver_id] : null;
+            const driver = b.driver_id ? drivers.data?.[b.id] : null;
             const vehicleNumber = b.driver_id ? kycByDriver.data?.[b.driver_id] : null;
             return (
               <article key={b.id} className="surface-card p-4">
@@ -234,9 +242,11 @@ function OrdersPage() {
                     {vehicleNumber && (
                       <span className="text-muted-foreground">· {vehicleNumber}</span>
                     )}
-                    <a href={`tel:${driver.phone}`} className="ml-auto font-medium text-primary">
-                      {driver.phone}
-                    </a>
+                    {driver.phone && (
+                      <a href={`tel:${driver.phone}`} className="ml-auto font-medium text-primary">
+                        {driver.phone}
+                      </a>
+                    )}
                   </div>
                 )}
 

@@ -973,6 +973,15 @@ export type Database = {
         Args: { _booking_id: string; _pod_path: string }
         Returns: boolean
       }
+      booking_contacts: {
+        Args: { _booking_ids: string[] }
+        Returns: {
+          booking_id: string
+          counterpart_id: string
+          name: string
+          phone: string
+        }[]
+      }
       claim_first_admin: { Args: { _user_id: string }; Returns: boolean }
       claim_sms_jobs: {
         Args: { _limit?: number }
