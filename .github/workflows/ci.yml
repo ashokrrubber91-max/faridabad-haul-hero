@@ -22,7 +22,7 @@ jobs:
         run: bun run typecheck
 
       - name: Lint
-        run: bunx eslint src --ext .ts,.tsx --max-warnings=100
+        run: bunx eslint . --max-warnings=100
 
       - name: Production build
         run: bun run build
