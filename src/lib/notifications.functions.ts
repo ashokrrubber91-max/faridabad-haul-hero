@@ -41,8 +41,8 @@ export const processSmsQueue = createServerFn({ method: "POST" })
       const { error: completeError } = await supabaseAdmin.rpc("complete_sms_job", {
         _id: job.id,
         _outcome: result.outcome,
-        _provider_sid: result.outcome === "sent" ? result.providerSid : null,
-        _error: result.outcome === "sent" ? null : result.error,
+        _provider_sid: result.outcome === "sent" ? result.providerSid : undefined,
+        _error: result.outcome === "sent" ? undefined : result.error,
       });
       if (completeError) throw new Error(completeError.message);
 
