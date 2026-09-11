@@ -202,7 +202,7 @@ function OrdersPage() {
         <div className="space-y-3">
           {list.slice(0, shown).map((b) => {
             const meta = STATUS_META[b.status] ?? STATUS_META.pending;
-            const driver = b.driver_id ? drivers.data?.[b.driver_id] : null;
+            const driver = b.driver_id ? drivers.data?.[b.id] : null;
             const vehicleNumber = b.driver_id ? kycByDriver.data?.[b.driver_id] : null;
             return (
               <article key={b.id} className="surface-card p-4">
@@ -242,9 +242,11 @@ function OrdersPage() {
                     {vehicleNumber && (
                       <span className="text-muted-foreground">· {vehicleNumber}</span>
                     )}
-                    <a href={`tel:${driver.phone}`} className="ml-auto font-medium text-primary">
-                      {driver.phone}
-                    </a>
+                    {driver.phone && (
+                      <a href={`tel:${driver.phone}`} className="ml-auto font-medium text-primary">
+                        {driver.phone}
+                      </a>
+                    )}
                   </div>
                 )}
 
