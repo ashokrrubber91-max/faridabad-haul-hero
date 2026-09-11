@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { phoneToEmail, useAuth } from "@/hooks/useAuth";
 import { getAdminSetupState } from "@/lib/admin.functions";
 
-export const Route = createFileRoute("/admin/login")({
+export const Route = createFileRoute("/admin_/login")({
   head: () => ({
     meta: [
       { title: "Team sign-in — MiniPort Admin" },
