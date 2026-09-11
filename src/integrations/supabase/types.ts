@@ -974,6 +974,67 @@ export type Database = {
         Returns: boolean
       }
       claim_first_admin: { Args: { _user_id: string }; Returns: boolean }
+      claim_sms_jobs: {
+        Args: { _limit?: number }
+        Returns: {
+          attempts: number
+          body: string
+          booking_id: string
+          created_at: string
+          error: string | null
+          event: Database["public"]["Enums"]["sms_event"]
+          id: string
+          last_attempt_at: string | null
+          max_attempts: number
+          next_attempt_at: string
+          phone: string
+          provider_sid: string | null
+          recipient: Database["public"]["Enums"]["sms_recipient"]
+          recipient_user_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["sms_status"]
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "sms_logs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      complete_sms_job: {
+        Args: {
+          _error?: string
+          _id: string
+          _outcome: string
+          _provider_sid?: string
+        }
+        Returns: {
+          attempts: number
+          body: string
+          booking_id: string
+          created_at: string
+          error: string | null
+          event: Database["public"]["Enums"]["sms_event"]
+          id: string
+          last_attempt_at: string | null
+          max_attempts: number
+          next_attempt_at: string
+          phone: string
+          provider_sid: string | null
+          recipient: Database["public"]["Enums"]["sms_recipient"]
+          recipient_user_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["sms_status"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "sms_logs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       decline_booking: { Args: { _booking_id: string }; Returns: boolean }
       expire_stale_bookings: { Args: never; Returns: number }
       get_booking_otps: {
