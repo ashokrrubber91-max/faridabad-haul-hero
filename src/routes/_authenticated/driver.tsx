@@ -366,7 +366,6 @@ function DriverPage() {
             verifyOtp.mutate({
               id: activeJob.id,
               otp,
-              expected: next === "in_progress" ? activeJob.pickup_otp : activeJob.drop_otp,
               next,
               podPath,
             })
