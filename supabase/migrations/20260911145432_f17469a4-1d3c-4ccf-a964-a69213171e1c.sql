@@ -1,0 +1,11 @@
+REVOKE ALL ON FUNCTION public.withdrawals_validate() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.withdrawals_settle() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.bank_accounts_guard() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.audit_sensitive_row() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.driver_locations_validate() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.get_booking_otps(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.verify_booking_otp(uuid, text, text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.complete_booking_with_pod(uuid, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_booking_otps(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.verify_booking_otp(uuid, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.complete_booking_with_pod(uuid, text) TO authenticated;
