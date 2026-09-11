@@ -1,5 +1,6 @@
 import type { AnyRow } from "@/lib/rows";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -50,6 +51,7 @@ import { vehicleLabel, STATUS_META, VEHICLES, BOOKING_FIELDS } from "@/lib/booki
 import { KycReviewTab } from "@/components/admin/KycReviewTab";
 import { DrillDownDialog, type DrillDownColumn } from "@/components/admin/DrillDownDialog";
 import { WithdrawalsTab, DisputesTab, AuditTab } from "@/components/admin/OpsTabs";
+import { getAdminSetupState, claimFirstAdmin } from "@/lib/admin.functions";
 import { SystemStatus } from "@/components/admin/SystemStatus";
 
 export const Route = createFileRoute("/admin")({
@@ -82,40 +84,102 @@ function AdminGate() {
         <p className="mt-1 text-sm text-muted-foreground">
           Sign in with your MiniPort team account to open the control room.
         </p>
-        <Button
-          className="mt-4 w-full"
-          onClick={() => {
-            window.location.href = "/auth";
-          }}
-        >
-          Sign in
+        <Button asChild className="mt-4 w-full">
+          <Link to="/auth" search={{ mode: "signin", next: "/admin" }}>
+            Sign in
+          </Link>
         </Button>
       </div>
     );
   }
 
   if (!roles.includes("admin")) {
+    return <AdminSetupOrDenied />;
+  }
+
+  return <AdminPage />;
+}
+
+/**
+ * A signed-in account without the admin role either needs an existing admin to
+ * grant access, or — when the platform has no admin at all — can complete the
+ * one-time setup. The database refuses the setup call once any admin exists.
+ */
+function AdminSetupOrDenied() {
+  const setupState = useServerFn(getAdminSetupState);
+  const claim = useServerFn(claimFirstAdmin);
+  const [busy, setBusy] = useState(false);
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["admin-setup-state"],
+    queryFn: () => setupState({}),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="mt-24 flex justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isError) {
     return (
       <div className="mx-auto mt-24 max-w-sm rounded-lg border bg-card p-6 text-center shadow-sm">
         <Ban className="mx-auto mb-2 h-6 w-6 text-destructive" />
-        <h1 className="font-display text-2xl tracking-wide text-secondary">Not authorised</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          This area is limited to MiniPort team accounts. Ask an existing admin to grant you access.
-        </p>
-        <Button
-          variant="outline"
-          className="mt-4 w-full"
-          onClick={() => {
-            window.location.href = "/";
-          }}
-        >
-          Back to home
+        <h1 className="font-display text-2xl tracking-wide text-secondary">
+          Could not check access
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">Check your connection and try again.</p>
+        <Button variant="outline" className="mt-4 w-full" onClick={() => refetch()}>
+          Try again
         </Button>
       </div>
     );
   }
 
-  return <AdminPage />;
+  if (data && !data.adminExists) {
+    return (
+      <div className="mx-auto mt-24 max-w-sm rounded-lg border bg-card p-6 text-center shadow-sm">
+        <ShieldCheck className="mx-auto mb-2 h-6 w-6 text-primary" />
+        <h1 className="font-display text-2xl tracking-wide text-secondary">Set up your team</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          No team account exists yet. Claim this signed-in account as the first MiniPort admin. This
+          is available only once — afterwards, access is granted by an existing admin.
+        </p>
+        <Button
+          className="mt-4 w-full"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await claim({});
+              toast.success("You are now the MiniPort admin");
+              window.location.reload();
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : "Setup failed");
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? "Setting up\u2026" : "Make me the first admin"}
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto mt-24 max-w-sm rounded-lg border bg-card p-6 text-center shadow-sm">
+      <Ban className="mx-auto mb-2 h-6 w-6 text-destructive" />
+      <h1 className="font-display text-2xl tracking-wide text-secondary">Not authorised</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        This area is limited to MiniPort team accounts. Ask an existing admin to grant you access.
+      </p>
+      <Button asChild variant="outline" className="mt-4 w-full">
+        <Link to="/">Back to home</Link>
+      </Button>
+    </div>
+  );
 }
 
 type Booking = {

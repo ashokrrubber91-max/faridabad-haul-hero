@@ -15,6 +15,9 @@ import { phoneToEmail, useAuth } from "@/hooks/useAuth";
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
   as: z.enum(["customer", "driver"]).optional(),
+  // Only a known in-app destination is accepted, so this can never be used to
+  // bounce someone to an external site after signing in.
+  next: z.enum(["/admin"]).optional(),
 });
 
 export const Route = createFileRoute("/auth")({
@@ -39,10 +42,11 @@ function AuthPage() {
 
   useEffect(() => {
     if (loading || !user) return;
-    if (role === "admin") navigate({ to: "/admin", replace: true });
+    if (search.next) navigate({ to: search.next, replace: true });
+    else if (role === "admin") navigate({ to: "/admin", replace: true });
     else if (role === "driver") navigate({ to: "/driver", replace: true });
     else navigate({ to: "/customer", replace: true });
-  }, [user, role, loading, navigate]);
+  }, [user, role, loading, navigate, search.next]);
 
   return (
     <div className="min-h-screen bg-background">
