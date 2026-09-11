@@ -2,12 +2,20 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify:
+    name: Typecheck, lint, build, audit
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -15,21 +23,28 @@ jobs:
         with:
           bun-version: latest
 
+      # bun.lock is the project's only lockfile; npm/yarn/pnpm are not used.
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # Uses the project's own script: tsc --noEmit (TypeScript 5.9.x).
       - name: Typecheck
         run: bun run typecheck
 
+      # ESLint 9 flat config: fails on any error; caps warning growth.
       - name: Lint
-        run: bunx eslint . --max-warnings=100
+        run: bunx eslint . --max-warnings=20
 
       - name: Production build
         run: bun run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
+          # Publishable (non-secret) values. Repository variables are used when
+          # present so the build matches production config; otherwise harmless
+          # placeholders keep the build deterministic. No secrets are committed.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'placeholder-publishable-key' }}
+          VITE_SUPABASE_PROJECT_ID: ${{ vars.VITE_SUPABASE_PROJECT_ID || 'placeholder' }}
 
-      - name: Dependency audit (high severity)
-        run: bun audit --audit-level=high || true
+      # Explicit policy: any high or critical advisory fails CI. Never masked.
+      - name: Dependency audit (high and critical)
+        run: bun audit --audit-level=high
