@@ -1,6 +1,7 @@
 import type { AnyRow } from "@/lib/rows";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { processSmsQueue } from "@/lib/notifications.functions";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -1795,6 +1796,7 @@ function smsTone(s: string) {
     case "sent":
       return "bg-success text-success-foreground hover:bg-success";
     case "failed":
+    case "not_configured":
       return "bg-destructive text-destructive-foreground hover:bg-destructive";
     default:
       return "bg-warning text-warning-foreground hover:bg-warning";
