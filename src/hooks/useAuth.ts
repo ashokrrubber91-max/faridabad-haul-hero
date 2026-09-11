@@ -24,10 +24,6 @@ export function useAuth(): AuthState {
 
   useEffect(() => {
     let active = true;
-    const metadataRole = (u: User): AppRole | null => {
-      const role = u.user_metadata?.role;
-      return role === "customer" || role === "driver" || role === "admin" ? role : null;
-    };
     const loadFor = async (u: User | null) => {
       if (!u) {
         if (!active) return;
@@ -38,9 +34,9 @@ export function useAuth(): AuthState {
         supabase.from("profiles").select("name, phone, active_mode, is_online, kyc_status, service_zone").eq("id", u.id).maybeSingle(),
       ]);
       if (!active) return;
-      const dbRoles = (roleRows ?? []).map((r) => r.role as AppRole);
-      const fallbackRole = metadataRole(u);
-      setRoles(dbRoles.length > 0 ? dbRoles : fallbackRole ? [fallbackRole] : []);
+      // Roles come only from the database. Values a client could set on its own
+      // account (user metadata) are deliberately ignored.
+      setRoles((roleRows ?? []).map((r) => r.role as AppRole));
       setProfile(profileRow ? {
         ...profileRow,
         active_mode: (profileRow.active_mode as ActiveMode) ?? "customer",
