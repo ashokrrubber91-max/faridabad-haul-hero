@@ -155,32 +155,38 @@ function DriverPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Codes are never sent to the browser: the database checks them, limits wrong
+  // tries and moves the trip forward in one atomic step.
   const verifyOtp = useMutation({
     mutationFn: async ({
       id,
       otp,
-      expected,
       next,
       podPath,
     }: {
       id: string;
       otp: string;
-      expected: string | null;
       next: "in_progress" | "completed";
       podPath?: string | null;
     }) => {
-      // Drop can be closed with the 4-digit OTP or with a photo proof of delivery.
-      const otpOk = !!expected && otp.trim() === expected;
-      if (!otpOk && !(next === "completed" && podPath)) throw new Error("Wrong OTP");
-      const now = new Date().toISOString();
-      const patch =
-        next === "in_progress"
-          ? { status: next, pickup_verified_at: now }
-          : { status: next, drop_verified_at: now, ...(podPath ? { pod_photo_url: podPath } : {}) };
-      const { error } = await supabase.from("bookings").update(patch).eq("id", id);
+      const code = otp.replace(/\D/g, "");
+      if (!code && next === "completed" && podPath) {
+        const { error } = await supabase.rpc("complete_booking_with_pod", { _booking_id: id, _pod_path: podPath });
+        if (error) throw error;
+        return;
+      }
+      if (code.length !== 4) throw new Error("Enter the 4-digit code from the customer");
+      const { error } = await supabase.rpc("verify_booking_otp", {
+        _booking_id: id,
+        _stage: next === "in_progress" ? "pickup" : "drop",
+        _otp: code,
+      });
       if (error) throw error;
     },
-    onSuccess: (_d, v) => toast.success(v.next === "in_progress" ? "Pickup verified — trip started" : "Delivery confirmed — trip completed 🎉"),
+    onSuccess: (_d, v) => {
+      toast.success(v.next === "in_progress" ? "Pickup verified — trip started" : "Delivery confirmed — trip completed 🎉");
+      void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
