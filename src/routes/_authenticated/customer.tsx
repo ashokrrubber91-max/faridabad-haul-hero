@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { VEHICLES, estimateFare, vehicleLabel, STATUS_META, routeDistanceKm, type VehicleId } from "@/lib/booking";
+import { VEHICLES, estimateFare, vehicleLabel, STATUS_META, routeDistanceKm, type VehicleId, BOOKING_FIELDS } from "@/lib/booking";
 import { VehicleCard } from "@/components/booking/VehicleCard";
 import { WaypointManager } from "@/components/booking/WaypointManager";
 import { GstinSelect, type CustomerGstin } from "@/components/booking/GstinSelect";
@@ -90,7 +90,7 @@ function CustomerPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookings")
-        .select("*")
+        .select(BOOKING_FIELDS)
         .eq("customer_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;

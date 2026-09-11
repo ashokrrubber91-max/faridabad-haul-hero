@@ -17,7 +17,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { vehicleLabel, STATUS_META, VEHICLES } from "@/lib/booking";
+import { vehicleLabel, STATUS_META, VEHICLES, BOOKING_FIELDS } from "@/lib/booking";
 import { KycReviewTab } from "@/components/admin/KycReviewTab";
 import { DrillDownDialog, type DrillDownColumn } from "@/components/admin/DrillDownDialog";
 
@@ -80,7 +80,7 @@ function AdminPage() {
   const bookings = useQuery({
     queryKey: ["admin-bookings"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("bookings").select("*")
+      const { data, error } = await supabase.from("bookings").select(BOOKING_FIELDS)
         .order("created_at", { ascending: false }).limit(500);
       if (error) throw error;
       return (data ?? []) as Booking[];

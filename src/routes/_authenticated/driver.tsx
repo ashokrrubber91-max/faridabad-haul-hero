@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { vehicleLabel, STATUS_META } from "@/lib/booking";
+import { vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
 import { SupportChat } from "@/components/support/SupportChat";
 import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 import { LoadingTimerCard } from "@/components/booking/LoadingTimerCard";
@@ -58,7 +58,7 @@ function DriverPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookings")
-        .select("*")
+        .select(BOOKING_FIELDS)
         .or(`and(status.eq.pending,driver_id.is.null,cancelled_at.is.null),driver_id.eq.${user!.id}`)
         .order("created_at", { ascending: false });
       if (error) throw error;
