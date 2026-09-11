@@ -873,30 +873,42 @@ function LiveTripsTab({
   );
   const [assignFor, setAssignFor] = useState<Booking | null>(null);
   const [driverId, setDriverId] = useState<string>("");
+  const [cancelFor, setCancelFor] = useState<Booking | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const cancel = async (b: Booking) => {
-    if (!confirm("Cancel this trip?")) return;
-    const { error } = await supabase
-      .from("bookings")
-      .update({ status: "cancelled" })
-      .eq("id", b.id);
+  const doCancel = async () => {
+    if (!cancelFor || cancelReason.trim().length < 4) return;
+    setBusy(true);
+    // Cancellation runs in the database: it refuses closed trips and records who cancelled.
+    const { error } = await supabase.rpc("admin_cancel_booking", {
+      _booking_id: cancelFor.id,
+      _reason: cancelReason.trim(),
+    });
+    setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Trip cancelled");
+    setCancelFor(null);
+    setCancelReason("");
     onChanged();
   };
 
   const assign = async () => {
     if (!assignFor || !driverId) return;
-    const { error } = await supabase
-      .from("bookings")
-      .update({ driver_id: driverId, status: "accepted" })
-      .eq("id", assignFor.id);
+    setBusy(true);
+    // Eligibility (approved, free driver) is checked in the database, not here.
+    const { error } = await supabase.rpc("admin_assign_driver", {
+      _booking_id: assignFor.id,
+      _driver_id: driverId,
+    });
+    setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Driver assigned");
     setAssignFor(null);
     setDriverId("");
     onChanged();
   };
+
 
   const availableDrivers = drivers.filter((d) => d.is_online);
 
