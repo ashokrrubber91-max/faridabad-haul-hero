@@ -1,7 +1,7 @@
 /* MiniPort background notification worker.
    Firebase config is passed in via the service-worker registration query string
    so no keys have to be hardcoded in this file. */
-/* eslint-disable no-undef */
+
 importScripts("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js");
 
