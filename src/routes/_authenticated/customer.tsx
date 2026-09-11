@@ -160,25 +160,16 @@ function CustomerPage() {
     mutationFn: async () => {
       if (!pickup) throw new Error("Choose pickup location");
       if (!drop) throw new Error("Choose drop location");
-      if (distanceKm <= 0) throw new Error("Invalid distance");
-      const { data: booking, error } = await supabase
-        .from("bookings")
-        .insert({
-          customer_id: user!.id,
-          pickup_address: pickup.address,
-          drop_address: drop.address,
-          pickup_lat: pickup.lat,
-          pickup_lng: pickup.lng,
-          drop_lat: drop.lat,
-          drop_lng: drop.lng,
-          service_zone: "Faridabad",
-          vehicle_type: vehicle,
-          distance_km: distanceKm,
-          fare,
-          coupon_code: promo?.code ?? null,
-          coupon_discount: promo?.discount ?? 0,
-          coins_redeemed: coins,
-          payment_method: method,
+      if (distanceKm <= 0) throw new Error("Road distance is still being calculated");
+      const booking = await createBooking({
+        data: {
+          pickup: { address: pickup.address, lat: pickup.lat, lng: pickup.lng },
+          drop: { address: drop.address, lat: drop.lat, lng: drop.lng },
+          stops: stops.map((s) => ({ address: s.address, lat: s.lat, lng: s.lng })),
+          vehicle,
+          couponCode: promo?.code ?? null,
+          coins,
+          paymentMethod: method,
           notes:
             [
               notes.trim(),
@@ -190,10 +181,8 @@ function CustomerPage() {
             ]
               .filter(Boolean)
               .join(" · ") || null,
-        })
-        .select("id, fare")
-        .single();
-      if (error) throw error;
+        },
+      });
 
       // Online methods must be paid before the trip goes out to drivers.
       if (ONLINE_METHODS.includes(method)) {
