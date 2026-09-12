@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
 import { Timer } from "lucide-react";
-import { computeLoadingTimer, OVERTIME_RATE_PER_MIN } from "@/lib/loading-timer";
+import { computeLoadingTimer } from "@/lib/loading-timer";
 
 /**
  * Live loading/unloading countdown. It only runs between the recorded start and
- * stop moments, so nobody is charged while the truck is simply driving.
- * Free time: 90 min for the 500 kg tempo, 60 min for larger trucks. Overtime ₹2/min.
+ * stop moments, so nobody is charged while the truck is simply driving. The
+ * free window and per-minute rate come from the vehicle's own configuration and
+ * the final amount is settled on the server when delivery is confirmed.
  */
 export function LoadingTimerCard({
-  vehicleType,
+  freeMinutes,
+  ratePerMin,
   startedAt,
   stoppedAt,
   title = "Loading / unloading time",
 }: {
-  vehicleType: string;
+  freeMinutes: number;
+  ratePerMin: number;
   startedAt: string | null | undefined;
   stoppedAt?: string | null;
   title?: string;
@@ -27,7 +30,7 @@ export function LoadingTimerCard({
   }, [stoppedAt]);
 
   const reference = stoppedAt ? new Date(stoppedAt).getTime() : now;
-  const state = computeLoadingTimer(vehicleType, startedAt, reference);
+  const state = computeLoadingTimer(freeMinutes, startedAt, reference, ratePerMin);
   if (!state) return null;
 
   const over = state.overtimeMinutes > 0;
@@ -51,14 +54,15 @@ export function LoadingTimerCard({
       <p className="mt-1 text-xs text-muted-foreground">
         {over ? (
           <>
-            Free {state.freeMinutes} min used up — overtime charge{" "}
+            Free {state.freeMinutes} min used up — waiting charge so far{" "}
             <span className="font-semibold text-destructive">₹{state.overtimeCharge}</span> (
-            {state.overtimeMinutes} min × ₹{OVERTIME_RATE_PER_MIN}/min) will be added to the fare.
+            {state.overtimeMinutes} min × ₹{state.ratePerMin}/min). It is added to the final fare
+            when delivery is confirmed.
           </>
         ) : (
           <>
-            {state.freeMinutes} min free included. After that ₹{OVERTIME_RATE_PER_MIN}/min waiting
-            charge applies.
+            {state.freeMinutes} min free included. After that ₹{state.ratePerMin}/min waiting charge
+            applies.
           </>
         )}
       </p>
