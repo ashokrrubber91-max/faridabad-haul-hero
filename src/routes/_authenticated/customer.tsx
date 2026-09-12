@@ -391,16 +391,40 @@ function CustomerPage() {
 
             <div>
               <Label>Vehicle</Label>
-              <div className="mt-2 flex flex-col gap-2">
-                {VEHICLES.map((v) => (
-                  <VehicleCard
-                    key={v.id}
-                    id={v.id}
-                    selected={vehicle === v.id}
-                    onSelect={() => setVehicle(v.id)}
-                  />
-                ))}
-              </div>
+              {catalogue.isLoading ? (
+                <div className="mt-2 space-y-2">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
+                  ))}
+                </div>
+              ) : catalogue.isError ? (
+                <div className="mt-2 rounded-lg border p-4 text-center text-sm">
+                  <p className="text-muted-foreground">We couldn&apos;t load the vehicle list.</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2"
+                    onClick={() => catalogue.refetch()}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : vehicles.length === 0 ? (
+                <p className="mt-2 rounded-lg border p-4 text-center text-sm text-muted-foreground">
+                  No vehicles are available for booking right now. Please try again shortly.
+                </p>
+              ) : (
+                <div className="mt-2 flex flex-col gap-2">
+                  {vehicles.map((v) => (
+                    <VehicleCard
+                      key={v.id}
+                      vehicle={v}
+                      selected={vehicle === v.id}
+                      onSelect={() => setVehicle(v.id)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
@@ -445,9 +469,19 @@ function CustomerPage() {
                           : "Estimated total"}
                   </p>
                   <p className="font-display text-3xl">₹ {fare || "—"}</p>
-                  {discount > 0 && (
+                  {selectedVehicle && distanceKm > 0 && (
                     <p className="text-xs opacity-80">
-                      Base ₹{baseFare} − ₹{discount} off
+                      ₹{selectedVehicle.base_fare} base + ₹{selectedVehicle.per_km_fare}/km ×{" "}
+                      {distanceKm} km = ₹{baseFare}
+                      {discount > 0 ? ` − ₹${discount} off` : ""}
+                    </p>
+                  )}
+                  {selectedVehicle && (
+                    <p className="mt-1 text-[11px] opacity-70">
+                      Quote locked at booking. {selectedVehicle.free_loading_minutes} min free
+                      loading + {selectedVehicle.free_unloading_minutes} min free unloading; extra
+                      waiting is ₹{selectedVehicle.overtime_rate_per_min}/min and is added to the
+                      final fare after delivery.
                     </p>
                   )}
                   {routeQuote.isError && (
@@ -558,12 +592,7 @@ function CustomerPage() {
                       distanceKm={Number(b.distance_km) || 0}
                     />
                   )}
-                  {b.status === "in_progress" && (
-                    <LoadingTimerCard
-                      vehicleType={b.vehicle_type}
-                      startedAt={b.pickup_verified_at}
-                    />
-                  )}
+                  <WaitingChargesCard booking={b} vehicle={vehicleFor(b.vehicle_type)} />
 
                   {(b.status === "accepted" || b.status === "in_progress") && (
                     <TripCodes bookingId={b.id} status={b.status} />
