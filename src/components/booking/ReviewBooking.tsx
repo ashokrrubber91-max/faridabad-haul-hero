@@ -13,7 +13,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { VEHICLES, vehicleLabel, type VehicleId } from "@/lib/booking";
+import { vehicleLabel, type VehicleId } from "@/lib/booking";
 import type { PlacePick } from "@/components/booking/LocationSearchOverlay";
 import type { CustomerGstin } from "@/components/booking/GstinSelect";
 import { GoodsChecklist } from "@/components/booking/GoodsChecklist";
@@ -52,7 +52,6 @@ export function ReviewBooking({
   const [checklistDone, setChecklistDone] = useState(false);
   const [otpOpen, setOtpOpen] = useState(false);
   const [otp, setOtp] = useState("");
-  const v = VEHICLES.find((x) => x.id === vehicle);
 
   const registeredPhone = (profile?.phone ?? "").replace(/\D/g, "");
   const expected = registeredPhone.slice(-4);
@@ -98,7 +97,7 @@ export function ReviewBooking({
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground">Vehicle</p>
             <p className="text-sm font-semibold text-secondary">
-              {v?.label ?? vehicleLabel(vehicle)}
+              {vehicleLabel(vehicle)}
             </p>
           </div>
           <Badge variant="secondary">{distanceKm} km</Badge>

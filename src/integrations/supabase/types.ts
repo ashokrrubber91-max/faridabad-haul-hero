@@ -149,10 +149,13 @@ export type Database = {
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
+          final_fare: number | null
           id: string
+          loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
           notes: string | null
+          overtime_charge: number
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_status: Database["public"]["Enums"]["payment_status"]
           pickup_address: string
@@ -164,10 +167,11 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
           updated_at: string
-          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+          vehicle_type: string
         }
         Insert: {
           cancellation_reason?: string | null
@@ -188,10 +192,13 @@ export type Database = {
           drop_verified_at?: string | null
           expires_at?: string | null
           fare: number
+          final_fare?: number | null
           id?: string
+          loading_overtime_minutes?: number
           loading_started_at?: string | null
           loading_stopped_at?: string | null
           notes?: string | null
+          overtime_charge?: number
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
           pickup_address: string
@@ -203,10 +210,11 @@ export type Database = {
           review?: string | null
           service_zone?: string
           status?: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes?: number
           unloading_started_at?: string | null
           unloading_stopped_at?: string | null
           updated_at?: string
-          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+          vehicle_type: string
         }
         Update: {
           cancellation_reason?: string | null
@@ -227,10 +235,13 @@ export type Database = {
           drop_verified_at?: string | null
           expires_at?: string | null
           fare?: number
+          final_fare?: number | null
           id?: string
+          loading_overtime_minutes?: number
           loading_started_at?: string | null
           loading_stopped_at?: string | null
           notes?: string | null
+          overtime_charge?: number
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
           pickup_address?: string
@@ -242,10 +253,58 @@ export type Database = {
           review?: string | null
           service_zone?: string
           status?: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes?: number
           unloading_started_at?: string | null
           unloading_stopped_at?: string | null
           updated_at?: string
-          vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
+          vehicle_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_vehicle_type_fkey"
+            columns: ["vehicle_type"]
+            isOneToOne: false
+            referencedRelation: "vehicle_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      broadcasts: {
+        Row: {
+          audience: string
+          body: string
+          channel: string
+          created_at: string
+          created_by: string | null
+          id: string
+          idempotency_key: string | null
+          recipient_count: number
+          sms_status: string
+          title: string
+        }
+        Insert: {
+          audience: string
+          body: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string | null
+          recipient_count?: number
+          sms_status?: string
+          title: string
+        }
+        Update: {
+          audience?: string
+          body?: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string | null
+          recipient_count?: number
+          sms_status?: string
+          title?: string
         }
         Relationships: []
       }
@@ -711,7 +770,7 @@ export type Database = {
           updated_at: string
           user_id: string
           vehicle_number: string | null
-          vehicle_type: Database["public"]["Enums"]["vehicle_type"] | null
+          vehicle_type: string | null
         }
         Insert: {
           created_at?: string
@@ -719,7 +778,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           vehicle_number?: string | null
-          vehicle_type?: Database["public"]["Enums"]["vehicle_type"] | null
+          vehicle_type?: string | null
         }
         Update: {
           created_at?: string
@@ -727,7 +786,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           vehicle_number?: string | null
-          vehicle_type?: Database["public"]["Enums"]["vehicle_type"] | null
+          vehicle_type?: string | null
         }
         Relationships: [
           {
@@ -735,6 +794,47 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string
+          broadcast_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          broadcast_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          broadcast_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "broadcasts"
             referencedColumns: ["id"]
           },
         ]
@@ -797,6 +897,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      platform_settings: {
+        Row: {
+          commission_rate: number
+          created_at: string
+          id: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          commission_rate?: number
+          created_at?: string
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          commission_rate?: number
+          created_at?: string
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -962,6 +1086,63 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicle_types: {
+        Row: {
+          active: boolean
+          base_fare: number
+          capacity_label: string
+          created_at: string
+          free_loading_minutes: number
+          free_unloading_minutes: number
+          good_for: string[]
+          id: string
+          image_url: string | null
+          label: string
+          load_area: string
+          overtime_rate_per_min: number
+          per_km_fare: number
+          sort_order: number
+          updated_at: string
+          weight_limit_kg: number | null
+        }
+        Insert: {
+          active?: boolean
+          base_fare?: number
+          capacity_label?: string
+          created_at?: string
+          free_loading_minutes?: number
+          free_unloading_minutes?: number
+          good_for?: string[]
+          id: string
+          image_url?: string | null
+          label: string
+          load_area?: string
+          overtime_rate_per_min?: number
+          per_km_fare?: number
+          sort_order?: number
+          updated_at?: string
+          weight_limit_kg?: number | null
+        }
+        Update: {
+          active?: boolean
+          base_fare?: number
+          capacity_label?: string
+          created_at?: string
+          free_loading_minutes?: number
+          free_unloading_minutes?: number
+          good_for?: string[]
+          id?: string
+          image_url?: string | null
+          label?: string
+          load_area?: string
+          overtime_rate_per_min?: number
+          per_km_fare?: number
+          sort_order?: number
+          updated_at?: string
+          weight_limit_kg?: number | null
+        }
+        Relationships: []
+      }
       wallet_accounts: {
         Row: {
           cash_balance: number
@@ -1101,10 +1282,13 @@ export type Database = {
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
+          final_fare: number | null
           id: string
+          loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
           notes: string | null
+          overtime_charge: number
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_status: Database["public"]["Enums"]["payment_status"]
           pickup_address: string
@@ -1116,10 +1300,11 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
           updated_at: string
-          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+          vehicle_type: string
         }
         SetofOptions: {
           from: "*"
@@ -1153,10 +1338,13 @@ export type Database = {
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
+          final_fare: number | null
           id: string
+          loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
           notes: string | null
+          overtime_charge: number
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_status: Database["public"]["Enums"]["payment_status"]
           pickup_address: string
@@ -1168,10 +1356,11 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
           updated_at: string
-          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+          vehicle_type: string
         }
         SetofOptions: {
           from: "*"
@@ -1201,10 +1390,13 @@ export type Database = {
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
+          final_fare: number | null
           id: string
+          loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
           notes: string | null
+          overtime_charge: number
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_status: Database["public"]["Enums"]["payment_status"]
           pickup_address: string
@@ -1216,10 +1408,11 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
           updated_at: string
-          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+          vehicle_type: string
         }
         SetofOptions: {
           from: "*"
@@ -1250,10 +1443,13 @@ export type Database = {
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
+          final_fare: number | null
           id: string
+          loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
           notes: string | null
+          overtime_charge: number
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_status: Database["public"]["Enums"]["payment_status"]
           pickup_address: string
@@ -1265,14 +1461,111 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
           updated_at: string
-          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+          vehicle_type: string
         }
         SetofOptions: {
           from: "*"
           to: "bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_send_broadcast: {
+        Args: {
+          _audience: string
+          _body: string
+          _idempotency_key?: string
+          _title: string
+        }
+        Returns: {
+          audience: string
+          body: string
+          channel: string
+          created_at: string
+          created_by: string | null
+          id: string
+          idempotency_key: string | null
+          recipient_count: number
+          sms_status: string
+          title: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "broadcasts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_set_commission_rate: { Args: { _rate: number }; Returns: number }
+      admin_set_vehicle_active: {
+        Args: { _active: boolean; _id: string }
+        Returns: {
+          active: boolean
+          base_fare: number
+          capacity_label: string
+          created_at: string
+          free_loading_minutes: number
+          free_unloading_minutes: number
+          good_for: string[]
+          id: string
+          image_url: string | null
+          label: string
+          load_area: string
+          overtime_rate_per_min: number
+          per_km_fare: number
+          sort_order: number
+          updated_at: string
+          weight_limit_kg: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "vehicle_types"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_upsert_vehicle_type: {
+        Args: {
+          _active: boolean
+          _base_fare: number
+          _capacity_label: string
+          _free_loading_minutes: number
+          _free_unloading_minutes: number
+          _good_for: string[]
+          _id: string
+          _image_url?: string
+          _label: string
+          _load_area: string
+          _overtime_rate_per_min: number
+          _per_km_fare: number
+          _sort_order: number
+          _weight_limit_kg: number
+        }
+        Returns: {
+          active: boolean
+          base_fare: number
+          capacity_label: string
+          created_at: string
+          free_loading_minutes: number
+          free_unloading_minutes: number
+          good_for: string[]
+          id: string
+          image_url: string | null
+          label: string
+          load_area: string
+          overtime_rate_per_min: number
+          per_km_fare: number
+          sort_order: number
+          updated_at: string
+          weight_limit_kg: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "vehicle_types"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1289,6 +1582,10 @@ export type Database = {
           name: string
           phone: string
         }[]
+      }
+      booking_overtime: {
+        Args: { _booking: Database["public"]["Tables"]["bookings"]["Row"] }
+        Returns: Json
       }
       cancel_booking: {
         Args: { _booking_id: string; _note?: string; _reason: string }
@@ -1311,10 +1608,13 @@ export type Database = {
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
+          final_fare: number | null
           id: string
+          loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
           notes: string | null
+          overtime_charge: number
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_status: Database["public"]["Enums"]["payment_status"]
           pickup_address: string
@@ -1326,10 +1626,11 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
           updated_at: string
-          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+          vehicle_type: string
         }
         SetofOptions: {
           from: "*"
@@ -1448,6 +1749,58 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "driver_kyc"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_booking_stage: {
+        Args: { _action: string; _booking_id: string }
+        Returns: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          coins_redeemed: number
+          commission_amount: number
+          commission_rate: number
+          coupon_code: string | null
+          coupon_discount: number
+          created_at: string
+          customer_id: string
+          distance_km: number
+          driver_id: string | null
+          driver_net_earning: number
+          drop_address: string
+          drop_lat: number | null
+          drop_lng: number | null
+          drop_verified_at: string | null
+          expires_at: string | null
+          fare: number
+          final_fare: number | null
+          id: string
+          loading_overtime_minutes: number
+          loading_started_at: string | null
+          loading_stopped_at: string | null
+          notes: string | null
+          overtime_charge: number
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_verified_at: string | null
+          pod_photo_url: string | null
+          rating: number | null
+          review: string | null
+          service_zone: string
+          status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
+          unloading_started_at: string | null
+          unloading_stopped_at: string | null
+          updated_at: string
+          vehicle_type: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bookings"
           isOneToOne: true
           isSetofReturn: false
         }

@@ -31,7 +31,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
 import { SupportChat } from "@/components/support/SupportChat";
 import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
-import { LoadingTimerCard } from "@/components/booking/LoadingTimerCard";
+import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
+import { useVehicleTypes, type VehicleType } from "@/lib/vehicles";
 import { sweepStaleBookings } from "@/lib/notifications.functions";
 
 export const Route = createFileRoute("/_authenticated/driver")({
@@ -60,6 +61,11 @@ function DriverPage() {
   });
 
   const sweepStale = useServerFn(sweepStaleBookings);
+
+  // Vehicle names, free loading windows and waiting rates come from the catalogue.
+  const catalogue = useVehicleTypes(true);
+  const vehicleFor = (id: string): VehicleType | undefined =>
+    (catalogue.data ?? []).find((v) => v.id === id);
 
   const queue = useQuery({
     queryKey: ["driver-feed", user?.id],
@@ -224,19 +230,28 @@ function DriverPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  type TimerPatch = {
-    loading_started_at?: string;
-    loading_stopped_at?: string;
-    unloading_started_at?: string;
-    unloading_stopped_at?: string;
+  /**
+   * Loading/unloading clocks are stamped by the server. Repeating or skipping a
+   * step is refused there, so a double tap or a stale screen cannot change a
+   * time that has already been recorded.
+   */
+  type StageAction = "start_loading" | "stop_loading" | "start_unloading" | "stop_unloading";
+  const STAGE_MESSAGE: Record<StageAction, string> = {
+    start_loading: "Loading time started",
+    stop_loading: "Loading time stopped",
+    start_unloading: "Unloading time started",
+    stop_unloading: "Unloading time stopped",
   };
-  const setTimer = useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: TimerPatch }) => {
-      const { error } = await supabase.from("bookings").update(patch).eq("id", id);
+  const setStage = useMutation({
+    mutationFn: async ({ id, action }: { id: string; action: StageAction }) => {
+      const { error } = await supabase.rpc("set_booking_stage", {
+        _booking_id: id,
+        _action: action,
+      });
       if (error) throw error;
     },
-    onSuccess: () => {
-      toast.success("Timer updated");
+    onSuccess: (_d, v) => {
+      toast.success(STAGE_MESSAGE[v.action]);
       void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -500,7 +515,9 @@ function DriverPage() {
               podPath,
             })
           }
-          onTimer={(patch) => setTimer.mutate({ id: activeJob.id, patch: patch as never })}
+          onStage={(action) => setStage.mutate({ id: activeJob.id, action })}
+          stageBusy={setStage.isPending}
+          vehicle={vehicleFor(activeJob.vehicle_type)}
           pending={verifyOtp.isPending}
         />
       )}
@@ -631,6 +648,9 @@ function DriverPage() {
                       </div>
                     </div>
                   )}
+                  {b.status === "completed" && (
+                    <WaitingChargesCard booking={b} vehicle={vehicleFor(b.vehicle_type)} />
+                  )}
                 </div>
               );
             })}
@@ -671,7 +691,8 @@ function PendingJob({
     const t = setTimeout(() => setSecs((s) => s - 1), 1000);
     return () => clearTimeout(t);
   }, [secs]);
-  const commission = Math.round(Number(job.fare) * 0.1);
+  const rate = Number(job.commission_rate) || 0.1;
+  const commission = Math.round(Number(job.fare) * rate);
   const net = Number(job.fare) - commission;
   return (
     <div className="surface-card border-l-4 border-l-primary p-4">
@@ -695,7 +716,7 @@ function PendingJob({
           <p className="text-[11px] uppercase text-muted-foreground">You will earn</p>
           <p className="font-display text-2xl text-success">₹{net}</p>
           <p className="text-[10px] text-muted-foreground">
-            Fare ₹{Number(job.fare).toFixed(0)} − 10%
+            Fare ₹{Number(job.fare).toFixed(0)} − {Math.round(rate * 100)}%
           </p>
         </div>
       </div>
@@ -748,12 +769,18 @@ function playRideAlert() {
 function ActiveJobCard({
   job,
   onVerify,
-  onTimer,
+  onStage,
+  stageBusy,
+  vehicle,
   pending,
 }: {
   job: AnyRow;
   onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null) => void;
-  onTimer: (patch: Record<string, string>) => void;
+  onStage: (
+    action: "start_loading" | "stop_loading" | "start_unloading" | "stop_unloading",
+  ) => void;
+  stageBusy: boolean;
+  vehicle?: VehicleType;
   pending: boolean;
 }) {
   const [otp, setOtp] = useState("");
@@ -785,7 +812,7 @@ function ActiveJobCard({
   const next = job.status === "accepted" ? "in_progress" : "completed";
   const label = next === "in_progress" ? "Verify Pickup OTP" : "Verify Drop OTP";
   const contact = extractContact(job.notes, next === "in_progress" ? "Sender" : "Receiver");
-  const commission = Math.round(Number(job.fare) * 0.1);
+  const commission = Math.round(Number(job.fare) * (Number(job.commission_rate) || 0.1));
   const net = Number(job.fare) - commission;
   const isCash = job.payment_method === "cod";
   // Navigate to the exact pin the customer dropped whenever we have it.
@@ -814,22 +841,7 @@ function ActiveJobCard({
           : `Payment Mode: Online — ₹${net.toFixed(0)} will be added to your wallet`}
       </div>
 
-      {job.status === "accepted" && job.loading_started_at && (
-        <LoadingTimerCard
-          vehicleType={job.vehicle_type}
-          startedAt={job.loading_started_at}
-          stoppedAt={job.loading_stopped_at}
-          title="Loading time at pickup"
-        />
-      )}
-      {job.status === "in_progress" && job.unloading_started_at && (
-        <LoadingTimerCard
-          vehicleType={job.vehicle_type}
-          startedAt={job.unloading_started_at}
-          stoppedAt={job.unloading_stopped_at}
-          title="Unloading time at drop"
-        />
-      )}
+      <WaitingChargesCard booking={job} vehicle={vehicle} />
 
       <div className="mt-3 flex flex-wrap gap-2">
         <Button
@@ -853,36 +865,40 @@ function ActiveJobCard({
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onTimer({ loading_started_at: new Date().toISOString() })}
+            disabled={stageBusy}
+            onClick={() => onStage("start_loading")}
           >
-            <Timer className="h-3.5 w-3.5" /> Arrived — start loading timer
+            <Timer className="h-3.5 w-3.5" /> Arrived — start loading
           </Button>
         )}
         {job.status === "accepted" && job.loading_started_at && !job.loading_stopped_at && (
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onTimer({ loading_stopped_at: new Date().toISOString() })}
+            disabled={stageBusy}
+            onClick={() => onStage("stop_loading")}
           >
-            <Timer className="h-3.5 w-3.5" /> Stop loading timer
+            <Timer className="h-3.5 w-3.5" /> Stop loading
           </Button>
         )}
         {job.status === "in_progress" && !job.unloading_started_at && (
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onTimer({ unloading_started_at: new Date().toISOString() })}
+            disabled={stageBusy}
+            onClick={() => onStage("start_unloading")}
           >
-            <Timer className="h-3.5 w-3.5" /> Reached drop — start unloading timer
+            <Timer className="h-3.5 w-3.5" /> Reached drop — start unloading
           </Button>
         )}
         {job.status === "in_progress" && job.unloading_started_at && !job.unloading_stopped_at && (
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onTimer({ unloading_stopped_at: new Date().toISOString() })}
+            disabled={stageBusy}
+            onClick={() => onStage("stop_unloading")}
           >
-            <Timer className="h-3.5 w-3.5" /> Stop unloading timer
+            <Timer className="h-3.5 w-3.5" /> Stop unloading
           </Button>
         )}
       </div>

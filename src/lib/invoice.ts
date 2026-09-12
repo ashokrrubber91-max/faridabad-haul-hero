@@ -9,6 +9,10 @@ export type InvoiceBooking = {
   coupon_discount?: number | string | null;
   coins_redeemed?: number | string | null;
   payment_method?: string | null;
+  overtime_charge?: number | string | null;
+  loading_overtime_minutes?: number | string | null;
+  unloading_overtime_minutes?: number | string | null;
+  final_fare?: number | string | null;
 };
 
 export type InvoiceParty = {
@@ -33,16 +37,24 @@ export function buildInvoiceHtml(
   party: InvoiceParty,
   vehicleName: string,
 ): string {
-  const total = Number(b.fare) || 0;
+  const total = Number(b.final_fare) || Number(b.fare) || 0;
   const taxable = +(total / (1 + GST_RATE)).toFixed(2);
   const gst = +(total - taxable).toFixed(2);
   const half = +(gst / 2).toFixed(2);
   const discount = (Number(b.coupon_discount) || 0) + (Number(b.coins_redeemed) || 0);
+  const overtime = Number(b.overtime_charge) || 0;
+  const overtimeMins =
+    (Number(b.loading_overtime_minutes) || 0) + (Number(b.unloading_overtime_minutes) || 0);
   const rows: Array<[string, string]> = [
     ["Taxable value", `\u20b9 ${taxable.toFixed(2)}`],
     ["CGST @ 2.5%", `\u20b9 ${half.toFixed(2)}`],
     ["SGST @ 2.5%", `\u20b9 ${half.toFixed(2)}`],
   ];
+  if (overtime > 0)
+    rows.unshift([
+      `Waiting charge (${overtimeMins} min beyond free loading/unloading time)`,
+      `\u20b9 ${overtime.toFixed(2)}`,
+    ]);
   if (discount > 0) rows.unshift(["Discounts applied", `\u2212 \u20b9 ${discount.toFixed(2)}`]);
 
   return `<!doctype html>

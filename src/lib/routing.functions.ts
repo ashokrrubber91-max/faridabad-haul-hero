@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { estimateFare, VEHICLES, type VehicleId } from "@/lib/booking";
 
 const point = z.object({
   lat: z.number().min(-90).max(90),
@@ -15,7 +14,11 @@ const place = point.extend({
   contactPhone: z.string().trim().max(20).nullish(),
 });
 
-const vehicleIds = VEHICLES.map((v) => v.id) as [VehicleId, ...VehicleId[]];
+/** Vehicles are configured in the database, so the id is validated by shape. */
+const vehicleId = z
+  .string()
+  .trim()
+  .regex(/^[a-z0-9_]{2,40}$/);
 
 /**
  * Authoritative road route for a set of waypoints. Used for the customer quote
@@ -43,7 +46,7 @@ export const createBooking = createServerFn({ method: "POST" })
         pickup: place,
         drop: place,
         stops: z.array(place).max(3).default([]),
-        vehicle: z.enum(vehicleIds),
+        vehicle: vehicleId,
         couponCode: z.string().trim().max(40).nullable().default(null),
         coins: z.number().int().min(0).max(100000).default(0),
         paymentMethod: z.enum(["cod", "upi", "card", "netbanking", "wallet"]),
@@ -59,6 +62,17 @@ export const createBooking = createServerFn({ method: "POST" })
       { lat: data.drop.lat, lng: data.drop.lng },
     ]);
 
+    // The vehicle's live rates come from the admin-managed catalogue. The
+    // database trigger recomputes the fare from the same row, so this value can
+    // never be used to underpay or overcharge.
+    const { data: vt, error: vtError } = await context.supabase
+      .from("vehicle_types")
+      .select("base_fare, per_km_fare, active")
+      .eq("id", data.vehicle)
+      .maybeSingle();
+    if (vtError) throw new Error(vtError.message);
+    if (!vt || !vt.active) throw new Error("That vehicle is not available for booking right now.");
+
     const { data: booking, error } = await context.supabase
       .from("bookings")
       .insert({
@@ -72,7 +86,7 @@ export const createBooking = createServerFn({ method: "POST" })
         service_zone: "Faridabad",
         vehicle_type: data.vehicle,
         distance_km: route.distanceKm,
-        fare: estimateFare(data.vehicle, route.distanceKm),
+        fare: Math.round(Number(vt.base_fare) + Number(vt.per_km_fare) * route.distanceKm),
         coupon_code: data.couponCode,
         coins_redeemed: data.coins,
         payment_method: data.paymentMethod,
