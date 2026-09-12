@@ -765,12 +765,18 @@ function playRideAlert() {
 function ActiveJobCard({
   job,
   onVerify,
-  onTimer,
+  onStage,
+  stageBusy,
+  vehicle,
   pending,
 }: {
   job: AnyRow;
   onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null) => void;
-  onTimer: (patch: Record<string, string>) => void;
+  onStage: (
+    action: "start_loading" | "stop_loading" | "start_unloading" | "stop_unloading",
+  ) => void;
+  stageBusy: boolean;
+  vehicle?: VehicleType;
   pending: boolean;
 }) {
   const [otp, setOtp] = useState("");
