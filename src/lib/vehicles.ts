@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { registerVehicleLabels } from "@/lib/booking";
 
 /**
  * The vehicle catalogue lives in the database so the team can add, price and
@@ -50,7 +51,9 @@ export async function fetchVehicleTypes(includeInactive = false): Promise<Vehicl
   if (!includeInactive) q = q.eq("active", true);
   const { data, error } = await q;
   if (error) throw error;
-  return (data ?? []).map((r) => normalise(r as Record<string, unknown>));
+  const rows = (data ?? []).map((r) => normalise(r as Record<string, unknown>));
+  registerVehicleLabels(rows);
+  return rows;
 }
 
 /** Bookable vehicles (or the full catalogue for admin screens). */
