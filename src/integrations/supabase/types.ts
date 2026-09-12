@@ -1418,6 +1418,40 @@ export type Database = {
       }
       is_kyc_approved: { Args: { _user_id: string }; Returns: boolean }
       is_trusted_booking_write: { Args: never; Returns: boolean }
+      review_driver_kyc: {
+        Args: {
+          _decision: Database["public"]["Enums"]["kyc_status"]
+          _driver_id: string
+          _reason?: string
+        }
+        Returns: {
+          city: string
+          dl_back_url: string | null
+          dl_front_url: string | null
+          driver_id: string
+          full_name: string
+          id_proof_url: string | null
+          insurance_url: string | null
+          number_plate_url: string | null
+          puc_url: string | null
+          rc_url: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["kyc_status"]
+          submitted_at: string
+          updated_at: string
+          vehicle_id: string
+          vehicle_number: string | null
+          vehicle_photo_url: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "driver_kyc"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       settle_daily_incentives: {
         Args: { _day?: string }
         Returns: {
@@ -1429,6 +1463,49 @@ export type Database = {
       shares_booking_with: {
         Args: { _a: string; _b: string }
         Returns: boolean
+      }
+      submit_driver_kyc: {
+        Args: {
+          _city: string
+          _dl_back_url: string
+          _dl_front_url: string
+          _full_name: string
+          _id_proof_url: string
+          _insurance_url?: string
+          _number_plate_url?: string
+          _puc_url?: string
+          _rc_url: string
+          _vehicle_id: string
+          _vehicle_number?: string
+          _vehicle_photo_url: string
+        }
+        Returns: {
+          city: string
+          dl_back_url: string | null
+          dl_front_url: string | null
+          driver_id: string
+          full_name: string
+          id_proof_url: string | null
+          insurance_url: string | null
+          number_plate_url: string | null
+          puc_url: string | null
+          rc_url: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["kyc_status"]
+          submitted_at: string
+          updated_at: string
+          vehicle_id: string
+          vehicle_number: string | null
+          vehicle_photo_url: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "driver_kyc"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       validate_coupon:
         | {
