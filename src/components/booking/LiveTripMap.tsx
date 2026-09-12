@@ -134,17 +134,23 @@ export function LiveTripMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [driverId]);
 
-  const driverPos = useMemo<LatLng | null>(() => {
+  /** Last real GPS report, with its age. Nothing here is interpolated. */
+  const lastFix = useMemo<{ pos: LatLng; ageMs: number } | null>(() => {
     const row = location.data;
     if (!row) return null;
     const lat = Number(row.latitude);
     const lng = Number(row.longitude);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
     if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
-    const age = Date.now() - new Date(row.updated_at).getTime();
-    if (!Number.isFinite(age) || age > FRESH_MS) return null;
-    return { lat, lng };
+    const ageMs = Date.now() - new Date(row.updated_at).getTime();
+    if (!Number.isFinite(ageMs)) return null;
+    return { pos: { lat, lng }, ageMs: Math.max(0, ageMs) };
   }, [location.data]);
+
+  // Only a fresh fix counts as live tracking; a stale one is reported as stale
+  // rather than drawn as if the driver were still there.
+  const driverPos = lastFix && lastFix.ageMs <= FRESH_MS ? lastFix.pos : null;
+  const staleMinutes = lastFix && lastFix.ageMs > FRESH_MS ? Math.round(lastFix.ageMs / 60000) : null;
 
   const target = phase === "accepted" ? pickup : drop;
   const origin = driverPos ?? pickup;
