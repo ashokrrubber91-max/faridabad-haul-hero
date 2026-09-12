@@ -2,7 +2,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, MapPin, Search, Home, Store, Bookmark, X } from "lucide-react";
+import {
+  Loader2,
+  MapPin,
+  Search,
+  Home,
+  Store,
+  Bookmark,
+  X,
+  Clock,
+  LocateFixed,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { loadGoogleMaps, FARIDABAD_CENTER } from "@/lib/google-maps";
@@ -34,6 +44,9 @@ export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Prop
   const tokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   const placesLibRef = useRef<google.maps.PlacesLibrary | null>(null);
 
+  const [locating, setLocating] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+
   const saved = useQuery({
     queryKey: ["saved-addresses", user?.id],
     enabled: !!user && open,
@@ -46,6 +59,94 @@ export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Prop
       return data ?? [];
     },
   });
+
+  /**
+   * Recent locations come from the customer's own past bookings (own rows only,
+   * so RLS already scopes this). Only entries that stored an exact pin are
+   * offered, because a booking needs real coordinates.
+   */
+  const recent = useQuery({
+    queryKey: ["recent-locations", user?.id, mode],
+    enabled: !!user && open,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("pickup_address, pickup_lat, pickup_lng, drop_address, drop_lat, drop_lng")
+        .order("created_at", { ascending: false })
+        .limit(25);
+      if (error) throw error;
+      const out: PlacePick[] = [];
+      const seen = new Set<string>();
+      for (const b of data ?? []) {
+        const candidates =
+          mode === "pickup"
+            ? [
+                { address: b.pickup_address, lat: b.pickup_lat, lng: b.pickup_lng },
+                { address: b.drop_address, lat: b.drop_lat, lng: b.drop_lng },
+              ]
+            : [
+                { address: b.drop_address, lat: b.drop_lat, lng: b.drop_lng },
+                { address: b.pickup_address, lat: b.pickup_lat, lng: b.pickup_lng },
+              ];
+        for (const c of candidates) {
+          if (typeof c.lat !== "number" || typeof c.lng !== "number") continue;
+          const key = c.address.trim().toLowerCase();
+          if (!key || seen.has(key)) continue;
+          seen.add(key);
+          out.push({ address: c.address, lat: c.lat, lng: c.lng });
+        }
+      }
+      return out.slice(0, 6);
+    },
+  });
+
+  /** Real device GPS + Google reverse geocoding. Never a guessed address. */
+  const pickCurrentLocation = async () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeoError("This device cannot share its location.");
+      return;
+    }
+    setLocating(true);
+    setGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const g = await loadGoogleMaps();
+          const geocoder = new g.maps.Geocoder();
+          const res = await geocoder.geocode({
+            location: { lat: latitude, lng: longitude },
+          });
+          const address = res.results[0]?.formatted_address;
+          onPick({
+            address: address ?? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+            lat: latitude,
+            lng: longitude,
+          });
+        } catch {
+          // Coordinates are real even when the address lookup fails; the pin
+          // confirm step lets the customer adjust and label it.
+          onPick({
+            address: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+            lat: latitude,
+            lng: longitude,
+          });
+        } finally {
+          setLocating(false);
+        }
+      },
+      (err) => {
+        setLocating(false);
+        setGeoError(
+          err.code === err.PERMISSION_DENIED
+            ? "Location permission is off. Allow location or search the address instead."
+            : "Could not get your location. Please search the address instead.",
+        );
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
+    );
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -143,22 +244,62 @@ export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Prop
 
           <div className="flex-1 overflow-y-auto">
             {query.trim().length === 0 ? (
-              <SavedList
-                addresses={saved.data ?? []}
-                loading={saved.isLoading}
-                onPick={(a) =>
-                  onPick({
-                    address: a.address,
-                    lat: a.latitude ?? FARIDABAD_CENTER.lat,
-                    lng: a.longitude ?? FARIDABAD_CENTER.lng,
-                    placeId: a.place_id ?? undefined,
-                    alias: a.alias ?? undefined,
-                    contactName: a.contact_name ?? undefined,
-                    contactPhone: a.contact_phone ?? undefined,
-                    kind: a.kind,
-                  })
-                }
-              />
+              <>
+                <div className="border-b p-3">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => void pickCurrentLocation()}
+                    disabled={locating}
+                  >
+                    {locating ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    ) : (
+                      <LocateFixed className="h-4 w-4 text-primary" />
+                    )}
+                    {locating ? "Getting your location…" : "Use my current location"}
+                  </Button>
+                  {geoError && <p className="mt-2 text-xs text-destructive">{geoError}</p>}
+                </div>
+
+                {(recent.data ?? []).length > 0 && (
+                  <div className="border-b p-3">
+                    <p className="px-1 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Recent locations
+                    </p>
+                    <ul className="space-y-1">
+                      {(recent.data ?? []).map((r) => (
+                        <li key={`${r.address}-${r.lat}`}>
+                          <button
+                            onClick={() => onPick(r)}
+                            className="flex w-full items-start gap-3 rounded-md px-3 py-3 text-left hover:bg-muted"
+                          >
+                            <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                            <p className="truncate text-sm text-secondary">{r.address}</p>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <SavedList
+                  addresses={saved.data ?? []}
+                  loading={saved.isLoading}
+                  onPick={(a) =>
+                    onPick({
+                      address: a.address,
+                      lat: a.latitude ?? FARIDABAD_CENTER.lat,
+                      lng: a.longitude ?? FARIDABAD_CENTER.lng,
+                      placeId: a.place_id ?? undefined,
+                      alias: a.alias ?? undefined,
+                      contactName: a.contact_name ?? undefined,
+                      contactPhone: a.contact_phone ?? undefined,
+                      kind: a.kind,
+                    })
+                  }
+                />
+              </>
             ) : (
               <ul className="divide-y">
                 {suggestions.map((s, i) => {

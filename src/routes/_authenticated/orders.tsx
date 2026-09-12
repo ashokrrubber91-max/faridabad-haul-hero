@@ -2,9 +2,19 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowRight, Download, Loader2, Package, RotateCcw, Star, Truck } from "lucide-react";
+import {
+  ArrowRight,
+  Download,
+  Loader2,
+  Package,
+  RotateCcw,
+  Search,
+  Star,
+  Truck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -48,6 +58,7 @@ function OrdersPage() {
   const { user, profile } = useAuth();
   const qc = useQueryClient();
   const [filter, setFilter] = useState<Filter>("active");
+  const [search, setSearch] = useState("");
   const [shown, setShown] = useState(10);
   const [rateTarget, setRateTarget] = useState<{ id: string; addr: string } | null>(null);
   const [detail, setDetail] = useState<string | null>(null);
@@ -139,13 +150,22 @@ function OrdersPage() {
   });
 
   const all = orders.data ?? [];
-  const list = all.filter((o) =>
-    filter === "active"
-      ? ["pending", "accepted", "in_progress"].includes(o.status)
-      : filter === "completed"
-        ? o.status === "completed"
-        : o.status === "cancelled" || o.status === "expired",
-  );
+  const term = search.trim().toLowerCase();
+  const list = all
+    .filter((o) =>
+      filter === "active"
+        ? ["pending", "accepted", "in_progress"].includes(o.status)
+        : filter === "completed"
+          ? o.status === "completed"
+          : o.status === "cancelled" || o.status === "expired",
+    )
+    .filter((o) =>
+      term
+        ? o.pickup_address.toLowerCase().includes(term) ||
+          o.drop_address.toLowerCase().includes(term) ||
+          o.id.slice(0, 8).toLowerCase().includes(term)
+        : true,
+    );
 
   const downloadInvoice = (b: (typeof all)[number]) => {
     const ok = openInvoice(
@@ -179,6 +199,30 @@ function OrdersPage() {
         </TabsList>
       </Tabs>
 
+      <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
+        <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setShown(10);
+          }}
+          placeholder="Search by pickup, drop or ride number"
+          aria-label="Search your rides"
+          className="h-7 border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            aria-label="Clear search"
+            className="text-xs font-medium text-primary"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
       {orders.isLoading ? (
         <div className="flex justify-center py-10">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -196,7 +240,9 @@ function OrdersPage() {
       ) : list.length === 0 ? (
         <div className="surface-card p-8 text-center text-sm text-muted-foreground">
           <Package className="mx-auto mb-2 h-5 w-5" />
-          No {filter} rides yet.
+          {search.trim()
+            ? `No ${filter} rides match “${search.trim()}”.`
+            : `No ${filter} rides yet.`}
         </div>
       ) : (
         <div className="space-y-3">
