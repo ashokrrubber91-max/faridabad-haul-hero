@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { estimateFare, VEHICLES, type VehicleId } from "@/lib/booking";
 
 const point = z.object({
   lat: z.number().min(-90).max(90),
@@ -15,7 +14,11 @@ const place = point.extend({
   contactPhone: z.string().trim().max(20).nullish(),
 });
 
-const vehicleIds = VEHICLES.map((v) => v.id) as [VehicleId, ...VehicleId[]];
+/** Vehicles are configured in the database, so the id is validated by shape. */
+const vehicleId = z
+  .string()
+  .trim()
+  .regex(/^[a-z0-9_]{2,40}$/);
 
 /**
  * Authoritative road route for a set of waypoints. Used for the customer quote
