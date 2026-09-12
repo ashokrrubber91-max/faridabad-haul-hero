@@ -25,7 +25,7 @@ export const reviewDriverKyc = createServerFn({ method: "POST" })
     const { error } = await context.supabase.rpc("review_driver_kyc", {
       _driver_id: data.driverId,
       _decision: data.decision,
-      _reason: data.reason?.trim() ?? null,
+      _reason: data.reason?.trim() || undefined,
     });
     if (error) throw new Error(error.message);
 
