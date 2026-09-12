@@ -161,9 +161,31 @@ function CustomerPage() {
       if (distanceKm <= 0) throw new Error("Road distance is still being calculated");
       const booking = await createBooking({
         data: {
-          pickup: { address: pickup.address, lat: pickup.lat, lng: pickup.lng },
-          drop: { address: drop.address, lat: drop.lat, lng: drop.lng },
-          stops: stops.map((s) => ({ address: s.address, lat: s.lat, lng: s.lng })),
+          pickup: {
+            address: pickup.address,
+            lat: pickup.lat,
+            lng: pickup.lng,
+            placeId: pickup.placeId ?? null,
+            contactName: pickup.contactName ?? null,
+            contactPhone: pickup.contactPhone ?? null,
+          },
+          drop: {
+            address: drop.address,
+            lat: drop.lat,
+            lng: drop.lng,
+            placeId: drop.placeId ?? null,
+            contactName: drop.contactName ?? null,
+            contactPhone: drop.contactPhone ?? null,
+          },
+          stops: stops.map((s) => ({
+            address: s.address,
+            lat: s.lat,
+            lng: s.lng,
+            placeId: s.placeId ?? null,
+            contactName: s.contactName ?? null,
+            contactPhone: s.contactPhone ?? null,
+          })),
+
           vehicle,
           couponCode: promo?.code ?? null,
           coins,
