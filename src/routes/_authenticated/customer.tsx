@@ -213,9 +213,7 @@ function CustomerPage() {
           await supabase.rpc("cancel_booking", {
             _booking_id: booking.id,
             _reason:
-              paymentError instanceof Error
-                ? paymentError.message.slice(0, 180)
-                : "Payment failed",
+              paymentError instanceof Error ? paymentError.message.slice(0, 180) : "Payment failed",
           });
           throw paymentError;
         }
