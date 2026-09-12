@@ -66,6 +66,13 @@ export function KycReviewTab() {
         <div className="flex justify-center py-10">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
+      ) : kyc.isError ? (
+        <div className="surface-card p-6 text-center text-sm">
+          <p className="text-muted-foreground">Could not load driver submissions.</p>
+          <Button size="sm" variant="outline" className="mt-3" onClick={() => kyc.refetch()}>
+            Retry
+          </Button>
+        </div>
       ) : rows.length === 0 ? (
         <p className="surface-card p-6 text-center text-sm text-muted-foreground">
           No submissions here.

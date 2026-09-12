@@ -122,32 +122,59 @@ function DriverPage() {
 
   useEffect(() => {
     if (!user) return;
+    // Scoped listeners only: new open requests, requests that just got taken,
+    // and this driver's own trips. Unrelated bookings no longer refetch anything.
     const ch = supabase
-      .channel("driver-bookings")
-      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, (payload) => {
-        qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
-        qc.invalidateQueries({ queryKey: ["driver-wallet", user.id] });
-        const next = payload.new as {
-          status?: string;
-          driver_id?: string | null;
-          service_zone?: string;
-        };
-        const eligibleForAlert =
-          profile?.is_online === true &&
-          profile.kyc_status === "approved" &&
-          profile.service_zone === (next.service_zone ?? "Faridabad");
-        if (
-          payload.eventType === "INSERT" &&
-          next.status === "pending" &&
-          !next.driver_id &&
-          eligibleForAlert
-        ) {
-          toast.info("New ride request", {
-            description: `${next.service_zone ?? "Faridabad"} zone · open Live requests`,
-          });
-          playRideAlert();
-        }
-      })
+      .channel(`driver-bookings-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "bookings",
+          filter: "status=eq.pending",
+        },
+        (payload) => {
+          qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
+          const next = payload.new as { driver_id?: string | null; service_zone?: string };
+          const eligibleForAlert =
+            profile?.is_online === true &&
+            profile.kyc_status === "approved" &&
+            profile.service_zone === (next.service_zone ?? "Faridabad");
+          if (!next.driver_id && eligibleForAlert) {
+            toast.info("New ride request", {
+              description: `${next.service_zone ?? "Faridabad"} zone · open Live requests`,
+            });
+            playRideAlert();
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "bookings",
+          filter: "status=eq.accepted",
+        },
+        () => {
+          // A request another driver just took must leave this feed immediately.
+          qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "bookings",
+          filter: `driver_id=eq.${user.id}`,
+        },
+        () => {
+          qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
+          qc.invalidateQueries({ queryKey: ["driver-wallet", user.id] });
+        },
+      )
       .subscribe((status) => {
         if (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           refreshFeed();

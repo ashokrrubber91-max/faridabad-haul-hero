@@ -98,7 +98,9 @@ export function LiveTripMap({
   const location = useQuery({
     queryKey: ["driver-location", driverId, bookingId],
     enabled: !!driverId,
-    refetchInterval: 10_000,
+    // Live updates arrive over the realtime channel below; this slower poll is
+    // only a safety net for a dropped socket, so it must not duplicate it.
+    refetchInterval: 25_000,
     refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -132,17 +134,24 @@ export function LiveTripMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [driverId]);
 
-  const driverPos = useMemo<LatLng | null>(() => {
+  /** Last real GPS report, with its age. Nothing here is interpolated. */
+  const lastFix = useMemo<{ pos: LatLng; ageMs: number } | null>(() => {
     const row = location.data;
     if (!row) return null;
     const lat = Number(row.latitude);
     const lng = Number(row.longitude);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
     if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
-    const age = Date.now() - new Date(row.updated_at).getTime();
-    if (!Number.isFinite(age) || age > FRESH_MS) return null;
-    return { lat, lng };
+    const ageMs = Date.now() - new Date(row.updated_at).getTime();
+    if (!Number.isFinite(ageMs)) return null;
+    return { pos: { lat, lng }, ageMs: Math.max(0, ageMs) };
   }, [location.data]);
+
+  // Only a fresh fix counts as live tracking; a stale one is reported as stale
+  // rather than drawn as if the driver were still there.
+  const driverPos = lastFix && lastFix.ageMs <= FRESH_MS ? lastFix.pos : null;
+  const staleMinutes =
+    lastFix && lastFix.ageMs > FRESH_MS ? Math.round(lastFix.ageMs / 60000) : null;
 
   const target = phase === "accepted" ? pickup : drop;
   const origin = driverPos ?? pickup;
@@ -269,9 +278,11 @@ export function LiveTripMap({
       : routeFailed
         ? "Live location received · road distance unavailable right now"
         : "Calculating road route…"
-    : phase === "accepted"
-      ? "Waiting for the driver's live location…"
-      : `Trip in progress · ${Math.max(0.5, distanceKm).toFixed(1)} km booked route`;
+    : staleMinutes !== null
+      ? `Driver's location last updated ${staleMinutes < 1 ? "just under a minute" : `${staleMinutes} min`} ago · waiting for a fresh GPS update`
+      : phase === "accepted"
+        ? "Waiting for the driver's live location…"
+        : `Trip in progress · ${Math.max(0.5, distanceKm).toFixed(1)} km booked route`;
 
   return (
     <div className="mt-3 overflow-hidden rounded-md border border-primary/30">
@@ -300,7 +311,9 @@ export function LiveTripMap({
           ? "Road route could not be loaded, so no route line is shown. Pickup and drop pins are exact."
           : driverPos
             ? "Live driver location and road route · updates automatically"
-            : "Driver location appears once their app shares GPS (location permission needed)."}
+            : staleMinutes !== null
+              ? "The last position shown was too old to be trusted, so the driver pin is hidden until a new GPS update arrives."
+              : "Driver location appears once their app shares GPS (location permission needed)."}
       </p>
     </div>
   );
