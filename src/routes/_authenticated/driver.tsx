@@ -69,16 +69,21 @@ function DriverPage() {
       // a request the backend would refuse to assign. Runs server-side: the
       // cleanup function is not directly executable by signed-in users.
       await sweepStale({ data: undefined }).catch(() => undefined);
-      const { data, error } = await supabase
-        .from("bookings")
-        .select(BOOKING_FIELDS)
-        .or(
-          `and(status.eq.pending,driver_id.is.null,cancelled_at.is.null),driver_id.eq.${user!.id}`,
-        )
-        .order("created_at", { ascending: false })
-        .limit(60);
+      const [{ data, error }, passed] = await Promise.all([
+        supabase
+          .from("bookings")
+          .select(BOOKING_FIELDS)
+          .or(
+            `and(status.eq.pending,driver_id.is.null,cancelled_at.is.null),driver_id.eq.${user!.id}`,
+          )
+          .order("created_at", { ascending: false })
+          .limit(60),
+        // Rides this driver already passed must not come back into the feed.
+        supabase.from("driver_booking_passes").select("booking_id").eq("driver_id", user!.id),
+      ]);
       if (error) throw error;
-      return data ?? [];
+      const skipped = new Set((passed.data ?? []).map((p) => p.booking_id));
+      return (data ?? []).filter((b) => b.driver_id === user!.id || !skipped.has(b.id));
     },
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
@@ -529,7 +534,7 @@ function DriverPage() {
         ) : (
           <div className="grid gap-3">
             {mine.map((b) => {
-              const meta = STATUS_META[b.status];
+              const meta = STATUS_META[b.status] ?? STATUS_META.pending;
               const commission = Number(b.commission_amount || Math.round(Number(b.fare) * 0.1));
               const net = Number(b.driver_net_earning || Number(b.fare) - commission);
               return (

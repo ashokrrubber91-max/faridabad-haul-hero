@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.bookings_record_coupon_redemption() FROM PUBLIC, anon, authenticated;
