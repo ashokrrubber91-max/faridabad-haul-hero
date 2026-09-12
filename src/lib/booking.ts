@@ -28,7 +28,6 @@ export const STATUS_META: Record<
   expired: { label: "Expired — no driver", tone: "muted" },
 };
 
-
 export type LatLng = { lat: number; lng: number };
 
 export function haversineKm(a: LatLng, b: LatLng): number {

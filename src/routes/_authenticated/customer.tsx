@@ -287,7 +287,6 @@ function CustomerPage() {
         .eq("id", id);
       if (error) throw error;
       return fee;
-
     },
     onSuccess: (fee) => {
       toast.success(

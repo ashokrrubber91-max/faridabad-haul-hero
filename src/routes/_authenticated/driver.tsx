@@ -90,7 +90,6 @@ function DriverPage() {
     refetchInterval: 30000,
   });
 
-
   const wallet = useQuery({
     queryKey: ["driver-wallet", user?.id],
     enabled: !!user,
