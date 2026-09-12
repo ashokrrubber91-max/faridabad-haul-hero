@@ -42,7 +42,8 @@ function DriverRidesPage() {
         .select(BOOKING_FIELDS)
         .eq("driver_id", user!.id)
         .order("created_at", { ascending: false })
-        .limit(500);
+        // Recent rides only; the page loads a smaller batch and reveals more on demand.
+        .limit(150);
       if (error) throw error;
       return data ?? [];
     },
@@ -51,6 +52,7 @@ function DriverRidesPage() {
   const list = rides.data ?? [];
   const completed = list.filter((b) => b.status === "completed");
   const totalNet = completed.reduce((s, b) => s + Number(b.driver_net_earning || 0), 0);
+  const visible = list.slice(0, shown);
 
   return (
     <div className="space-y-5">
@@ -65,6 +67,16 @@ function DriverRidesPage() {
         <div className="flex justify-center py-10">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
+      ) : rides.isError ? (
+        <div className="surface-card p-8 text-center text-sm">
+          <Package className="mx-auto mb-2 h-5 w-5 text-destructive" />
+          <p className="text-muted-foreground">
+            We couldn&apos;t load your rides. Check your connection and try again.
+          </p>
+          <Button size="sm" variant="outline" className="mt-3" onClick={() => rides.refetch()}>
+            Retry
+          </Button>
+        </div>
       ) : list.length === 0 ? (
         <div className="surface-card p-8 text-center text-sm text-muted-foreground">
           <Package className="mx-auto mb-2 h-5 w-5" />
@@ -72,9 +84,14 @@ function DriverRidesPage() {
         </div>
       ) : (
         <div className="grid gap-3">
-          {list.map((b) => (
+          {visible.map((b) => (
             <RideCard key={b.id} ride={b} />
           ))}
+          {list.length > visible.length && (
+            <Button variant="outline" onClick={() => setShown((n) => n + 20)}>
+              Show more rides
+            </Button>
+          )}
         </div>
       )}
     </div>
