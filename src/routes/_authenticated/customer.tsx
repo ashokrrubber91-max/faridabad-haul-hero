@@ -196,14 +196,10 @@ function CustomerPage() {
             description: `${pickup.address.slice(0, 40)} → ${drop.address.slice(0, 40)}`,
           });
           if (!result) {
-            await supabase
-              .from("bookings")
-              .update({
-                status: "cancelled",
-                cancelled_at: new Date().toISOString(),
-                cancellation_reason: "Payment not completed",
-              })
-              .eq("id", booking.id);
+            await supabase.rpc("cancel_booking", {
+              _booking_id: booking.id,
+              _reason: "Payment not completed",
+            });
             throw new Error("Payment cancelled — the trip was not booked");
           }
           await confirmTripPayment({
@@ -214,17 +210,11 @@ function CustomerPage() {
             },
           });
         } catch (paymentError) {
-          await supabase
-            .from("bookings")
-            .update({
-              status: "cancelled",
-              cancelled_at: new Date().toISOString(),
-              cancellation_reason:
-                paymentError instanceof Error
-                  ? paymentError.message.slice(0, 180)
-                  : "Payment failed",
-            })
-            .eq("id", booking.id);
+          await supabase.rpc("cancel_booking", {
+            _booking_id: booking.id,
+            _reason:
+              paymentError instanceof Error ? paymentError.message.slice(0, 180) : "Payment failed",
+          });
           throw paymentError;
         }
       }
@@ -264,7 +254,6 @@ function CustomerPage() {
     mutationFn: async ({
       id,
       reason,
-      existingNotes,
       fee,
     }: {
       id: string;
@@ -275,16 +264,12 @@ function CustomerPage() {
       const noteLine =
         `Cancelled by customer: ${reason}` +
         (fee > 0 ? ` · Cancellation charge ₹${fee}` : " · No charge");
-      const nextNotes = existingNotes ? `${existingNotes} · ${noteLine}` : noteLine;
-      const { error } = await supabase
-        .from("bookings")
-        .update({
-          status: "cancelled",
-          cancelled_at: new Date().toISOString(),
-          cancellation_reason: reason.slice(0, 300),
-          notes: nextNotes,
-        })
-        .eq("id", id);
+      // Cancellation is applied by a server routine that checks who may cancel and when.
+      const { error } = await supabase.rpc("cancel_booking", {
+        _booking_id: id,
+        _reason: reason.slice(0, 300),
+        _note: noteLine,
+      });
       if (error) throw error;
       return fee;
     },
