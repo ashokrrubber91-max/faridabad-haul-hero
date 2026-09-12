@@ -234,12 +234,14 @@ function DriverPage() {
         });
         if (podError) throw podError;
       }
-      const { error } = await supabase.rpc("verify_booking_otp", {
+      const { data, error } = await supabase.rpc("verify_booking_otp", {
         _booking_id: id,
         _stage: next === "in_progress" ? "pickup" : "drop",
         _otp: code,
       });
       if (error) throw error;
+      const result = (data ?? {}) as { ok?: boolean; message?: string };
+      if (!result.ok) throw new Error(result.message || "Could not verify this code");
     },
     onSuccess: (_d, v) => {
       toast.success(
