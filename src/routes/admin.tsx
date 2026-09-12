@@ -326,7 +326,7 @@ function AdminPage() {
         <Loader2 className="h-5 w-5 animate-spin text-primary" />
       </Center>
     );
-  // Passcode-gated in AdminGate above; no role redirect here.
+  // Role-gated in AdminGate above (and again by the database on every action).
   void role;
 
   const all = bookings.data ?? [];
