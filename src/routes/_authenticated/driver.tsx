@@ -837,22 +837,7 @@ function ActiveJobCard({
           : `Payment Mode: Online — ₹${net.toFixed(0)} will be added to your wallet`}
       </div>
 
-      {job.status === "accepted" && job.loading_started_at && (
-        <LoadingTimerCard
-          vehicleType={job.vehicle_type}
-          startedAt={job.loading_started_at}
-          stoppedAt={job.loading_stopped_at}
-          title="Loading time at pickup"
-        />
-      )}
-      {job.status === "in_progress" && job.unloading_started_at && (
-        <LoadingTimerCard
-          vehicleType={job.vehicle_type}
-          startedAt={job.unloading_started_at}
-          stoppedAt={job.unloading_stopped_at}
-          title="Unloading time at drop"
-        />
-      )}
+      <WaitingChargesCard booking={job} vehicle={vehicle} />
 
       <div className="mt-3 flex flex-wrap gap-2">
         <Button
@@ -876,36 +861,40 @@ function ActiveJobCard({
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onTimer({ loading_started_at: new Date().toISOString() })}
+            disabled={stageBusy}
+            onClick={() => onStage("start_loading")}
           >
-            <Timer className="h-3.5 w-3.5" /> Arrived — start loading timer
+            <Timer className="h-3.5 w-3.5" /> Arrived — start loading
           </Button>
         )}
         {job.status === "accepted" && job.loading_started_at && !job.loading_stopped_at && (
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onTimer({ loading_stopped_at: new Date().toISOString() })}
+            disabled={stageBusy}
+            onClick={() => onStage("stop_loading")}
           >
-            <Timer className="h-3.5 w-3.5" /> Stop loading timer
+            <Timer className="h-3.5 w-3.5" /> Stop loading
           </Button>
         )}
         {job.status === "in_progress" && !job.unloading_started_at && (
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onTimer({ unloading_started_at: new Date().toISOString() })}
+            disabled={stageBusy}
+            onClick={() => onStage("start_unloading")}
           >
-            <Timer className="h-3.5 w-3.5" /> Reached drop — start unloading timer
+            <Timer className="h-3.5 w-3.5" /> Reached drop — start unloading
           </Button>
         )}
         {job.status === "in_progress" && job.unloading_started_at && !job.unloading_stopped_at && (
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onTimer({ unloading_stopped_at: new Date().toISOString() })}
+            disabled={stageBusy}
+            onClick={() => onStage("stop_unloading")}
           >
-            <Timer className="h-3.5 w-3.5" /> Stop unloading timer
+            <Timer className="h-3.5 w-3.5" /> Stop unloading
           </Button>
         )}
       </div>
