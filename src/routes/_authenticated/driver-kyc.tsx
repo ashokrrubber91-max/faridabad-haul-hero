@@ -114,22 +114,18 @@ function DriverKycPage() {
         if (error) throw error;
         urls[key] = path;
       }
-      const { error: insertErr } = await supabase.from("driver_kyc" as never).upsert({
-        driver_id: user.id,
-        full_name: fullName.trim(),
-        city: city.trim() || "Faridabad",
-        vehicle_id: vehicleId,
-        dl_front_url: urls.dl_front,
-        dl_back_url: urls.dl_back,
-        rc_url: urls.rc,
-        id_proof_url: urls.id_proof,
-        vehicle_photo_url: urls.vehicle_photo,
-        status: "pending",
-        rejection_reason: null,
-        submitted_at: new Date().toISOString(),
-        reviewed_at: null,
-        reviewed_by: null,
-      } as never);
+      // Submission goes through a server-side routine: the review columns
+      // (status / reviewer / rejection reason) are not writable by drivers.
+      const { error: insertErr } = await supabase.rpc("submit_driver_kyc", {
+        _full_name: fullName.trim(),
+        _city: city.trim() || "Faridabad",
+        _vehicle_id: vehicleId,
+        _dl_front_url: urls.dl_front,
+        _dl_back_url: urls.dl_back,
+        _rc_url: urls.rc,
+        _id_proof_url: urls.id_proof,
+        _vehicle_photo_url: urls.vehicle_photo,
+      });
       if (insertErr) throw insertErr;
       toast.success("KYC submitted — admin will review within 24 hours");
       navigate({ to: "/driver" });
