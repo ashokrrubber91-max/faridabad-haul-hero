@@ -833,7 +833,8 @@ function ActiveJobCard({
           />
           <Button
             size="sm"
-            disabled={pending || otp.length !== 4}
+            // Proof of delivery is mandatory, so the photo must be added first.
+            disabled={pending || otp.length !== 4 || (next === "completed" && !podPath)}
             onClick={() => {
               onVerify(otp, next, podPath);
               setOtp("");
@@ -846,7 +847,7 @@ function ActiveJobCard({
         {next === "completed" && (
           <div className="mt-3 border-t border-primary/20 pt-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-              Proof of delivery
+              Proof of delivery {!podPath && <span className="text-destructive">· required</span>}
             </p>
             <label className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-secondary">
               <Camera className="h-4 w-4 text-primary" />
