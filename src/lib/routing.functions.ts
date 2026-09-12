@@ -15,7 +15,6 @@ const place = point.extend({
   contactPhone: z.string().trim().max(20).nullish(),
 });
 
-
 const vehicleIds = VEHICLES.map((v) => v.id) as [VehicleId, ...VehicleId[]];
 
 /**
@@ -112,4 +111,3 @@ export const createBooking = createServerFn({ method: "POST" })
       durationMin: route.durationMin,
     };
   });
-

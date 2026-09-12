@@ -131,7 +131,6 @@ export function TripDetailDialog({
           <p className="mt-1 text-muted-foreground">to {b.drop_address}</p>
         </div>
 
-
         <div className="divide-y divide-border">
           <Row label="Vehicle" value={vehicleLabel(b.vehicle_type as never)} />
           <Row label="Distance" value={`${Number(b.distance_km).toFixed(1)} km`} />
