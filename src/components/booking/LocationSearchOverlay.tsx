@@ -34,6 +34,8 @@ export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Prop
   const tokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   const placesLibRef = useRef<google.maps.PlacesLibrary | null>(null);
 
+  const [locating, setLocating] = useState(false);
+
   const saved = useQuery({
     queryKey: ["saved-addresses", user?.id],
     enabled: !!user && open,
@@ -46,6 +48,94 @@ export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Prop
       return data ?? [];
     },
   });
+
+  /**
+   * Recent locations come from the customer's own past bookings (own rows only,
+   * so RLS already scopes this). Only entries that stored an exact pin are
+   * offered, because a booking needs real coordinates.
+   */
+  const recent = useQuery({
+    queryKey: ["recent-locations", user?.id, mode],
+    enabled: !!user && open,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("pickup_address, pickup_lat, pickup_lng, drop_address, drop_lat, drop_lng")
+        .order("created_at", { ascending: false })
+        .limit(25);
+      if (error) throw error;
+      const out: PlacePick[] = [];
+      const seen = new Set<string>();
+      for (const b of data ?? []) {
+        const candidates =
+          mode === "pickup"
+            ? [
+                { address: b.pickup_address, lat: b.pickup_lat, lng: b.pickup_lng },
+                { address: b.drop_address, lat: b.drop_lat, lng: b.drop_lng },
+              ]
+            : [
+                { address: b.drop_address, lat: b.drop_lat, lng: b.drop_lng },
+                { address: b.pickup_address, lat: b.pickup_lat, lng: b.pickup_lng },
+              ];
+        for (const c of candidates) {
+          if (typeof c.lat !== "number" || typeof c.lng !== "number") continue;
+          const key = c.address.trim().toLowerCase();
+          if (!key || seen.has(key)) continue;
+          seen.add(key);
+          out.push({ address: c.address, lat: c.lat, lng: c.lng });
+        }
+      }
+      return out.slice(0, 6);
+    },
+  });
+
+  /** Real device GPS + Google reverse geocoding. Never a guessed address. */
+  const useCurrentLocation = async () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeoError("This device cannot share its location.");
+      return;
+    }
+    setLocating(true);
+    setGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const g = await loadGoogleMaps();
+          const geocoder = new g.maps.Geocoder();
+          const res = await geocoder.geocode({
+            location: { lat: latitude, lng: longitude },
+          });
+          const address = res.results[0]?.formatted_address;
+          onPick({
+            address: address ?? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+            lat: latitude,
+            lng: longitude,
+          });
+        } catch {
+          // Coordinates are real even when the address lookup fails; the pin
+          // confirm step lets the customer adjust and label it.
+          onPick({
+            address: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+            lat: latitude,
+            lng: longitude,
+          });
+        } finally {
+          setLocating(false);
+        }
+      },
+      (err) => {
+        setLocating(false);
+        setGeoError(
+          err.code === err.PERMISSION_DENIED
+            ? "Location permission is off. Allow location or search the address instead."
+            : "Could not get your location. Please search the address instead.",
+        );
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
+    );
+  };
 
   useEffect(() => {
     if (!open) return;
