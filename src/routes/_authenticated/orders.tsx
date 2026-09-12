@@ -189,6 +189,31 @@ function OrdersPage() {
         </TabsList>
       </Tabs>
 
+      <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
+        <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setShown(10);
+          }}
+          placeholder="Search by pickup, drop or ride number"
+          aria-label="Search your rides"
+          className="h-7 border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            aria-label="Clear search"
+            className="text-xs font-medium text-primary"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+
       {orders.isLoading ? (
         <div className="flex justify-center py-10">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
