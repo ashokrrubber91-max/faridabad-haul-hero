@@ -289,7 +289,8 @@ export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Prop
                     kind: a.kind,
                   })
                 }
-              />
+                />
+              </>
             ) : (
               <ul className="divide-y">
                 {suggestions.map((s, i) => {
