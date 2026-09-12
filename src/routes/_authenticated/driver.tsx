@@ -1,7 +1,7 @@
 import type { AnyRow } from "@/lib/rows";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -110,6 +110,11 @@ function DriverPage() {
     },
   });
 
+  const refreshFeed = useCallback(() => {
+    if (!user) return;
+    qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
+  }, [qc, user]);
+
   useEffect(() => {
     if (!user) return;
     const ch = supabase
@@ -140,11 +145,15 @@ function DriverPage() {
       })
       .subscribe((status) => {
         if (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          void queue.refetch();
+          refreshFeed();
         }
       });
 
-    const recover = () => void queue.refetch();
+    // Reconnect handling: refresh the queue when the phone comes back online or
+    // the app returns to the foreground. Nothing is fetched while hidden.
+    const recover = () => {
+      if (document.visibilityState === "visible") refreshFeed();
+    };
     window.addEventListener("online", recover);
     document.addEventListener("visibilitychange", recover);
     return () => {
@@ -152,7 +161,7 @@ function DriverPage() {
       document.removeEventListener("visibilitychange", recover);
       supabase.removeChannel(ch);
     };
-  }, [user, profile, qc]);
+  }, [user, profile, qc, refreshFeed]);
 
   const accept = useMutation({
     mutationFn: async (id: string) => {
