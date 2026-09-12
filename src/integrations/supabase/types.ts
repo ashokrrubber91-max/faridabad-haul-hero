@@ -79,6 +79,56 @@ export type Database = {
           },
         ]
       }
+      booking_stops: {
+        Row: {
+          address: string
+          booking_id: string
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["booking_stop_kind"]
+          latitude: number | null
+          longitude: number | null
+          place_id: string | null
+          sequence: number
+        }
+        Insert: {
+          address: string
+          booking_id: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["booking_stop_kind"]
+          latitude?: number | null
+          longitude?: number | null
+          place_id?: string | null
+          sequence: number
+        }
+        Update: {
+          address?: string
+          booking_id?: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["booking_stop_kind"]
+          latitude?: number | null
+          longitude?: number | null
+          place_id?: string | null
+          sequence?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_stops_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           cancellation_reason: string | null
@@ -312,6 +362,45 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_profiles: {
+        Row: {
+          created_at: string
+          default_gstin_id: string | null
+          marketing_opt_in: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          default_gstin_id?: string | null
+          marketing_opt_in?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          default_gstin_id?: string | null
+          marketing_opt_in?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_profiles_default_gstin_id_fkey"
+            columns: ["default_gstin_id"]
+            isOneToOne: false
+            referencedRelation: "customer_gstins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       device_tokens: {
         Row: {
           created_at: string
@@ -341,6 +430,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      driver_applications: {
+        Row: {
+          applied_at: string
+          created_at: string
+          decision_note: string | null
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["driver_application_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string
+          created_at?: string
+          decision_note?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["driver_application_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applied_at?: string
+          created_at?: string
+          decision_note?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["driver_application_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       driver_bank_accounts: {
         Row: {
@@ -565,6 +698,41 @@ export type Database = {
           {
             foreignKeyName: "driver_locations_driver_id_fkey"
             columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_profiles: {
+        Row: {
+          created_at: string
+          payout_hold: boolean
+          updated_at: string
+          user_id: string
+          vehicle_number: string | null
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"] | null
+        }
+        Insert: {
+          created_at?: string
+          payout_hold?: boolean
+          updated_at?: string
+          user_id: string
+          vehicle_number?: string | null
+          vehicle_type?: Database["public"]["Enums"]["vehicle_type"] | null
+        }
+        Update: {
+          created_at?: string
+          payout_hold?: boolean
+          updated_at?: string
+          user_id?: string
+          vehicle_number?: string | null
+          vehicle_type?: Database["public"]["Enums"]["vehicle_type"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_profiles_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1294,7 +1462,13 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "expired"
+      booking_stop_kind: "pickup" | "stop" | "drop"
       coupon_kind: "flat" | "percent"
+      driver_application_status:
+        | "submitted"
+        | "approved"
+        | "rejected"
+        | "withdrawn"
       kyc_status: "not_submitted" | "pending" | "approved" | "rejected"
       payment_method: "cod" | "wallet" | "upi" | "card" | "netbanking"
       payment_state: "created" | "paid" | "failed" | "refunded"
@@ -1446,7 +1620,14 @@ export const Constants = {
         "cancelled",
         "expired",
       ],
+      booking_stop_kind: ["pickup", "stop", "drop"],
       coupon_kind: ["flat", "percent"],
+      driver_application_status: [
+        "submitted",
+        "approved",
+        "rejected",
+        "withdrawn",
+      ],
       kyc_status: ["not_submitted", "pending", "approved", "rejected"],
       payment_method: ["cod", "wallet", "upi", "card", "netbanking"],
       payment_state: ["created", "paid", "failed", "refunded"],
