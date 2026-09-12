@@ -235,7 +235,46 @@ export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Prop
 
           <div className="flex-1 overflow-y-auto">
             {query.trim().length === 0 ? (
-              <SavedList
+              <>
+                <div className="border-b p-3">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => void useCurrentLocation()}
+                    disabled={locating}
+                  >
+                    {locating ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    ) : (
+                      <LocateFixed className="h-4 w-4 text-primary" />
+                    )}
+                    {locating ? "Getting your location…" : "Use my current location"}
+                  </Button>
+                  {geoError && <p className="mt-2 text-xs text-destructive">{geoError}</p>}
+                </div>
+
+                {(recent.data ?? []).length > 0 && (
+                  <div className="border-b p-3">
+                    <p className="px-1 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Recent locations
+                    </p>
+                    <ul className="space-y-1">
+                      {(recent.data ?? []).map((r) => (
+                        <li key={`${r.address}-${r.lat}`}>
+                          <button
+                            onClick={() => onPick(r)}
+                            className="flex w-full items-start gap-3 rounded-md px-3 py-3 text-left hover:bg-muted"
+                          >
+                            <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                            <p className="truncate text-sm text-secondary">{r.address}</p>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <SavedList
                 addresses={saved.data ?? []}
                 loading={saved.isLoading}
                 onPick={(a) =>
