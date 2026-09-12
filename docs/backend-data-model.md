@@ -1,5 +1,39 @@
 # MiniPort backend data model
 
+## Persistence architecture (single source of truth)
+
+The Supabase Postgres project **`dpxaelivsmszrneyitoy`** is the one and only
+permanent store for every MiniPort business record: customers, drivers, bookings
+and stops, payments and webhook events, wallets and ledger, withdrawals, coupons
+and redemptions, KYC (rows + private storage objects), invoices (derived from
+booking rows), proof-of-delivery, GPS/trip data, notification/SMS logs and audit
+logs. This is the same instance Lovable Cloud provisions and manages — there is
+no second business database anywhere in the project.
+
+Rules for future changes:
+
+- Never introduce another database, ORM or hosted data service for business
+  records. All reads/writes go through `@/integrations/supabase/client` (browser,
+  RLS), the `requireSupabaseAuth` server-function context, or — for privileged
+  server-only work — `@/integrations/supabase/client.server`.
+- Non-Supabase services are runtime-only and must not hold business state:
+  Firebase Cloud Messaging (push transport only — no Firestore / Realtime
+  Database), Twilio (SMS transport; delivery records live in `sms_logs`),
+  Razorpay (payment provider; state mirrored into `payments`/`webhook_events`),
+  Google Maps (geocoding/routing), Lovable AI Gateway (support chat inference).
+- Browser storage is cache/UX only. The single permitted key is the FCM token
+  marker in `usePushNotifications`; the authoritative token row is
+  `device_tokens`. Auth session storage is Lovable-generated and off limits.
+- Files: only the private `driver-kyc` and `delivery-proof` Supabase Storage
+  buckets. No third-party file host.
+- Secrets never live in source. The committed `.env` is Lovable-generated and
+  holds only public/publishable values (Supabase URL + anon key, Google Maps
+  browser key). Every private credential (`SUPABASE_SERVICE_ROLE_KEY`,
+  `RAZORPAY_*`, `TWILIO_*`, `FIREBASE_SERVICE_ACCOUNT_JSON`,
+  `GOOGLE_MAPS_API_KEY`, `LOVABLE_API_KEY`) is read from the server environment
+  inside handlers only.
+
+
 Canonical reference for the Supabase (Lovable Cloud) schema. Every table lives in
 `public` unless stated otherwise, has RLS enabled, and explicit grants. The auth
 user UUID (`auth.users.id`) is the canonical identity for every domain — customer,
