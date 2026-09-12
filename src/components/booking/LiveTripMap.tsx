@@ -150,7 +150,8 @@ export function LiveTripMap({
   // Only a fresh fix counts as live tracking; a stale one is reported as stale
   // rather than drawn as if the driver were still there.
   const driverPos = lastFix && lastFix.ageMs <= FRESH_MS ? lastFix.pos : null;
-  const staleMinutes = lastFix && lastFix.ageMs > FRESH_MS ? Math.round(lastFix.ageMs / 60000) : null;
+  const staleMinutes =
+    lastFix && lastFix.ageMs > FRESH_MS ? Math.round(lastFix.ageMs / 60000) : null;
 
   const target = phase === "accepted" ? pickup : drop;
   const origin = driverPos ?? pickup;
