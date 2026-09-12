@@ -2,9 +2,19 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowRight, Download, Loader2, Package, RotateCcw, Star, Truck } from "lucide-react";
+import {
+  ArrowRight,
+  Download,
+  Loader2,
+  Package,
+  RotateCcw,
+  Search,
+  Star,
+  Truck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -231,7 +241,7 @@ function OrdersPage() {
       ) : list.length === 0 ? (
         <div className="surface-card p-8 text-center text-sm text-muted-foreground">
           <Package className="mx-auto mb-2 h-5 w-5" />
-          No {filter} rides yet.
+          {search.trim() ? `No ${filter} rides match “${search.trim()}”.` : `No ${filter} rides yet.`}
         </div>
       ) : (
         <div className="space-y-3">
