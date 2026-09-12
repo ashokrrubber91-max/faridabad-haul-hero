@@ -2,7 +2,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, MapPin, Search, Home, Store, Bookmark, X } from "lucide-react";
+import {
+  Loader2,
+  MapPin,
+  Search,
+  Home,
+  Store,
+  Bookmark,
+  X,
+  Clock,
+  LocateFixed,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { loadGoogleMaps, FARIDABAD_CENTER } from "@/lib/google-maps";
