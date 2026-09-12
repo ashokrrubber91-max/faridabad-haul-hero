@@ -72,8 +72,23 @@ export function TripDetailDialog({
   booking: Booking | null;
   onClose: () => void;
 }) {
+  const extraStops = useQuery({
+    queryKey: ["booking-stops", booking?.id],
+    enabled: !!booking?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("booking_stops")
+        .select("id, address, sequence")
+        .eq("booking_id", booking!.id)
+        .eq("kind", "stop")
+        .order("sequence");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
   if (!booking) return null;
   const b = booking;
+
   const meta = STATUS_META[b.status] ?? STATUS_META.pending;
   const pay = PAY_STATE[b.payment_status ?? "pending"] ?? PAY_STATE.pending;
   const discount = Number(b.coupon_discount ?? 0);
@@ -105,8 +120,14 @@ export function TripDetailDialog({
 
         <div className="mt-2 rounded-md bg-muted/40 p-3 text-sm">
           <p className="font-medium text-secondary">{b.pickup_address}</p>
+          {(extraStops.data ?? []).map((s) => (
+            <p key={s.id} className="mt-1 text-muted-foreground">
+              via {s.address}
+            </p>
+          ))}
           <p className="mt-1 text-muted-foreground">to {b.drop_address}</p>
         </div>
+
 
         <div className="divide-y divide-border">
           <Row label="Vehicle" value={vehicleLabel(b.vehicle_type as never)} />
