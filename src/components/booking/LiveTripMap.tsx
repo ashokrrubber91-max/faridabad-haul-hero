@@ -310,7 +310,9 @@ export function LiveTripMap({
           ? "Road route could not be loaded, so no route line is shown. Pickup and drop pins are exact."
           : driverPos
             ? "Live driver location and road route · updates automatically"
-            : "Driver location appears once their app shares GPS (location permission needed)."}
+            : staleMinutes !== null
+              ? "The last position shown was too old to be trusted, so the driver pin is hidden until a new GPS update arrives."
+              : "Driver location appears once their app shares GPS (location permission needed)."}
       </p>
     </div>
   );
