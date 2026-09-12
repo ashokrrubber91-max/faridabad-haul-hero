@@ -487,6 +487,16 @@ function CustomerPage() {
         <h2 className="mb-3 font-display text-2xl tracking-wide text-secondary">Your bookings</h2>
         {bookings.isLoading ? (
           <CenterLoader />
+        ) : bookings.isError ? (
+          <div className="surface-card p-6 text-center text-sm">
+            <Package className="mx-auto mb-2 h-5 w-5 text-destructive" />
+            <p className="text-muted-foreground">
+              We couldn&apos;t load your bookings. Check your connection and try again.
+            </p>
+            <Button size="sm" variant="outline" className="mt-3" onClick={() => bookings.refetch()}>
+              Retry
+            </Button>
+          </div>
         ) : (
           <div className="space-y-3">
             {(bookings.data ?? []).length === 0 && (
