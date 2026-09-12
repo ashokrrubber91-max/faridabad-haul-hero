@@ -833,7 +833,8 @@ function ActiveJobCard({
           />
           <Button
             size="sm"
-            disabled={pending || otp.length !== 4}
+            // Proof of delivery is mandatory, so the photo must be added first.
+            disabled={pending || otp.length !== 4 || (next === "completed" && !podPath)}
             onClick={() => {
               onVerify(otp, next, podPath);
               setOtp("");
