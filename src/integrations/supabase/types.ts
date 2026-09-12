@@ -96,7 +96,6 @@ export type Database = {
           drop_address: string
           drop_lat: number | null
           drop_lng: number | null
-          drop_otp: string | null
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
@@ -109,7 +108,6 @@ export type Database = {
           pickup_address: string
           pickup_lat: number | null
           pickup_lng: number | null
-          pickup_otp: string | null
           pickup_verified_at: string | null
           pod_photo_url: string | null
           rating: number | null
@@ -137,7 +135,6 @@ export type Database = {
           drop_address: string
           drop_lat?: number | null
           drop_lng?: number | null
-          drop_otp?: string | null
           drop_verified_at?: string | null
           expires_at?: string | null
           fare: number
@@ -150,7 +147,6 @@ export type Database = {
           pickup_address: string
           pickup_lat?: number | null
           pickup_lng?: number | null
-          pickup_otp?: string | null
           pickup_verified_at?: string | null
           pod_photo_url?: string | null
           rating?: number | null
@@ -178,7 +174,6 @@ export type Database = {
           drop_address?: string
           drop_lat?: number | null
           drop_lng?: number | null
-          drop_otp?: string | null
           drop_verified_at?: string | null
           expires_at?: string | null
           fare?: number
@@ -191,7 +186,6 @@ export type Database = {
           pickup_address?: string
           pickup_lat?: number | null
           pickup_lng?: number | null
-          pickup_otp?: string | null
           pickup_verified_at?: string | null
           pod_photo_url?: string | null
           rating?: number | null
@@ -936,7 +930,6 @@ export type Database = {
           drop_address: string
           drop_lat: number | null
           drop_lng: number | null
-          drop_otp: string | null
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
@@ -949,7 +942,6 @@ export type Database = {
           pickup_address: string
           pickup_lat: number | null
           pickup_lng: number | null
-          pickup_otp: string | null
           pickup_verified_at: string | null
           pod_photo_url: string | null
           rating: number | null
@@ -990,7 +982,6 @@ export type Database = {
           drop_address: string
           drop_lat: number | null
           drop_lng: number | null
-          drop_otp: string | null
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
@@ -1003,7 +994,6 @@ export type Database = {
           pickup_address: string
           pickup_lat: number | null
           pickup_lng: number | null
-          pickup_otp: string | null
           pickup_verified_at: string | null
           pod_photo_url: string | null
           rating: number | null
@@ -1040,7 +1030,6 @@ export type Database = {
           drop_address: string
           drop_lat: number | null
           drop_lng: number | null
-          drop_otp: string | null
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
@@ -1053,7 +1042,6 @@ export type Database = {
           pickup_address: string
           pickup_lat: number | null
           pickup_lng: number | null
-          pickup_otp: string | null
           pickup_verified_at: string | null
           pod_photo_url: string | null
           rating: number | null
