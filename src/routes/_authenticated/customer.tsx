@@ -17,14 +17,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  VEHICLES,
-  estimateFare,
-  vehicleLabel,
-  STATUS_META,
-  type VehicleId,
-  BOOKING_FIELDS,
-} from "@/lib/booking";
+import { vehicleLabel, STATUS_META, type VehicleId, BOOKING_FIELDS } from "@/lib/booking";
+import { useVehicleTypes, fareFor, type VehicleType } from "@/lib/vehicles";
 import { VehicleCard } from "@/components/booking/VehicleCard";
 import { WaypointManager } from "@/components/booking/WaypointManager";
 import { GstinSelect, type CustomerGstin } from "@/components/booking/GstinSelect";
@@ -35,7 +29,7 @@ import { LiveTripMap } from "@/components/booking/LiveTripMap";
 import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
 import { SupportChat } from "@/components/support/SupportChat";
 import { FARIDABAD_CENTER } from "@/lib/google-maps";
-import { LoadingTimerCard } from "@/components/booking/LoadingTimerCard";
+import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
 import { canCancel, cancellationQuote } from "@/lib/cancellation";
 import {
   Dialog,
@@ -64,6 +58,8 @@ function CustomerPage() {
   const { user, role, roles, activeMode, loading, profile } = useAuth();
   const qc = useQueryClient();
   const [vehicle, setVehicle] = useState<VehicleId>("tata_ace");
+  // Vehicles, their fares and their free loading time are managed by the team.
+  const catalogue = useVehicleTypes(true);
   const [pickup, setPickup] = useState<PlacePick | null>(null);
   const [drop, setDrop] = useState<PlacePick | null>(null);
   const [notes, setNotes] = useState("");
@@ -103,7 +99,20 @@ function CustomerPage() {
     queryFn: () => computeRoadRoute({ data: { points: routePoints! } }),
   });
   const distanceKm = routeQuote.data?.distanceKm ?? 0;
-  const baseFare = estimateFare(vehicle, distanceKm);
+  const allVehicles = catalogue.data ?? [];
+  const vehicles = allVehicles.filter((v) => v.active);
+  const vehicleFor = (id: string): VehicleType | undefined => allVehicles.find((v) => v.id === id);
+  const selectedVehicle = vehicles.find((v) => v.id === vehicle);
+  const baseFare = selectedVehicle ? fareFor(selectedVehicle, distanceKm) : 0;
+
+  // If the currently picked vehicle is switched off by the team, move to the
+  // first one that is actually bookable instead of quoting an unavailable truck.
+  useEffect(() => {
+    if (vehicles.length > 0 && !vehicles.some((v) => v.id === vehicle)) {
+      setVehicle(vehicles[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalogue.data]);
   const discount = Math.min(baseFare, (promo?.discount ?? 0) + coins);
   const fare = Math.max(0, baseFare - discount);
 
