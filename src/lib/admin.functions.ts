@@ -19,26 +19,14 @@ export const reviewDriverKyc = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { data: isAdmin, error: roleError } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
+    // The decision is written by an admin-only database routine: the review
+    // columns are not directly writable by any signed-in user, so a tampered
+    // client cannot approve a driver even with a valid session.
+    const { error } = await context.supabase.rpc("review_driver_kyc", {
+      _driver_id: data.driverId,
+      _decision: data.decision,
+      _reason: data.reason?.trim() ?? null,
     });
-    if (roleError) throw new Error(roleError.message);
-    if (!isAdmin) throw new Error("Only the operations team can review applications");
-
-    if (data.decision === "rejected" && (data.reason?.trim().length ?? 0) < 4) {
-      throw new Error("Add a rejection reason the applicant can act on");
-    }
-
-    const { error } = await context.supabase
-      .from("driver_kyc")
-      .update({
-        status: data.decision,
-        rejection_reason: data.decision === "rejected" ? (data.reason?.trim() ?? null) : null,
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: context.userId,
-      })
-      .eq("driver_id", data.driverId);
     if (error) throw new Error(error.message);
 
     return { ok: true, status: data.decision };
