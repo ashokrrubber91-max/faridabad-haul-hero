@@ -24,8 +24,7 @@ describe('cancellation', () => {
   it('expired not cancellable', () => expect(canCancel('expired')).toBe(false));
 });
 describe('loading timer', () => {
-  it('null when unstarted', () => expect(computeLoadingTimer('tata_ace', null)).toBeNull();
-  );
+  it('null when unstarted', () => { expect(computeLoadingTimer('tata_ace', null)).toBeNull(); });
   it('overtime charge', () => {
     const s = computeLoadingTimer('tata_407', new Date(Date.now()-65*60000).toISOString())!;
     expect(s.overtimeMinutes).toBe(5); expect(s.overtimeCharge).toBe(10);
