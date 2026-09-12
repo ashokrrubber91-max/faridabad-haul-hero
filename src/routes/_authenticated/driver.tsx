@@ -517,6 +517,27 @@ function DriverPage() {
             <ShieldCheck className="mx-auto mb-2 h-5 w-5 text-primary" />
             Ride requests unlock once your documents are verified by the MiniPort team.
           </div>
+        ) : queue.isLoading ? (
+          <div className="grid gap-3">
+            {[0, 1].map((i) => (
+              <div key={i} className="surface-card animate-pulse space-y-2 p-4">
+                <div className="h-3 w-28 rounded bg-muted" />
+                <div className="h-4 w-3/4 rounded bg-muted" />
+                <div className="h-4 w-2/3 rounded bg-muted" />
+                <div className="h-9 w-full rounded bg-muted" />
+              </div>
+            ))}
+          </div>
+        ) : queue.isError ? (
+          <div className="surface-card p-6 text-center text-sm">
+            <AlertTriangle className="mx-auto mb-2 h-5 w-5 text-destructive" />
+            <p className="text-muted-foreground">
+              Could not load ride requests. Check your connection.
+            </p>
+            <Button size="sm" variant="outline" className="mt-3" onClick={() => queue.refetch()}>
+              Retry
+            </Button>
+          </div>
         ) : pending.length === 0 ? (
           <div className="surface-card p-6 text-center text-sm text-muted-foreground">
             <Truck className="mx-auto mb-2 h-5 w-5" />
@@ -531,6 +552,15 @@ function DriverPage() {
                 onAccept={() => accept.mutate(b.id)}
                 onDecline={() => decline.mutate(b.id)}
                 pending={accept.isPending || decline.isPending}
+                // Only the tapped card shows progress; every accept button stays
+                // disabled meanwhile, so a double tap cannot send two claims.
+                busyAction={
+                  accept.isPending && accept.variables === b.id
+                    ? "accepting"
+                    : decline.isPending && decline.variables === b.id
+                      ? "passing"
+                      : null
+                }
               />
             ))}
           </div>
