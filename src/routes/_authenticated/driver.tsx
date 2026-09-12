@@ -224,19 +224,28 @@ function DriverPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  type TimerPatch = {
-    loading_started_at?: string;
-    loading_stopped_at?: string;
-    unloading_started_at?: string;
-    unloading_stopped_at?: string;
+  /**
+   * Loading/unloading clocks are stamped by the server. Repeating or skipping a
+   * step is refused there, so a double tap or a stale screen cannot change a
+   * time that has already been recorded.
+   */
+  type StageAction = "start_loading" | "stop_loading" | "start_unloading" | "stop_unloading";
+  const STAGE_MESSAGE: Record<StageAction, string> = {
+    start_loading: "Loading time started",
+    stop_loading: "Loading time stopped",
+    start_unloading: "Unloading time started",
+    stop_unloading: "Unloading time stopped",
   };
-  const setTimer = useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: TimerPatch }) => {
-      const { error } = await supabase.from("bookings").update(patch).eq("id", id);
+  const setStage = useMutation({
+    mutationFn: async ({ id, action }: { id: string; action: StageAction }) => {
+      const { error } = await supabase.rpc("set_booking_stage", {
+        _booking_id: id,
+        _action: action,
+      });
       if (error) throw error;
     },
-    onSuccess: () => {
-      toast.success("Timer updated");
+    onSuccess: (_d, v) => {
+      toast.success(STAGE_MESSAGE[v.action]);
       void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -500,7 +509,9 @@ function DriverPage() {
               podPath,
             })
           }
-          onTimer={(patch) => setTimer.mutate({ id: activeJob.id, patch: patch as never })}
+          onStage={(action) => setStage.mutate({ id: activeJob.id, action })}
+          stageBusy={setStage.isPending}
+          vehicle={vehicleFor(activeJob.vehicle_type)}
           pending={verifyOtp.isPending}
         />
       )}
