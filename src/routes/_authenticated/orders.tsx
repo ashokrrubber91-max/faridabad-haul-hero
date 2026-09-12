@@ -48,6 +48,7 @@ function OrdersPage() {
   const { user, profile } = useAuth();
   const qc = useQueryClient();
   const [filter, setFilter] = useState<Filter>("active");
+  const [search, setSearch] = useState("");
   const [shown, setShown] = useState(10);
   const [rateTarget, setRateTarget] = useState<{ id: string; addr: string } | null>(null);
   const [detail, setDetail] = useState<string | null>(null);
