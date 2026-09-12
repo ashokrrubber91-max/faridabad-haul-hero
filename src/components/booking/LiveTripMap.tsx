@@ -98,7 +98,9 @@ export function LiveTripMap({
   const location = useQuery({
     queryKey: ["driver-location", driverId, bookingId],
     enabled: !!driverId,
-    refetchInterval: 10_000,
+    // Live updates arrive over the realtime channel below; this slower poll is
+    // only a safety net for a dropped socket, so it must not duplicate it.
+    refetchInterval: 25_000,
     refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase
