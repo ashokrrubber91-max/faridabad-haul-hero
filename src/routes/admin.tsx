@@ -506,7 +506,13 @@ function AdminPage() {
             <div className="border-b border-border px-4 py-3">
               <h3 className="font-display text-xl tracking-wide text-secondary">Recent bookings</h3>
             </div>
-            <BookingsList bookings={all.slice(0, 15)} profileMap={profileMap} />
+            <BookingsList
+              bookings={all.slice(0, 15)}
+              profileMap={profileMap}
+              loading={bookings.isLoading}
+              error={bookings.isError}
+              onRetry={() => bookings.refetch()}
+            />
           </section>
 
           <DrillDownDialog
