@@ -131,7 +131,9 @@ function CustomerPage() {
         .from("bookings")
         .select(BOOKING_FIELDS)
         .eq("customer_id", user!.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        // This screen only shows recent trips; full history lives on My rides.
+        .limit(15);
       if (error) throw error;
       return data ?? [];
     },
