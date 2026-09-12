@@ -1678,10 +1678,42 @@ function BroadcastTab({ drivers, customers }: { drivers: Profile[]; customers: P
 function BookingsList({
   bookings,
   profileMap,
+  loading,
+  error,
+  onRetry,
 }: {
   bookings: Booking[];
   profileMap: Map<string, Profile>;
+  loading?: boolean;
+  error?: boolean;
+  onRetry?: () => void;
 }) {
+  if (loading) {
+    return (
+      <div className="divide-y divide-border">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="animate-pulse space-y-2 px-4 py-4">
+            <div className="h-3 w-40 rounded bg-muted" />
+            <div className="h-4 w-2/3 rounded bg-muted" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="px-4 py-8 text-center text-sm">
+        <p className="text-muted-foreground">
+          Could not load bookings. Check the connection and try again.
+        </p>
+        {onRetry && (
+          <Button size="sm" variant="outline" className="mt-3" onClick={onRetry}>
+            Retry
+          </Button>
+        )}
+      </div>
+    );
+  }
   return (
     <div className="divide-y divide-border">
       {bookings.length === 0 && (
