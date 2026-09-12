@@ -657,11 +657,13 @@ function PendingJob({
   onAccept,
   onDecline,
   pending,
+  busyAction,
 }: {
   job: AnyRow;
   onAccept: () => void;
   onDecline: () => void;
   pending: boolean;
+  busyAction?: "accepting" | "passing" | null;
 }) {
   const [secs, setSecs] = useState(30);
   useEffect(() => {
