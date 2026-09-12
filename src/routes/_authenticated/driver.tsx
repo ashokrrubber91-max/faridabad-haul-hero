@@ -701,10 +701,16 @@ function PendingJob({
       </div>
       <div className="mt-3 flex gap-2">
         <Button size="sm" className="flex-1" onClick={onAccept} disabled={pending}>
-          Accept Ride
+          {busyAction === "accepting" ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Accepting…
+            </>
+          ) : (
+            "Accept Ride"
+          )}
         </Button>
         <Button size="sm" variant="outline" onClick={onDecline} disabled={pending}>
-          Pass / Decline
+          {busyAction === "passing" ? "Passing…" : "Pass / Decline"}
         </Button>
       </div>
       <p className="mt-2 text-[11px] text-muted-foreground">
