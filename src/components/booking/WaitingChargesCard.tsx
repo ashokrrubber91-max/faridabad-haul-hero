@@ -3,9 +3,9 @@ import { DEFAULT_OVERTIME_RATE_PER_MIN } from "@/lib/loading-timer";
 import type { VehicleType } from "@/lib/vehicles";
 
 type BookingLike = {
-  status: string;
-  vehicle_type: string;
-  fare: number | string;
+  status?: string | null;
+  vehicle_type?: string | null;
+  fare?: number | string | null;
   loading_started_at?: string | null;
   loading_stopped_at?: string | null;
   unloading_started_at?: string | null;
