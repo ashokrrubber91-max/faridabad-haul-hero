@@ -47,7 +47,6 @@ export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Prop
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
 
-
   const saved = useQuery({
     queryKey: ["saved-addresses", user?.id],
     enabled: !!user && open,
@@ -285,20 +284,20 @@ export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Prop
                 )}
 
                 <SavedList
-                addresses={saved.data ?? []}
-                loading={saved.isLoading}
-                onPick={(a) =>
-                  onPick({
-                    address: a.address,
-                    lat: a.latitude ?? FARIDABAD_CENTER.lat,
-                    lng: a.longitude ?? FARIDABAD_CENTER.lng,
-                    placeId: a.place_id ?? undefined,
-                    alias: a.alias ?? undefined,
-                    contactName: a.contact_name ?? undefined,
-                    contactPhone: a.contact_phone ?? undefined,
-                    kind: a.kind,
-                  })
-                }
+                  addresses={saved.data ?? []}
+                  loading={saved.isLoading}
+                  onPick={(a) =>
+                    onPick({
+                      address: a.address,
+                      lat: a.latitude ?? FARIDABAD_CENTER.lat,
+                      lng: a.longitude ?? FARIDABAD_CENTER.lng,
+                      placeId: a.place_id ?? undefined,
+                      alias: a.alias ?? undefined,
+                      contactName: a.contact_name ?? undefined,
+                      contactPhone: a.contact_phone ?? undefined,
+                      kind: a.kind,
+                    })
+                  }
                 />
               </>
             ) : (

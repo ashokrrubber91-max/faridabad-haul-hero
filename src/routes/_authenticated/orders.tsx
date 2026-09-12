@@ -223,7 +223,6 @@ function OrdersPage() {
         )}
       </div>
 
-
       {orders.isLoading ? (
         <div className="flex justify-center py-10">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -241,7 +240,9 @@ function OrdersPage() {
       ) : list.length === 0 ? (
         <div className="surface-card p-8 text-center text-sm text-muted-foreground">
           <Package className="mx-auto mb-2 h-5 w-5" />
-          {search.trim() ? `No ${filter} rides match “${search.trim()}”.` : `No ${filter} rides yet.`}
+          {search.trim()
+            ? `No ${filter} rides match “${search.trim()}”.`
+            : `No ${filter} rides yet.`}
         </div>
       ) : (
         <div className="space-y-3">
