@@ -277,9 +277,11 @@ export function LiveTripMap({
       : routeFailed
         ? "Live location received · road distance unavailable right now"
         : "Calculating road route…"
-    : phase === "accepted"
-      ? "Waiting for the driver's live location…"
-      : `Trip in progress · ${Math.max(0.5, distanceKm).toFixed(1)} km booked route`;
+    : staleMinutes !== null
+      ? `Driver's location last updated ${staleMinutes < 1 ? "just under a minute" : `${staleMinutes} min`} ago · waiting for a fresh GPS update`
+      : phase === "accepted"
+        ? "Waiting for the driver's live location…"
+        : `Trip in progress · ${Math.max(0.5, distanceKm).toFixed(1)} km booked route`;
 
   return (
     <div className="mt-3 overflow-hidden rounded-md border border-primary/30">
