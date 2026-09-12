@@ -25,7 +25,9 @@ export const STATUS_META: Record<
   in_progress: { label: "On the way", tone: "primary" },
   completed: { label: "Completed", tone: "success" },
   cancelled: { label: "Cancelled", tone: "destructive" },
+  expired: { label: "Expired — no driver", tone: "muted" },
 };
+
 
 export type LatLng = { lat: number; lng: number };
 

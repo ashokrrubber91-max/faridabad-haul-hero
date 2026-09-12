@@ -278,10 +278,16 @@ function CustomerPage() {
       const nextNotes = existingNotes ? `${existingNotes} · ${noteLine}` : noteLine;
       const { error } = await supabase
         .from("bookings")
-        .update({ status: "cancelled", cancelled_at: new Date().toISOString(), notes: nextNotes })
+        .update({
+          status: "cancelled",
+          cancelled_at: new Date().toISOString(),
+          cancellation_reason: reason.slice(0, 300),
+          notes: nextNotes,
+        })
         .eq("id", id);
       if (error) throw error;
       return fee;
+
     },
     onSuccess: (fee) => {
       toast.success(
