@@ -35,6 +35,8 @@ export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Prop
   const placesLibRef = useRef<google.maps.PlacesLibrary | null>(null);
 
   const [locating, setLocating] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+
 
   const saved = useQuery({
     queryKey: ["saved-addresses", user?.id],
