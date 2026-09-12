@@ -31,7 +31,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
 import { SupportChat } from "@/components/support/SupportChat";
 import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
-import { LoadingTimerCard } from "@/components/booking/LoadingTimerCard";
+import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
+import { useVehicleTypes, type VehicleType } from "@/lib/vehicles";
 import { sweepStaleBookings } from "@/lib/notifications.functions";
 
 export const Route = createFileRoute("/_authenticated/driver")({
@@ -60,6 +61,11 @@ function DriverPage() {
   });
 
   const sweepStale = useServerFn(sweepStaleBookings);
+
+  // Vehicle names, free loading windows and waiting rates come from the catalogue.
+  const catalogue = useVehicleTypes(true);
+  const vehicleFor = (id: string): VehicleType | undefined =>
+    (catalogue.data ?? []).find((v) => v.id === id);
 
   const queue = useQuery({
     queryKey: ["driver-feed", user?.id],
