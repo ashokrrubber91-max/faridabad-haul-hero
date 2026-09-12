@@ -1,19 +1,29 @@
+/**
+ * Fallback names for the vehicles that shipped with the app. The live catalogue
+ * (names, capacity, fares, free loading time) is managed by the team in the
+ * database — see `@/lib/vehicles`. These names only keep older trips readable
+ * before the catalogue has loaded.
+ */
 export const VEHICLES = [
   { id: "tata_ace", label: "Tata Ace (Chhota Hathi)", capacity: "750 kg", base: 150, perKm: 22 },
   { id: "pickup_8ft", label: "Pickup 8ft", capacity: "1.2 ton", base: 220, perKm: 28 },
   { id: "tata_407", label: "Tata 407", capacity: "2.5 ton", base: 350, perKm: 38 },
 ] as const;
 
-export type VehicleId = (typeof VEHICLES)[number]["id"];
+export type VehicleId = string;
 
-export function estimateFare(vehicle: VehicleId, distanceKm: number): number {
-  const v = VEHICLES.find((x) => x.id === vehicle);
-  if (!v || !distanceKm || distanceKm < 0) return 0;
-  return Math.round(v.base + v.perKm * distanceKm);
+const labelRegistry = new Map<string, string>(VEHICLES.map((v) => [v.id, v.label]));
+
+/** Called once the catalogue loads so every screen shows the current names. */
+export function registerVehicleLabels(rows: Array<{ id: string; label: string }>): void {
+  for (const row of rows) labelRegistry.set(row.id, row.label);
 }
 
 export function vehicleLabel(id: string): string {
-  return VEHICLES.find((v) => v.id === id)?.label ?? id;
+  return (
+    labelRegistry.get(id) ??
+    id.replace(/_/g, " ").replace(/\b[a-z]/g, (c) => c.toUpperCase())
+  );
 }
 
 export const STATUS_META: Record<
@@ -68,4 +78,4 @@ export const VEHICLE_DETAILS: Record<
  * the `get_booking_otps` (customer) and `verify_booking_otp` (driver) functions.
  */
 export const BOOKING_FIELDS =
-  "id, customer_id, driver_id, pickup_address, drop_address, vehicle_type, distance_km, fare, status, notes, created_at, updated_at, coupon_code, coupon_discount, coins_redeemed, payment_method, payment_status, commission_rate, commission_amount, driver_net_earning, pickup_verified_at, drop_verified_at, rating, review, pod_photo_url, cancellation_reason, pickup_lat, pickup_lng, drop_lat, drop_lng, loading_started_at, loading_stopped_at, unloading_started_at, unloading_stopped_at, service_zone, cancelled_at, expires_at";
+  "id, customer_id, driver_id, pickup_address, drop_address, vehicle_type, distance_km, fare, status, notes, created_at, updated_at, coupon_code, coupon_discount, coins_redeemed, payment_method, payment_status, commission_rate, commission_amount, driver_net_earning, pickup_verified_at, drop_verified_at, rating, review, pod_photo_url, cancellation_reason, pickup_lat, pickup_lng, drop_lat, drop_lng, loading_started_at, loading_stopped_at, unloading_started_at, unloading_stopped_at, service_zone, cancelled_at, expires_at, loading_overtime_minutes, unloading_overtime_minutes, overtime_charge, final_fare";
