@@ -256,7 +256,6 @@ function CustomerPage() {
     mutationFn: async ({
       id,
       reason,
-      existingNotes,
       fee,
     }: {
       id: string;
@@ -267,16 +266,12 @@ function CustomerPage() {
       const noteLine =
         `Cancelled by customer: ${reason}` +
         (fee > 0 ? ` · Cancellation charge ₹${fee}` : " · No charge");
-      const nextNotes = existingNotes ? `${existingNotes} · ${noteLine}` : noteLine;
-      const { error } = await supabase
-        .from("bookings")
-        .update({
-          status: "cancelled",
-          cancelled_at: new Date().toISOString(),
-          cancellation_reason: reason.slice(0, 300),
-          notes: nextNotes,
-        })
-        .eq("id", id);
+      // Cancellation is applied by a server routine that checks who may cancel and when.
+      const { error } = await supabase.rpc("cancel_booking", {
+        _booking_id: id,
+        _reason: reason.slice(0, 300),
+        _note: noteLine,
+      });
       if (error) throw error;
       return fee;
     },
