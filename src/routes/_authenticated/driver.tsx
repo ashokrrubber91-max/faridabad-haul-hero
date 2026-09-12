@@ -648,6 +648,9 @@ function DriverPage() {
                       </div>
                     </div>
                   )}
+                  {b.status === "completed" && (
+                    <WaitingChargesCard booking={b} vehicle={vehicleFor(b.vehicle_type)} />
+                  )}
                 </div>
               );
             })}
@@ -688,7 +691,8 @@ function PendingJob({
     const t = setTimeout(() => setSecs((s) => s - 1), 1000);
     return () => clearTimeout(t);
   }, [secs]);
-  const commission = Math.round(Number(job.fare) * 0.1);
+  const rate = Number(job.commission_rate) || 0.1;
+  const commission = Math.round(Number(job.fare) * rate);
   const net = Number(job.fare) - commission;
   return (
     <div className="surface-card border-l-4 border-l-primary p-4">
@@ -712,7 +716,7 @@ function PendingJob({
           <p className="text-[11px] uppercase text-muted-foreground">You will earn</p>
           <p className="font-display text-2xl text-success">₹{net}</p>
           <p className="text-[10px] text-muted-foreground">
-            Fare ₹{Number(job.fare).toFixed(0)} − 10%
+            Fare ₹{Number(job.fare).toFixed(0)} − {Math.round(rate * 100)}%
           </p>
         </div>
       </div>
@@ -808,7 +812,7 @@ function ActiveJobCard({
   const next = job.status === "accepted" ? "in_progress" : "completed";
   const label = next === "in_progress" ? "Verify Pickup OTP" : "Verify Drop OTP";
   const contact = extractContact(job.notes, next === "in_progress" ? "Sender" : "Receiver");
-  const commission = Math.round(Number(job.fare) * 0.1);
+  const commission = Math.round(Number(job.fare) * (Number(job.commission_rate) || 0.1));
   const net = Number(job.fare) - commission;
   const isCash = job.payment_method === "cod";
   // Navigate to the exact pin the customer dropped whenever we have it.
