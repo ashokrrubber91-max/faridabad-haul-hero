@@ -31,6 +31,7 @@ export const Route = createFileRoute("/_authenticated/driver-rides")({
 
 function DriverRidesPage() {
   const { user } = useAuth();
+  const [shown, setShown] = useState(20);
 
   const rides = useQuery({
     queryKey: ["driver-rides", user?.id],
