@@ -139,13 +139,22 @@ function OrdersPage() {
   });
 
   const all = orders.data ?? [];
-  const list = all.filter((o) =>
-    filter === "active"
-      ? ["pending", "accepted", "in_progress"].includes(o.status)
-      : filter === "completed"
-        ? o.status === "completed"
-        : o.status === "cancelled" || o.status === "expired",
-  );
+  const term = search.trim().toLowerCase();
+  const list = all
+    .filter((o) =>
+      filter === "active"
+        ? ["pending", "accepted", "in_progress"].includes(o.status)
+        : filter === "completed"
+          ? o.status === "completed"
+          : o.status === "cancelled" || o.status === "expired",
+    )
+    .filter((o) =>
+      term
+        ? o.pickup_address.toLowerCase().includes(term) ||
+          o.drop_address.toLowerCase().includes(term) ||
+          o.id.slice(0, 8).toLowerCase().includes(term)
+        : true,
+    );
 
   const downloadInvoice = (b: (typeof all)[number]) => {
     const ok = openInvoice(
