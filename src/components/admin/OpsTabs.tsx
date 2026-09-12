@@ -303,10 +303,8 @@ export function DisputesTab({
 
   const refund = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("bookings")
-        .update({ payment_status: "refunded" })
-        .eq("id", id);
+      // Refunds are applied by a server routine that checks the admin role and logs the action.
+      const { error } = await supabase.rpc("admin_mark_refunded", { _booking_id: id });
       if (error) throw error;
     },
     onSuccess: () => {
