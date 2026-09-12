@@ -102,7 +102,7 @@ export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Prop
   });
 
   /** Real device GPS + Google reverse geocoding. Never a guessed address. */
-  const useCurrentLocation = async () => {
+  const pickCurrentLocation = async () => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setGeoError("This device cannot share its location.");
       return;
@@ -249,7 +249,7 @@ export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Prop
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => void useCurrentLocation()}
+                    onClick={() => void pickCurrentLocation()}
                     disabled={locating}
                   >
                     {locating ? (
