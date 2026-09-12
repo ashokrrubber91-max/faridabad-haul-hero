@@ -10,7 +10,11 @@ const point = z.object({
 
 const place = point.extend({
   address: z.string().trim().min(3).max(400),
+  placeId: z.string().trim().max(300).nullish(),
+  contactName: z.string().trim().max(120).nullish(),
+  contactPhone: z.string().trim().max(20).nullish(),
 });
+
 
 const vehicleIds = VEHICLES.map((v) => v.id) as [VehicleId, ...VehicleId[]];
 
@@ -79,6 +83,28 @@ export const createBooking = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
+    // Structured itinerary: sequence 0 = pickup, 1..3 = extra stops, 10 = drop.
+    // Persisting stops properly replaces the old "Stops: ..." note text.
+    const itinerary = [
+      { seq: 0, kind: "pickup" as const, place: data.pickup },
+      ...data.stops.map((s, i) => ({ seq: i + 1, kind: "stop" as const, place: s })),
+      { seq: 10, kind: "drop" as const, place: data.drop },
+    ];
+    const { error: stopsError } = await context.supabase.from("booking_stops").insert(
+      itinerary.map((row) => ({
+        booking_id: booking.id,
+        sequence: row.seq,
+        kind: row.kind,
+        address: row.place.address,
+        latitude: row.place.lat,
+        longitude: row.place.lng,
+        place_id: row.place.placeId ?? null,
+        contact_name: row.place.contactName ?? null,
+        contact_phone: row.place.contactPhone ?? null,
+      })),
+    );
+    if (stopsError) throw new Error(stopsError.message);
+
     return {
       id: booking.id,
       fare: Number(booking.fare),
@@ -86,3 +112,4 @@ export const createBooking = createServerFn({ method: "POST" })
       durationMin: route.durationMin,
     };
   });
+
