@@ -59,6 +59,9 @@ export function LiveTripMap({
 
   const [pickup, setPickup] = useState<LatLng | null>(exactPickup);
   const [drop, setDrop] = useState<LatLng | null>(exactDrop);
+  // The map library can fail to load or be rejected for this domain. When that
+  // happens we say so instead of leaving an empty grey box behind.
+  const [mapError, setMapError] = useState(false);
 
   // Only geocode when the customer's exact pin was not stored with the booking.
   useEffect(() => {
@@ -86,6 +89,12 @@ export function LiveTripMap({
       if (!cancelled) {
         setPickup(p);
         setDrop(d);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setMapError(true);
+        setPickup(exactPickup ?? FARIDABAD_CENTER);
+        setDrop(exactDrop ?? FARIDABAD_CENTER);
       }
     });
     return () => {
@@ -173,7 +182,8 @@ export function LiveTripMap({
   useEffect(() => {
     if (!mapRef.current || !pickup || !drop) return;
     let cancelled = false;
-    void loadGoogleMaps().then((g) => {
+    void loadGoogleMaps()
+      .then((g) => {
       if (cancelled || !mapRef.current) return;
       mapInstance.current = new g.maps.Map(mapRef.current, {
         center: target ?? pickup,
@@ -200,7 +210,10 @@ export function LiveTripMap({
       setTimeout(() => {
         if (mapInstance.current) g.maps.event.trigger(mapInstance.current, "resize");
       }, 250);
-    });
+      })
+      .catch(() => {
+        if (!cancelled) setMapError(true);
+      });
     return () => {
       cancelled = true;
       routeRef.current?.setMap(null);
@@ -236,7 +249,7 @@ export function LiveTripMap({
       const bounds = new g.maps.LatLngBounds();
       path.forEach((pt) => bounds.extend(pt));
       mapInstance.current.fitBounds(bounds, 60);
-    });
+    }).catch(() => setMapError(true));
   }, [road.data?.polyline]);
 
   // Move the driver marker to the real reported position only.
@@ -266,7 +279,7 @@ export function LiveTripMap({
       } else {
         driverMarker.current.setPosition(driverPos);
       }
-    });
+    }).catch(() => setMapError(true));
   }, [driverPos]);
 
   const routeFailed = road.isError;
@@ -300,10 +313,19 @@ export function LiveTripMap({
       </div>
       <div className="relative h-[240px] w-full bg-muted">
         <div ref={mapRef} className="absolute inset-0 h-full w-full" />
-        {(!pickup || !drop) && (
-          <div className="absolute inset-0 grid place-items-center">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        {mapError ? (
+          <div className="absolute inset-0 grid place-items-center px-4 text-center">
+            <p className="text-xs text-muted-foreground">
+              The map cannot be shown right now. Your pickup, drop and distance are unchanged, and
+              the driver&rsquo;s progress still updates in the trip details above.
+            </p>
           </div>
+        ) : (
+          (!pickup || !drop) && (
+            <div className="absolute inset-0 grid place-items-center">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </div>
+          )
         )}
       </div>
       <p className="border-t bg-background px-3 py-1.5 text-[11px] text-muted-foreground">
