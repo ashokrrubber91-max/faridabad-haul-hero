@@ -20,10 +20,7 @@ export function registerVehicleLabels(rows: Array<{ id: string; label: string }>
 }
 
 export function vehicleLabel(id: string): string {
-  return (
-    labelRegistry.get(id) ??
-    id.replace(/_/g, " ").replace(/\b[a-z]/g, (c) => c.toUpperCase())
-  );
+  return labelRegistry.get(id) ?? id.replace(/_/g, " ").replace(/\b[a-z]/g, (c) => c.toUpperCase());
 }
 
 export const STATUS_META: Record<

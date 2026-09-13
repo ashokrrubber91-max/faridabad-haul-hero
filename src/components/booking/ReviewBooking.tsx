@@ -96,9 +96,7 @@ export function ReviewBooking({
         <div className="flex items-center justify-between rounded-md border p-3">
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground">Vehicle</p>
-            <p className="text-sm font-semibold text-secondary">
-              {vehicleLabel(vehicle)}
-            </p>
+            <p className="text-sm font-semibold text-secondary">{vehicleLabel(vehicle)}</p>
           </div>
           <Badge variant="secondary">{distanceKm} km</Badge>
         </div>

@@ -100,7 +100,8 @@ export function FaresVehiclesTab({ lifetimeCommission }: { lifetimeCommission: n
   const [commission, setCommission] = useState("10");
   const [savingCommission, setSavingCommission] = useState(false);
   useEffect(() => {
-    if (settings.data) setCommission(String(Math.round(Number(settings.data.commission_rate) * 100)));
+    if (settings.data)
+      setCommission(String(Math.round(Number(settings.data.commission_rate) * 100)));
   }, [settings.data]);
 
   const saveCommission = async () => {

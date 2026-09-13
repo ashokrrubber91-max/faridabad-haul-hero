@@ -31,13 +31,7 @@ type Broadcast = {
  * they see in Account → Notifications. Text messages stay marked as not sent
  * until an SMS provider is connected — nothing here pretends an SMS went out.
  */
-export function BroadcastTab({
-  drivers,
-  customers,
-}: {
-  drivers: unknown[];
-  customers: unknown[];
-}) {
+export function BroadcastTab({ drivers, customers }: { drivers: unknown[]; customers: unknown[] }) {
   const [audience, setAudience] = useState<"driver" | "customer" | "all">("driver");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
@@ -140,7 +134,9 @@ export function BroadcastTab({
 
       <section className="surface-card">
         <div className="border-b border-border px-4 py-3">
-          <h3 className="font-display text-xl tracking-wide text-secondary">Recent announcements</h3>
+          <h3 className="font-display text-xl tracking-wide text-secondary">
+            Recent announcements
+          </h3>
         </div>
         {history.isLoading ? (
           <div className="flex justify-center py-8">
@@ -154,9 +150,7 @@ export function BroadcastTab({
             </Button>
           </div>
         ) : (history.data ?? []).length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-            Nothing sent yet.
-          </p>
+          <p className="px-4 py-8 text-center text-sm text-muted-foreground">Nothing sent yet.</p>
         ) : (
           <div className="divide-y divide-border">
             {(history.data ?? []).map((b) => (

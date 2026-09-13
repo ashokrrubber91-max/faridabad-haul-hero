@@ -76,9 +76,7 @@ export function KycReviewTab({ driverId }: { driverId?: string } = {}) {
         </div>
       ) : rows.length === 0 ? (
         <p className="surface-card p-6 text-center text-sm text-muted-foreground">
-          {driverId
-            ? "This driver has not submitted documents yet."
-            : "No submissions here."}
+          {driverId ? "This driver has not submitted documents yet." : "No submissions here."}
         </p>
       ) : (
         <div className="grid gap-3">
