@@ -163,13 +163,15 @@ function WalletPage() {
               }}
             />
           ) : (
-            <Button
-              className="mt-4 w-full sm:w-auto"
-              onClick={() => toast.info("UPI & card top-ups are coming soon")}
-            >
-              <Plus className="h-4 w-4" /> Add money
-            </Button>
+            // Honest state: there is no customer top-up rail yet. Customers pay
+            // per trip at checkout, so a "Add money" button here would be a
+            // dead control. Coins earned on trips are shown below.
+            <p className="mt-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              You pay for each trip at checkout — no top-up needed. Coins you earn are applied as a
+              discount on your next booking.
+            </p>
           )}
+
         </section>
 
         <section className="surface-card p-5">
