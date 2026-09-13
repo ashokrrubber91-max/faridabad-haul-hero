@@ -71,32 +71,34 @@ export function LiveTripMap({
       return;
     }
     let cancelled = false;
-    void loadGoogleMaps().then(async (g) => {
-      const geocoder = new g.maps.Geocoder();
-      const geo = async (addr: string): Promise<LatLng> => {
-        try {
-          const res = await geocoder.geocode({ address: addr, region: "IN" });
-          const loc = res.results[0]?.geometry.location;
-          return loc ? { lat: loc.lat(), lng: loc.lng() } : FARIDABAD_CENTER;
-        } catch {
-          return FARIDABAD_CENTER;
+    void loadGoogleMaps()
+      .then(async (g) => {
+        const geocoder = new g.maps.Geocoder();
+        const geo = async (addr: string): Promise<LatLng> => {
+          try {
+            const res = await geocoder.geocode({ address: addr, region: "IN" });
+            const loc = res.results[0]?.geometry.location;
+            return loc ? { lat: loc.lat(), lng: loc.lng() } : FARIDABAD_CENTER;
+          } catch {
+            return FARIDABAD_CENTER;
+          }
+        };
+        const [p, d] = await Promise.all([
+          exactPickup ? Promise.resolve(exactPickup) : geo(pickupAddress),
+          exactDrop ? Promise.resolve(exactDrop) : geo(dropAddress),
+        ]);
+        if (!cancelled) {
+          setPickup(p);
+          setDrop(d);
         }
-      };
-      const [p, d] = await Promise.all([
-        exactPickup ? Promise.resolve(exactPickup) : geo(pickupAddress),
-        exactDrop ? Promise.resolve(exactDrop) : geo(dropAddress),
-      ]);
-      if (!cancelled) {
-        setPickup(p);
-        setDrop(d);
-      }
-    }).catch(() => {
-      if (!cancelled) {
-        setMapError(true);
-        setPickup(exactPickup ?? FARIDABAD_CENTER);
-        setDrop(exactDrop ?? FARIDABAD_CENTER);
-      }
-    });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMapError(true);
+          setPickup(exactPickup ?? FARIDABAD_CENTER);
+          setDrop(exactDrop ?? FARIDABAD_CENTER);
+        }
+      });
     return () => {
       cancelled = true;
     };
@@ -184,32 +186,32 @@ export function LiveTripMap({
     let cancelled = false;
     void loadGoogleMaps()
       .then((g) => {
-      if (cancelled || !mapRef.current) return;
-      mapInstance.current = new g.maps.Map(mapRef.current, {
-        center: target ?? pickup,
-        zoom: 14,
-        disableDefaultUI: true,
-        zoomControl: true,
-        clickableIcons: false,
-        gestureHandling: "greedy",
-      });
-      pickupMarker.current = new g.maps.Marker({
-        position: pickup,
-        map: mapInstance.current,
-        label: { text: "P", color: "#fff", fontSize: "11px", fontWeight: "700" },
-      });
-      dropMarker.current = new g.maps.Marker({
-        position: drop,
-        map: mapInstance.current,
-        label: { text: "D", color: "#fff", fontSize: "11px", fontWeight: "700" },
-      });
-      const bounds = new g.maps.LatLngBounds();
-      bounds.extend(pickup);
-      bounds.extend(drop);
-      mapInstance.current.fitBounds(bounds, 60);
-      setTimeout(() => {
-        if (mapInstance.current) g.maps.event.trigger(mapInstance.current, "resize");
-      }, 250);
+        if (cancelled || !mapRef.current) return;
+        mapInstance.current = new g.maps.Map(mapRef.current, {
+          center: target ?? pickup,
+          zoom: 14,
+          disableDefaultUI: true,
+          zoomControl: true,
+          clickableIcons: false,
+          gestureHandling: "greedy",
+        });
+        pickupMarker.current = new g.maps.Marker({
+          position: pickup,
+          map: mapInstance.current,
+          label: { text: "P", color: "#fff", fontSize: "11px", fontWeight: "700" },
+        });
+        dropMarker.current = new g.maps.Marker({
+          position: drop,
+          map: mapInstance.current,
+          label: { text: "D", color: "#fff", fontSize: "11px", fontWeight: "700" },
+        });
+        const bounds = new g.maps.LatLngBounds();
+        bounds.extend(pickup);
+        bounds.extend(drop);
+        mapInstance.current.fitBounds(bounds, 60);
+        setTimeout(() => {
+          if (mapInstance.current) g.maps.event.trigger(mapInstance.current, "resize");
+        }, 250);
       })
       .catch(() => {
         if (!cancelled) setMapError(true);
@@ -235,21 +237,23 @@ export function LiveTripMap({
       routeRef.current = null;
       return;
     }
-    void loadGoogleMaps().then((g) => {
-      if (!mapInstance.current) return;
-      const path = g.maps.geometry.encoding.decodePath(encoded);
-      routeRef.current?.setMap(null);
-      routeRef.current = new g.maps.Polyline({
-        path,
-        strokeColor: "#F97316",
-        strokeOpacity: 0.85,
-        strokeWeight: 5,
-        map: mapInstance.current,
-      });
-      const bounds = new g.maps.LatLngBounds();
-      path.forEach((pt) => bounds.extend(pt));
-      mapInstance.current.fitBounds(bounds, 60);
-    }).catch(() => setMapError(true));
+    void loadGoogleMaps()
+      .then((g) => {
+        if (!mapInstance.current) return;
+        const path = g.maps.geometry.encoding.decodePath(encoded);
+        routeRef.current?.setMap(null);
+        routeRef.current = new g.maps.Polyline({
+          path,
+          strokeColor: "#F97316",
+          strokeOpacity: 0.85,
+          strokeWeight: 5,
+          map: mapInstance.current,
+        });
+        const bounds = new g.maps.LatLngBounds();
+        path.forEach((pt) => bounds.extend(pt));
+        mapInstance.current.fitBounds(bounds, 60);
+      })
+      .catch(() => setMapError(true));
   }, [road.data?.polyline]);
 
   // Move the driver marker to the real reported position only.
@@ -261,25 +265,27 @@ export function LiveTripMap({
       driverMarker.current = null;
       return;
     }
-    void loadGoogleMaps().then((g) => {
-      if (!mapInstance.current) return;
-      if (!driverMarker.current) {
-        driverMarker.current = new g.maps.Marker({
-          position: driverPos,
-          map: mapInstance.current,
-          icon: {
-            path: g.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: "#F97316",
-            fillOpacity: 1,
-            strokeColor: "#fff",
-            strokeWeight: 3,
-          },
-        });
-      } else {
-        driverMarker.current.setPosition(driverPos);
-      }
-    }).catch(() => setMapError(true));
+    void loadGoogleMaps()
+      .then((g) => {
+        if (!mapInstance.current) return;
+        if (!driverMarker.current) {
+          driverMarker.current = new g.maps.Marker({
+            position: driverPos,
+            map: mapInstance.current,
+            icon: {
+              path: g.maps.SymbolPath.CIRCLE,
+              scale: 8,
+              fillColor: "#F97316",
+              fillOpacity: 1,
+              strokeColor: "#fff",
+              strokeWeight: 3,
+            },
+          });
+        } else {
+          driverMarker.current.setPosition(driverPos);
+        }
+      })
+      .catch(() => setMapError(true));
   }, [driverPos]);
 
   const routeFailed = road.isError;

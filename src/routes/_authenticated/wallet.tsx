@@ -171,7 +171,6 @@ function WalletPage() {
               discount on your next booking.
             </p>
           )}
-
         </section>
 
         <section className="surface-card p-5">
