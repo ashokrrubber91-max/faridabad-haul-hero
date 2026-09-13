@@ -36,6 +36,8 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
   initialRef.current = initial;
 
   const [mapReady, setMapReady] = useState(false);
+  // True when the map library will not load or is not allowed for this domain.
+  const [mapFailed, setMapFailed] = useState(false);
   const [address, setAddress] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [pinSet, setPinSet] = useState(false);
@@ -62,6 +64,7 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
     setSaveKind("other");
     setAlias(init?.alias ?? "");
     setMapReady(false);
+    setMapFailed(false);
   }, [open]);
 
   // Build the map once per open, after the sheet has actually laid out its container.
@@ -72,7 +75,11 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
 
     const start = async () => {
       const g = await loadGoogleMaps().catch(() => null);
-      if (!g || cancelled) return;
+      if (cancelled) return;
+      if (!g) {
+        setMapFailed(true);
+        return;
+      }
 
       const waitForBox = () =>
         new Promise<HTMLDivElement | null>((resolve) => {
@@ -133,7 +140,11 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
       });
     };
 
-    void start();
+    // A rejected key makes the map constructor unavailable; treat that as an
+    // honest "map unavailable" state rather than an endless spinner.
+    void start().catch(() => {
+      if (!cancelled) setMapFailed(true);
+    });
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
@@ -242,10 +253,19 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
 
           <div className="relative w-full shrink-0" style={{ height: 320 }}>
             <div ref={mapRef} className="absolute inset-0 h-full w-full bg-muted" />
-            {!mapReady && (
-              <div className="pointer-events-none absolute inset-0 grid place-items-center bg-muted">
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            {mapFailed ? (
+              <div className="absolute inset-0 grid place-items-center bg-muted px-6 text-center">
+                <p className="text-xs text-muted-foreground">
+                  The map cannot be shown right now. You can still continue with the address you
+                  searched — tap &ldquo;Set location&rdquo; below, or use your current location.
+                </p>
               </div>
+            ) : (
+              !mapReady && (
+                <div className="pointer-events-none absolute inset-0 grid place-items-center bg-muted">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                </div>
+              )
             )}
             <Button
               type="button"
