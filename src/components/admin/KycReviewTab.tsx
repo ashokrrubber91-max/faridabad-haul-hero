@@ -27,14 +27,15 @@ type Kyc = Record<string, string | null> & {
   submitted_at: string;
 };
 
-export function KycReviewTab() {
-  const [filter, setFilter] = useState<"pending" | "all">("pending");
+export function KycReviewTab({ driverId }: { driverId?: string } = {}) {
+  const [filter, setFilter] = useState<"pending" | "all">(driverId ? "all" : "pending");
 
   const kyc = useQuery({
-    queryKey: ["admin-kyc", filter],
+    queryKey: ["admin-kyc", filter, driverId ?? "all-drivers"],
     queryFn: async () => {
       let q = supabase.from("driver_kyc").select("*").order("submitted_at", { ascending: false });
-      if (filter === "pending") q = q.eq("status", "pending");
+      if (driverId) q = q.eq("driver_id", driverId);
+      else if (filter === "pending") q = q.eq("status", "pending");
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as Kyc[];
@@ -45,7 +46,7 @@ export function KycReviewTab() {
 
   return (
     <section className="space-y-3">
-      <div className="flex items-center gap-2">
+      <div className={`flex items-center gap-2 ${driverId ? "hidden" : ""}`}>
         <Button
           size="sm"
           variant={filter === "pending" ? "default" : "outline"}
@@ -75,7 +76,7 @@ export function KycReviewTab() {
         </div>
       ) : rows.length === 0 ? (
         <p className="surface-card p-6 text-center text-sm text-muted-foreground">
-          No submissions here.
+          {driverId ? "This driver has not submitted documents yet." : "No submissions here."}
         </p>
       ) : (
         <div className="grid gap-3">

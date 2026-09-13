@@ -261,8 +261,9 @@ function OrdersPage() {
                     <p className="mt-1 truncate text-sm font-medium text-secondary">
                       {b.pickup_address}
                     </p>
-                    <p className="flex items-center gap-1 truncate text-sm text-muted-foreground">
-                      <ArrowRight className="h-3 w-3 shrink-0" /> {b.drop_address}
+                    <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <ArrowRight className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{b.drop_address}</span>
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {vehicleLabel(b.vehicle_type)} · {Number(b.distance_km).toFixed(1)} km
@@ -270,8 +271,13 @@ function OrdersPage() {
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="font-display text-xl text-secondary">
-                      ₹{Number(b.fare).toFixed(0)}
+                      ₹{Number(b.final_fare || b.fare).toFixed(0)}
                     </p>
+                    {Number(b.overtime_charge ?? 0) > 0 && (
+                      <p className="text-[11px] text-muted-foreground">
+                        incl. ₹{Number(b.overtime_charge).toFixed(0)} waiting
+                      </p>
+                    )}
                     <Badge
                       variant={meta.tone === "destructive" ? "destructive" : "secondary"}
                       className={tone(meta.tone)}

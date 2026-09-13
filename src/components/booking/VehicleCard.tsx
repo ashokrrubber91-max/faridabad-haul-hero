@@ -85,8 +85,8 @@ export function VehicleCard({
           </p>
         )}
         <p className="mt-1 text-[11px] text-muted-foreground">
-          {vehicle.free_loading_minutes} min free loading · {vehicle.free_unloading_minutes} min free
-          unloading
+          {vehicle.free_loading_minutes} min free loading · {vehicle.free_unloading_minutes} min
+          free unloading
         </p>
       </div>
 

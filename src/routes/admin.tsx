@@ -48,8 +48,10 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { vehicleLabel, STATUS_META, VEHICLES, BOOKING_FIELDS } from "@/lib/booking";
+import { vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
 import { KycReviewTab } from "@/components/admin/KycReviewTab";
+import { FaresVehiclesTab } from "@/components/admin/FaresVehiclesTab";
+import { BroadcastTab } from "@/components/admin/BroadcastTab";
 import { DrillDownDialog, type DrillDownColumn } from "@/components/admin/DrillDownDialog";
 import { WithdrawalsTab, DisputesTab, AuditTab } from "@/components/admin/OpsTabs";
 import { getAdminSetupState, claimFirstAdmin } from "@/lib/admin.functions";
@@ -580,7 +582,11 @@ function AdminPage() {
 
         {/* FARES */}
         <TabsContent value="fares">
-          <FaresTab bookings={all} />
+          <FaresVehiclesTab
+            lifetimeCommission={all
+              .filter((b) => b.status === "completed")
+              .reduce((sum, b) => sum + Number(b.commission_amount ?? 0), 0)}
+          />
         </TabsContent>
 
         {/* INCENTIVES */}
@@ -642,6 +648,7 @@ function DriversTab({
 }) {
   const [q, setQ] = useState("");
   const [topupFor, setTopupFor] = useState<Profile | null>(null);
+  const [kycFor, setKycFor] = useState<Profile | null>(null);
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -748,11 +755,7 @@ function DriversTab({
                   <Ban className="mr-1 h-3.5 w-3.5" />
                   Force offline
                 </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => toast.info("KYC verification module coming soon")}
-                >
+                <Button size="sm" variant="ghost" onClick={() => setKycFor(d)}>
                   <ShieldCheck className="mr-1 h-3.5 w-3.5" />
                   KYC
                 </Button>
@@ -761,6 +764,15 @@ function DriversTab({
           );
         })}
       </div>
+
+      <Dialog open={!!kycFor} onOpenChange={(o) => !o && setKycFor(null)}>
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Documents — {kycFor?.name}</DialogTitle>
+          </DialogHeader>
+          {kycFor && <KycReviewTab driverId={kycFor.id} />}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!topupFor} onOpenChange={(o) => !o && setTopupFor(null)}>
         <DialogContent>
@@ -1049,114 +1061,6 @@ function LiveTripsTab({
         </DialogContent>
       </Dialog>
     </section>
-  );
-}
-
-/* ============================== Fares & Commission ============================== */
-type FareRow = { id: string; label: string; base: number; perKm: number };
-function FaresTab({ bookings }: { bookings: Booking[] }) {
-  const [rates, setRates] = useState<FareRow[]>(() =>
-    VEHICLES.map((v) => ({
-      id: v.id,
-      label: v.label,
-      base: Number(v.base),
-      perKm: Number(v.perKm),
-    })),
-  );
-  const [commission, setCommission] = useState(10);
-
-  const totalCommission = bookings
-    .filter((b) => b.status === "completed")
-    .reduce((s, b) => s + Number(b.commission_amount ?? 0), 0);
-
-  return (
-    <div className="space-y-4">
-      <section className="surface-card p-4">
-        <h3 className="font-display text-xl tracking-wide text-secondary">Platform commission</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Applied to every completed booking. Lifetime collected:{" "}
-          <strong className="text-secondary">₹{totalCommission.toFixed(0)}</strong>
-        </p>
-        <div className="mt-3 flex items-end gap-2">
-          <div className="flex-1">
-            <Label>Commission %</Label>
-            <Input
-              type="number"
-              value={commission}
-              onChange={(e) => setCommission(Number(e.target.value))}
-            />
-          </div>
-          <Button
-            onClick={() =>
-              toast.success(
-                `Commission preview updated to ${commission}% (persist via backend config)`,
-              )
-            }
-          >
-            Save
-          </Button>
-        </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Note: default is 10%. Persisting new rates for future bookings requires a backend config
-          migration.
-        </p>
-      </section>
-
-      <section className="surface-card">
-        <div className="border-b border-border px-4 py-3">
-          <h3 className="font-display text-xl tracking-wide text-secondary">Vehicle fare rules</h3>
-        </div>
-        <div className="divide-y divide-border">
-          {rates.map((v, i) => (
-            <div
-              key={v.id}
-              className="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_120px_120px_auto] sm:items-end"
-            >
-              <div>
-                <Label className="text-xs">Vehicle</Label>
-                <p className="text-sm font-semibold text-secondary">{v.label}</p>
-              </div>
-              <div>
-                <Label className="text-xs">Base fare (₹)</Label>
-                <Input
-                  type="number"
-                  value={v.base}
-                  onChange={(e) => {
-                    const c = [...rates];
-                    c[i] = { ...c[i], base: Number(e.target.value) };
-                    setRates(c);
-                  }}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Per km (₹)</Label>
-                <Input
-                  type="number"
-                  value={v.perKm}
-                  onChange={(e) => {
-                    const c = [...rates];
-                    c[i] = { ...c[i], perKm: Number(e.target.value) };
-                    setRates(c);
-                  }}
-                />
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  toast.success(`${v.label}: base ₹${v.base}, per km ₹${v.perKm} (preview only)`)
-                }
-              >
-                Save
-              </Button>
-            </div>
-          ))}
-        </div>
-        <p className="px-4 py-3 text-xs text-muted-foreground">
-          Rates preview locally. Wire to a backend `fare_config` table to persist across sessions.
-        </p>
-      </section>
-    </div>
   );
 }
 
@@ -1625,58 +1529,6 @@ function CouponsTab({ coupons, onChanged }: { coupons: AnyRow[]; onChanged: () =
         </DialogContent>
       </Dialog>
     </div>
-  );
-}
-
-/* ============================== Broadcast ============================== */
-function BroadcastTab({ drivers, customers }: { drivers: Profile[]; customers: Profile[] }) {
-  const [audience, setAudience] = useState<"driver" | "customer">("driver");
-  const [message, setMessage] = useState("");
-
-  const send = async () => {
-    if (!message.trim()) return toast.error("Enter a message");
-    const targets = audience === "driver" ? drivers : customers;
-    const count = targets.filter((t) => t.phone).length;
-    if (count === 0) return toast.error("No recipients");
-    // Broadcast is queued locally; wire to an SMS provider to deliver externally.
-    toast.success(`Broadcast queued to ${count} ${audience}s`);
-    setMessage("");
-  };
-
-  return (
-    <section className="surface-card p-4">
-      <h3 className="font-display text-xl tracking-wide text-secondary">Send broadcast</h3>
-      <p className="text-xs text-muted-foreground">
-        Records the message for the selected audience in the SMS log. Messages are only delivered to
-        phones once an SMS provider is connected — see the go-live checklist on Overview.
-      </p>
-      <div className="mt-3 space-y-2">
-        <div>
-          <Label className="text-xs">Audience</Label>
-          <Select value={audience} onValueChange={(v) => setAudience(v as "customer" | "driver")}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="driver">Drivers ({drivers.length})</SelectItem>
-              <SelectItem value="customer">Customers ({customers.length})</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label className="text-xs">Message</Label>
-          <Input
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Rain bonus active — ₹50 extra per trip!"
-          />
-        </div>
-        <Button onClick={send}>
-          <Send className="mr-1 h-3.5 w-3.5" />
-          Send
-        </Button>
-      </div>
-    </section>
   );
 }
 

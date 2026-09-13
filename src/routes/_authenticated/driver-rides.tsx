@@ -126,8 +126,9 @@ function RideCard({ ride }: { ride: AnyRow }) {
             · {vehicleLabel(ride.vehicle_type)} · {ride.distance_km} km
           </p>
           <p className="truncate text-sm font-medium text-secondary">{ride.pickup_address}</p>
-          <p className="flex items-center gap-1 truncate text-sm text-muted-foreground">
-            <ArrowRight className="h-3 w-3" /> {ride.drop_address}
+          <p className="flex items-center gap-1 text-sm text-muted-foreground">
+            <ArrowRight className="h-3 w-3 shrink-0" />
+            <span className="truncate">{ride.drop_address}</span>
           </p>
         </div>
         <Badge variant={ride.status === "cancelled" ? "destructive" : "default"}>

@@ -32,6 +32,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { SupportChat } from "@/components/support/SupportChat";
 import { buildInvoiceHtml, openInvoice } from "@/lib/invoice";
 import { vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
+import { NotificationsCard } from "@/components/NotificationsCard";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -239,6 +240,8 @@ function AccountPage() {
           </Button>
         </div>
       </section>
+
+      <NotificationsCard />
 
       <section className="surface-card p-5">
         <div className="mb-3 flex items-center justify-between">
