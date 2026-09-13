@@ -270,8 +270,13 @@ function OrdersPage() {
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="font-display text-xl text-secondary">
-                      ₹{Number(b.fare).toFixed(0)}
+                      ₹{Number(b.final_fare || b.fare).toFixed(0)}
                     </p>
+                    {Number(b.overtime_charge ?? 0) > 0 && (
+                      <p className="text-[11px] text-muted-foreground">
+                        incl. ₹{Number(b.overtime_charge).toFixed(0)} waiting
+                      </p>
+                    )}
                     <Badge
                       variant={meta.tone === "destructive" ? "destructive" : "secondary"}
                       className={tone(meta.tone)}

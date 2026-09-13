@@ -147,6 +147,15 @@ export function TripDetailDialog({
               value={<span className="text-success">−₹{coins.toFixed(0)}</span>}
             />
           )}
+          {Number((b as Record<string, unknown>).overtime_charge ?? 0) > 0 && (
+            <Row
+              label={`Waiting charge (${
+                Number((b as Record<string, unknown>).loading_overtime_minutes ?? 0) +
+                Number((b as Record<string, unknown>).unloading_overtime_minutes ?? 0)
+              } min beyond free loading/unloading time)`}
+              value={`₹${Number((b as Record<string, unknown>).overtime_charge ?? 0).toFixed(0)}`}
+            />
+          )}
           <Row label="Amount payable" value={`₹${fare.toFixed(0)}`} />
           <Row label="Payment method" value={PAYMENT_LABEL[b.payment_method ?? "cod"] ?? "—"} />
           {b.pickup_verified_at && (
