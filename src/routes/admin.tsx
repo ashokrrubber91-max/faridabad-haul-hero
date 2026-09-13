@@ -754,11 +754,7 @@ function DriversTab({
                   <Ban className="mr-1 h-3.5 w-3.5" />
                   Force offline
                 </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => toast.info("KYC verification module coming soon")}
-                >
+                <Button size="sm" variant="ghost" onClick={() => setKycFor(d)}>
                   <ShieldCheck className="mr-1 h-3.5 w-3.5" />
                   KYC
                 </Button>
