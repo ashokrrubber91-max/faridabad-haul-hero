@@ -261,8 +261,9 @@ function OrdersPage() {
                     <p className="mt-1 truncate text-sm font-medium text-secondary">
                       {b.pickup_address}
                     </p>
-                    <p className="flex items-center gap-1 truncate text-sm text-muted-foreground">
-                      <ArrowRight className="h-3 w-3 shrink-0" /> {b.drop_address}
+                    <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <ArrowRight className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{b.drop_address}</span>
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {vehicleLabel(b.vehicle_type)} · {Number(b.distance_km).toFixed(1)} km
