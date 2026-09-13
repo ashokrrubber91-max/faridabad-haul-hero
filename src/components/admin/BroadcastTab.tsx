@@ -87,9 +87,9 @@ export function BroadcastTab({ drivers, customers }: { drivers: unknown[]; custo
         </p>
         <div className="mt-3 space-y-2">
           <div>
-            <Label className="text-xs">Audience</Label>
+            <Label className="text-xs" htmlFor="bc-audience">Audience</Label>
             <Select value={audience} onValueChange={(v) => setAudience(v as typeof audience)}>
-              <SelectTrigger>
+              <SelectTrigger id="bc-audience">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -100,8 +100,9 @@ export function BroadcastTab({ drivers, customers }: { drivers: unknown[]; custo
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Headline</Label>
+            <Label className="text-xs" htmlFor="bc-title">Headline</Label>
             <Input
+              id="bc-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={120}
@@ -109,8 +110,9 @@ export function BroadcastTab({ drivers, customers }: { drivers: unknown[]; custo
             />
           </div>
           <div>
-            <Label className="text-xs">Message</Label>
+            <Label className="text-xs" htmlFor="bc-body">Message</Label>
             <Textarea
+              id="bc-body"
               rows={3}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
