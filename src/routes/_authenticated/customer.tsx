@@ -336,7 +336,7 @@ function CustomerPage() {
   const openSearch = (mode: "pickup" | "drop") => setStage({ type: "search", mode });
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+    <div className="grid min-w-0 gap-6 lg:grid-cols-[1.1fr_1fr] [&>*]:min-w-0">
       {step === "form" ? (
         <section className="surface-card p-5">
           <h2 className="font-display text-2xl tracking-wide text-secondary">New booking</h2>
