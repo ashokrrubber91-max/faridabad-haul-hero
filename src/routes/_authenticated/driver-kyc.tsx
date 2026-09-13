@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { VEHICLES } from "@/lib/booking";
+import { useVehicleTypes } from "@/lib/vehicles";
 
 export const Route = createFileRoute("/_authenticated/driver-kyc")({
   head: () => ({ meta: [{ title: "Driver verification — MiniPort" }] }),
@@ -31,7 +31,9 @@ function DriverKycPage() {
   const [step, setStep] = useState(1);
   const [fullName, setFullName] = useState("");
   const [city, setCity] = useState("Faridabad");
-  const [vehicleId, setVehicleId] = useState<string>(VEHICLES[0].id);
+  const catalogue = useVehicleTypes();
+  const catalogueRows = catalogue.data ?? [];
+  const [vehicleId, setVehicleId] = useState<string>("");
   const [files, setFiles] = useState<Partial<Record<DocKey, File>>>({});
   const [previews, setPreviews] = useState<Partial<Record<DocKey, string>>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -192,7 +194,15 @@ function DriverKycPage() {
           <div className="space-y-3">
             <p className="text-sm font-semibold text-secondary">Choose your vehicle</p>
             <div className="grid gap-2">
-              {VEHICLES.map((v) => (
+              {catalogue.isLoading && (
+                <p className="text-sm text-muted-foreground">Loading vehicle list…</p>
+              )}
+              {catalogue.isError && (
+                <p className="text-sm text-muted-foreground">
+                  Could not load the vehicle list. Check your connection and try again.
+                </p>
+              )}
+              {catalogueRows.map((v) => (
                 <button
                   key={v.id}
                   type="button"
@@ -203,7 +213,7 @@ function DriverKycPage() {
                 >
                   <p className="text-sm font-semibold text-secondary">{v.label}</p>
                   <p className="text-xs text-muted-foreground">
-                    Up to {v.capacity} · ₹{v.perKm}/km
+                    Up to {v.capacity_label || "—"} · ₹{v.per_km_fare}/km
                   </p>
                 </button>
               ))}
