@@ -648,6 +648,7 @@ function DriversTab({
 }) {
   const [q, setQ] = useState("");
   const [topupFor, setTopupFor] = useState<Profile | null>(null);
+  const [kycFor, setKycFor] = useState<Profile | null>(null);
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -763,6 +764,15 @@ function DriversTab({
           );
         })}
       </div>
+
+      <Dialog open={!!kycFor} onOpenChange={(o) => !o && setKycFor(null)}>
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Documents — {kycFor?.name}</DialogTitle>
+          </DialogHeader>
+          {kycFor && <KycReviewTab driverId={kycFor.id} />}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!topupFor} onOpenChange={(o) => !o && setTopupFor(null)}>
         <DialogContent>
