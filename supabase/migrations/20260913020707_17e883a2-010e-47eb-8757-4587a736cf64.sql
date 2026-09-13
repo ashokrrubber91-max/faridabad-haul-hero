@@ -1,0 +1,1 @@
+GRANT SELECT (loading_overtime_minutes, unloading_overtime_minutes, overtime_charge, final_fare) ON public.bookings TO authenticated;
