@@ -407,6 +407,9 @@ function CustomerPage() {
                 setPending(pickup ?? { address: "", ...FARIDABAD_CENTER });
                 setStage({ type: "confirm", mode: "pickup" });
               }}
+              onUseMyLocation={() => void locateFor("pickup")}
+              locating={locatingMode === "pickup"}
+
             />
 
             <WaypointManager
