@@ -337,6 +337,53 @@ function CustomerPage() {
 
   const openSearch = (mode: "pickup" | "drop") => setStage({ type: "search", mode });
 
+  /**
+   * Real device location, asked for from the plain page (never while a sheet is
+   * open — mobile browsers refuse the prompt then). The pin always opens on the
+   * map afterwards so the person can check and correct the exact point, and any
+   * failure falls back to that same manual map instead of a dead end.
+   */
+  const locateFor = async (mode: "pickup" | "drop") => {
+    const existing = mode === "pickup" ? pickup : drop;
+    setStage(null);
+    setLocatingMode(mode);
+    try {
+      if ((await readPermissionState()) === "denied") throw { code: "denied" as const };
+      const fix = await getCurrentFix();
+      let address: string | null = null;
+      try {
+        const g = await loadGoogleMaps();
+        const res = await new g.maps.Geocoder().geocode({
+          location: { lat: fix.lat, lng: fix.lng },
+        });
+        address = res.results[0]?.formatted_address ?? null;
+      } catch {
+        address = null;
+      }
+      setPending({
+        address: address ?? pinnedAddress(fix.lat, fix.lng),
+        lat: fix.lat,
+        lng: fix.lng,
+        contactName: existing?.contactName,
+        contactPhone: existing?.contactPhone,
+      });
+      setStage({ type: "confirm", mode });
+      if (!address) {
+        toast.warning(
+          "We found your exact spot but no street address. Please adjust the pin or type the address.",
+        );
+      }
+    } catch (err) {
+      toast.error(geoMessage(err));
+      // Manual fallback: the map pin selector, pre-centred on whatever we know.
+      setPending(existing ?? { address: "", ...FARIDABAD_CENTER });
+      setStage({ type: "confirm", mode });
+    } finally {
+      setLocatingMode(null);
+    }
+  };
+
+
   return (
     <div className="grid min-w-0 gap-6 lg:grid-cols-[1.1fr_1fr] [&>*]:min-w-0">
       {step === "form" ? (
