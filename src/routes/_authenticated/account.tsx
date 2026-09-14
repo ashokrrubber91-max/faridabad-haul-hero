@@ -14,6 +14,8 @@ import { buildInvoiceHtml, openInvoice } from "@/lib/invoice";
 import { vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
 import { NotificationsCard } from "@/components/NotificationsCard";
 import { DriverAccountProfile } from "@/components/driver/DriverAccountProfile";
+import { AdminAccountProfile } from "@/components/admin/AdminAccountProfile";
+import { signOutEverywhere } from "@/lib/session";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -37,7 +39,10 @@ function AccountPage() {
   const [gstin, setGstin] = useState("");
   const [bizName, setBizName] = useState("");
   const [bizAddr, setBizAddr] = useState("");
+  const isAdmin = roles.includes("admin");
   const isDriverMode = roles.includes("driver") && activeMode === "driver";
+  // Customer billing details only belong to a customer-mode, non-admin session.
+  const showCustomerSections = !isDriverMode && !isAdmin;
 
   const addresses = useQuery({
     queryKey: ["saved-addresses", user?.id], enabled: !!user,
@@ -91,7 +96,7 @@ function AccountPage() {
     const html = data.map((b) => buildInvoiceHtml(b, { name: profile?.name ?? "Customer", phone: profile?.phone ?? "", gstin: defaultGst?.gstin ?? null, businessName: defaultGst?.business_name ?? null, businessAddress: defaultGst?.business_address ?? null }, vehicleLabel(b.vehicle_type))).join('<div style="page-break-after:always"></div>');
     if (!openInvoice(html)) toast.error("Allow pop-ups to download invoices");
   };
-  const signOut = async () => { await qc.cancelQueries(); qc.clear(); await supabase.auth.signOut(); window.location.href = "/auth"; };
+  const signOut = () => void signOutEverywhere(qc);
 
   return (
     <div className="space-y-5">
