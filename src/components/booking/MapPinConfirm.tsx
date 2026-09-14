@@ -257,7 +257,7 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
               type="button"
               size="sm"
               variant="secondary"
-              onClick={useCurrentLocation}
+              onClick={() => void useCurrentLocation()}
               disabled={locating}
               className="absolute bottom-3 right-3 shadow-md"
             >
