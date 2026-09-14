@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, MapPin, Package } from "lucide-react";
+import { ArrowLeft, ArrowRight, MapPin, Package, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { vehicleLabel, type VehicleId } from "@/lib/booking";
 import type { PlacePick } from "@/components/booking/LocationSearchOverlay";
 import type { CustomerGstin } from "@/components/booking/GstinSelect";
 import { GoodsChecklist } from "@/components/booking/GoodsChecklist";
+import { useVehicleMap, vehicleSpecs } from "@/lib/vehicles";
 
 export function ReviewBooking({
   pickup,
@@ -19,6 +20,8 @@ export function ReviewBooking({
   notes,
   gstin,
   onBack,
+  onEditPickup,
+  onEditDrop,
   onConfirm,
   submitting,
 }: {
@@ -33,10 +36,14 @@ export function ReviewBooking({
   notes: string;
   gstin: CustomerGstin | null;
   onBack: () => void;
+  onEditPickup?: () => void;
+  onEditDrop?: () => void;
   onConfirm: () => void;
   submitting: boolean;
 }) {
   const [checklistOpen, setChecklistOpen] = useState(false);
+  const { map } = useVehicleMap();
+  const specs = map.has(vehicle) ? vehicleSpecs(map.get(vehicle)!) : [];
 
   return (
     <div className="surface-card p-5">
@@ -50,8 +57,8 @@ export function ReviewBooking({
         <div className="rounded-md border bg-muted/30 p-3">
           <div className="flex items-start justify-between gap-2">
             <Stop label="Pickup" address={pickup.address} dotClass="text-primary" />
-            <Button type="button" size="sm" variant="ghost" onClick={onBack}>
-              Edit location
+            <Button type="button" size="sm" variant="ghost" onClick={onEditPickup ?? onBack}>
+              <Pencil className="h-3.5 w-3.5" /> Edit on map
             </Button>
           </div>
           {stops.map((s, i) => (
@@ -59,8 +66,8 @@ export function ReviewBooking({
           ))}
           <div className="flex items-start justify-between gap-2">
             <Stop label="Drop" address={drop.address} dotClass="text-success" last />
-            <Button type="button" size="sm" variant="ghost" onClick={onBack}>
-              Edit location
+            <Button type="button" size="sm" variant="ghost" onClick={onEditDrop ?? onBack}>
+              <Pencil className="h-3.5 w-3.5" /> Edit on map
             </Button>
           </div>
         </div>
@@ -71,6 +78,21 @@ export function ReviewBooking({
           </div>
           <Badge variant="secondary">{distanceKm} km</Badge>
         </div>
+        {specs.length > 0 && (
+          <div className="rounded-md border p-3">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+              Vehicle specifications
+            </p>
+            <dl className="mt-1 space-y-1 text-sm">
+              {specs.map((s) => (
+                <div key={s.label} className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">{s.label}</dt>
+                  <dd className="text-right font-medium text-secondary">{s.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
         {notes.trim() && (
           <div className="rounded-md border p-3">
             <p className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">

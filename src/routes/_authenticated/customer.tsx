@@ -520,6 +520,14 @@ function CustomerPage() {
             notes={notes}
             gstin={selectedGstin}
             onBack={() => setStep("form")}
+            onEditPickup={() => {
+              setPending(pickup);
+              setStage({ type: "confirm", mode: "pickup" });
+            }}
+            onEditDrop={() => {
+              setPending(drop);
+              setStage({ type: "confirm", mode: "drop" });
+            }}
             onConfirm={() => create.mutate()}
             submitting={create.isPending}
           />
