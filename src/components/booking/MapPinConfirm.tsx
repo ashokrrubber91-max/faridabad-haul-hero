@@ -159,7 +159,7 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
     }
   };
 
-  const useCurrentLocation = async () => {
+  const fetchCurrentLocation = async () => {
     setLocating(true);
     try {
       const fix = await getCurrentFix();
@@ -258,7 +258,7 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
               type="button"
               size="sm"
               variant="secondary"
-              onClick={() => void useCurrentLocation()}
+              onClick={() => void fetchCurrentLocation()}
               disabled={locating}
               className="absolute bottom-3 right-3 shadow-md"
             >
