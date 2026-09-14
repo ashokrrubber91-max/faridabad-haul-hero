@@ -96,6 +96,8 @@ export function cancellationSummary(booking: {
   cancellation_reason?: string | null;
   cancelled_by?: string | null;
   cancellation_category?: string | null;
+  cancelled_at?: string | null;
+  updated_at?: string | null;
 }): CancellationSummary | null {
   const status = booking.status ?? "";
   const closed = status === "cancelled" || status === "expired";
@@ -106,6 +108,7 @@ export function cancellationSummary(booking: {
       title: "Payment failed — booking not cancelled",
       who: null,
       reason: "Retry the online payment or switch this same booking to cash.",
+      at: null,
       isPaymentFailure: true,
     };
   }
@@ -126,6 +129,9 @@ export function cancellationSummary(booking: {
     title,
     who: ACTOR_LABEL[actor] ?? null,
     reason,
+    // Only the recorded closing time — never the row's last-touched time as a stand-in.
+    at: closedAtLabel(booking.cancelled_at),
     isPaymentFailure: false,
   };
 }
+
