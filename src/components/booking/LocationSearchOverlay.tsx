@@ -255,7 +255,15 @@ export function LocationSearchOverlay({
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => void pickCurrentLocation()}
+                    onClick={() => {
+                      if (onUseDeviceLocation) {
+                        // Close this sheet first, then ask from the plain page.
+                        onOpenChange(false);
+                        onUseDeviceLocation();
+                        return;
+                      }
+                      void pickCurrentLocation();
+                    }}
                     disabled={locating}
                   >
                     {locating ? (
@@ -267,6 +275,7 @@ export function LocationSearchOverlay({
                   </Button>
                   {geoError && <p className="mt-2 text-xs text-destructive">{geoError}</p>}
                 </div>
+
 
                 {(recent.data ?? []).length > 0 && (
                   <div className="border-b p-3">
