@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.admin_upsert_vehicle_type(text,text,text,integer,text,text[],numeric,numeric,integer,integer,numeric,boolean,integer,text);

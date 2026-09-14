@@ -1588,106 +1588,58 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      admin_upsert_vehicle_type:
-        | {
-            Args: {
-              _active: boolean
-              _base_fare: number
-              _capacity_label: string
-              _free_loading_minutes: number
-              _free_unloading_minutes: number
-              _good_for: string[]
-              _id: string
-              _image_url?: string
-              _label: string
-              _load_area: string
-              _overtime_rate_per_min: number
-              _per_km_fare: number
-              _sort_order: number
-              _weight_limit_kg: number
-            }
-            Returns: {
-              active: boolean
-              base_fare: number
-              capacity_label: string
-              created_at: string
-              free_loading_minutes: number
-              free_unloading_minutes: number
-              good_for: string[]
-              height_ft: number | null
-              id: string
-              image_url: string | null
-              label: string
-              length_ft: number | null
-              load_area: string
-              overtime_rate_per_min: number
-              payload_kg: number | null
-              per_km_fare: number
-              sort_order: number
-              spec_notes: string | null
-              updated_at: string
-              weight_limit_kg: number | null
-              width_ft: number | null
-            }
-            SetofOptions: {
-              from: "*"
-              to: "vehicle_types"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-        | {
-            Args: {
-              _active: boolean
-              _base_fare: number
-              _capacity_label: string
-              _free_loading_minutes: number
-              _free_unloading_minutes: number
-              _good_for: string[]
-              _height_ft?: number
-              _id: string
-              _image_url: string
-              _label: string
-              _length_ft?: number
-              _load_area: string
-              _overtime_rate_per_min: number
-              _payload_kg?: number
-              _per_km_fare: number
-              _sort_order: number
-              _spec_notes?: string
-              _weight_limit_kg: number
-              _width_ft?: number
-            }
-            Returns: {
-              active: boolean
-              base_fare: number
-              capacity_label: string
-              created_at: string
-              free_loading_minutes: number
-              free_unloading_minutes: number
-              good_for: string[]
-              height_ft: number | null
-              id: string
-              image_url: string | null
-              label: string
-              length_ft: number | null
-              load_area: string
-              overtime_rate_per_min: number
-              payload_kg: number | null
-              per_km_fare: number
-              sort_order: number
-              spec_notes: string | null
-              updated_at: string
-              weight_limit_kg: number | null
-              width_ft: number | null
-            }
-            SetofOptions: {
-              from: "*"
-              to: "vehicle_types"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
+      admin_upsert_vehicle_type: {
+        Args: {
+          _active: boolean
+          _base_fare: number
+          _capacity_label: string
+          _free_loading_minutes: number
+          _free_unloading_minutes: number
+          _good_for: string[]
+          _height_ft?: number
+          _id: string
+          _image_url: string
+          _label: string
+          _length_ft?: number
+          _load_area: string
+          _overtime_rate_per_min: number
+          _payload_kg?: number
+          _per_km_fare: number
+          _sort_order: number
+          _spec_notes?: string
+          _weight_limit_kg: number
+          _width_ft?: number
+        }
+        Returns: {
+          active: boolean
+          base_fare: number
+          capacity_label: string
+          created_at: string
+          free_loading_minutes: number
+          free_unloading_minutes: number
+          good_for: string[]
+          height_ft: number | null
+          id: string
+          image_url: string | null
+          label: string
+          length_ft: number | null
+          load_area: string
+          overtime_rate_per_min: number
+          payload_kg: number | null
+          per_km_fare: number
+          sort_order: number
+          spec_notes: string | null
+          updated_at: string
+          weight_limit_kg: number | null
+          width_ft: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "vehicle_types"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       attach_delivery_photo: {
         Args: { _booking_id: string; _pod_path: string }
         Returns: boolean
