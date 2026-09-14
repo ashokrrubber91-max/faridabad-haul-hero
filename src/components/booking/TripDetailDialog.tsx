@@ -211,6 +211,8 @@ export function TripDetailDialog({
               <p className="text-xs text-muted-foreground">{closure.who}</p>
             )}
             <p className="text-muted-foreground">{closure.reason ?? "No reason recorded."}</p>
+            {closure.at && <p className="text-xs text-muted-foreground">Closed on {closure.at}</p>}
+
             {b.payment_status === "paid" && (
               <p className="mt-1 text-xs text-muted-foreground">
                 Paid online — a refund is processed to your original payment method within 5–7
