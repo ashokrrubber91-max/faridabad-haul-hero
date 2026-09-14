@@ -26,6 +26,8 @@ import { ReviewBooking } from "@/components/booking/ReviewBooking";
 import { LocationSearchOverlay, type PlacePick } from "@/components/booking/LocationSearchOverlay";
 import { MapPinConfirm } from "@/components/booking/MapPinConfirm";
 import { LiveTripMap } from "@/components/booking/LiveTripMap";
+import { DriverApproachCard } from "@/components/booking/DriverApproachCard";
+
 import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
 import { SupportChat } from "@/components/support/SupportChat";
 import { FARIDABAD_CENTER } from "@/lib/google-maps";
@@ -587,6 +589,17 @@ function CustomerPage() {
                       </Badge>
                     </div>
                   </div>
+                  {(b.status === "accepted" || b.status === "in_progress") && (
+                    <DriverApproachCard
+                      bookingId={b.id}
+                      driverId={b.driver_id}
+                      vehicleType={b.vehicle_type}
+                      phase={b.status === "accepted" ? "accepted" : "in_progress"}
+                      pickupAddress={b.pickup_address}
+                      pickupLat={b.pickup_lat}
+                      pickupLng={b.pickup_lng}
+                    />
+                  )}
                   {(b.status === "accepted" || b.status === "in_progress") && (
                     <LiveTripMap
                       bookingId={b.id}
