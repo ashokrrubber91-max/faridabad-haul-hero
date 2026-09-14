@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { loadGoogleMaps, FARIDABAD_CENTER } from "@/lib/google-maps";
 import { getCurrentFix, geoMessage } from "@/lib/geolocation";
+import { lookupAddress } from "@/lib/address-lookup";
 import { pinnedAddress } from "@/lib/address";
 
 import { useQuery } from "@tanstack/react-query";
@@ -129,7 +130,6 @@ export function LocationSearchOverlay({
       const fix = await getCurrentFix();
       const address = await lookupAddress(fix.lat, fix.lng);
       onPick({
-
         address: address ?? pinnedAddress(fix.lat, fix.lng),
         lat: fix.lat,
         lng: fix.lng,

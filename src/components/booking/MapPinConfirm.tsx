@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Home, Store, Bookmark, ArrowLeft, Crosshair, Check, MapPin } from "lucide-react";
+import { lookupAddress } from "@/lib/address-lookup";
 import { loadGoogleMaps, FARIDABAD_CENTER } from "@/lib/google-maps";
 import { getCurrentFix, geoMessage } from "@/lib/geolocation";
 
@@ -161,7 +162,6 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
       setLocating(false);
       setPinSet(true);
     }
-
   };
 
   const fetchCurrentLocation = async () => {

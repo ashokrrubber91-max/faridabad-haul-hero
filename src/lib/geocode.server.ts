@@ -27,8 +27,11 @@ export async function reverseGeocodeServer(lat: number, lng: number): Promise<st
 
   if (response.status === 403) {
     const details: Array<{ reason?: string }> =
-      ((await response.json().catch(() => null)) as { error?: { details?: Array<{ reason?: string }> } } | null)
-        ?.error?.details ?? [];
+      (
+        (await response.json().catch(() => null)) as {
+          error?: { details?: Array<{ reason?: string }> };
+        } | null
+      )?.error?.details ?? [];
     const reason = details.find((d) => d.reason)?.reason;
     console.error(`Geocoding denied (403) reason=${reason ?? "unknown"}`);
     return null;
