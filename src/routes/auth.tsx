@@ -361,7 +361,6 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
 
   const submit = sendCode;
 
-
   return (
     <form onSubmit={submit} className="space-y-4">
       <div>
@@ -435,7 +434,6 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
       <p className="text-center text-xs text-muted-foreground">
         We text a one-time code to confirm your number before the account is created.
       </p>
-
     </form>
   );
 }

@@ -85,11 +85,7 @@ export function BecomeDriverCard({ userId }: { userId: string }) {
       ) : (
         <div className="mt-3 space-y-2">
           {!status && kycStatus === "not_submitted" && (
-            <Button
-              className="w-full"
-              disabled={apply.isPending}
-              onClick={() => apply.mutate()}
-            >
+            <Button className="w-full" disabled={apply.isPending} onClick={() => apply.mutate()}>
               {apply.isPending ? "Starting…" : "Apply to drive"}
             </Button>
           )}
@@ -97,9 +93,7 @@ export function BecomeDriverCard({ userId }: { userId: string }) {
             <Button variant="outline" className="w-full justify-start" asChild>
               <Link to="/driver-kyc">
                 <Truck className="h-4 w-4" />
-                {kycStatus === "not_submitted"
-                  ? "Add vehicle & documents"
-                  : "Review my documents"}
+                {kycStatus === "not_submitted" ? "Add vehicle & documents" : "Review my documents"}
               </Link>
             </Button>
           )}

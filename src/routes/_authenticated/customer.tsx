@@ -602,7 +602,6 @@ function CustomerPage() {
                   )}
                   {(b.status === "accepted" || b.status === "in_progress") && (
                     <LiveTripMap
-
                       bookingId={b.id}
                       driverId={b.driver_id}
                       pickupAddress={b.pickup_address}

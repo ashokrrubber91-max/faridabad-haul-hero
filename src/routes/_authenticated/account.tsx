@@ -38,7 +38,6 @@ import { AdminAccountProfile } from "@/components/admin/AdminAccountProfile";
 import { signOutEverywhere } from "@/lib/session";
 import { BecomeDriverCard } from "@/components/driver/BecomeDriverCard";
 
-
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
     meta: [
