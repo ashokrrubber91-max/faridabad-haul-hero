@@ -378,16 +378,13 @@ function AccountPage() {
               </ul>
             )}
           </section>
+          {user && <BecomeDriverCard userId={user.id} />}
           <section className="surface-card space-y-2 p-5">
             <h2 className="font-display text-xl tracking-wide text-secondary">More</h2>
             <Button variant="outline" className="w-full justify-start" onClick={downloadMonthly}>
               <FileText className="h-4 w-4" /> Download this month&rsquo;s invoices
             </Button>
-            <Button variant="outline" className="w-full justify-start" asChild>
-              <Link to="/driver-kyc">
-                <Truck className="h-4 w-4" /> Become a MiniPort driver
-              </Link>
-            </Button>
+
             <a
               className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
               href="/privacy.html"
