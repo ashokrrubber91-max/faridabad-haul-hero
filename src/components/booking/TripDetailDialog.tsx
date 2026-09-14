@@ -104,7 +104,9 @@ export function TripDetailDialog({
     unloadMins = minutesBetween(b.unloading_started_at, b.unloading_stopped_at);
   const closure = cancellationSummary(b);
   const switchToCash = async () => {
+    if (switchingCash) return;
     setSwitchingCash(true);
+
     const { error } = await supabase.rpc("switch_failed_payment_to_cod", { _booking_id: b.id });
     setSwitchingCash(false);
     if (error) return toast.error(error.message);
