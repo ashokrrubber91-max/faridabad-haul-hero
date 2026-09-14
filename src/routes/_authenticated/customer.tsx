@@ -10,6 +10,8 @@ import {
   ChevronRight,
   Map as MapIcon,
   X,
+  LocateFixed,
+
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
