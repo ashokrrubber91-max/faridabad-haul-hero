@@ -7,6 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Home, Store, Bookmark, ArrowLeft, Crosshair, Check, MapPin } from "lucide-react";
 import { loadGoogleMaps, FARIDABAD_CENTER } from "@/lib/google-maps";
+import { getCurrentFix, geoMessage } from "@/lib/geolocation";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
