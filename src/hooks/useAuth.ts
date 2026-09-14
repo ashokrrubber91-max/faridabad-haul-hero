@@ -235,7 +235,7 @@ export function useAuth(): AuthState {
     [user],
   );
 
-  return { user, role, roles, profile, activeMode, setActiveMode, loading };
+  return { user, role, roles, profile, activeMode, setActiveMode, loading, locationShare };
 }
 
 /**
