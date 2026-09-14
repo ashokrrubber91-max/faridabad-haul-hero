@@ -79,6 +79,44 @@ export type Database = {
           },
         ]
       }
+      booking_share_links: {
+        Row: {
+          booking_id: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          revoked_at: string | null
+          token: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          token: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_share_links_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_stops: {
         Row: {
           address: string
@@ -1775,6 +1813,24 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_booking_share_link: {
+        Args: { _booking_id: string }
+        Returns: {
+          booking_id: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          revoked_at: string | null
+          token: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "booking_share_links"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       decline_booking: { Args: { _booking_id: string }; Returns: boolean }
       driver_update_account_profile: {
         Args: {
@@ -1875,6 +1931,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      revoke_booking_share_links: {
+        Args: { _booking_id: string }
+        Returns: number
+      }
       set_booking_stage: {
         Args: { _action: string; _booking_id: string }
         Returns: {
@@ -1939,6 +1999,7 @@ export type Database = {
           rides: number
         }[]
       }
+      shared_trip_view: { Args: { _token: string }; Returns: Json }
       shares_booking_with: {
         Args: { _a: string; _b: string }
         Returns: boolean
