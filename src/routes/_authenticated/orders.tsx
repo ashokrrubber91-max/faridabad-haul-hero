@@ -333,7 +333,6 @@ function OrdersPage() {
                       {closure.at && (
                         <p className="mt-0.5 text-muted-foreground">Closed on {closure.at}</p>
                       )}
-
                     </div>
                   );
                 })()}

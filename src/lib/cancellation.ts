@@ -75,7 +75,6 @@ function closedAtLabel(value?: string | null): string | null {
   return t.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
 }
 
-
 const ACTOR_LABEL: Record<string, string> = {
   customer: "Cancelled by customer",
   driver: "Cancelled by driver",
@@ -134,4 +133,3 @@ export function cancellationSummary(booking: {
     isPaymentFailure: false,
   };
 }
-

@@ -381,11 +381,12 @@ export function DisputesTab({
                             {closure.who && closure.who !== closure.title
                               ? ` · ${closure.who}`
                               : ""}
-                            {closure.reason ? ` · Reason: ${closure.reason}` : " · No reason recorded"}
+                            {closure.reason
+                              ? ` · Reason: ${closure.reason}`
+                              : " · No reason recorded"}
                             {closure.at ? ` · ${closure.at}` : ""}
                           </p>
                         );
-
                       })()}
                       {b.review && (
                         <p className="mt-1 text-xs italic text-muted-foreground">“{b.review}”</p>
