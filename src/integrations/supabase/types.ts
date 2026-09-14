@@ -1702,6 +1702,42 @@ export type Database = {
         }
       }
       decline_booking: { Args: { _booking_id: string }; Returns: boolean }
+      driver_update_account_profile: {
+        Args: {
+          _insurance_url?: string
+          _number_plate_url?: string
+          _puc_url?: string
+          _vehicle_number?: string
+          _vehicle_photo_url?: string
+        }
+        Returns: {
+          city: string
+          dl_back_url: string | null
+          dl_front_url: string | null
+          driver_id: string
+          full_name: string
+          id_proof_url: string | null
+          insurance_url: string | null
+          number_plate_url: string | null
+          puc_url: string | null
+          rc_url: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["kyc_status"]
+          submitted_at: string
+          updated_at: string
+          vehicle_id: string
+          vehicle_number: string | null
+          vehicle_photo_url: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "driver_kyc"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       expire_stale_bookings: { Args: never; Returns: number }
       get_booking_otps: {
         Args: { _booking_id: string }
@@ -1856,6 +1892,58 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "driver_kyc"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      switch_failed_payment_to_cod: {
+        Args: { _booking_id: string }
+        Returns: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          coins_redeemed: number
+          commission_amount: number
+          commission_rate: number
+          coupon_code: string | null
+          coupon_discount: number
+          created_at: string
+          customer_id: string
+          distance_km: number
+          driver_id: string | null
+          driver_net_earning: number
+          drop_address: string
+          drop_lat: number | null
+          drop_lng: number | null
+          drop_verified_at: string | null
+          expires_at: string | null
+          fare: number
+          final_fare: number | null
+          id: string
+          loading_overtime_minutes: number
+          loading_started_at: string | null
+          loading_stopped_at: string | null
+          notes: string | null
+          overtime_charge: number
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_verified_at: string | null
+          pod_photo_url: string | null
+          rating: number | null
+          review: string | null
+          service_zone: string
+          status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
+          unloading_started_at: string | null
+          unloading_stopped_at: string | null
+          updated_at: string
+          vehicle_type: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bookings"
           isOneToOne: true
           isSetofReturn: false
         }
