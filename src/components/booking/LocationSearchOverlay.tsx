@@ -63,7 +63,6 @@ export function LocationSearchOverlay({
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
 
-
   const saved = useQuery({
     queryKey: ["saved-addresses", user?.id],
     enabled: !!user && open,
@@ -275,7 +274,6 @@ export function LocationSearchOverlay({
                   </Button>
                   {geoError && <p className="mt-2 text-xs text-destructive">{geoError}</p>}
                 </div>
-
 
                 {(recent.data ?? []).length > 0 && (
                   <div className="border-b p-3">

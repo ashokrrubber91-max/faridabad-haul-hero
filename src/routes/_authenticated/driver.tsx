@@ -436,7 +436,6 @@ function DriverPage() {
 
       <PushAlertToggle />
 
-
       {/* Stats */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Today's Earnings" value={`₹${todayEarnings.toFixed(0)}`} />

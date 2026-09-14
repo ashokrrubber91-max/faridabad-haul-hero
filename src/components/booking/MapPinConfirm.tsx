@@ -176,7 +176,6 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
     }
   };
 
-
   useEffect(() => {
     if (useMyPhone && profile?.phone) setContactPhone(profile.phone);
   }, [useMyPhone, profile]);

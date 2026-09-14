@@ -11,7 +11,6 @@ import {
   Map as MapIcon,
   X,
   LocateFixed,
-
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -390,7 +389,6 @@ function CustomerPage() {
     }
   };
 
-
   return (
     <div className="grid min-w-0 gap-6 lg:grid-cols-[1.1fr_1fr] [&>*]:min-w-0">
       {step === "form" ? (
@@ -411,7 +409,6 @@ function CustomerPage() {
               }}
               onUseMyLocation={() => void locateFor("pickup")}
               locating={locatingMode === "pickup"}
-
             />
 
             <WaypointManager
@@ -448,7 +445,6 @@ function CustomerPage() {
               }}
               onUseMyLocation={() => void locateFor("drop")}
               locating={locatingMode === "drop"}
-
             />
 
             <div>
@@ -926,7 +922,6 @@ function LocationRow({
     </div>
   );
 }
-
 
 function tone(t: "warning" | "primary" | "success" | "muted" | "destructive") {
   switch (t) {

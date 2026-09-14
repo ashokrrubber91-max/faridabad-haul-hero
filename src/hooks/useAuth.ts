@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { GEO_MESSAGES, isStaleFix } from "@/lib/geolocation";
 
-
 export type AppRole = "customer" | "driver" | "admin";
 export type ActiveMode = "customer" | "driver";
 export type KycStatus = "not_submitted" | "pending" | "approved" | "rejected";
@@ -37,7 +36,6 @@ export interface AuthState {
   setActiveMode: (m: ActiveMode) => Promise<void>;
   locationShare: DriverLocationShare;
 }
-
 
 export function useAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null);
@@ -109,8 +107,7 @@ export function useAuth(): AuthState {
   const [geoAttempt, setGeoAttempt] = useState(0);
   const retryLocation = useCallback(() => setGeoAttempt((n) => n + 1), []);
 
-  const sharingEnabled =
-    !!user && roles.includes("driver") && profile?.kyc_status === "approved";
+  const sharingEnabled = !!user && roles.includes("driver") && profile?.kyc_status === "approved";
 
   useEffect(() => {
     if (!sharingEnabled || !user) {
@@ -207,7 +204,6 @@ export function useAuth(): AuthState {
     stale: share.state === "live" ? isStaleFix(share.lastFixAt) : false,
     retry: retryLocation,
   };
-
 
   const role: AppRole | null = roles.includes("admin")
     ? "admin"
