@@ -33,6 +33,7 @@ import { CheckoutExtras, type PaymentMethod } from "@/components/booking/Checkou
 import { SupportChat } from "@/components/support/SupportChat";
 import { FARIDABAD_CENTER, loadGoogleMaps } from "@/lib/google-maps";
 import { getCurrentFix, geoMessage, readPermissionState } from "@/lib/geolocation";
+import { lookupAddress } from "@/lib/address-lookup";
 import { pinnedAddress } from "@/lib/address";
 
 import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
