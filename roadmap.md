@@ -35,7 +35,7 @@
 
 ## Batch 9 — Phone validation (partly done)
 - [x] Strict 10-digit Indian mobile (`^[6-9]\d{9}$`) on client and enforced by a database trigger
-- [ ] Mandatory signup OTP — blocked: needs an SMS provider (Twilio deferred by request)
+- [x] Mandatory signup OTP flow built and enforced (no account without a verified code); delivery still needs an SMS provider — no fake or universal code is ever accepted
 
 ## Still blocked on external providers
 - Signup OTP delivery: SMS provider not connected
