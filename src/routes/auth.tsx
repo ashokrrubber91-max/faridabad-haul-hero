@@ -256,43 +256,111 @@ function SignInForm() {
   );
 }
 
+/**
+ * Sign-up is gated on a real SMS one-time code: the account is only created and
+ * activated after the code sent to that number is verified. If SMS delivery is
+ * not configured, the person is told exactly that — no code is faked, and no
+ * account is activated from an unverified number.
+ */
 function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"customer" | "driver">(defaultRole);
   const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState<"details" | "verify">("details");
+  const [code, setCode] = useState("");
+  const [smsUnavailable, setSmsUnavailable] = useState(false);
 
-  const submit = async (e: React.FormEvent) => {
+  const sendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
     if (password.length < 6) return toast.error("Password must be at least 6 characters");
     if (name.trim().length < 2) return toast.error("Enter your name");
 
     setBusy(true);
-    const email = phoneToEmail(phone);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
+    const { error } = await supabase.auth.signInWithOtp({
+      phone: `+91${normalisePhone(phone)}`,
       options: {
+        shouldCreateUser: true,
         data: { phone: normalisePhone(phone), name: name.trim(), role },
-        emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
       },
+    });
+    setBusy(false);
+    if (error) {
+      setSmsUnavailable(true);
+      toast.error(
+        "We can't verify your number yet — SMS sending isn't set up on this app, so no account was created. Please contact MiniPort support.",
+      );
+      return;
+    }
+    setSmsUnavailable(false);
+    setStep("verify");
+    toast.success(`Verification code sent to +91 ${normalisePhone(phone)}`);
+  };
+
+  const verifyAndCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (code.length < 4) return toast.error("Enter the code you received");
+    setBusy(true);
+    const { error } = await supabase.auth.verifyOtp({
+      phone: `+91${normalisePhone(phone)}`,
+      token: code,
+      type: "sms",
     });
     if (error) {
       setBusy(false);
       toast.error(error.message);
       return;
     }
-    // If email confirmation is off (default for Lovable Cloud), session is active.
-    const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+    // Number verified — attach the email/password login to the same account so
+    // the person can also sign in with a password later.
+    const { error: linkError } = await supabase.auth.updateUser({
+      email: phoneToEmail(phone),
+      password,
+      data: { phone: normalisePhone(phone), name: name.trim(), role },
+    });
     setBusy(false);
-    if (signInErr) {
-      toast.success("Account created \u2014 you can sign in now");
-    } else {
-      toast.success("Welcome to MiniPort!");
-    }
+    if (linkError) toast.success("Number verified — welcome to MiniPort!");
+    else toast.success("Welcome to MiniPort!");
   };
+
+  if (step === "verify") {
+    return (
+      <form onSubmit={verifyAndCreate} className="space-y-4">
+        <div>
+          <Label htmlFor="signup-code">Enter the code sent to +91 {normalisePhone(phone)}</Label>
+          <Input
+            id="signup-code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            placeholder="••••••"
+            className="text-center text-lg tracking-[0.4em]"
+            required
+          />
+        </div>
+        <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
+          {busy ? "Verifying\u2026" : "Verify & create account"}
+        </Button>
+        <button
+          type="button"
+          onClick={() => {
+            setStep("details");
+            setCode("");
+          }}
+          className="w-full text-center text-xs text-muted-foreground underline"
+        >
+          Change details
+        </button>
+      </form>
+    );
+  }
+
+  const submit = sendCode;
+
 
   return (
     <form onSubmit={submit} className="space-y-4">
