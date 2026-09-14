@@ -24,6 +24,7 @@ import {
   Wallet as WalletIcon,
   Send,
   Search,
+  LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,7 @@ import { DrillDownDialog, type DrillDownColumn } from "@/components/admin/DrillD
 import { WithdrawalsTab, DisputesTab, AuditTab } from "@/components/admin/OpsTabs";
 import { getAdminSetupState, claimFirstAdmin } from "@/lib/admin.functions";
 import { SystemStatus } from "@/components/admin/SystemStatus";
+import { signOutEverywhere } from "@/lib/session";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — MiniPort" }] }),
@@ -353,9 +355,26 @@ function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-display text-3xl tracking-wide text-secondary">Admin Console</h2>
-        <p className="text-sm text-muted-foreground">MiniPort operations · Faridabad</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-3xl tracking-wide text-secondary">Admin Console</h2>
+          <p className="text-sm text-muted-foreground">MiniPort operations · Faridabad</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" asChild>
+            <Link to="/account">
+              <UserRound className="h-3.5 w-3.5" /> Admin profile
+            </Link>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-destructive"
+            onClick={() => void signOutEverywhere(qc)}
+          >
+            <LogOut className="h-3.5 w-3.5" /> Log out
+          </Button>
+        </div>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
