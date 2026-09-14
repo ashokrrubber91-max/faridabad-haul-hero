@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Home, Store, Bookmark, ArrowLeft, Crosshair, Check, MapPin } from "lucide-react";
+import { lookupAddress } from "@/lib/address-lookup";
 import { loadGoogleMaps, FARIDABAD_CENTER } from "@/lib/google-maps";
 import { getCurrentFix, geoMessage } from "@/lib/geolocation";
 
@@ -149,8 +150,12 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
     setLocating(true);
     setCoords({ lat, lng });
     try {
-      const res = await geocoderRef.current?.geocode({ location: { lat, lng } });
-      if (res?.results[0]) setAddress(res.results[0].formatted_address);
+      const readable = await lookupAddress(lat, lng);
+      if (readable) setAddress(readable);
+      else {
+        const res = await geocoderRef.current?.geocode({ location: { lat, lng } });
+        if (res?.results[0]) setAddress(res.results[0].formatted_address);
+      }
     } catch {
       /* keep whatever address we have */
     } finally {
