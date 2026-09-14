@@ -1,26 +1,47 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { FileImage, Loader2, Save, Truck } from "lucide-react";
+import { FileImage, Loader2, Save, ShieldCheck, Truck } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useVehicleTypes } from "@/lib/vehicles";
 
 const DOCS = [
+  ["driver_photo_url", "Driver photo"],
   ["vehicle_photo_url", "Vehicle photo"],
   ["insurance_url", "Insurance photo"],
   ["puc_url", "PUC photo"],
   ["number_plate_url", "Number plate photo"],
+  ["poc_photo_url", "Contact person photo"],
 ] as const;
 type DocKey = (typeof DOCS)[number][0];
+
+/** Documents captured during KYC; shown here read-only so drivers can verify them. */
+const KYC_DOCS = [
+  ["dl_front_url", "Driving licence — front"],
+  ["dl_back_url", "Driving licence — back"],
+  ["rc_url", "Registration certificate (RC)"],
+  ["id_proof_url", "ID proof"],
+] as const;
+
+const STATUS_LABEL: Record<string, string> = {
+  not_submitted: "Not submitted",
+  pending: "Under review",
+  approved: "Verified",
+  rejected: "Rejected",
+};
 
 export function DriverAccountProfile() {
   const { user, profile, activeMode, setActiveMode, roles } = useAuth();
   const qc = useQueryClient();
   const [vehicleNumber, setVehicleNumber] = useState("");
+  const [pocName, setPocName] = useState("");
+  const [pocPhone, setPocPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<DocKey | null>(null);
   const vehicles = useVehicleTypes(true);
@@ -39,20 +60,31 @@ export function DriverAccountProfile() {
   });
   const row = kyc.data;
   const currentVehicle = vehicles.data?.find((v) => v.id === row?.vehicle_id);
+  const status = row?.status ?? profile?.kyc_status ?? "not_submitted";
 
   const save = async () => {
     if (!user) return;
     const value = vehicleNumber.trim() || row?.vehicle_number || "";
     if (value && (value.length < 4 || value.length > 20))
       return toast.error("Enter a valid vehicle registration number");
+    const name = pocName.trim();
+    if (name && (name.length < 2 || name.length > 80))
+      return toast.error("Enter a valid contact person name");
+    const phoneDigits = pocPhone.replace(/\D/g, "");
+    if (phoneDigits && !/^[6-9]\d{9}$/.test(phoneDigits))
+      return toast.error("Enter a valid 10-digit contact phone number");
     setSaving(true);
     const { error } = await supabase.rpc("driver_update_account_profile", {
       _vehicle_number: value || undefined,
+      _poc_name: name || undefined,
+      _poc_phone: phoneDigits || undefined,
     });
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Driver profile saved");
     setVehicleNumber("");
+    setPocName("");
+    setPocPhone("");
     qc.invalidateQueries({ queryKey: ["driver-account-kyc", user.id] });
   };
   const upload = async (key: DocKey, file: File) => {
@@ -74,6 +106,8 @@ export function DriverAccountProfile() {
       _insurance_url: key === "insurance_url" ? path : undefined,
       _puc_url: key === "puc_url" ? path : undefined,
       _number_plate_url: key === "number_plate_url" ? path : undefined,
+      _driver_photo_url: key === "driver_photo_url" ? path : undefined,
+      _poc_photo_url: key === "poc_photo_url" ? path : undefined,
     });
     setUploading(null);
     if (error) return toast.error(error.message);
@@ -103,18 +137,42 @@ export function DriverAccountProfile() {
         <div className="brand-gradient grid h-11 w-11 shrink-0 place-items-center rounded-full">
           <Truck className="h-5 w-5 text-white" />
         </div>
-        <div>
+        <div className="min-w-0">
           <h2 className="font-display text-xl tracking-wide text-secondary">
             Driver account profile
           </h2>
           <p className="text-xs text-muted-foreground">
-            Vehicle and driver documents belong here — not GSTIN or saved customer addresses.
+            Vehicle, driver photo, contact person and documents. GSTIN and saved customer addresses
+            are not part of a driver profile.
           </p>
         </div>
       </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Badge
+          variant={
+            status === "approved" ? "default" : status === "rejected" ? "destructive" : "secondary"
+          }
+        >
+          <ShieldCheck className="mr-1 h-3.5 w-3.5" /> KYC: {STATUS_LABEL[status] ?? status}
+        </Badge>
+        {status !== "approved" && (
+          <Button size="sm" variant="outline" asChild>
+            <Link to="/driver-kyc">
+              {status === "not_submitted" ? "Start verification" : "View verification"}
+            </Link>
+          </Button>
+        )}
+      </div>
+      {status === "rejected" && row?.rejection_reason && (
+        <p className="mt-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+          Reason: {row.rejection_reason}
+        </p>
+      )}
+
       {roles.includes("customer") && (
         <div className="mt-4 rounded-md border bg-muted/30 p-3">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-secondary">Account mode</p>
               <p className="text-xs text-muted-foreground">
@@ -135,27 +193,46 @@ export function DriverAccountProfile() {
         <div className="mt-4 space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label>Driver name</Label>
-              <Input value={profile?.name ?? row?.full_name ?? ""} readOnly />
+              <Label htmlFor="drv-name">Driver name</Label>
+              <Input id="drv-name" value={profile?.name ?? row?.full_name ?? ""} readOnly />
             </div>
             <div>
-              <Label>Vehicle number</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder={row?.vehicle_number || "HR29AB1234"}
-                  value={vehicleNumber}
-                  onChange={(e) => setVehicleNumber(e.target.value.toUpperCase().slice(0, 20))}
-                />
-                <Button onClick={save} disabled={saving}>
-                  <Save className="h-4 w-4" /> Save
-                </Button>
-              </div>
+              <Label htmlFor="drv-vnum">Vehicle number</Label>
+              <Input
+                id="drv-vnum"
+                placeholder={row?.vehicle_number || "HR29AB1234"}
+                value={vehicleNumber}
+                onChange={(e) => setVehicleNumber(e.target.value.toUpperCase().slice(0, 20))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="drv-poc">Contact person (POC) name</Label>
+              <Input
+                id="drv-poc"
+                placeholder={row?.poc_name || "Owner / emergency contact"}
+                value={pocName}
+                onChange={(e) => setPocName(e.target.value.slice(0, 80))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="drv-poc-phone">Contact person phone</Label>
+              <Input
+                id="drv-poc-phone"
+                inputMode="numeric"
+                placeholder={row?.poc_phone || "10-digit mobile"}
+                value={pocPhone}
+                onChange={(e) => setPocPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+              />
             </div>
           </div>
+          <Button onClick={save} disabled={saving} className="w-full sm:w-auto">
+            <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save driver details"}
+          </Button>
           <div className="rounded-md border bg-muted/30 p-3 text-sm">
-            <p className="font-semibold text-secondary">Vehicle</p>
+            <p className="font-semibold text-secondary">Vehicle type</p>
             <p className="text-muted-foreground">
               {currentVehicle?.label ?? row?.vehicle_id ?? "Not selected"}
+              {row?.vehicle_number ? ` · ${row.vehicle_number}` : ""}
             </p>
             {currentVehicle && (
               <p className="mt-1 text-xs text-muted-foreground">
@@ -205,12 +282,32 @@ export function DriverAccountProfile() {
               );
             })}
           </div>
-          {row?.status && (
+          <div className="rounded-md border p-3">
+            <p className="text-sm font-semibold text-secondary">Verification documents</p>
             <p className="text-xs text-muted-foreground">
-              KYC status: <span className="font-semibold text-secondary">{row.status}</span>.
-              Changing documents sends the profile back for review.
+              Submitted during KYC. Re-submit from the verification screen if any of these change.
             </p>
-          )}
+            <ul className="mt-2 divide-y divide-border">
+              {KYC_DOCS.map(([key, label]) => {
+                const path = row?.[key] as string | null | undefined;
+                return (
+                  <li key={key} className="flex items-center justify-between gap-2 py-2">
+                    <span className="min-w-0 flex-1 truncate text-sm text-secondary">{label}</span>
+                    {path ? (
+                      <Button size="sm" variant="ghost" onClick={() => void openDoc(path)}>
+                        View
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Not uploaded</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Replacing any photo sends your profile back to the operations team for review.
+          </p>
         </div>
       )}
     </section>
