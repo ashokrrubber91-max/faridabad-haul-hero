@@ -15,10 +15,13 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { loadGoogleMaps, FARIDABAD_CENTER } from "@/lib/google-maps";
+import { FARIDABAD_CENTER } from "@/lib/google-maps";
 import { getCurrentFix, geoMessage } from "@/lib/geolocation";
 import { lookupAddress } from "@/lib/address-lookup";
+import { searchPlaces, getPlaceDetails } from "@/lib/geocode.functions";
+import type { PlaceSuggestion } from "@/lib/geocode.server";
 import { pinnedAddress } from "@/lib/address";
+
 
 import { useQuery } from "@tanstack/react-query";
 
@@ -56,10 +59,10 @@ export function LocationSearchOverlay({
 }: Props) {
   const { user } = useAuth();
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<google.maps.places.AutocompleteSuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
-  const tokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
-  const placesLibRef = useRef<google.maps.PlacesLibrary | null>(null);
+  const tokenRef = useRef<string | null>(null);
+
 
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
