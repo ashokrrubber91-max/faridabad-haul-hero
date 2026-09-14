@@ -146,73 +146,66 @@ export function LocationSearchOverlay({
     }
   };
 
+  /**
+   * Address suggestions come from our own backend (the browser map key is not
+   * allowed to search places). One search session token is reused while typing
+   * and retired once a suggestion is picked.
+   */
   useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    loadGoogleMaps()
-      .then(async (g) => {
-        const lib = (await g.maps.importLibrary("places")) as google.maps.PlacesLibrary;
-        if (cancelled) return;
-        placesLibRef.current = lib;
-        tokenRef.current = new lib.AutocompleteSessionToken();
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open || !query.trim() || !placesLibRef.current) {
+    if (!open) {
       setSuggestions([]);
       return;
     }
-    const handle = setTimeout(async () => {
-      try {
-        setLoading(true);
-        const { suggestions } =
-          await placesLibRef.current!.AutocompleteSuggestion.fetchAutocompleteSuggestions({
-            input: query,
-            sessionToken: tokenRef.current ?? undefined,
-            locationBias: {
-              center: FARIDABAD_CENTER,
-              radius: 25000,
-            } as google.maps.CircleLiteral,
-            includedRegionCodes: ["in"],
-          });
-        setSuggestions(suggestions);
-      } catch {
-        setSuggestions([]);
-      } finally {
-        setLoading(false);
-      }
-    }, 220);
-    return () => clearTimeout(handle);
+    if (!tokenRef.current) tokenRef.current = crypto.randomUUID();
+    const text = query.trim();
+    if (text.length < 2) {
+      setSuggestions([]);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const handle = setTimeout(() => {
+      setLoading(true);
+      searchPlaces({ data: { input: text, sessionToken: tokenRef.current! } })
+        .then((res) => {
+          if (!cancelled) setSuggestions(res.suggestions);
+        })
+        .catch(() => {
+          if (!cancelled) setSuggestions([]);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
   }, [query, open]);
 
-  const handlePickSuggestion = async (s: google.maps.places.AutocompleteSuggestion) => {
-    const pp = s.placePrediction;
-    if (!pp) return;
+  const handlePickSuggestion = async (s: PlaceSuggestion) => {
+    const token = tokenRef.current ?? crypto.randomUUID();
+    setLoading(true);
     try {
-      const place = pp.toPlace();
-      await place.fetchFields({ fields: ["location", "formattedAddress", "displayName"] });
-      const loc = place.location;
-      if (!loc) return;
-      onPick({
-        address: place.formattedAddress ?? pp.text.text,
-        lat: loc.lat(),
-        lng: loc.lng(),
-        placeId: pp.placeId ?? undefined,
-      });
+      const { place } = await getPlaceDetails({ data: { placeId: s.placeId, sessionToken: token } });
+      if (!place) {
+        setGeoError(
+          "We could not read that address's exact point. Please pick another suggestion or set the pin on the map.",
+        );
+        return;
+      }
+      onPick({ address: place.address, lat: place.lat, lng: place.lng, placeId: s.placeId });
       setQuery("");
       setSuggestions([]);
-      tokenRef.current = placesLibRef.current
-        ? new placesLibRef.current.AutocompleteSessionToken()
-        : null;
     } catch {
-      /* ignore */
+      setGeoError("Address search is unavailable right now. Please set the pin on the map instead.");
+    } finally {
+      setLoading(false);
+      // A session token is valid for one selection only.
+      tokenRef.current = crypto.randomUUID();
     }
   };
+
 
   const title = mode === "pickup" ? "Pickup location" : "Drop location";
 
