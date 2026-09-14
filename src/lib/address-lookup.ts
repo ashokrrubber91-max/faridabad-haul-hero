@@ -15,3 +15,10 @@ export async function lookupAddress(lat: number, lng: number): Promise<string | 
     return null;
   }
 }
+
+/** Address suggestion shape shared by the search sheet and the backend. */
+export type PlaceSuggestion = {
+  placeId: string;
+  primary: string;
+  secondary: string | null;
+};

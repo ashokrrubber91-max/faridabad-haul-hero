@@ -17,11 +17,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { FARIDABAD_CENTER } from "@/lib/google-maps";
 import { getCurrentFix, geoMessage } from "@/lib/geolocation";
-import { lookupAddress } from "@/lib/address-lookup";
+import { lookupAddress, type PlaceSuggestion } from "@/lib/address-lookup";
 import { searchPlaces, getPlaceDetails } from "@/lib/geocode.functions";
-import type { PlaceSuggestion } from "@/lib/geocode.server";
 import { pinnedAddress } from "@/lib/address";
-
 
 import { useQuery } from "@tanstack/react-query";
 
@@ -62,7 +60,6 @@ export function LocationSearchOverlay({
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const tokenRef = useRef<string | null>(null);
-
 
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -190,7 +187,9 @@ export function LocationSearchOverlay({
     const token = tokenRef.current ?? crypto.randomUUID();
     setLoading(true);
     try {
-      const { place } = await getPlaceDetails({ data: { placeId: s.placeId, sessionToken: token } });
+      const { place } = await getPlaceDetails({
+        data: { placeId: s.placeId, sessionToken: token },
+      });
       if (!place) {
         setGeoError(
           "We could not read that address's exact point. Please pick another suggestion or set the pin on the map.",
@@ -201,14 +200,15 @@ export function LocationSearchOverlay({
       setQuery("");
       setSuggestions([]);
     } catch {
-      setGeoError("Address search is unavailable right now. Please set the pin on the map instead.");
+      setGeoError(
+        "Address search is unavailable right now. Please set the pin on the map instead.",
+      );
     } finally {
       setLoading(false);
       // A session token is valid for one selection only.
       tokenRef.current = crypto.randomUUID();
     }
   };
-
 
   const title = mode === "pickup" ? "Pickup location" : "Drop location";
 
@@ -304,35 +304,28 @@ export function LocationSearchOverlay({
               </>
             ) : (
               <ul className="divide-y">
-                {suggestions.map((s, i) => {
-                  const pp = s.placePrediction;
-                  if (!pp) return null;
-                  return (
-                    <li key={i}>
-                      <button
-                        onClick={() => handlePickSuggestion(s)}
-                        className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-muted"
-                      >
-                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-secondary">
-                            {pp.mainText?.text ?? pp.text.text}
-                          </p>
-                          {pp.secondaryText?.text && (
-                            <p className="truncate text-xs text-muted-foreground">
-                              {pp.secondaryText.text}
-                            </p>
-                          )}
-                        </div>
-                      </button>
-                    </li>
-                  );
-                })}
+                {suggestions.map((s) => (
+                  <li key={s.placeId}>
+                    <button
+                      onClick={() => void handlePickSuggestion(s)}
+                      className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-muted"
+                    >
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-secondary">{s.primary}</p>
+                        {s.secondary && (
+                          <p className="truncate text-xs text-muted-foreground">{s.secondary}</p>
+                        )}
+                      </div>
+                    </button>
+                  </li>
+                ))}
                 {!loading && suggestions.length === 0 && (
                   <li className="px-4 py-8 text-center text-sm text-muted-foreground">
                     No matches yet
                   </li>
                 )}
+                {geoError && <li className="px-4 py-3 text-xs text-destructive">{geoError}</li>}
               </ul>
             )}
           </div>

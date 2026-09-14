@@ -53,11 +53,9 @@ export async function reverseGeocodeServer(lat: number, lng: number): Promise<st
   return typeof address === "string" && address.trim() ? address.trim() : null;
 }
 
-export type PlaceSuggestion = {
-  placeId: string;
-  primary: string;
-  secondary: string | null;
-};
+import type { PlaceSuggestion } from "@/lib/address-lookup";
+
+export type { PlaceSuggestion };
 
 /** Faridabad-biased address suggestions. Empty list when Places is unavailable. */
 export async function placeSuggestionsServer(

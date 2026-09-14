@@ -27,9 +27,7 @@ const sessionToken = z.string().trim().min(8).max(64);
 export const searchPlaces = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z
-      .object({ input: z.string().trim().min(2).max(200), sessionToken })
-      .parse(input),
+    z.object({ input: z.string().trim().min(2).max(200), sessionToken }).parse(input),
   )
   .handler(async ({ data }) => {
     const { placeSuggestionsServer } = await import("@/lib/geocode.server");
