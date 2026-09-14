@@ -10,7 +10,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { phoneToEmail, useAuth } from "@/hooks/useAuth";
+import {
+  isValidIndianMobile,
+  normalisePhone,
+  PHONE_ERROR,
+  phoneToEmail,
+  useAuth,
+} from "@/hooks/useAuth";
 
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
@@ -108,14 +114,11 @@ function OtpSignInForm() {
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const e164 = (raw: string) => {
-    const digits = raw.replace(/\D/g, "").slice(-10);
-    return `+91${digits}`;
-  };
+  const e164 = (raw: string) => `+91${normalisePhone(raw)}`;
 
   const sendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (phone.replace(/\D/g, "").length < 10) return toast.error("Enter a 10-digit phone number");
+    if (!isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
     setBusy(true);
     const { error } = await supabase.auth.signInWithOtp({ phone: e164(phone) });
     setBusy(false);
@@ -156,7 +159,7 @@ function OtpSignInForm() {
             required
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            We&rsquo;ll text a one-time code to +91 {phone.replace(/\D/g, "").slice(-10)}
+            We&rsquo;ll text a one-time code to +91 {normalisePhone(phone)}
           </p>
         </div>
         <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
@@ -206,8 +209,8 @@ function SignInForm() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (phone.replace(/\D/g, "").length < 10) {
-      toast.error("Enter a 10-digit phone number");
+    if (!isValidIndianMobile(phone)) {
+      toast.error(PHONE_ERROR);
       return;
     }
     setBusy(true);
@@ -262,7 +265,7 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (phone.replace(/\D/g, "").length < 10) return toast.error("Enter a 10-digit phone number");
+    if (!isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
     if (password.length < 6) return toast.error("Password must be at least 6 characters");
     if (name.trim().length < 2) return toast.error("Enter your name");
 
@@ -272,7 +275,7 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
       email,
       password,
       options: {
-        data: { phone: phone.replace(/\D/g, ""), name: name.trim(), role },
+        data: { phone: normalisePhone(phone), name: name.trim(), role },
         emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
       },
     });

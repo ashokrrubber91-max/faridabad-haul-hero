@@ -149,7 +149,26 @@ export function useAuth(): AuthState {
   return { user, role, roles, profile, activeMode, setActiveMode, loading };
 }
 
+/**
+ * Indian mobile numbers are exactly 10 digits starting 6-9. Anything shorter,
+ * longer or starting 0-5 is rejected — never silently trimmed to 10 digits.
+ */
+export const INDIAN_MOBILE = /^[6-9]\d{9}$/;
+
+export function normalisePhone(raw: string): string {
+  let digits = raw.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2);
+  if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
+  return digits;
+}
+
+export function isValidIndianMobile(raw: string): boolean {
+  return INDIAN_MOBILE.test(normalisePhone(raw));
+}
+
+export const PHONE_ERROR =
+  "Enter a valid 10-digit Indian mobile number starting with 6, 7, 8 or 9.";
+
 export function phoneToEmail(phone: string): string {
-  const digits = phone.replace(/\D/g, "");
-  return `${digits}@miniport.app`;
+  return `${normalisePhone(phone)}@miniport.app`;
 }
