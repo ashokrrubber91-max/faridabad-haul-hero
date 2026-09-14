@@ -665,10 +665,14 @@ export type Database = {
           dl_back_url: string | null
           dl_front_url: string | null
           driver_id: string
+          driver_photo_url: string | null
           full_name: string
           id_proof_url: string | null
           insurance_url: string | null
           number_plate_url: string | null
+          poc_name: string | null
+          poc_phone: string | null
+          poc_photo_url: string | null
           puc_url: string | null
           rc_url: string | null
           rejection_reason: string | null
@@ -686,10 +690,14 @@ export type Database = {
           dl_back_url?: string | null
           dl_front_url?: string | null
           driver_id: string
+          driver_photo_url?: string | null
           full_name: string
           id_proof_url?: string | null
           insurance_url?: string | null
           number_plate_url?: string | null
+          poc_name?: string | null
+          poc_phone?: string | null
+          poc_photo_url?: string | null
           puc_url?: string | null
           rc_url?: string | null
           rejection_reason?: string | null
@@ -707,10 +715,14 @@ export type Database = {
           dl_back_url?: string | null
           dl_front_url?: string | null
           driver_id?: string
+          driver_photo_url?: string | null
           full_name?: string
           id_proof_url?: string | null
           insurance_url?: string | null
           number_plate_url?: string | null
+          poc_name?: string | null
+          poc_phone?: string | null
+          poc_photo_url?: string | null
           puc_url?: string | null
           rc_url?: string | null
           rejection_reason?: string | null
@@ -1704,8 +1716,12 @@ export type Database = {
       decline_booking: { Args: { _booking_id: string }; Returns: boolean }
       driver_update_account_profile: {
         Args: {
+          _driver_photo_url?: string
           _insurance_url?: string
           _number_plate_url?: string
+          _poc_name?: string
+          _poc_phone?: string
+          _poc_photo_url?: string
           _puc_url?: string
           _vehicle_number?: string
           _vehicle_photo_url?: string
@@ -1715,10 +1731,14 @@ export type Database = {
           dl_back_url: string | null
           dl_front_url: string | null
           driver_id: string
+          driver_photo_url: string | null
           full_name: string
           id_proof_url: string | null
           insurance_url: string | null
           number_plate_url: string | null
+          poc_name: string | null
+          poc_phone: string | null
+          poc_photo_url: string | null
           puc_url: string | null
           rc_url: string | null
           rejection_reason: string | null
@@ -1766,10 +1786,14 @@ export type Database = {
           dl_back_url: string | null
           dl_front_url: string | null
           driver_id: string
+          driver_photo_url: string | null
           full_name: string
           id_proof_url: string | null
           insurance_url: string | null
           number_plate_url: string | null
+          poc_name: string | null
+          poc_phone: string | null
+          poc_photo_url: string | null
           puc_url: string | null
           rc_url: string | null
           rejection_reason: string | null
@@ -1873,10 +1897,14 @@ export type Database = {
           dl_back_url: string | null
           dl_front_url: string | null
           driver_id: string
+          driver_photo_url: string | null
           full_name: string
           id_proof_url: string | null
           insurance_url: string | null
           number_plate_url: string | null
+          poc_name: string | null
+          poc_phone: string | null
+          poc_photo_url: string | null
           puc_url: string | null
           rc_url: string | null
           rejection_reason: string | null
