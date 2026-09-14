@@ -378,9 +378,14 @@ export function DisputesTab({
                         return (
                           <p className="mt-1 text-xs text-destructive">
                             {closure.title}
-                            {closure.reason ? ` · Reason: ${closure.reason}` : ""}
+                            {closure.who && closure.who !== closure.title
+                              ? ` · ${closure.who}`
+                              : ""}
+                            {closure.reason ? ` · Reason: ${closure.reason}` : " · No reason recorded"}
+                            {closure.at ? ` · ${closure.at}` : ""}
                           </p>
                         );
+
                       })()}
                       {b.review && (
                         <p className="mt-1 text-xs italic text-muted-foreground">“{b.review}”</p>
