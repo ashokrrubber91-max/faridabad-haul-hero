@@ -444,6 +444,9 @@ function CustomerPage() {
                 setPending(drop ?? { address: "", ...FARIDABAD_CENTER });
                 setStage({ type: "confirm", mode: "drop" });
               }}
+              onUseMyLocation={() => void locateFor("drop")}
+              locating={locatingMode === "drop"}
+
             />
 
             <div>
