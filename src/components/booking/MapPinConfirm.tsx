@@ -149,14 +149,19 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
     setLocating(true);
     setCoords({ lat, lng });
     try {
-      const res = await geocoderRef.current?.geocode({ location: { lat, lng } });
-      if (res?.results[0]) setAddress(res.results[0].formatted_address);
+      const readable = await lookupAddress(lat, lng);
+      if (readable) setAddress(readable);
+      else {
+        const res = await geocoderRef.current?.geocode({ location: { lat, lng } });
+        if (res?.results[0]) setAddress(res.results[0].formatted_address);
+      }
     } catch {
       /* keep whatever address we have */
     } finally {
       setLocating(false);
       setPinSet(true);
     }
+
   };
 
   const fetchCurrentLocation = async () => {

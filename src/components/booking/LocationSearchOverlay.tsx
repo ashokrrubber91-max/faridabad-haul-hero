@@ -127,16 +127,9 @@ export function LocationSearchOverlay({
     setLocating(true);
     try {
       const fix = await getCurrentFix();
-      let address: string | null = null;
-      try {
-        const g = await loadGoogleMaps();
-        const geocoder = new g.maps.Geocoder();
-        const res = await geocoder.geocode({ location: { lat: fix.lat, lng: fix.lng } });
-        address = res.results[0]?.formatted_address ?? null;
-      } catch {
-        address = null;
-      }
+      const address = await lookupAddress(fix.lat, fix.lng);
       onPick({
+
         address: address ?? pinnedAddress(fix.lat, fix.lng),
         lat: fix.lat,
         lng: fix.lng,
