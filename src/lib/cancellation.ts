@@ -63,8 +63,18 @@ export type CancellationSummary = {
   title: string;
   who: string | null;
   reason: string | null;
+  /** When the trip was closed, ready to display; null when it was never recorded. */
+  at: string | null;
   isPaymentFailure: boolean;
 };
+
+function closedAtLabel(value?: string | null): string | null {
+  if (!value) return null;
+  const t = new Date(value);
+  if (Number.isNaN(t.getTime())) return null;
+  return t.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+}
+
 
 const ACTOR_LABEL: Record<string, string> = {
   customer: "Cancelled by customer",
