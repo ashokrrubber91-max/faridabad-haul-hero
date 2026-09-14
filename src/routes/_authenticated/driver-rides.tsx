@@ -130,6 +130,9 @@ function RideCard({ ride }: { ride: AnyRow }) {
               <span className="font-medium text-secondary">Reason:</span> {closure.reason}
             </p>
           )}
+          {closure.at && (
+            <p className="mt-0.5 text-xs text-muted-foreground">Closed on {closure.at}</p>
+          )}
         </div>
       )}
 
