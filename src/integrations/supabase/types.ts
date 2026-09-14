@@ -79,6 +79,44 @@ export type Database = {
           },
         ]
       }
+      booking_share_links: {
+        Row: {
+          booking_id: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          revoked_at: string | null
+          token: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          token: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_share_links_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_stops: {
         Row: {
           address: string
@@ -131,8 +169,12 @@ export type Database = {
       }
       bookings: {
         Row: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -174,8 +216,12 @@ export type Database = {
           vehicle_type: string
         }
         Insert: {
+          cancellation_category?:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
+          cancelled_by?: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed?: number
           commission_amount?: number
           commission_rate?: number
@@ -217,8 +263,12 @@ export type Database = {
           vehicle_type: string
         }
         Update: {
+          cancellation_category?:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
+          cancelled_by?: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed?: number
           commission_amount?: number
           commission_rate?: number
@@ -1107,15 +1157,20 @@ export type Database = {
           free_loading_minutes: number
           free_unloading_minutes: number
           good_for: string[]
+          height_ft: number | null
           id: string
           image_url: string | null
           label: string
+          length_ft: number | null
           load_area: string
           overtime_rate_per_min: number
+          payload_kg: number | null
           per_km_fare: number
           sort_order: number
+          spec_notes: string | null
           updated_at: string
           weight_limit_kg: number | null
+          width_ft: number | null
         }
         Insert: {
           active?: boolean
@@ -1125,15 +1180,20 @@ export type Database = {
           free_loading_minutes?: number
           free_unloading_minutes?: number
           good_for?: string[]
+          height_ft?: number | null
           id: string
           image_url?: string | null
           label: string
+          length_ft?: number | null
           load_area?: string
           overtime_rate_per_min?: number
+          payload_kg?: number | null
           per_km_fare?: number
           sort_order?: number
+          spec_notes?: string | null
           updated_at?: string
           weight_limit_kg?: number | null
+          width_ft?: number | null
         }
         Update: {
           active?: boolean
@@ -1143,15 +1203,20 @@ export type Database = {
           free_loading_minutes?: number
           free_unloading_minutes?: number
           good_for?: string[]
+          height_ft?: number | null
           id?: string
           image_url?: string | null
           label?: string
+          length_ft?: number | null
           load_area?: string
           overtime_rate_per_min?: number
+          payload_kg?: number | null
           per_km_fare?: number
           sort_order?: number
+          spec_notes?: string | null
           updated_at?: string
           weight_limit_kg?: number | null
+          width_ft?: number | null
         }
         Relationships: []
       }
@@ -1276,8 +1341,12 @@ export type Database = {
       accept_booking: {
         Args: { _booking_id: string }
         Returns: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -1332,8 +1401,12 @@ export type Database = {
       admin_assign_driver: {
         Args: { _booking_id: string; _driver_id: string }
         Returns: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -1384,8 +1457,12 @@ export type Database = {
       admin_cancel_booking: {
         Args: { _booking_id: string; _reason: string }
         Returns: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -1437,8 +1514,12 @@ export type Database = {
       admin_mark_refunded: {
         Args: { _booking_id: string }
         Returns: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -1523,15 +1604,20 @@ export type Database = {
           free_loading_minutes: number
           free_unloading_minutes: number
           good_for: string[]
+          height_ft: number | null
           id: string
           image_url: string | null
           label: string
+          length_ft: number | null
           load_area: string
           overtime_rate_per_min: number
+          payload_kg: number | null
           per_km_fare: number
           sort_order: number
+          spec_notes: string | null
           updated_at: string
           weight_limit_kg: number | null
+          width_ft: number | null
         }
         SetofOptions: {
           from: "*"
@@ -1548,14 +1634,19 @@ export type Database = {
           _free_loading_minutes: number
           _free_unloading_minutes: number
           _good_for: string[]
+          _height_ft?: number
           _id: string
-          _image_url?: string
+          _image_url: string
           _label: string
+          _length_ft?: number
           _load_area: string
           _overtime_rate_per_min: number
+          _payload_kg?: number
           _per_km_fare: number
           _sort_order: number
+          _spec_notes?: string
           _weight_limit_kg: number
+          _width_ft?: number
         }
         Returns: {
           active: boolean
@@ -1565,15 +1656,20 @@ export type Database = {
           free_loading_minutes: number
           free_unloading_minutes: number
           good_for: string[]
+          height_ft: number | null
           id: string
           image_url: string | null
           label: string
+          length_ft: number | null
           load_area: string
           overtime_rate_per_min: number
+          payload_kg: number | null
           per_km_fare: number
           sort_order: number
+          spec_notes: string | null
           updated_at: string
           weight_limit_kg: number | null
+          width_ft: number | null
         }
         SetofOptions: {
           from: "*"
@@ -1602,8 +1698,12 @@ export type Database = {
       cancel_booking: {
         Args: { _booking_id: string; _note?: string; _reason: string }
         Returns: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -1713,6 +1813,24 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_booking_share_link: {
+        Args: { _booking_id: string }
+        Returns: {
+          booking_id: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          revoked_at: string | null
+          token: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "booking_share_links"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       decline_booking: { Args: { _booking_id: string }; Returns: boolean }
       driver_update_account_profile: {
         Args: {
@@ -1813,11 +1931,19 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      revoke_booking_share_links: {
+        Args: { _booking_id: string }
+        Returns: number
+      }
       set_booking_stage: {
         Args: { _action: string; _booking_id: string }
         Returns: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -1873,6 +1999,7 @@ export type Database = {
           rides: number
         }[]
       }
+      shared_trip_view: { Args: { _token: string }; Returns: Json }
       shares_booking_with: {
         Args: { _a: string; _b: string }
         Returns: boolean
@@ -1927,8 +2054,12 @@ export type Database = {
       switch_failed_payment_to_cod: {
         Args: { _booking_id: string }
         Returns: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -2009,6 +2140,12 @@ export type Database = {
         | "cancelled"
         | "expired"
       booking_stop_kind: "pickup" | "stop" | "drop"
+      cancel_actor: "customer" | "driver" | "admin" | "system"
+      cancellation_category:
+        | "customer_cancelled"
+        | "driver_cancelled"
+        | "admin_cancelled"
+        | "expired"
       coupon_kind: "flat" | "percent"
       driver_application_status:
         | "submitted"
@@ -2167,6 +2304,13 @@ export const Constants = {
         "expired",
       ],
       booking_stop_kind: ["pickup", "stop", "drop"],
+      cancel_actor: ["customer", "driver", "admin", "system"],
+      cancellation_category: [
+        "customer_cancelled",
+        "driver_cancelled",
+        "admin_cancelled",
+        "expired",
+      ],
       coupon_kind: ["flat", "percent"],
       driver_application_status: [
         "submitted",

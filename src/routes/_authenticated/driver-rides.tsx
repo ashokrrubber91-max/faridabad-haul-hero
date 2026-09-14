@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { STATUS_META, vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
+import { cancellationSummary } from "@/lib/cancellation";
 
 export const Route = createFileRoute("/_authenticated/driver-rides")({
   head: () => ({ meta: [{ title: "My Rides — MiniPort Driver" }] }),
@@ -85,9 +86,7 @@ function RideCard({ ride }: { ride: AnyRow }) {
   const meta = STATUS_META[ride.status] ?? { label: ride.status };
   const commission = Number(ride.commission_amount || 0);
   const net = Number(ride.driver_net_earning || 0);
-  const cancellationReason =
-    typeof ride.cancellation_reason === "string" ? ride.cancellation_reason.trim() : "";
-  const paymentStatus = typeof ride.payment_status === "string" ? ride.payment_status : "";
+  const closure = cancellationSummary(ride);
 
   const viewProof = async () => {
     setBusy(true);
@@ -120,16 +119,15 @@ function RideCard({ ride }: { ride: AnyRow }) {
         </Badge>
       </div>
 
-      {(ride.status === "cancelled" || paymentStatus === "failed") && (
+      {closure && (
         <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm">
-          <p className="font-semibold text-destructive">
-            {paymentStatus === "failed" && ride.status !== "cancelled"
-              ? "Payment failed"
-              : "Ride cancelled"}
-          </p>
-          {cancellationReason && (
+          <p className="font-semibold text-destructive">{closure.title}</p>
+          {closure.who && closure.who !== closure.title && (
+            <p className="mt-0.5 text-xs text-muted-foreground">{closure.who}</p>
+          )}
+          {closure.reason && (
             <p className="mt-1 text-xs text-muted-foreground">
-              <span className="font-medium text-secondary">Reason:</span> {cancellationReason}
+              <span className="font-medium text-secondary">Reason:</span> {closure.reason}
             </p>
           )}
         </div>

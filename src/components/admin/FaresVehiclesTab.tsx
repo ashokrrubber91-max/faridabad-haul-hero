@@ -18,6 +18,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchVehicleTypes, type VehicleType } from "@/lib/vehicles";
 import { useVehicleImage } from "@/components/booking/VehicleCard";
 
+/** Blank means "not configured" — we never send a made-up number. */
+function optionalNumber(raw: string): number | undefined {
+  const t = raw.trim();
+  if (!t) return undefined;
+  const n = Number(t);
+  return Number.isFinite(n) && n >= 0 ? n : undefined;
+}
+
 type Draft = {
   id: string;
   label: string;
@@ -33,6 +41,11 @@ type Draft = {
   sort_order: string;
   active: boolean;
   image_url: string | null;
+  length_ft: string;
+  width_ft: string;
+  height_ft: string;
+  payload_kg: string;
+  spec_notes: string;
 };
 
 const EMPTY: Draft = {
@@ -50,6 +63,11 @@ const EMPTY: Draft = {
   sort_order: "100",
   active: true,
   image_url: null,
+  length_ft: "",
+  width_ft: "",
+  height_ft: "",
+  payload_kg: "",
+  spec_notes: "",
 };
 
 function toDraft(v: VehicleType): Draft {
@@ -68,6 +86,11 @@ function toDraft(v: VehicleType): Draft {
     sort_order: String(v.sort_order),
     active: v.active,
     image_url: v.image_url,
+    length_ft: v.length_ft == null ? "" : String(v.length_ft),
+    width_ft: v.width_ft == null ? "" : String(v.width_ft),
+    height_ft: v.height_ft == null ? "" : String(v.height_ft),
+    payload_kg: v.payload_kg == null ? "" : String(v.payload_kg),
+    spec_notes: v.spec_notes ?? "",
   };
 }
 
@@ -352,7 +375,12 @@ function VehicleDialog({
       _overtime_rate_per_min: nums.rate,
       _sort_order: Math.round(nums.sort),
       _active: form.active,
-      _image_url: form.image_url ?? undefined,
+      _image_url: form.image_url ?? "",
+      _length_ft: optionalNumber(form.length_ft),
+      _width_ft: optionalNumber(form.width_ft),
+      _height_ft: optionalNumber(form.height_ft),
+      _payload_kg: optionalNumber(form.payload_kg),
+      _spec_notes: form.spec_notes.trim() || undefined,
     });
     setBusy(false);
     if (error) {
@@ -410,6 +438,51 @@ function VehicleDialog({
               value={form.load_area}
               placeholder="Delivery box"
               onChange={(e) => set("load_area", e.target.value)}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Payload (kg) shown as specification</Label>
+            <Input
+              type="number"
+              value={form.payload_kg}
+              onChange={(e) => set("payload_kg", e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2 sm:col-span-2">
+            <div>
+              <Label className="text-xs">Load length (ft)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={form.length_ft}
+                onChange={(e) => set("length_ft", e.target.value)}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Width (ft)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={form.width_ft}
+                onChange={(e) => set("width_ft", e.target.value)}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Height (ft)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={form.height_ft}
+                onChange={(e) => set("height_ft", e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="sm:col-span-2">
+            <Label className="text-xs">Specification note shown to customers</Label>
+            <Input
+              value={form.spec_notes}
+              placeholder="Closed body, tail lift available"
+              onChange={(e) => set("spec_notes", e.target.value)}
             />
           </div>
           <div className="sm:col-span-2">

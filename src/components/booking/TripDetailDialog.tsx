@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { vehicleLabel, STATUS_META } from "@/lib/booking";
 import { supabase } from "@/integrations/supabase/client";
+import { cancellationSummary } from "@/lib/cancellation";
 
 type Booking = {
   id: string;
@@ -30,6 +31,9 @@ type Booking = {
   payment_status?: string | null;
   cancellation_reason?: string | null;
   cancelled_at?: string | null;
+  cancelled_by?: string | null;
+  cancellation_category?: string | null;
+
   pickup_verified_at?: string | null;
   drop_verified_at?: string | null;
   loading_started_at?: string | null;
@@ -98,6 +102,7 @@ export function TripDetailDialog({
     gross = fare + discount + coins;
   const loadMins = minutesBetween(b.loading_started_at, b.loading_stopped_at),
     unloadMins = minutesBetween(b.unloading_started_at, b.unloading_stopped_at);
+  const closure = cancellationSummary(b);
   const switchToCash = async () => {
     setSwitchingCash(true);
     const { error } = await supabase.rpc("switch_failed_payment_to_cod", { _booking_id: b.id });
@@ -197,12 +202,13 @@ export function TripDetailDialog({
             </Button>
           </div>
         )}
-        {b.status === "cancelled" && (
+        {closure && !closure.isPaymentFailure && (
           <div className="rounded-md border border-destructive bg-destructive/5 p-3 text-sm">
-            <p className="font-semibold text-destructive">Trip cancelled</p>
-            <p className="text-muted-foreground">
-              {b.cancellation_reason || "No reason recorded."}
-            </p>
+            <p className="font-semibold text-destructive">{closure.title}</p>
+            {closure.who && closure.who !== closure.title && (
+              <p className="text-xs text-muted-foreground">{closure.who}</p>
+            )}
+            <p className="text-muted-foreground">{closure.reason ?? "No reason recorded."}</p>
             {b.payment_status === "paid" && (
               <p className="mt-1 text-xs text-muted-foreground">
                 Paid online — a refund is processed to your original payment method within 5–7
@@ -213,11 +219,6 @@ export function TripDetailDialog({
               <p className="mt-1 text-xs text-success">Refund has been processed.</p>
             )}
           </div>
-        )}
-        {b.status === "expired" && (
-          <p className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
-            No driver accepted this request, so it was closed. Nothing was charged.
-          </p>
         )}
       </DialogContent>
     </Dialog>

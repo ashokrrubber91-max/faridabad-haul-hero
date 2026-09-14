@@ -16,6 +16,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { loadGoogleMaps, FARIDABAD_CENTER } from "@/lib/google-maps";
+import { getCurrentFix, geoMessage } from "@/lib/geolocation";
+import { pinnedAddress } from "@/lib/address";
+
 import { useQuery } from "@tanstack/react-query";
 
 export type PlacePick = {
@@ -101,51 +104,40 @@ export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Prop
     },
   });
 
-  /** Real device GPS + Google reverse geocoding. Never a guessed address. */
+  /**
+   * Real device GPS + Google reverse geocoding, requested straight from the tap.
+   * A failed address lookup keeps the real pin but never presents bare
+   * coordinates as if they were an address.
+   */
   const pickCurrentLocation = async () => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setGeoError("This device cannot share its location.");
-      return;
-    }
-    setLocating(true);
     setGeoError(null);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        try {
-          const g = await loadGoogleMaps();
-          const geocoder = new g.maps.Geocoder();
-          const res = await geocoder.geocode({
-            location: { lat: latitude, lng: longitude },
-          });
-          const address = res.results[0]?.formatted_address;
-          onPick({
-            address: address ?? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
-            lat: latitude,
-            lng: longitude,
-          });
-        } catch {
-          // Coordinates are real even when the address lookup fails; the pin
-          // confirm step lets the customer adjust and label it.
-          onPick({
-            address: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
-            lat: latitude,
-            lng: longitude,
-          });
-        } finally {
-          setLocating(false);
-        }
-      },
-      (err) => {
-        setLocating(false);
+    setLocating(true);
+    try {
+      const fix = await getCurrentFix();
+      let address: string | null = null;
+      try {
+        const g = await loadGoogleMaps();
+        const geocoder = new g.maps.Geocoder();
+        const res = await geocoder.geocode({ location: { lat: fix.lat, lng: fix.lng } });
+        address = res.results[0]?.formatted_address ?? null;
+      } catch {
+        address = null;
+      }
+      onPick({
+        address: address ?? pinnedAddress(fix.lat, fix.lng),
+        lat: fix.lat,
+        lng: fix.lng,
+      });
+      if (!address) {
         setGeoError(
-          err.code === err.PERMISSION_DENIED
-            ? "Location permission is off. Allow location or search the address instead."
-            : "Could not get your location. Please search the address instead.",
+          "We found your pin but could not read a street address. Please adjust the pin or type the address so your driver can find you.",
         );
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
-    );
+      }
+    } catch (err) {
+      setGeoError(geoMessage(err));
+    } finally {
+      setLocating(false);
+    }
   };
 
   useEffect(() => {

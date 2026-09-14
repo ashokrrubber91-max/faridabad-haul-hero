@@ -22,10 +22,15 @@ export type VehicleType = {
   overtime_rate_per_min: number;
   active: boolean;
   sort_order: number;
+  length_ft: number | null;
+  width_ft: number | null;
+  height_ft: number | null;
+  payload_kg: number | null;
+  spec_notes: string | null;
 };
 
 export const VEHICLE_FIELDS =
-  "id,label,capacity_label,weight_limit_kg,load_area,good_for,image_url,base_fare,per_km_fare,free_loading_minutes,free_unloading_minutes,overtime_rate_per_min,active,sort_order";
+  "id,label,capacity_label,weight_limit_kg,load_area,good_for,image_url,base_fare,per_km_fare,free_loading_minutes,free_unloading_minutes,overtime_rate_per_min,active,sort_order,length_ft,width_ft,height_ft,payload_kg,spec_notes";
 
 function normalise(row: Record<string, unknown>): VehicleType {
   return {
@@ -43,6 +48,11 @@ function normalise(row: Record<string, unknown>): VehicleType {
     overtime_rate_per_min: Number(row.overtime_rate_per_min ?? 2),
     active: Boolean(row.active),
     sort_order: Number(row.sort_order ?? 100),
+    length_ft: row.length_ft == null ? null : Number(row.length_ft),
+    width_ft: row.width_ft == null ? null : Number(row.width_ft),
+    height_ft: row.height_ft == null ? null : Number(row.height_ft),
+    payload_kg: row.payload_kg == null ? null : Number(row.payload_kg),
+    spec_notes: row.spec_notes == null ? null : String(row.spec_notes),
   };
 }
 
@@ -86,4 +96,30 @@ export async function vehicleImageSrc(path: string | null): Promise<string | nul
   if (/^https?:\/\//.test(path)) return path;
   const { data } = await supabase.storage.from("vehicle-images").createSignedUrl(path, 3600);
   return data?.signedUrl ?? null;
+}
+
+/**
+ * Specification lines for a vehicle, built only from what the team configured —
+ * nothing is guessed and no legal limit is invented.
+ */
+export function vehicleSpecs(v: VehicleType): { label: string; value: string }[] {
+  const out: { label: string; value: string }[] = [];
+  const payload = v.payload_kg ?? v.weight_limit_kg;
+  if (payload) out.push({ label: "Payload", value: `Up to ${payload} kg` });
+  else if (v.capacity_label) out.push({ label: "Capacity", value: v.capacity_label });
+  if (v.length_ft && v.width_ft) {
+    const dims = v.height_ft
+      ? `${v.length_ft} × ${v.width_ft} × ${v.height_ft} ft`
+      : `${v.length_ft} × ${v.width_ft} ft`;
+    out.push({ label: "Load space", value: dims });
+  } else if (v.load_area) {
+    out.push({ label: "Load space", value: v.load_area });
+  }
+  if (v.spec_notes) out.push({ label: "Notes", value: v.spec_notes });
+  if (v.good_for.length) out.push({ label: "Best for", value: v.good_for.join(", ") });
+  out.push({
+    label: "Free loading / unloading",
+    value: `${v.free_loading_minutes} min / ${v.free_unloading_minutes} min (then ₹${v.overtime_rate_per_min}/min)`,
+  });
+  return out;
 }

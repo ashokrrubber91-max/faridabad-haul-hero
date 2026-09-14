@@ -13,6 +13,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { cancellationSummary } from "@/lib/cancellation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -270,6 +271,8 @@ type DisputeBooking = {
   payment_status: string;
   payment_method: string;
   cancellation_reason: string | null;
+  cancelled_by?: string | null;
+  cancellation_category?: string | null;
   cancelled_at: string | null;
   rating: number | null;
   review: string | null;
@@ -291,7 +294,7 @@ export function DisputesTab({
       const { data, error } = await supabase
         .from("bookings")
         .select(
-          "id, customer_id, driver_id, pickup_address, drop_address, vehicle_type, fare, status, payment_status, payment_method, cancellation_reason, cancelled_at, rating, review, created_at",
+          "id, customer_id, driver_id, pickup_address, drop_address, vehicle_type, fare, status, payment_status, payment_method, cancellation_reason, cancelled_by, cancellation_category, cancelled_at, rating, review, created_at",
         )
         .or("status.eq.cancelled,rating.lte.2")
         .order("created_at", { ascending: false })
@@ -369,11 +372,16 @@ export function DisputesTab({
                         {vehicleLabel(b.vehicle_type)} · {c?.name ?? "Customer"} {c?.phone ?? ""}
                         {d ? ` · Driver ${d.name}` : " · No driver"}
                       </p>
-                      {b.cancellation_reason && (
-                        <p className="mt-1 text-xs text-destructive">
-                          Reason: {b.cancellation_reason}
-                        </p>
-                      )}
+                      {(() => {
+                        const closure = cancellationSummary(b);
+                        if (!closure) return null;
+                        return (
+                          <p className="mt-1 text-xs text-destructive">
+                            {closure.title}
+                            {closure.reason ? ` · Reason: ${closure.reason}` : ""}
+                          </p>
+                        );
+                      })()}
                       {b.review && (
                         <p className="mt-1 text-xs italic text-muted-foreground">“{b.review}”</p>
                       )}

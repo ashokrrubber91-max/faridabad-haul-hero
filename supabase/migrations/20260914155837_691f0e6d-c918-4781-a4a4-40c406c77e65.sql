@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.shared_trip_view(text) FROM anon;
