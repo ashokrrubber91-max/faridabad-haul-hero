@@ -41,3 +41,8 @@
 - Signup OTP delivery: SMS provider not connected
 - Pickup-area photo / traffic-aware geocoding: Google key rejects this preview's address
 - Razorpay live webhook confirmation: provider webhook secret required
+
+## Batch 5–7 completion (this turn)
+- [x] Sign-up now requires a real SMS one-time code before the account is created; if SMS sending is not switched on, the person is told plainly and no account is created (no fake/universal code).
+- [x] Customer → driver onboarding card on Account: records the application, then documents, then team approval unlocks driver mode (no role change from the browser).
+- [x] Driver approach card on active customer trips: driver name, vehicle, call button, readable pickup address, pickup map thumbnail with a neutral placeholder when real imagery is unavailable.
