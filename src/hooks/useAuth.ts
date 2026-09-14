@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import { GEO_MESSAGES, isStaleFix } from "@/lib/geolocation";
+
 
 export type AppRole = "customer" | "driver" | "admin";
 export type ActiveMode = "customer" | "driver";
