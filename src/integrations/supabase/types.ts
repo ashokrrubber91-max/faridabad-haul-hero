@@ -131,8 +131,12 @@ export type Database = {
       }
       bookings: {
         Row: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -174,8 +178,12 @@ export type Database = {
           vehicle_type: string
         }
         Insert: {
+          cancellation_category?:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
+          cancelled_by?: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed?: number
           commission_amount?: number
           commission_rate?: number
@@ -217,8 +225,12 @@ export type Database = {
           vehicle_type: string
         }
         Update: {
+          cancellation_category?:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason?: string | null
           cancelled_at?: string | null
+          cancelled_by?: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed?: number
           commission_amount?: number
           commission_rate?: number
@@ -1276,8 +1288,12 @@ export type Database = {
       accept_booking: {
         Args: { _booking_id: string }
         Returns: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -1332,8 +1348,12 @@ export type Database = {
       admin_assign_driver: {
         Args: { _booking_id: string; _driver_id: string }
         Returns: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -1384,8 +1404,12 @@ export type Database = {
       admin_cancel_booking: {
         Args: { _booking_id: string; _reason: string }
         Returns: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -1437,8 +1461,12 @@ export type Database = {
       admin_mark_refunded: {
         Args: { _booking_id: string }
         Returns: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -1602,8 +1630,12 @@ export type Database = {
       cancel_booking: {
         Args: { _booking_id: string; _note?: string; _reason: string }
         Returns: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -1816,8 +1848,12 @@ export type Database = {
       set_booking_stage: {
         Args: { _action: string; _booking_id: string }
         Returns: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -1927,8 +1963,12 @@ export type Database = {
       switch_failed_payment_to_cod: {
         Args: { _booking_id: string }
         Returns: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
           cancellation_reason: string | null
           cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -2009,6 +2049,12 @@ export type Database = {
         | "cancelled"
         | "expired"
       booking_stop_kind: "pickup" | "stop" | "drop"
+      cancel_actor: "customer" | "driver" | "admin" | "system"
+      cancellation_category:
+        | "customer_cancelled"
+        | "driver_cancelled"
+        | "admin_cancelled"
+        | "expired"
       coupon_kind: "flat" | "percent"
       driver_application_status:
         | "submitted"
@@ -2167,6 +2213,13 @@ export const Constants = {
         "expired",
       ],
       booking_stop_kind: ["pickup", "stop", "drop"],
+      cancel_actor: ["customer", "driver", "admin", "system"],
+      cancellation_category: [
+        "customer_cancelled",
+        "driver_cancelled",
+        "admin_cancelled",
+        "expired",
+      ],
       coupon_kind: ["flat", "percent"],
       driver_application_status: [
         "submitted",

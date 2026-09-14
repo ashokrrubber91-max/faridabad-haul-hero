@@ -29,6 +29,8 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
+import { addressLines } from "@/lib/address";
+
 import { SupportChat } from "@/components/support/SupportChat";
 import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
@@ -619,11 +621,13 @@ function DriverPage() {
                         {vehicleLabel(b.vehicle_type)} · {b.distance_km} km
                       </p>
                       <p className="truncate text-sm font-medium text-secondary">
-                        {b.pickup_address}
+                        {addressLines(b.pickup_address, b.pickup_lat, b.pickup_lng).primary}
                       </p>
                       <p className="flex items-center gap-1 text-sm text-muted-foreground">
                         <ArrowRight className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{b.drop_address}</span>
+                        <span className="truncate">
+                          {addressLines(b.drop_address, b.drop_lat, b.drop_lng).primary}
+                        </span>
                       </p>
                     </div>
                     <Badge className="bg-primary text-primary-foreground hover:bg-primary">
@@ -703,14 +707,18 @@ function PendingJob({
             {vehicleLabel(job.vehicle_type)} · {job.distance_km} km ·{" "}
             {job.payment_method === "cod" ? "CASH" : "ONLINE"}
           </p>
-          <p className="mt-1 flex items-start gap-1.5 text-sm font-medium text-secondary">
-            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-            Pickup: {job.pickup_address}
-          </p>
-          <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
-            <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            Drop: {job.drop_address}
-          </p>
+          <JobAddress
+            label="Pickup"
+            address={job.pickup_address}
+            lat={job.pickup_lat}
+            lng={job.pickup_lng}
+          />
+          <JobAddress
+            label="Drop"
+            address={job.drop_address}
+            lat={job.drop_lat}
+            lng={job.drop_lng}
+          />
           {job.notes && <p className="mt-1 text-xs italic text-muted-foreground">"{job.notes}"</p>}
         </div>
         <div className="text-right">
@@ -828,10 +836,13 @@ function ActiveJobCard({
   return (
     <section className="surface-card border-l-4 border-l-primary p-4">
       <p className="text-xs font-semibold uppercase tracking-wider text-primary">Active job</p>
-      <p className="mt-1 text-sm font-medium text-secondary">Pickup: {job.pickup_address}</p>
-      <p className="flex items-center gap-1 text-sm text-muted-foreground">
-        <ArrowRight className="h-3 w-3" /> Drop: {job.drop_address}
-      </p>
+      <JobAddress
+        label="Pickup"
+        address={job.pickup_address}
+        lat={job.pickup_lat}
+        lng={job.pickup_lng}
+      />
+      <JobAddress label="Drop" address={job.drop_address} lat={job.drop_lat} lng={job.drop_lng} />
 
       <div
         className={`mt-3 rounded-md px-3 py-2 text-sm ${isCash ? "bg-warning/15 text-warning-foreground" : "bg-success/15 text-success-foreground"}`}
@@ -977,4 +988,37 @@ function extractContact(notes: string | null, prefix: "Sender" | "Receiver") {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="flex justify-center py-10">{children}</div>;
+}
+
+/**
+ * Drivers must be able to read the address without opening navigation. The
+ * human line comes first; exact coordinates stay visible as small secondary
+ * text (and navigation still uses the stored pin).
+ */
+function JobAddress({
+  label,
+  address,
+  lat,
+  lng,
+}: {
+  label: string;
+  address?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+}) {
+  const lines = addressLines(address, lat, lng);
+  return (
+    <div className="mt-1 flex items-start gap-1.5">
+      <MapPin
+        className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${label === "Pickup" ? "text-primary" : "text-muted-foreground"}`}
+      />
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="text-sm font-medium text-secondary">{lines.primary}</p>
+        {lines.secondary && (
+          <p className="text-[11px] text-muted-foreground">Pin: {lines.secondary}</p>
+        )}
+      </div>
+    </div>
+  );
 }

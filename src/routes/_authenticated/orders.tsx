@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { cancellationSummary } from "@/lib/cancellation";
 import { STATUS_META, vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
 import { buildInvoiceHtml, invoiceNumber, openInvoice } from "@/lib/invoice";
 import { TripDetailDialog } from "@/components/booking/TripDetailDialog";
@@ -301,6 +302,39 @@ function OrdersPage() {
                     )}
                   </div>
                 )}
+
+                {(() => {
+                  const closure = cancellationSummary(b);
+                  if (!closure) return null;
+                  return (
+                    <div
+                      className={`mt-3 rounded-md border px-3 py-2 text-xs ${
+                        closure.isPaymentFailure
+                          ? "border-warning bg-warning/10"
+                          : "border-destructive/30 bg-destructive/5"
+                      }`}
+                    >
+                      <p
+                        className={`text-sm font-semibold ${
+                          closure.isPaymentFailure ? "text-secondary" : "text-destructive"
+                        }`}
+                      >
+                        {closure.title}
+                      </p>
+                      {closure.who && closure.who !== closure.title && (
+                        <p className="mt-0.5 text-muted-foreground">{closure.who}</p>
+                      )}
+                      {closure.reason && (
+                        <p className="mt-1 text-muted-foreground">
+                          <span className="font-medium text-secondary">Reason:</span>{" "}
+                          {closure.reason}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
+
+
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button size="sm" variant="outline" onClick={() => setDetail(b.id)}>

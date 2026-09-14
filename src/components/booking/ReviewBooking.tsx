@@ -37,7 +37,7 @@ export function ReviewBooking({
   submitting: boolean;
 }) {
   const [checklistOpen, setChecklistOpen] = useState(false);
-  const [checklistDone, setChecklistDone] = useState(false);
+
   return (
     <div className="surface-card p-5">
       <div className="flex items-center gap-2">
@@ -104,30 +104,23 @@ export function ReviewBooking({
             <span>₹{fare}</span>
           </div>
         </div>
-        <label className="flex items-center justify-between rounded-md border p-3 text-sm">
-          <span className="text-secondary">Goods restrictions confirmed</span>
-          <Button
-            type="button"
-            size="sm"
-            variant={checklistDone ? "secondary" : "outline"}
-            onClick={() => setChecklistOpen(true)}
-          >
-            {checklistDone ? "Confirmed ✓" : "Confirm now"}
-          </Button>
-        </label>
-        <Button onClick={onConfirm} disabled={!checklistDone || submitting} className="h-11 w-full">
+        <Button onClick={onConfirm} disabled={submitting} className="h-11 w-full">
           {submitting ? "Booking…" : `Confirm & book · ₹${fare}`}{" "}
           {!submitting && <ArrowRight className="h-4 w-4" />}
         </Button>
+        <button
+          type="button"
+          onClick={() => setChecklistOpen(true)}
+          className="w-full text-center text-xs text-muted-foreground underline underline-offset-2"
+        >
+          What can&apos;t be carried? View goods restrictions
+        </button>
       </div>
-      <GoodsChecklist
-        open={checklistOpen}
-        onOpenChange={setChecklistOpen}
-        onConfirmed={() => setChecklistDone(true)}
-      />
+      <GoodsChecklist open={checklistOpen} onOpenChange={setChecklistOpen} onConfirmed={() => {}} />
     </div>
   );
 }
+
 function Stop({
   label,
   address,
