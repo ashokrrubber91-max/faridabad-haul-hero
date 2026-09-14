@@ -30,7 +30,10 @@ import { DriverApproachCard } from "@/components/booking/DriverApproachCard";
 
 import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
 import { SupportChat } from "@/components/support/SupportChat";
-import { FARIDABAD_CENTER } from "@/lib/google-maps";
+import { FARIDABAD_CENTER, loadGoogleMaps } from "@/lib/google-maps";
+import { getCurrentFix, geoMessage, readPermissionState } from "@/lib/geolocation";
+import { pinnedAddress } from "@/lib/address";
+
 import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
 import { canCancel, cancellationQuote } from "@/lib/cancellation";
 import {
