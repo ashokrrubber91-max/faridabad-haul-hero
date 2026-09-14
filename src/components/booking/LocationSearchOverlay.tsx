@@ -37,9 +37,22 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   mode: "pickup" | "drop";
   onPick: (p: PlacePick) => void;
+  /**
+   * Optional handler used instead of asking for location from inside this
+   * full-screen sheet. Mobile browsers refuse the permission prompt while a
+   * sheet is animating ("this site can't ask for your permission"), so the
+   * parent closes this sheet first and then asks from the plain page.
+   */
+  onUseDeviceLocation?: () => void;
 }
 
-export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Props) {
+export function LocationSearchOverlay({
+  open,
+  onOpenChange,
+  mode,
+  onPick,
+  onUseDeviceLocation,
+}: Props) {
   const { user } = useAuth();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<google.maps.places.AutocompleteSuggestion[]>([]);
@@ -49,6 +62,7 @@ export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Prop
 
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
+
 
   const saved = useQuery({
     queryKey: ["saved-addresses", user?.id],
