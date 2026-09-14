@@ -71,13 +71,20 @@ export function VehicleCard({
 
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-secondary">{vehicle.label}</p>
-        {vehicle.capacity_label && (
-          <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-primary">
-            <Weight className="h-3.5 w-3.5" /> Up to {vehicle.capacity_label}
-          </p>
-        )}
-        {vehicle.load_area && (
-          <p className="truncate text-xs text-muted-foreground">{vehicle.load_area}</p>
+        <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-primary">
+          <Weight className="h-3.5 w-3.5" />
+          {payload
+            ? `Payload up to ${payload} kg`
+            : vehicle.capacity_label
+              ? `Up to ${vehicle.capacity_label}`
+              : "Payload not published"}
+        </p>
+        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Ruler className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{dimensions ?? vehicle.load_area || "Load size on request"}</span>
+        </p>
+        {vehicle.spec_notes && (
+          <p className="truncate text-xs text-muted-foreground">{vehicle.spec_notes}</p>
         )}
         {vehicle.good_for.length > 0 && (
           <p className="mt-1 truncate text-xs text-muted-foreground">
@@ -89,6 +96,7 @@ export function VehicleCard({
           free unloading
         </p>
       </div>
+
 
       <div className="shrink-0 text-right">
         <p className="text-sm font-semibold text-secondary">₹{vehicle.base_fare}</p>
