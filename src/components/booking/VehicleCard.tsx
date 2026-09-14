@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Truck, Weight } from "lucide-react";
+import { Check, Ruler, Truck, Weight } from "lucide-react";
 import { vehicleImageSrc, type VehicleType } from "@/lib/vehicles";
 import aceImg from "@/assets/vehicle-tata-ace.jpg";
 import pickupImg from "@/assets/vehicle-pickup-8ft.jpg";
@@ -42,6 +42,11 @@ export function VehicleCard({
   onSelect: () => void;
 }) {
   const img = useVehicleImage(vehicle);
+  const payload = vehicle.payload_kg ?? vehicle.weight_limit_kg;
+  const dimensions =
+    vehicle.length_ft && vehicle.width_ft
+      ? `Load ${vehicle.length_ft} × ${vehicle.width_ft}${vehicle.height_ft ? ` × ${vehicle.height_ft}` : ""} ft`
+      : null;
 
   return (
     <button
