@@ -2,10 +2,22 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import { GEO_MESSAGES, isStaleFix } from "@/lib/geolocation";
 
 export type AppRole = "customer" | "driver" | "admin";
 export type ActiveMode = "customer" | "driver";
 export type KycStatus = "not_submitted" | "pending" | "approved" | "rejected";
+
+export type LocationShareState = "idle" | "starting" | "live" | "error";
+
+export interface DriverLocationShare {
+  state: LocationShareState;
+  message: string | null;
+  /** Time of the last real device fix that was saved, or null if none yet. */
+  lastFixAt: number | null;
+  stale: boolean;
+  retry: () => void;
+}
 
 export interface AuthState {
   loading: boolean;
@@ -22,6 +34,7 @@ export interface AuthState {
   } | null;
   activeMode: ActiveMode;
   setActiveMode: (m: ActiveMode) => Promise<void>;
+  locationShare: DriverLocationShare;
 }
 
 export function useAuth(): AuthState {
@@ -80,45 +93,117 @@ export function useAuth(): AuthState {
     };
   }, []);
 
-  // Real driver GPS. Permission errors are surfaced instead of being silently swallowed.
+  /**
+   * Real driver GPS, shared from one watcher only. A blocked or failing device
+   * is reported honestly (MiniPort cannot override an Android/browser block),
+   * saving is throttled so a moving vehicle does not flood the database, and a
+   * failed watcher is retried with a growing delay until it works.
+   */
+  const [share, setShare] = useState<{
+    state: LocationShareState;
+    message: string | null;
+    lastFixAt: number | null;
+  }>({ state: "idle", message: null, lastFixAt: null });
+  const [geoAttempt, setGeoAttempt] = useState(0);
+  const retryLocation = useCallback(() => setGeoAttempt((n) => n + 1), []);
+
+  const sharingEnabled = !!user && roles.includes("driver") && profile?.kyc_status === "approved";
+
   useEffect(() => {
-    if (
-      !user ||
-      !roles.includes("driver") ||
-      profile?.kyc_status !== "approved" ||
-      !navigator.geolocation
-    )
+    if (!sharingEnabled || !user) {
+      setShare({ state: "idle", message: null, lastFixAt: null });
       return;
-    const watchId = navigator.geolocation.watchPosition(
-      async (position) => {
-        const { latitude, longitude, accuracy, heading, speed } = position.coords;
-        const { error } = await supabase.from("driver_locations").upsert(
-          {
-            driver_id: user.id,
-            latitude,
-            longitude,
-            accuracy_m: accuracy ?? null,
-            heading_deg: heading ?? null,
-            speed_mps: speed ?? null,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "driver_id" },
-        );
-        if (error) toast.error("Could not update live location. Check your connection.");
-      },
-      (error) => {
-        const message =
-          error.code === error.PERMISSION_DENIED
-            ? "Live location is blocked. Close other screen overlays/bubbles, allow MiniPort location permission, then retry."
-            : error.code === error.TIMEOUT
-              ? "Live location timed out. Keep GPS on and retry."
-              : "MiniPort could not read live location. Please retry.";
-        toast.error(message);
-      },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 },
-    );
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, [user, roles, profile?.kyc_status]);
+    }
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setShare({
+        state: "error",
+        message: GEO_MESSAGES.unsupported,
+        lastFixAt: null,
+      });
+      return;
+    }
+
+    let cancelled = false;
+    let watchId: number | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let failures = 0;
+    let lastSentAt = 0;
+    let notifiedCode: number | null = null;
+
+    setShare((s) => ({ ...s, state: "starting", message: null }));
+
+    const start = () => {
+      if (cancelled) return;
+      watchId = navigator.geolocation.watchPosition(
+        async (position) => {
+          if (cancelled) return;
+          failures = 0;
+          notifiedCode = null;
+          const now = Date.now();
+          setShare({ state: "live", message: null, lastFixAt: position.timestamp || now });
+          // At most one write every 10 seconds; the watcher can fire far more often.
+          if (now - lastSentAt < 10_000) return;
+          lastSentAt = now;
+          const { latitude, longitude, accuracy, heading, speed } = position.coords;
+          const { error } = await supabase.from("driver_locations").upsert(
+            {
+              driver_id: user.id,
+              latitude,
+              longitude,
+              accuracy_m: accuracy ?? null,
+              heading_deg: heading ?? null,
+              speed_mps: speed ?? null,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "driver_id" },
+          );
+          if (error && !cancelled) {
+            lastSentAt = 0;
+            setShare((s) => ({
+              ...s,
+              message: "Your live location could not be saved. Check your internet connection.",
+            }));
+          }
+        },
+        (error) => {
+          if (cancelled) return;
+          const message =
+            error.code === error.PERMISSION_DENIED
+              ? GEO_MESSAGES.denied
+              : error.code === error.TIMEOUT
+                ? GEO_MESSAGES.timeout
+                : GEO_MESSAGES.unavailable;
+          setShare((s) => ({ ...s, state: "error", message }));
+          if (notifiedCode !== error.code) {
+            notifiedCode = error.code;
+            toast.error(message);
+          }
+          if (error.code === error.PERMISSION_DENIED) return; // retrying cannot help
+          failures += 1;
+          if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+          watchId = null;
+          const delay = Math.min(60_000, 5_000 * 2 ** (failures - 1));
+          retryTimer = setTimeout(start, delay);
+        },
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 },
+      );
+    };
+
+    start();
+    return () => {
+      cancelled = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      if (retryTimer) clearTimeout(retryTimer);
+    };
+  }, [sharingEnabled, user, geoAttempt]);
+
+  const locationShare: DriverLocationShare = {
+    state: share.state,
+    message: share.message,
+    lastFixAt: share.lastFixAt,
+    stale: share.state === "live" ? isStaleFix(share.lastFixAt) : false,
+    retry: retryLocation,
+  };
 
   const role: AppRole | null = roles.includes("admin")
     ? "admin"
@@ -146,7 +231,7 @@ export function useAuth(): AuthState {
     [user],
   );
 
-  return { user, role, roles, profile, activeMode, setActiveMode, loading };
+  return { user, role, roles, profile, activeMode, setActiveMode, loading, locationShare };
 }
 
 /**

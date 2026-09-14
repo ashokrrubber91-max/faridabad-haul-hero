@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PushAlertToggle } from "@/components/driver/PushAlertToggle";
+import { LiveLocationStatus } from "@/components/driver/LiveLocationStatus";
+
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -429,6 +431,8 @@ function DriverPage() {
           aria-label="Toggle online"
         />
       </section>
+
+      <LiveLocationStatus />
 
       <PushAlertToggle />
 

@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Map as MapIcon,
   X,
+  LocateFixed,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,7 +31,10 @@ import { DriverApproachCard } from "@/components/booking/DriverApproachCard";
 
 import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
 import { SupportChat } from "@/components/support/SupportChat";
-import { FARIDABAD_CENTER } from "@/lib/google-maps";
+import { FARIDABAD_CENTER, loadGoogleMaps } from "@/lib/google-maps";
+import { getCurrentFix, geoMessage, readPermissionState } from "@/lib/geolocation";
+import { pinnedAddress } from "@/lib/address";
+
 import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
 import { canCancel, cancellationQuote } from "@/lib/cancellation";
 import {
@@ -67,6 +71,8 @@ function CustomerPage() {
   const [notes, setNotes] = useState("");
   const [stage, setStage] = useState<Stage>(null);
   const [pending, setPending] = useState<PlacePick | null>(null);
+  const [locatingMode, setLocatingMode] = useState<"pickup" | "drop" | null>(null);
+
   const [promo, setPromo] = useState<{ code: string; discount: number } | null>(null);
   const [coins, setCoins] = useState(0);
   const [method, setMethod] = useState<PaymentMethod>("cod");
@@ -337,6 +343,52 @@ function CustomerPage() {
 
   const openSearch = (mode: "pickup" | "drop") => setStage({ type: "search", mode });
 
+  /**
+   * Real device location, asked for from the plain page (never while a sheet is
+   * open — mobile browsers refuse the prompt then). The pin always opens on the
+   * map afterwards so the person can check and correct the exact point, and any
+   * failure falls back to that same manual map instead of a dead end.
+   */
+  const locateFor = async (mode: "pickup" | "drop") => {
+    const existing = mode === "pickup" ? pickup : drop;
+    setStage(null);
+    setLocatingMode(mode);
+    try {
+      if ((await readPermissionState()) === "denied") throw { code: "denied" as const };
+      const fix = await getCurrentFix();
+      let address: string | null = null;
+      try {
+        const g = await loadGoogleMaps();
+        const res = await new g.maps.Geocoder().geocode({
+          location: { lat: fix.lat, lng: fix.lng },
+        });
+        address = res.results[0]?.formatted_address ?? null;
+      } catch {
+        address = null;
+      }
+      setPending({
+        address: address ?? pinnedAddress(fix.lat, fix.lng),
+        lat: fix.lat,
+        lng: fix.lng,
+        contactName: existing?.contactName,
+        contactPhone: existing?.contactPhone,
+      });
+      setStage({ type: "confirm", mode });
+      if (!address) {
+        toast.warning(
+          "We found your exact spot but no street address. Please adjust the pin or type the address.",
+        );
+      }
+    } catch (err) {
+      toast.error(geoMessage(err));
+      // Manual fallback: the map pin selector, pre-centred on whatever we know.
+      setPending(existing ?? { address: "", ...FARIDABAD_CENTER });
+      setStage({ type: "confirm", mode });
+    } finally {
+      setLocatingMode(null);
+    }
+  };
+
   return (
     <div className="grid min-w-0 gap-6 lg:grid-cols-[1.1fr_1fr] [&>*]:min-w-0">
       {step === "form" ? (
@@ -355,6 +407,8 @@ function CustomerPage() {
                 setPending(pickup ?? { address: "", ...FARIDABAD_CENTER });
                 setStage({ type: "confirm", mode: "pickup" });
               }}
+              onUseMyLocation={() => void locateFor("pickup")}
+              locating={locatingMode === "pickup"}
             />
 
             <WaypointManager
@@ -389,6 +443,8 @@ function CustomerPage() {
                 setPending(drop ?? { address: "", ...FARIDABAD_CENTER });
                 setStage({ type: "confirm", mode: "drop" });
               }}
+              onUseMyLocation={() => void locateFor("drop")}
+              locating={locatingMode === "drop"}
             />
 
             <div>
@@ -747,11 +803,13 @@ function CustomerPage() {
         open={stage?.type === "search"}
         onOpenChange={(v) => !v && setStage(null)}
         mode={stage?.mode ?? "pickup"}
+        onUseDeviceLocation={() => void locateFor(stage?.mode ?? "pickup")}
         onPick={(p) => {
           setPending(p);
           setStage({ type: "confirm", mode: stage?.mode ?? "pickup" });
         }}
       />
+
       <MapPinConfirm
         open={stage?.type === "confirm"}
         onOpenChange={(v) => !v && setStage(null)}
@@ -796,6 +854,8 @@ function LocationRow({
   placeholder,
   onSearch,
   onPickOnMap,
+  onUseMyLocation,
+  locating,
 }: {
   label: string;
   dotClass: string;
@@ -803,41 +863,62 @@ function LocationRow({
   placeholder: string;
   onSearch: () => void;
   onPickOnMap: () => void;
+  onUseMyLocation?: () => void;
+  locating?: boolean;
 }) {
   return (
-    <div className="flex items-stretch gap-2">
-      <button
-        type="button"
-        onClick={onSearch}
-        className="flex min-w-0 flex-1 items-center gap-3 rounded-md border bg-background p-3 text-left transition-colors hover:bg-muted"
-      >
-        <MapPin className={`h-4 w-4 shrink-0 ${dotClass}`} />
-        <div className="min-w-0 flex-1">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
-          {place ? (
-            <>
-              <p className="truncate text-sm font-medium text-secondary">
-                {place.alias || place.address}
-              </p>
-              {place.alias && (
-                <p className="truncate text-xs text-muted-foreground">{place.address}</p>
-              )}
-            </>
+    <div className="space-y-2">
+      <div className="flex items-stretch gap-2">
+        <button
+          type="button"
+          onClick={onSearch}
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-md border bg-background p-3 text-left transition-colors hover:bg-muted"
+        >
+          <MapPin className={`h-4 w-4 shrink-0 ${dotClass}`} />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+            {place ? (
+              <>
+                <p className="truncate text-sm font-medium text-secondary">
+                  {place.alias || place.address}
+                </p>
+                {place.alias && (
+                  <p className="truncate text-xs text-muted-foreground">{place.address}</p>
+                )}
+              </>
+            ) : (
+              <p className="truncate text-sm text-muted-foreground">{placeholder}</p>
+            )}
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onPickOnMap}
+          className="h-auto shrink-0 px-3"
+          title="Select pin on map"
+        >
+          <MapIcon className="h-4 w-4" />
+        </Button>
+      </div>
+      {onUseMyLocation && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onUseMyLocation}
+          disabled={locating}
+          className="h-8 gap-2 px-2 text-primary"
+        >
+          {locating ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <p className="truncate text-sm text-muted-foreground">{placeholder}</p>
+            <LocateFixed className="h-4 w-4" />
           )}
-        </div>
-        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-      </button>
-      <Button
-        type="button"
-        variant="outline"
-        onClick={onPickOnMap}
-        className="h-auto shrink-0 px-3"
-        title="Select pin on map"
-      >
-        <MapIcon className="h-4 w-4" />
-      </Button>
+          {locating ? "Getting your location…" : "Use my location"}
+        </Button>
+      )}
     </div>
   );
 }

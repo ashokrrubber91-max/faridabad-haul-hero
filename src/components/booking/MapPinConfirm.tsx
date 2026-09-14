@@ -7,6 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Home, Store, Bookmark, ArrowLeft, Crosshair, Check, MapPin } from "lucide-react";
 import { loadGoogleMaps, FARIDABAD_CENTER } from "@/lib/google-maps";
+import { getCurrentFix, geoMessage } from "@/lib/geolocation";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -157,41 +159,21 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
     }
   };
 
-  const useCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error("Location is not available in this browser");
-      return;
-    }
+  const fetchCurrentLocation = async () => {
     setLocating(true);
-    const applyPosition = (pos: GeolocationPosition) => {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      markerRef.current?.setPosition({ lat, lng });
-      mapInstance.current?.panTo({ lat, lng });
-      setCoords({ lat, lng });
+    try {
+      const fix = await getCurrentFix();
+      markerRef.current?.setPosition({ lat: fix.lat, lng: fix.lng });
+      mapInstance.current?.panTo({ lat: fix.lat, lng: fix.lng });
+      setCoords({ lat: fix.lat, lng: fix.lng });
       setPinSet(false);
-      setLocating(false);
       toast.success("Current location fetched. Tap Set location to confirm.");
-    };
-    const fail = (error: GeolocationPositionError) => {
+    } catch (err) {
+      // Honest message; the map pin stays available as the manual fallback.
+      toast.error(geoMessage(err));
+    } finally {
       setLocating(false);
-      if (error.code === 1) {
-        toast.error(
-          "Location permission is blocked. Allow location for MiniPort in browser settings, then try again.",
-        );
-      } else if (error.code === 2) {
-        toast.error(
-          "Your location is temporarily unavailable. You can still enter the address manually.",
-        );
-      } else {
-        toast.error("Location took too long. Try again or enter the address manually.");
-      }
-    };
-    navigator.geolocation.getCurrentPosition(applyPosition, fail, {
-      enableHighAccuracy: false,
-      timeout: 12000,
-      maximumAge: 60000,
-    });
+    }
   };
 
   useEffect(() => {
@@ -276,7 +258,7 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
               type="button"
               size="sm"
               variant="secondary"
-              onClick={useCurrentLocation}
+              onClick={() => void fetchCurrentLocation()}
               disabled={locating}
               className="absolute bottom-3 right-3 shadow-md"
             >
