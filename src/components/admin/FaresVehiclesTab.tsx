@@ -375,7 +375,7 @@ function VehicleDialog({
       _overtime_rate_per_min: nums.rate,
       _sort_order: Math.round(nums.sort),
       _active: form.active,
-      _image_url: form.image_url ?? undefined,
+      _image_url: form.image_url ?? "",
       _length_ft: optionalNumber(form.length_ft),
       _width_ft: optionalNumber(form.width_ft),
       _height_ft: optionalNumber(form.height_ft),
