@@ -356,16 +356,8 @@ function CustomerPage() {
     try {
       if ((await readPermissionState()) === "denied") throw { code: "denied" as const };
       const fix = await getCurrentFix();
-      let address: string | null = null;
-      try {
-        const g = await loadGoogleMaps();
-        const res = await new g.maps.Geocoder().geocode({
-          location: { lat: fix.lat, lng: fix.lng },
-        });
-        address = res.results[0]?.formatted_address ?? null;
-      } catch {
-        address = null;
-      }
+      const address = await lookupAddress(fix.lat, fix.lng);
+
       setPending({
         address: address ?? pinnedAddress(fix.lat, fix.lng),
         lat: fix.lat,
