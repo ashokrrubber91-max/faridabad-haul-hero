@@ -110,15 +110,13 @@ function AccountPage() {
       if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]{3}$/.test(code))
         throw new Error("Enter a valid 15-character GSTIN");
       if (bizName.trim().length < 2) throw new Error("Enter the business name");
-      const { error } = await supabase
-        .from("customer_gstins")
-        .insert({
-          user_id: user!.id,
-          gstin: code,
-          business_name: bizName.trim(),
-          business_address: bizAddr.trim() || null,
-          is_default: (gstins.data ?? []).length === 0,
-        });
+      const { error } = await supabase.from("customer_gstins").insert({
+        user_id: user!.id,
+        gstin: code,
+        business_name: bizName.trim(),
+        business_address: bizAddr.trim() || null,
+        is_default: (gstins.data ?? []).length === 0,
+      });
       if (error) throw error;
     },
     onSuccess: () => {

@@ -90,12 +90,23 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
       const el = await waitForBox();
       if (!el || cancelled) return;
       const init = initialRef.current;
-      const center = { lat: init?.lat || FARIDABAD_CENTER.lat, lng: init?.lng || FARIDABAD_CENTER.lng };
-      const map = new g.maps.Map(el, { center, zoom: 16, disableDefaultUI: true, zoomControl: true, gestureHandling: "greedy" });
+      const center = {
+        lat: init?.lat || FARIDABAD_CENTER.lat,
+        lng: init?.lng || FARIDABAD_CENTER.lng,
+      };
+      const map = new g.maps.Map(el, {
+        center,
+        zoom: 16,
+        disableDefaultUI: true,
+        zoomControl: true,
+        gestureHandling: "greedy",
+      });
       mapInstance.current = map;
       geocoderRef.current = new g.maps.Geocoder();
       markerRef.current = new g.maps.Marker({ position: center, map, draggable: true });
-      g.maps.event.addListenerOnce(map, "idle", () => { if (!cancelled) setMapReady(true); });
+      g.maps.event.addListenerOnce(map, "idle", () => {
+        if (!cancelled) setMapReady(true);
+      });
       setTimeout(() => {
         if (cancelled || !mapInstance.current) return;
         g.maps.event.trigger(mapInstance.current, "resize");
@@ -116,7 +127,9 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
         if (ll) movePin(ll.lat(), ll.lng());
       });
     };
-    void start().catch(() => { if (!cancelled) setMapFailed(true); });
+    void start().catch(() => {
+      if (!cancelled) setMapFailed(true);
+    });
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
@@ -163,9 +176,13 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
     const fail = (error: GeolocationPositionError) => {
       setLocating(false);
       if (error.code === 1) {
-        toast.error("Location permission is blocked. Allow location for MiniPort in browser settings, then try again.");
+        toast.error(
+          "Location permission is blocked. Allow location for MiniPort in browser settings, then try again.",
+        );
       } else if (error.code === 2) {
-        toast.error("Your location is temporarily unavailable. You can still enter the address manually.");
+        toast.error(
+          "Your location is temporarily unavailable. You can still enter the address manually.",
+        );
       } else {
         toast.error("Location took too long. Try again or enter the address manually.");
       }
@@ -232,33 +249,160 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
       <SheetContent side="bottom" className="h-[100dvh] w-full max-w-full p-0 sm:max-w-full">
         <div className="flex h-full flex-col">
           <header className="flex items-center gap-2 border-b bg-background px-4 py-3">
-            <button onClick={() => onOpenChange(false)} aria-label="Back" className="p-1"><ArrowLeft className="h-5 w-5" /></button>
-            <p className="font-display text-lg tracking-wide text-secondary">Confirm {mode === "pickup" ? "pickup" : "drop"}</p>
+            <button onClick={() => onOpenChange(false)} aria-label="Back" className="p-1">
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <p className="font-display text-lg tracking-wide text-secondary">
+              Confirm {mode === "pickup" ? "pickup" : "drop"}
+            </p>
           </header>
           <div className="relative w-full shrink-0" style={{ height: 320 }}>
             <div ref={mapRef} className="absolute inset-0 h-full w-full bg-muted" />
             {mapFailed ? (
-              <div className="absolute inset-0 grid place-items-center bg-muted px-6 text-center"><p className="text-xs text-muted-foreground">The map cannot be shown right now. You can still continue with the address you searched — tap “Set location” below, or use your current location.</p></div>
-            ) : (!mapReady && <div className="pointer-events-none absolute inset-0 grid place-items-center bg-muted"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>)}
-            <Button type="button" size="sm" variant="secondary" onClick={useCurrentLocation} disabled={locating} className="absolute bottom-3 right-3 shadow-md">
-              {locating ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Crosshair className="mr-1.5 h-4 w-4" />} {locating ? "Fetching…" : "Use my location"}
+              <div className="absolute inset-0 grid place-items-center bg-muted px-6 text-center">
+                <p className="text-xs text-muted-foreground">
+                  The map cannot be shown right now. You can still continue with the address you
+                  searched — tap “Set location” below, or use your current location.
+                </p>
+              </div>
+            ) : (
+              !mapReady && (
+                <div className="pointer-events-none absolute inset-0 grid place-items-center bg-muted">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                </div>
+              )
+            )}
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={useCurrentLocation}
+              disabled={locating}
+              className="absolute bottom-3 right-3 shadow-md"
+            >
+              {locating ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <Crosshair className="mr-1.5 h-4 w-4" />
+              )}{" "}
+              {locating ? "Fetching…" : "Use my location"}
             </Button>
-            <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-background/90 px-3 py-1 text-[11px] font-medium text-secondary shadow-sm">Drag the pin or tap the map, then set the location</div>
+            <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-background/90 px-3 py-1 text-[11px] font-medium text-secondary shadow-sm">
+              Drag the pin or tap the map, then set the location
+            </div>
           </div>
-          <div className="border-b bg-background p-3"><Button type="button" variant={pinSet ? "secondary" : "default"} onClick={setLocationFromPin} disabled={locating} className="h-11 w-full">{locating ? <Loader2 className="h-4 w-4 animate-spin" /> : pinSet ? <><Check className="mr-1.5 h-4 w-4" /> Location set</> : <><MapPin className="mr-1.5 h-4 w-4" /> Set location</>}</Button></div>
+          <div className="border-b bg-background p-3">
+            <Button
+              type="button"
+              variant={pinSet ? "secondary" : "default"}
+              onClick={setLocationFromPin}
+              disabled={locating}
+              className="h-11 w-full"
+            >
+              {locating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : pinSet ? (
+                <>
+                  <Check className="mr-1.5 h-4 w-4" /> Location set
+                </>
+              ) : (
+                <>
+                  <MapPin className="mr-1.5 h-4 w-4" /> Set location
+                </>
+              )}
+            </Button>
+          </div>
           <div className="flex-1 overflow-y-auto p-4">
-            <div className="surface-card p-4"><p className="text-xs uppercase tracking-wider text-muted-foreground">Address</p><p className="mt-1 text-sm font-medium text-secondary">{pinSet && address ? address : "Drag the pin and tap “Set location”"}</p></div>
+            <div className="surface-card p-4">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Address</p>
+              <p className="mt-1 text-sm font-medium text-secondary">
+                {pinSet && address ? address : "Drag the pin and tap “Set location”"}
+              </p>
+            </div>
             <div className="mt-4 space-y-3">
-              <div><Label htmlFor="cname">{personLabel}'s name</Label><Input id="cname" value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder={`${personLabel}'s full name`} maxLength={80} /></div>
-              <div><Label htmlFor="cphone">{personLabel}'s mobile number</Label><Input id="cphone" inputMode="tel" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="10-digit mobile" maxLength={15} disabled={useMyPhone} /></div>
-              <label className="flex items-center gap-2 text-sm text-muted-foreground"><Checkbox checked={useMyPhone} onCheckedChange={(v) => setUseMyPhone(v === true)} /> Use my mobile number</label>
+              <div>
+                <Label htmlFor="cname">{personLabel}'s name</Label>
+                <Input
+                  id="cname"
+                  value={contactName}
+                  onChange={(e) => setContactName(e.target.value)}
+                  placeholder={`${personLabel}'s full name`}
+                  maxLength={80}
+                />
+              </div>
+              <div>
+                <Label htmlFor="cphone">{personLabel}'s mobile number</Label>
+                <Input
+                  id="cphone"
+                  inputMode="tel"
+                  value={contactPhone}
+                  onChange={(e) => setContactPhone(e.target.value)}
+                  placeholder="10-digit mobile"
+                  maxLength={15}
+                  disabled={useMyPhone}
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Checkbox checked={useMyPhone} onCheckedChange={(v) => setUseMyPhone(v === true)} />{" "}
+                Use my mobile number
+              </label>
             </div>
             <div className="mt-5 rounded-md border p-3">
-              <div className="flex items-center justify-between gap-3"><div><p className="text-sm font-semibold text-secondary">Save this address</p><p className="text-xs text-muted-foreground">Off by default — nothing is stored unless you turn this on.</p></div><Switch checked={saveEnabled} onCheckedChange={setSaveEnabled} aria-label="Save this address" /></div>
-              {saveEnabled && <div className="mt-3"><div className="flex flex-wrap gap-2">{KINDS.map((k) => { const Icon = k.icon; const active = saveKind === k.id; return <button key={k.id} type="button" onClick={() => setSaveKind(k.id)} className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-secondary hover:bg-muted"}`}><Icon className="h-3.5 w-3.5" />{k.label}</button>; })}</div><div className="mt-2"><Label htmlFor="alias">Label (optional)</Label><Input id="alias" value={alias} onChange={(e) => setAlias(e.target.value)} placeholder="e.g. Radha Rubber Industries" maxLength={80} /></div></div>}
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-secondary">Save this address</p>
+                  <p className="text-xs text-muted-foreground">
+                    Off by default — nothing is stored unless you turn this on.
+                  </p>
+                </div>
+                <Switch
+                  checked={saveEnabled}
+                  onCheckedChange={setSaveEnabled}
+                  aria-label="Save this address"
+                />
+              </div>
+              {saveEnabled && (
+                <div className="mt-3">
+                  <div className="flex flex-wrap gap-2">
+                    {KINDS.map((k) => {
+                      const Icon = k.icon;
+                      const active = saveKind === k.id;
+                      return (
+                        <button
+                          key={k.id}
+                          type="button"
+                          onClick={() => setSaveKind(k.id)}
+                          className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-secondary hover:bg-muted"}`}
+                        >
+                          <Icon className="h-3.5 w-3.5" />
+                          {k.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-2">
+                    <Label htmlFor="alias">Label (optional)</Label>
+                    <Input
+                      id="alias"
+                      value={alias}
+                      onChange={(e) => setAlias(e.target.value)}
+                      placeholder="e.g. Radha Rubber Industries"
+                      maxLength={80}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          <footer className="border-t bg-background p-3"><Button onClick={handleConfirm} disabled={saving || !pinSet} className="h-11 w-full">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : `Confirm ${mode === "pickup" ? "pickup" : "drop"}`}</Button></footer>
+          <footer className="border-t bg-background p-3">
+            <Button onClick={handleConfirm} disabled={saving || !pinSet} className="h-11 w-full">
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                `Confirm ${mode === "pickup" ? "pickup" : "drop"}`
+              )}
+            </Button>
+          </footer>
         </div>
       </SheetContent>
     </Sheet>
