@@ -856,6 +856,8 @@ function LocationRow({
   placeholder,
   onSearch,
   onPickOnMap,
+  onUseMyLocation,
+  locating,
 }: {
   label: string;
   dotClass: string;
@@ -863,44 +865,66 @@ function LocationRow({
   placeholder: string;
   onSearch: () => void;
   onPickOnMap: () => void;
+  onUseMyLocation?: () => void;
+  locating?: boolean;
 }) {
   return (
-    <div className="flex items-stretch gap-2">
-      <button
-        type="button"
-        onClick={onSearch}
-        className="flex min-w-0 flex-1 items-center gap-3 rounded-md border bg-background p-3 text-left transition-colors hover:bg-muted"
-      >
-        <MapPin className={`h-4 w-4 shrink-0 ${dotClass}`} />
-        <div className="min-w-0 flex-1">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
-          {place ? (
-            <>
-              <p className="truncate text-sm font-medium text-secondary">
-                {place.alias || place.address}
-              </p>
-              {place.alias && (
-                <p className="truncate text-xs text-muted-foreground">{place.address}</p>
-              )}
-            </>
+    <div className="space-y-2">
+      <div className="flex items-stretch gap-2">
+        <button
+          type="button"
+          onClick={onSearch}
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-md border bg-background p-3 text-left transition-colors hover:bg-muted"
+        >
+          <MapPin className={`h-4 w-4 shrink-0 ${dotClass}`} />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+            {place ? (
+              <>
+                <p className="truncate text-sm font-medium text-secondary">
+                  {place.alias || place.address}
+                </p>
+                {place.alias && (
+                  <p className="truncate text-xs text-muted-foreground">{place.address}</p>
+                )}
+              </>
+            ) : (
+              <p className="truncate text-sm text-muted-foreground">{placeholder}</p>
+            )}
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onPickOnMap}
+          className="h-auto shrink-0 px-3"
+          title="Select pin on map"
+        >
+          <MapIcon className="h-4 w-4" />
+        </Button>
+      </div>
+      {onUseMyLocation && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onUseMyLocation}
+          disabled={locating}
+          className="h-8 gap-2 px-2 text-primary"
+        >
+          {locating ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <p className="truncate text-sm text-muted-foreground">{placeholder}</p>
+            <LocateFixed className="h-4 w-4" />
           )}
-        </div>
-        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-      </button>
-      <Button
-        type="button"
-        variant="outline"
-        onClick={onPickOnMap}
-        className="h-auto shrink-0 px-3"
-        title="Select pin on map"
-      >
-        <MapIcon className="h-4 w-4" />
-      </Button>
+          {locating ? "Getting your location…" : "Use my location"}
+        </Button>
+      )}
     </div>
   );
 }
+
 
 function tone(t: "warning" | "primary" | "success" | "muted" | "destructive") {
   switch (t) {
