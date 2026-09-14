@@ -747,11 +747,13 @@ function CustomerPage() {
         open={stage?.type === "search"}
         onOpenChange={(v) => !v && setStage(null)}
         mode={stage?.mode ?? "pickup"}
+        onUseDeviceLocation={() => void locateFor(stage?.mode ?? "pickup")}
         onPick={(p) => {
           setPending(p);
           setStage({ type: "confirm", mode: stage?.mode ?? "pickup" });
         }}
       />
+
       <MapPinConfirm
         open={stage?.type === "confirm"}
         onOpenChange={(v) => !v && setStage(null)}
