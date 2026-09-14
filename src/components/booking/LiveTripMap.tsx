@@ -6,82 +6,316 @@ import { computeRoadRoute } from "@/lib/routing.functions";
 import { Navigation, Loader2, MapPin, AlertTriangle } from "lucide-react";
 import { TripSafetyActions } from "@/components/booking/TripSafetyActions";
 
-interface Props { bookingId: string; driverId: string | null; pickupAddress: string; dropAddress: string; pickupLat?: number | null; pickupLng?: number | null; dropLat?: number | null; dropLng?: number | null; phase: "accepted" | "in_progress"; distanceKm: number; }
+interface Props {
+  bookingId: string;
+  driverId: string | null;
+  pickupAddress: string;
+  dropAddress: string;
+  pickupLat?: number | null;
+  pickupLng?: number | null;
+  dropLat?: number | null;
+  dropLng?: number | null;
+  phase: "accepted" | "in_progress";
+  distanceKm: number;
+}
 type LatLng = { lat: number; lng: number };
 const FRESH_MS = 120_000;
 
-export function LiveTripMap({ bookingId, driverId, pickupAddress, dropAddress, pickupLat, pickupLng, dropLat, dropLng, phase, distanceKm }: Props) {
+export function LiveTripMap({
+  bookingId,
+  driverId,
+  pickupAddress,
+  dropAddress,
+  pickupLat,
+  pickupLng,
+  dropLat,
+  dropLng,
+  phase,
+  distanceKm,
+}: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const routeRef = useRef<google.maps.Polyline | null>(null);
   const driverMarker = useRef<google.maps.Marker | null>(null);
   const pickupMarker = useRef<google.maps.Marker | null>(null);
   const dropMarker = useRef<google.maps.Marker | null>(null);
-  const exactPickup: LatLng | null = typeof pickupLat === "number" && typeof pickupLng === "number" ? { lat: pickupLat, lng: pickupLng } : null;
-  const exactDrop: LatLng | null = typeof dropLat === "number" && typeof dropLng === "number" ? { lat: dropLat, lng: dropLng } : null;
+  const exactPickup: LatLng | null =
+    typeof pickupLat === "number" && typeof pickupLng === "number"
+      ? { lat: pickupLat, lng: pickupLng }
+      : null;
+  const exactDrop: LatLng | null =
+    typeof dropLat === "number" && typeof dropLng === "number"
+      ? { lat: dropLat, lng: dropLng }
+      : null;
   const [pickup, setPickup] = useState<LatLng | null>(exactPickup);
   const [drop, setDrop] = useState<LatLng | null>(exactDrop);
   const [mapError, setMapError] = useState(false);
 
   useEffect(() => {
-    if (exactPickup && exactDrop) { setPickup(exactPickup); setDrop(exactDrop); return; }
+    if (exactPickup && exactDrop) {
+      setPickup(exactPickup);
+      setDrop(exactDrop);
+      return;
+    }
     let cancelled = false;
-    void loadGoogleMaps().then(async (g) => {
-      const geocoder = new g.maps.Geocoder();
-      const geo = async (addr: string): Promise<LatLng> => { try { const res = await geocoder.geocode({ address: addr, region: "IN" }); const loc = res.results[0]?.geometry.location; return loc ? { lat: loc.lat(), lng: loc.lng() } : FARIDABAD_CENTER; } catch { return FARIDABAD_CENTER; } };
-      const [p, d] = await Promise.all([exactPickup ? Promise.resolve(exactPickup) : geo(pickupAddress), exactDrop ? Promise.resolve(exactDrop) : geo(dropAddress)]);
-      if (!cancelled) { setPickup(p); setDrop(d); }
-    }).catch(() => { if (!cancelled) { setMapError(true); setPickup(exactPickup ?? FARIDABAD_CENTER); setDrop(exactDrop ?? FARIDABAD_CENTER); } });
-    return () => { cancelled = true; };
+    void loadGoogleMaps()
+      .then(async (g) => {
+        const geocoder = new g.maps.Geocoder();
+        const geo = async (addr: string): Promise<LatLng> => {
+          try {
+            const res = await geocoder.geocode({ address: addr, region: "IN" });
+            const loc = res.results[0]?.geometry.location;
+            return loc ? { lat: loc.lat(), lng: loc.lng() } : FARIDABAD_CENTER;
+          } catch {
+            return FARIDABAD_CENTER;
+          }
+        };
+        const [p, d] = await Promise.all([
+          exactPickup ? Promise.resolve(exactPickup) : geo(pickupAddress),
+          exactDrop ? Promise.resolve(exactDrop) : geo(dropAddress),
+        ]);
+        if (!cancelled) {
+          setPickup(p);
+          setDrop(d);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMapError(true);
+          setPickup(exactPickup ?? FARIDABAD_CENTER);
+          setDrop(exactDrop ?? FARIDABAD_CENTER);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [pickupAddress, dropAddress, pickupLat, pickupLng, dropLat, dropLng]);
 
   const location = useQuery({
-    queryKey: ["driver-location", driverId, bookingId], enabled: !!driverId, refetchInterval: 25_000, refetchOnWindowFocus: true,
-    queryFn: async () => { const { data, error } = await supabase.from("driver_locations").select("latitude, longitude, updated_at, speed_mps").eq("driver_id", driverId!).maybeSingle(); if (error) throw error; return data ?? null; },
+    queryKey: ["driver-location", driverId, bookingId],
+    enabled: !!driverId,
+    refetchInterval: 25_000,
+    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("driver_locations")
+        .select("latitude, longitude, updated_at, speed_mps")
+        .eq("driver_id", driverId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data ?? null;
+    },
   });
-  useEffect(() => { if (!driverId) return; const ch = supabase.channel(`driver-loc-${driverId}`).on("postgres_changes", { event: "*", schema: "public", table: "driver_locations", filter: `driver_id=eq.${driverId}` }, () => void location.refetch()).subscribe(); return () => { void supabase.removeChannel(ch); }; }, [driverId]);
-  const lastFix = useMemo<{ pos: LatLng; ageMs: number } | null>(() => { const row = location.data; if (!row) return null; const lat = Number(row.latitude), lng = Number(row.longitude); if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null; const ageMs = Date.now() - new Date(row.updated_at).getTime(); return Number.isFinite(ageMs) ? { pos: { lat, lng }, ageMs: Math.max(0, ageMs) } : null; }, [location.data]);
+  useEffect(() => {
+    if (!driverId) return;
+    const ch = supabase
+      .channel(`driver-loc-${driverId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "driver_locations",
+          filter: `driver_id=eq.${driverId}`,
+        },
+        () => void location.refetch(),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [driverId]);
+  const lastFix = useMemo<{ pos: LatLng; ageMs: number } | null>(() => {
+    const row = location.data;
+    if (!row) return null;
+    const lat = Number(row.latitude),
+      lng = Number(row.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180)
+      return null;
+    const ageMs = Date.now() - new Date(row.updated_at).getTime();
+    return Number.isFinite(ageMs) ? { pos: { lat, lng }, ageMs: Math.max(0, ageMs) } : null;
+  }, [location.data]);
   const driverPos = lastFix && lastFix.ageMs <= FRESH_MS ? lastFix.pos : null;
-  const staleMinutes = lastFix && lastFix.ageMs > FRESH_MS ? Math.round(lastFix.ageMs / 60000) : null;
+  const staleMinutes =
+    lastFix && lastFix.ageMs > FRESH_MS ? Math.round(lastFix.ageMs / 60000) : null;
   const target = phase === "accepted" ? pickup : drop;
   const origin = driverPos ?? pickup;
-  const roundedKey = (p: LatLng | null) => p ? `${p.lat.toFixed(3)},${p.lng.toFixed(3)}` : "none";
-  const road = useQuery({ queryKey: ["road-route", roundedKey(origin), roundedKey(target)], enabled: !!origin && !!target, staleTime: 30_000, retry: 1, queryFn: () => computeRoadRoute({ data: { points: [origin!, target!] } }) });
+  const roundedKey = (p: LatLng | null) => (p ? `${p.lat.toFixed(3)},${p.lng.toFixed(3)}` : "none");
+  const road = useQuery({
+    queryKey: ["road-route", roundedKey(origin), roundedKey(target)],
+    enabled: !!origin && !!target,
+    staleTime: 30_000,
+    retry: 1,
+    queryFn: () => computeRoadRoute({ data: { points: [origin!, target!] } }),
+  });
   const remainingKm = driverPos && road.data ? road.data.distanceKm : null;
   const eta = driverPos && road.data?.durationMin ? road.data.durationMin : null;
 
   useEffect(() => {
     if (!mapRef.current || !pickup || !drop) return;
     let cancelled = false;
-    void loadGoogleMaps().then((g) => {
-      if (cancelled || !mapRef.current) return;
-      mapInstance.current = new g.maps.Map(mapRef.current, { center: target ?? pickup, zoom: 14, disableDefaultUI: true, zoomControl: true, clickableIcons: false, gestureHandling: "greedy" });
-      pickupMarker.current = new g.maps.Marker({ position: pickup, map: mapInstance.current, label: { text: "P", color: "#fff", fontSize: "11px", fontWeight: "700" } });
-      dropMarker.current = new g.maps.Marker({ position: drop, map: mapInstance.current, label: { text: "D", color: "#fff", fontSize: "11px", fontWeight: "700" } });
-      const bounds = new g.maps.LatLngBounds(); bounds.extend(pickup); bounds.extend(drop); mapInstance.current.fitBounds(bounds, 60); setTimeout(() => { if (mapInstance.current) g.maps.event.trigger(mapInstance.current, "resize"); }, 250);
-    }).catch(() => { if (!cancelled) setMapError(true); });
-    return () => { cancelled = true; routeRef.current?.setMap(null); driverMarker.current?.setMap(null); pickupMarker.current?.setMap(null); dropMarker.current?.setMap(null); routeRef.current = null; driverMarker.current = null; mapInstance.current = null; };
+    void loadGoogleMaps()
+      .then((g) => {
+        if (cancelled || !mapRef.current) return;
+        mapInstance.current = new g.maps.Map(mapRef.current, {
+          center: target ?? pickup,
+          zoom: 14,
+          disableDefaultUI: true,
+          zoomControl: true,
+          clickableIcons: false,
+          gestureHandling: "greedy",
+        });
+        pickupMarker.current = new g.maps.Marker({
+          position: pickup,
+          map: mapInstance.current,
+          label: { text: "P", color: "#fff", fontSize: "11px", fontWeight: "700" },
+        });
+        dropMarker.current = new g.maps.Marker({
+          position: drop,
+          map: mapInstance.current,
+          label: { text: "D", color: "#fff", fontSize: "11px", fontWeight: "700" },
+        });
+        const bounds = new g.maps.LatLngBounds();
+        bounds.extend(pickup);
+        bounds.extend(drop);
+        mapInstance.current.fitBounds(bounds, 60);
+        setTimeout(() => {
+          if (mapInstance.current) g.maps.event.trigger(mapInstance.current, "resize");
+        }, 250);
+      })
+      .catch(() => {
+        if (!cancelled) setMapError(true);
+      });
+    return () => {
+      cancelled = true;
+      routeRef.current?.setMap(null);
+      driverMarker.current?.setMap(null);
+      pickupMarker.current?.setMap(null);
+      dropMarker.current?.setMap(null);
+      routeRef.current = null;
+      driverMarker.current = null;
+      mapInstance.current = null;
+    };
   }, [pickup, drop]);
 
   useEffect(() => {
     const encoded = road.data?.polyline;
-    if (!encoded) { routeRef.current?.setMap(null); routeRef.current = null; return; }
-    void loadGoogleMaps().then((g) => { if (!mapInstance.current) return; const path = g.maps.geometry.encoding.decodePath(encoded); routeRef.current?.setMap(null); routeRef.current = new g.maps.Polyline({ path, strokeColor: "#F97316", strokeOpacity: 0.85, strokeWeight: 5, map: mapInstance.current }); const bounds = new g.maps.LatLngBounds(); path.forEach((pt) => bounds.extend(pt)); mapInstance.current.fitBounds(bounds, 60); }).catch(() => setMapError(true));
+    if (!encoded) {
+      routeRef.current?.setMap(null);
+      routeRef.current = null;
+      return;
+    }
+    void loadGoogleMaps()
+      .then((g) => {
+        if (!mapInstance.current) return;
+        const path = g.maps.geometry.encoding.decodePath(encoded);
+        routeRef.current?.setMap(null);
+        routeRef.current = new g.maps.Polyline({
+          path,
+          strokeColor: "#F97316",
+          strokeOpacity: 0.85,
+          strokeWeight: 5,
+          map: mapInstance.current,
+        });
+        const bounds = new g.maps.LatLngBounds();
+        path.forEach((pt) => bounds.extend(pt));
+        mapInstance.current.fitBounds(bounds, 60);
+      })
+      .catch(() => setMapError(true));
   }, [road.data?.polyline]);
 
   useEffect(() => {
-    const map = mapInstance.current; if (!map) return;
-    if (!driverPos) { driverMarker.current?.setMap(null); driverMarker.current = null; return; }
-    void loadGoogleMaps().then((g) => { if (!mapInstance.current) return; if (!driverMarker.current) driverMarker.current = new g.maps.Marker({ position: driverPos, map: mapInstance.current, icon: { path: g.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#F97316", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 3 } }); else driverMarker.current.setPosition(driverPos); }).catch(() => setMapError(true));
+    const map = mapInstance.current;
+    if (!map) return;
+    if (!driverPos) {
+      driverMarker.current?.setMap(null);
+      driverMarker.current = null;
+      return;
+    }
+    void loadGoogleMaps()
+      .then((g) => {
+        if (!mapInstance.current) return;
+        if (!driverMarker.current)
+          driverMarker.current = new g.maps.Marker({
+            position: driverPos,
+            map: mapInstance.current,
+            icon: {
+              path: g.maps.SymbolPath.CIRCLE,
+              scale: 8,
+              fillColor: "#F97316",
+              fillOpacity: 1,
+              strokeColor: "#fff",
+              strokeWeight: 3,
+            },
+          });
+        else driverMarker.current.setPosition(driverPos);
+      })
+      .catch(() => setMapError(true));
   }, [driverPos]);
 
   const routeFailed = road.isError;
-  const headline = driverPos ? remainingKm !== null ? phase === "accepted" ? `Driver is ${remainingKm.toFixed(1)} km away by road${eta ? ` · Arriving in ~${eta} min` : ""}` : `On the way to drop · ${remainingKm.toFixed(1)} km by road${eta ? ` · ~${eta} min` : ""}` : routeFailed ? "Live location received · road distance unavailable right now" : "Calculating road route…" : staleMinutes !== null ? `Driver's location last updated ${staleMinutes < 1 ? "just under a minute" : `${staleMinutes} min`} ago · waiting for a fresh GPS update` : phase === "accepted" ? "Waiting for the driver's live location…" : `Trip in progress · ${Math.max(0.5, distanceKm).toFixed(1)} km booked route`;
+  const headline = driverPos
+    ? remainingKm !== null
+      ? phase === "accepted"
+        ? `Driver is ${remainingKm.toFixed(1)} km away by road${eta ? ` · Arriving in ~${eta} min` : ""}`
+        : `On the way to drop · ${remainingKm.toFixed(1)} km by road${eta ? ` · ~${eta} min` : ""}`
+      : routeFailed
+        ? "Live location received · road distance unavailable right now"
+        : "Calculating road route…"
+    : staleMinutes !== null
+      ? `Driver's location last updated ${staleMinutes < 1 ? "just under a minute" : `${staleMinutes} min`} ago · waiting for a fresh GPS update`
+      : phase === "accepted"
+        ? "Waiting for the driver's live location…"
+        : `Trip in progress · ${Math.max(0.5, distanceKm).toFixed(1)} km booked route`;
 
-  return <div className="mt-3 overflow-hidden rounded-md border border-primary/30">
-    <div className="flex items-center justify-between gap-2 bg-primary/10 px-3 py-2 text-primary"><div className="flex items-center gap-2">{routeFailed ? <AlertTriangle className="h-4 w-4" /> : driverPos ? <Navigation className="h-4 w-4 animate-pulse" /> : <MapPin className="h-4 w-4" />}<p className="text-sm font-semibold">{headline}</p></div></div>
-    <div className="relative h-[240px] w-full bg-muted"><div ref={mapRef} className="absolute inset-0 h-full w-full" />{mapError ? <div className="absolute inset-0 grid place-items-center px-4 text-center"><p className="text-xs text-muted-foreground">The map cannot be shown right now. Your pickup, drop and distance are unchanged, and the driver&rsquo;s progress still updates in the trip details above.</p></div> : (!pickup || !drop && <div className="absolute inset-0 grid place-items-center"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>)}</div>
-    <p className="border-t bg-background px-3 py-1.5 text-[11px] text-muted-foreground">{routeFailed ? "Road route could not be loaded, so no route line is shown. Pickup and drop pins are exact." : driverPos ? "Live driver location and road route · updates automatically" : staleMinutes !== null ? "The last position shown was too old to be trusted, so the driver pin is hidden until a new GPS update arrives." : "Driver location appears once their app shares GPS (location permission needed)."}</p>
-    <TripSafetyActions bookingId={bookingId} pickupAddress={pickupAddress} dropAddress={dropAddress} phase={phase} eta={eta} />
-  </div>;
+  return (
+    <div className="mt-3 overflow-hidden rounded-md border border-primary/30">
+      <div className="flex items-center justify-between gap-2 bg-primary/10 px-3 py-2 text-primary">
+        <div className="flex items-center gap-2">
+          {routeFailed ? (
+            <AlertTriangle className="h-4 w-4" />
+          ) : driverPos ? (
+            <Navigation className="h-4 w-4 animate-pulse" />
+          ) : (
+            <MapPin className="h-4 w-4" />
+          )}
+          <p className="text-sm font-semibold">{headline}</p>
+        </div>
+      </div>
+      <div className="relative h-[240px] w-full bg-muted">
+        <div ref={mapRef} className="absolute inset-0 h-full w-full" />
+        {mapError ? (
+          <div className="absolute inset-0 grid place-items-center px-4 text-center">
+            <p className="text-xs text-muted-foreground">
+              The map cannot be shown right now. Your pickup, drop and distance are unchanged, and
+              the driver&rsquo;s progress still updates in the trip details above.
+            </p>
+          </div>
+        ) : (
+          !pickup ||
+          (!drop && (
+            <div className="absolute inset-0 grid place-items-center">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </div>
+          ))
+        )}
+      </div>
+      <p className="border-t bg-background px-3 py-1.5 text-[11px] text-muted-foreground">
+        {routeFailed
+          ? "Road route could not be loaded, so no route line is shown. Pickup and drop pins are exact."
+          : driverPos
+            ? "Live driver location and road route · updates automatically"
+            : staleMinutes !== null
+              ? "The last position shown was too old to be trusted, so the driver pin is hidden until a new GPS update arrives."
+              : "Driver location appears once their app shares GPS (location permission needed)."}
+      </p>
+      <TripSafetyActions
+        bookingId={bookingId}
+        pickupAddress={pickupAddress}
+        dropAddress={dropAddress}
+        phase={phase}
+        eta={eta}
+      />
+    </div>
+  );
 }

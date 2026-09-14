@@ -40,22 +40,39 @@ function DriverRidesPage() {
     <div className="space-y-5">
       <header>
         <h1 className="font-display text-3xl tracking-wide text-secondary">My rides</h1>
-        <p className="text-sm text-muted-foreground">{completed.length} completed · ₹{totalNet.toFixed(0)} net earned</p>
+        <p className="text-sm text-muted-foreground">
+          {completed.length} completed · ₹{totalNet.toFixed(0)} net earned
+        </p>
       </header>
       {rides.isLoading ? (
-        <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+        <div className="flex justify-center py-10">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </div>
       ) : rides.isError ? (
         <div className="surface-card p-8 text-center text-sm">
           <Package className="mx-auto mb-2 h-5 w-5 text-destructive" />
-          <p className="text-muted-foreground">We couldn&apos;t load your rides. Check your connection and try again.</p>
-          <Button size="sm" variant="outline" className="mt-3" onClick={() => rides.refetch()}>Retry</Button>
+          <p className="text-muted-foreground">
+            We couldn&apos;t load your rides. Check your connection and try again.
+          </p>
+          <Button size="sm" variant="outline" className="mt-3" onClick={() => rides.refetch()}>
+            Retry
+          </Button>
         </div>
       ) : list.length === 0 ? (
-        <div className="surface-card p-8 text-center text-sm text-muted-foreground"><Package className="mx-auto mb-2 h-5 w-5" />No rides yet.</div>
+        <div className="surface-card p-8 text-center text-sm text-muted-foreground">
+          <Package className="mx-auto mb-2 h-5 w-5" />
+          No rides yet.
+        </div>
       ) : (
         <div className="grid gap-3">
-          {visible.map((b) => <RideCard key={b.id} ride={b} />)}
-          {list.length > visible.length && <Button variant="outline" onClick={() => setShown((n) => n + 20)}>Show more rides</Button>}
+          {visible.map((b) => (
+            <RideCard key={b.id} ride={b} />
+          ))}
+          {list.length > visible.length && (
+            <Button variant="outline" onClick={() => setShown((n) => n + 20)}>
+              Show more rides
+            </Button>
+          )}
         </div>
       )}
     </div>
@@ -68,12 +85,15 @@ function RideCard({ ride }: { ride: AnyRow }) {
   const meta = STATUS_META[ride.status] ?? { label: ride.status };
   const commission = Number(ride.commission_amount || 0);
   const net = Number(ride.driver_net_earning || 0);
-  const cancellationReason = typeof ride.cancellation_reason === "string" ? ride.cancellation_reason.trim() : "";
+  const cancellationReason =
+    typeof ride.cancellation_reason === "string" ? ride.cancellation_reason.trim() : "";
   const paymentStatus = typeof ride.payment_status === "string" ? ride.payment_status : "";
 
   const viewProof = async () => {
     setBusy(true);
-    const { data, error } = await supabase.storage.from("delivery-proof").createSignedUrl(ride.pod_photo_url, 300);
+    const { data, error } = await supabase.storage
+      .from("delivery-proof")
+      .createSignedUrl(ride.pod_photo_url, 300);
     setBusy(false);
     if (!error && data) setProofUrl(data.signedUrl);
   };
@@ -82,31 +102,70 @@ function RideCard({ ride }: { ride: AnyRow }) {
     <article className="surface-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">{new Date(ride.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })} · {vehicleLabel(ride.vehicle_type)} · {ride.distance_km} km</p>
+          <p className="text-xs text-muted-foreground">
+            {new Date(ride.created_at).toLocaleString("en-IN", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}{" "}
+            · {vehicleLabel(ride.vehicle_type)} · {ride.distance_km} km
+          </p>
           <p className="truncate text-sm font-medium text-secondary">{ride.pickup_address}</p>
-          <p className="flex items-center gap-1 text-sm text-muted-foreground"><ArrowRight className="h-3 w-3 shrink-0" /><span className="truncate">{ride.drop_address}</span></p>
+          <p className="flex items-center gap-1 text-sm text-muted-foreground">
+            <ArrowRight className="h-3 w-3 shrink-0" />
+            <span className="truncate">{ride.drop_address}</span>
+          </p>
         </div>
-        <Badge variant={ride.status === "cancelled" ? "destructive" : "default"}>{meta.label}</Badge>
+        <Badge variant={ride.status === "cancelled" ? "destructive" : "default"}>
+          {meta.label}
+        </Badge>
       </div>
 
       {(ride.status === "cancelled" || paymentStatus === "failed") && (
         <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm">
-          <p className="font-semibold text-destructive">{paymentStatus === "failed" && ride.status !== "cancelled" ? "Payment failed" : "Ride cancelled"}</p>
-          {cancellationReason && <p className="mt-1 text-xs text-muted-foreground"><span className="font-medium text-secondary">Reason:</span> {cancellationReason}</p>}
+          <p className="font-semibold text-destructive">
+            {paymentStatus === "failed" && ride.status !== "cancelled"
+              ? "Payment failed"
+              : "Ride cancelled"}
+          </p>
+          {cancellationReason && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              <span className="font-medium text-secondary">Reason:</span> {cancellationReason}
+            </p>
+          )}
         </div>
       )}
 
       {ride.status === "completed" && (
         <div className="mt-3 rounded-md bg-muted/40 px-3 py-2 text-xs">
-          <div className="flex justify-between"><span>Total ride fare</span><span>₹{Number(ride.fare).toFixed(0)}</span></div>
-          <div className="flex justify-between text-destructive"><span>Miniport commission</span><span>−₹{commission.toFixed(0)}</span></div>
-          <div className="mt-1 flex justify-between border-t border-border pt-1 font-semibold text-success"><span>Your net earning</span><span>₹{net.toFixed(0)}</span></div>
+          <div className="flex justify-between">
+            <span>Total ride fare</span>
+            <span>₹{Number(ride.fare).toFixed(0)}</span>
+          </div>
+          <div className="flex justify-between text-destructive">
+            <span>Miniport commission</span>
+            <span>−₹{commission.toFixed(0)}</span>
+          </div>
+          <div className="mt-1 flex justify-between border-t border-border pt-1 font-semibold text-success">
+            <span>Your net earning</span>
+            <span>₹{net.toFixed(0)}</span>
+          </div>
         </div>
       )}
 
       {ride.pod_photo_url && (
         <div className="mt-3">
-          {proofUrl ? <img src={proofUrl} alt="Proof of delivery photo" loading="lazy" className="max-h-56 rounded-md border border-border object-cover" /> : <Button size="sm" variant="outline" onClick={viewProof} disabled={busy}><Camera className="h-3.5 w-3.5" /> {busy ? "Loading…" : "View proof of delivery"}</Button>}
+          {proofUrl ? (
+            <img
+              src={proofUrl}
+              alt="Proof of delivery photo"
+              loading="lazy"
+              className="max-h-56 rounded-md border border-border object-cover"
+            />
+          ) : (
+            <Button size="sm" variant="outline" onClick={viewProof} disabled={busy}>
+              <Camera className="h-3.5 w-3.5" /> {busy ? "Loading…" : "View proof of delivery"}
+            </Button>
+          )}
         </div>
       )}
     </article>
