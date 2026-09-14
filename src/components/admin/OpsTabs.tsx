@@ -296,7 +296,7 @@ export function DisputesTab({
         .select(
           "id, customer_id, driver_id, pickup_address, drop_address, vehicle_type, fare, status, payment_status, payment_method, cancellation_reason, cancelled_by, cancellation_category, cancelled_at, rating, review, created_at",
         )
-        .or("status.eq.cancelled,rating.lte.2")
+        .or("status.eq.cancelled,status.eq.expired,rating.lte.2")
         .order("created_at", { ascending: false })
         .limit(300);
       if (error) throw error;
