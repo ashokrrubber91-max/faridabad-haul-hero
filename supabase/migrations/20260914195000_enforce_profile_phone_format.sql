@@ -1,0 +1,12 @@
+-- Enforce Indian mobile-number format at the database boundary.
+-- NOT VALID keeps legacy rows from blocking deployment, while new inserts/updates
+-- must use exactly 10 digits beginning with 6-9.
+ALTER TABLE public.profiles
+  DROP CONSTRAINT IF EXISTS profiles_phone_format_check;
+
+ALTER TABLE public.profiles
+  ADD CONSTRAINT profiles_phone_format_check
+  CHECK (phone ~ '^[6-9][0-9]{9}$') NOT VALID;
+
+COMMENT ON CONSTRAINT profiles_phone_format_check ON public.profiles
+  IS 'New profile phone values must be valid Indian 10-digit mobile numbers.';
