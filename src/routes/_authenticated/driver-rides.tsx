@@ -10,7 +10,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { STATUS_META, vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
 import { cancellationSummary } from "@/lib/cancellation";
 
-
 export const Route = createFileRoute("/_authenticated/driver-rides")({
   head: () => ({ meta: [{ title: "My Rides — MiniPort Driver" }] }),
   component: DriverRidesPage,
@@ -133,7 +132,6 @@ function RideCard({ ride }: { ride: AnyRow }) {
           )}
         </div>
       )}
-
 
       {ride.status === "completed" && (
         <div className="mt-3 rounded-md bg-muted/40 px-3 py-2 text-xs">

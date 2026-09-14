@@ -334,8 +334,6 @@ function OrdersPage() {
                   );
                 })()}
 
-
-
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button size="sm" variant="outline" onClick={() => setDetail(b.id)}>
                     View details

@@ -19,7 +19,8 @@ export const Route = createFileRoute("/trip/$token")({
       { property: "og:title", content: "Live trip status — MiniPort" },
       {
         property: "og:description",
-        content: "Follow a shared MiniPort delivery: live status, pickup, drop and vehicle details.",
+        content:
+          "Follow a shared MiniPort delivery: live status, pickup, drop and vehicle details.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -75,7 +76,11 @@ function SharedTripPage() {
   );
 }
 
-function TripView({ trip }: { trip: Extract<Awaited<ReturnType<typeof getSharedTrip>>, { ok: true }> }) {
+function TripView({
+  trip,
+}: {
+  trip: Extract<Awaited<ReturnType<typeof getSharedTrip>>, { ok: true }>;
+}) {
   const meta = STATUS_META[trip.status] ?? STATUS_META.pending;
   const pickup = addressLines(trip.pickup_address, trip.pickup.lat, trip.pickup.lng);
   const drop = addressLines(trip.drop_address, trip.drop.lat, trip.drop.lng);

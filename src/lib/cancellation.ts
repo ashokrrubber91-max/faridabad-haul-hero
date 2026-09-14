@@ -104,8 +104,7 @@ export function cancellationSummary(booking: {
   const category = booking.cancellation_category ?? "";
   const actor = booking.cancelled_by ?? "";
   const title =
-    CATEGORY_TITLE[category] ??
-    (status === "expired" ? CATEGORY_TITLE.expired : "Cancelled");
+    CATEGORY_TITLE[category] ?? (status === "expired" ? CATEGORY_TITLE.expired : "Cancelled");
   const reason =
     typeof booking.cancellation_reason === "string" && booking.cancellation_reason.trim()
       ? booking.cancellation_reason.trim()

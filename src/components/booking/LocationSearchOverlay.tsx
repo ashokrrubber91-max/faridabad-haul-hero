@@ -140,7 +140,6 @@ export function LocationSearchOverlay({ open, onOpenChange, mode, onPick }: Prop
     }
   };
 
-
   useEffect(() => {
     if (!open) return;
     let cancelled = false;

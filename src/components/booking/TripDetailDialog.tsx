@@ -208,9 +208,7 @@ export function TripDetailDialog({
             {closure.who && closure.who !== closure.title && (
               <p className="text-xs text-muted-foreground">{closure.who}</p>
             )}
-            <p className="text-muted-foreground">
-              {closure.reason ?? "No reason recorded."}
-            </p>
+            <p className="text-muted-foreground">{closure.reason ?? "No reason recorded."}</p>
             {b.payment_status === "paid" && (
               <p className="mt-1 text-xs text-muted-foreground">
                 Paid online — a refund is processed to your original payment method within 5–7
@@ -222,7 +220,6 @@ export function TripDetailDialog({
             )}
           </div>
         )}
-
       </DialogContent>
     </Dialog>
   );

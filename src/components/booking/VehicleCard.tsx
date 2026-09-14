@@ -86,7 +86,9 @@ export function VehicleCard({
         </p>
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
           <Ruler className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">{dimensions ?? (vehicle.load_area || "Load size on request")}</span>
+          <span className="truncate">
+            {dimensions ?? (vehicle.load_area || "Load size on request")}
+          </span>
         </p>
         {vehicle.spec_notes && (
           <p className="truncate text-xs text-muted-foreground">{vehicle.spec_notes}</p>
@@ -101,7 +103,6 @@ export function VehicleCard({
           free unloading
         </p>
       </div>
-
 
       <div className="shrink-0 text-right">
         <p className="text-sm font-semibold text-secondary">₹{vehicle.base_fare}</p>
