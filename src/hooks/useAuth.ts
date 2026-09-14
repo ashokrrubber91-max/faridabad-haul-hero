@@ -7,6 +7,17 @@ export type AppRole = "customer" | "driver" | "admin";
 export type ActiveMode = "customer" | "driver";
 export type KycStatus = "not_submitted" | "pending" | "approved" | "rejected";
 
+export type LocationShareState = "idle" | "starting" | "live" | "error";
+
+export interface DriverLocationShare {
+  state: LocationShareState;
+  message: string | null;
+  /** Time of the last real device fix that was saved, or null if none yet. */
+  lastFixAt: number | null;
+  stale: boolean;
+  retry: () => void;
+}
+
 export interface AuthState {
   loading: boolean;
   user: User | null;
@@ -22,7 +33,9 @@ export interface AuthState {
   } | null;
   activeMode: ActiveMode;
   setActiveMode: (m: ActiveMode) => Promise<void>;
+  locationShare: DriverLocationShare;
 }
+
 
 export function useAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null);
