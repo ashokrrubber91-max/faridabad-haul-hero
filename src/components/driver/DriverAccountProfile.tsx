@@ -9,7 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useVehicleTypes } from "@/lib/vehicles";
 
-const DOCS = [["vehicle_photo_url", "Vehicle photo"], ["insurance_url", "Insurance photo"], ["puc_url", "PUC photo"], ["number_plate_url", "Number plate photo"]] as const;
+const DOCS = [
+  ["vehicle_photo_url", "Vehicle photo"],
+  ["insurance_url", "Insurance photo"],
+  ["puc_url", "PUC photo"],
+  ["number_plate_url", "Number plate photo"],
+] as const;
 type DocKey = (typeof DOCS)[number][0];
 
 export function DriverAccountProfile() {
@@ -19,17 +24,195 @@ export function DriverAccountProfile() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<DocKey | null>(null);
   const vehicles = useVehicleTypes(true);
-  const kyc = useQuery({ queryKey: ["driver-account-kyc", user?.id], enabled: !!user, queryFn: async () => { const { data, error } = await supabase.from("driver_kyc").select("*").eq("driver_id", user!.id).maybeSingle(); if (error) throw error; return data; } });
+  const kyc = useQuery({
+    queryKey: ["driver-account-kyc", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("driver_kyc")
+        .select("*")
+        .eq("driver_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
   const row = kyc.data;
   const currentVehicle = vehicles.data?.find((v) => v.id === row?.vehicle_id);
 
-  const save = async () => { if (!user) return; const value = vehicleNumber.trim() || row?.vehicle_number || ""; if (value && (value.length < 4 || value.length > 20)) return toast.error("Enter a valid vehicle registration number"); setSaving(true); const { error } = await supabase.rpc("driver_update_account_profile", { _vehicle_number: value || undefined }); setSaving(false); if (error) return toast.error(error.message); toast.success("Driver profile saved"); setVehicleNumber(""); qc.invalidateQueries({ queryKey: ["driver-account-kyc", user.id] }); };
-  const upload = async (key: DocKey, file: File) => { if (!user) return; if (!file.type.startsWith("image/")) return toast.error("Please choose an image file"); if (file.size > 8 * 1024 * 1024) return toast.error("Image must be 8 MB or smaller"); setUploading(key); const ext = file.name.split(".").pop()?.toLowerCase() || "jpg"; const path = `${user.id}/account-${key}-${Date.now()}.${ext}`; const { error: uploadError } = await supabase.storage.from("driver-kyc").upload(path, file, { upsert: true, contentType: file.type }); if (uploadError) { setUploading(null); return toast.error(uploadError.message); } const { error } = await supabase.rpc("driver_update_account_profile", { _vehicle_photo_url: key === "vehicle_photo_url" ? path : undefined, _insurance_url: key === "insurance_url" ? path : undefined, _puc_url: key === "puc_url" ? path : undefined, _number_plate_url: key === "number_plate_url" ? path : undefined }); setUploading(null); if (error) return toast.error(error.message); toast.success(`${DOCS.find(([k]) => k === key)?.[1] ?? "Document"} uploaded`); qc.invalidateQueries({ queryKey: ["driver-account-kyc", user.id] }); };
-  const openDoc = async (path: string | null) => { if (!path) return; const { data, error } = await supabase.storage.from("driver-kyc").createSignedUrl(path, 300); if (error || !data?.signedUrl) return toast.error("Could not open this document"); window.open(data.signedUrl, "_blank", "noopener,noreferrer"); };
-  const switchMode = async () => { try { await setActiveMode(activeMode === "driver" ? "customer" : "driver"); toast.success(activeMode === "driver" ? "Switched to customer mode" : "Switched to driver mode"); } catch (e) { toast.error((e as Error).message); } };
+  const save = async () => {
+    if (!user) return;
+    const value = vehicleNumber.trim() || row?.vehicle_number || "";
+    if (value && (value.length < 4 || value.length > 20))
+      return toast.error("Enter a valid vehicle registration number");
+    setSaving(true);
+    const { error } = await supabase.rpc("driver_update_account_profile", {
+      _vehicle_number: value || undefined,
+    });
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Driver profile saved");
+    setVehicleNumber("");
+    qc.invalidateQueries({ queryKey: ["driver-account-kyc", user.id] });
+  };
+  const upload = async (key: DocKey, file: File) => {
+    if (!user) return;
+    if (!file.type.startsWith("image/")) return toast.error("Please choose an image file");
+    if (file.size > 8 * 1024 * 1024) return toast.error("Image must be 8 MB or smaller");
+    setUploading(key);
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `${user.id}/account-${key}-${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("driver-kyc")
+      .upload(path, file, { upsert: true, contentType: file.type });
+    if (uploadError) {
+      setUploading(null);
+      return toast.error(uploadError.message);
+    }
+    const { error } = await supabase.rpc("driver_update_account_profile", {
+      _vehicle_photo_url: key === "vehicle_photo_url" ? path : undefined,
+      _insurance_url: key === "insurance_url" ? path : undefined,
+      _puc_url: key === "puc_url" ? path : undefined,
+      _number_plate_url: key === "number_plate_url" ? path : undefined,
+    });
+    setUploading(null);
+    if (error) return toast.error(error.message);
+    toast.success(`${DOCS.find(([k]) => k === key)?.[1] ?? "Document"} uploaded`);
+    qc.invalidateQueries({ queryKey: ["driver-account-kyc", user.id] });
+  };
+  const openDoc = async (path: string | null) => {
+    if (!path) return;
+    const { data, error } = await supabase.storage.from("driver-kyc").createSignedUrl(path, 300);
+    if (error || !data?.signedUrl) return toast.error("Could not open this document");
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+  const switchMode = async () => {
+    try {
+      await setActiveMode(activeMode === "driver" ? "customer" : "driver");
+      toast.success(
+        activeMode === "driver" ? "Switched to customer mode" : "Switched to driver mode",
+      );
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
 
-  return <section className="surface-card p-5"><div className="flex items-start gap-3"><div className="brand-gradient grid h-11 w-11 shrink-0 place-items-center rounded-full"><Truck className="h-5 w-5 text-white" /></div><div><h2 className="font-display text-xl tracking-wide text-secondary">Driver account profile</h2><p className="text-xs text-muted-foreground">Vehicle and driver documents belong here — not GSTIN or saved customer addresses.</p></div></div>
-    {roles.includes("customer") && <div className="mt-4 rounded-md border bg-muted/30 p-3"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-semibold text-secondary">Account mode</p><p className="text-xs text-muted-foreground">Switch between your customer and driver experience without signing out.</p></div><Button size="sm" variant="outline" onClick={() => void switchMode()}>{activeMode === "driver" ? "Switch to customer" : "Switch to driver"}</Button></div></div>}
-    {kyc.isLoading ? <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div> : <div className="mt-4 space-y-4"><div className="grid gap-3 sm:grid-cols-2"><div><Label>Driver name</Label><Input value={profile?.name ?? row?.full_name ?? ""} readOnly /></div><div><Label>Vehicle number</Label><div className="flex gap-2"><Input placeholder={row?.vehicle_number || "HR29AB1234"} value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value.toUpperCase().slice(0,20))} /><Button onClick={save} disabled={saving}><Save className="h-4 w-4" /> Save</Button></div></div></div><div className="rounded-md border bg-muted/30 p-3 text-sm"><p className="font-semibold text-secondary">Vehicle</p><p className="text-muted-foreground">{currentVehicle?.label ?? row?.vehicle_id ?? "Not selected"}</p>{currentVehicle && <p className="mt-1 text-xs text-muted-foreground">Up to {currentVehicle.capacity_label || (currentVehicle.weight_limit_kg ? `${currentVehicle.weight_limit_kg} kg` : "capacity not set")} · {currentVehicle.load_area || "load dimensions not set"}</p>}</div><div className="grid gap-2 sm:grid-cols-2">{DOCS.map(([key, label]) => { const path = row?.[key] as string | null | undefined; return <div key={key} className="rounded-md border p-3"><div className="flex items-center justify-between gap-2"><div><p className="text-sm font-semibold text-secondary">{label}</p><p className="text-xs text-muted-foreground">{path ? "Uploaded" : "Not uploaded"}</p></div>{path && <Button size="sm" variant="outline" onClick={() => void openDoc(path)}>View</Button>}</div><label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-primary"><FileImage className="h-4 w-4" /> {uploading === key ? "Uploading…" : "Upload / replace"}<input type="file" accept="image/*" className="sr-only" disabled={uploading !== null} onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(key, file); e.currentTarget.value = ""; }} /></label></div>; })}</div>{row?.status && <p className="text-xs text-muted-foreground">KYC status: <span className="font-semibold text-secondary">{row.status}</span>. Changing documents sends the profile back for review.</p>}</div>}
-  </section>;
+  return (
+    <section className="surface-card p-5">
+      <div className="flex items-start gap-3">
+        <div className="brand-gradient grid h-11 w-11 shrink-0 place-items-center rounded-full">
+          <Truck className="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h2 className="font-display text-xl tracking-wide text-secondary">
+            Driver account profile
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Vehicle and driver documents belong here — not GSTIN or saved customer addresses.
+          </p>
+        </div>
+      </div>
+      {roles.includes("customer") && (
+        <div className="mt-4 rounded-md border bg-muted/30 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-secondary">Account mode</p>
+              <p className="text-xs text-muted-foreground">
+                Switch between your customer and driver experience without signing out.
+              </p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => void switchMode()}>
+              {activeMode === "driver" ? "Switch to customer" : "Switch to driver"}
+            </Button>
+          </div>
+        </div>
+      )}
+      {kyc.isLoading ? (
+        <div className="flex justify-center py-6">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="mt-4 space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label>Driver name</Label>
+              <Input value={profile?.name ?? row?.full_name ?? ""} readOnly />
+            </div>
+            <div>
+              <Label>Vehicle number</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder={row?.vehicle_number || "HR29AB1234"}
+                  value={vehicleNumber}
+                  onChange={(e) => setVehicleNumber(e.target.value.toUpperCase().slice(0, 20))}
+                />
+                <Button onClick={save} disabled={saving}>
+                  <Save className="h-4 w-4" /> Save
+                </Button>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-md border bg-muted/30 p-3 text-sm">
+            <p className="font-semibold text-secondary">Vehicle</p>
+            <p className="text-muted-foreground">
+              {currentVehicle?.label ?? row?.vehicle_id ?? "Not selected"}
+            </p>
+            {currentVehicle && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Up to{" "}
+                {currentVehicle.capacity_label ||
+                  (currentVehicle.weight_limit_kg
+                    ? `${currentVehicle.weight_limit_kg} kg`
+                    : "capacity not set")}{" "}
+                · {currentVehicle.load_area || "load dimensions not set"}
+              </p>
+            )}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {DOCS.map(([key, label]) => {
+              const path = row?.[key] as string | null | undefined;
+              return (
+                <div key={key} className="rounded-md border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-secondary">{label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {path ? "Uploaded" : "Not uploaded"}
+                      </p>
+                    </div>
+                    {path && (
+                      <Button size="sm" variant="outline" onClick={() => void openDoc(path)}>
+                        View
+                      </Button>
+                    )}
+                  </div>
+                  <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-primary">
+                    <FileImage className="h-4 w-4" />{" "}
+                    {uploading === key ? "Uploading…" : "Upload / replace"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      disabled={uploading !== null}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void upload(key, file);
+                        e.currentTarget.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+          {row?.status && (
+            <p className="text-xs text-muted-foreground">
+              KYC status: <span className="font-semibold text-secondary">{row.status}</span>.
+              Changing documents sends the profile back for review.
+            </p>
+          )}
+        </div>
+      )}
+    </section>
+  );
 }
