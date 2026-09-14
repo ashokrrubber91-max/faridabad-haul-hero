@@ -423,9 +423,19 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
           minLength={6}
         />
       </div>
+      {smsUnavailable && (
+        <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+          Number verification is not available on this app yet, so no account was created. MiniPort
+          support must switch on SMS sending before new sign-ups can be verified.
+        </p>
+      )}
       <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
-        {busy ? "Creating\u2026" : "Create account"}
+        {busy ? "Sending code\u2026" : "Send verification code"}
       </Button>
+      <p className="text-center text-xs text-muted-foreground">
+        We text a one-time code to confirm your number before the account is created.
+      </p>
+
     </form>
   );
 }
