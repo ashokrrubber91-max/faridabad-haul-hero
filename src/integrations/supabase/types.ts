@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletions: {
+        Row: {
+          deleted_at: string
+          had_bookings: boolean
+          id: string
+          user_id: string
+        }
+        Insert: {
+          deleted_at?: string
+          had_bookings?: boolean
+          id?: string
+          user_id: string
+        }
+        Update: {
+          deleted_at?: string
+          had_bookings?: boolean
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -1130,6 +1151,36 @@ export type Database = {
           },
         ]
       }
+      user_consents: {
+        Row: {
+          accepted_at: string
+          created_at: string
+          id: string
+          privacy_version: string
+          source: string
+          terms_version: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          created_at?: string
+          id?: string
+          privacy_version: string
+          source?: string
+          terms_version: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          created_at?: string
+          id?: string
+          privacy_version?: string
+          source?: string
+          terms_version?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1832,6 +1883,7 @@ export type Database = {
         }
       }
       decline_booking: { Args: { _booking_id: string }; Returns: boolean }
+      delete_my_account: { Args: never; Returns: Json }
       driver_update_account_profile: {
         Args: {
           _driver_photo_url?: string
@@ -1893,6 +1945,28 @@ export type Database = {
       }
       is_kyc_approved: { Args: { _user_id: string }; Returns: boolean }
       is_trusted_booking_write: { Args: never; Returns: boolean }
+      record_consent: {
+        Args: {
+          _privacy_version: string
+          _source?: string
+          _terms_version: string
+        }
+        Returns: {
+          accepted_at: string
+          created_at: string
+          id: string
+          privacy_version: string
+          source: string
+          terms_version: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "user_consents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       review_driver_kyc: {
         Args: {
           _decision: Database["public"]["Enums"]["kyc_status"]
