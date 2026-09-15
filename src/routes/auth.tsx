@@ -328,7 +328,13 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
     const { error: linkError } = await supabase.auth.updateUser({
       email: phoneToEmail(phone),
       password,
-      data: { phone: normalisePhone(phone), name: name.trim(), role },
+      data: {
+        phone: normalisePhone(phone),
+        name: name.trim(),
+        role,
+        terms_version: TERMS_VERSION,
+        terms_accepted_at: consentAt(),
+      },
     });
     setBusy(false);
     if (linkError) toast.success("Number verified — welcome to MiniPort!");
