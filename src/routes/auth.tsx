@@ -438,6 +438,37 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
           minLength={6}
         />
       </div>
+      <label htmlFor="su-terms" className="flex items-start gap-2 text-sm text-muted-foreground">
+        <input
+          id="su-terms"
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
+          required
+          className="mt-1 h-4 w-4 shrink-0 accent-primary"
+        />
+        <span>
+          I agree to the{" "}
+          <a
+            href="/terms.html"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-primary underline"
+          >
+            Terms &amp; Conditions
+          </a>{" "}
+          and{" "}
+          <a
+            href="/privacy.html"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-primary underline"
+          >
+            Privacy Policy
+          </a>
+          .
+        </span>
+      </label>
       {smsUnavailable && (
         <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
           Number verification is not available on this app yet, so no account was created. MiniPort
