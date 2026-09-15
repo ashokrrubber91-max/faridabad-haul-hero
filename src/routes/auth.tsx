@@ -18,6 +18,9 @@ import {
   useAuth,
 } from "@/hooks/useAuth";
 
+/** Effective date of /terms.html and /privacy.html, stored with each consent. */
+const TERMS_VERSION = "2026-09-14";
+
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
   as: z.enum(["customer", "driver"]).optional(),
