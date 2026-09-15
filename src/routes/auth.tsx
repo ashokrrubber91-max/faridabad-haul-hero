@@ -475,7 +475,7 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
           support must switch on SMS sending before new sign-ups can be verified.
         </p>
       )}
-      <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
+      <Button type="submit" className="h-11 w-full text-base" disabled={busy || !agreed}>
         {busy ? "Sending code\u2026" : "Send verification code"}
       </Button>
       <p className="text-center text-xs text-muted-foreground">
