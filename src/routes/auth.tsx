@@ -18,6 +18,9 @@ import {
   useAuth,
 } from "@/hooks/useAuth";
 
+/** Effective date of /terms.html and /privacy.html, stored with each consent. */
+const TERMS_VERSION = "2026-09-14";
+
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
   as: z.enum(["customer", "driver"]).optional(),
@@ -271,19 +274,29 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
   const [step, setStep] = useState<"details" | "verify">("details");
   const [code, setCode] = useState("");
   const [smsUnavailable, setSmsUnavailable] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const consentAt = () => new Date().toISOString();
 
   const sendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
     if (password.length < 6) return toast.error("Password must be at least 6 characters");
     if (name.trim().length < 2) return toast.error("Enter your name");
+    if (!agreed)
+      return toast.error("Please accept the Terms & Conditions and Privacy Policy to continue");
 
     setBusy(true);
     const { error } = await supabase.auth.signInWithOtp({
       phone: `+91${normalisePhone(phone)}`,
       options: {
         shouldCreateUser: true,
-        data: { phone: normalisePhone(phone), name: name.trim(), role },
+        data: {
+          phone: normalisePhone(phone),
+          name: name.trim(),
+          role,
+          terms_version: TERMS_VERSION,
+          terms_accepted_at: consentAt(),
+        },
       },
     });
     setBusy(false);
@@ -318,7 +331,13 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
     const { error: linkError } = await supabase.auth.updateUser({
       email: phoneToEmail(phone),
       password,
-      data: { phone: normalisePhone(phone), name: name.trim(), role },
+      data: {
+        phone: normalisePhone(phone),
+        name: name.trim(),
+        role,
+        terms_version: TERMS_VERSION,
+        terms_accepted_at: consentAt(),
+      },
     });
     setBusy(false);
     if (linkError) toast.success("Number verified — welcome to MiniPort!");
@@ -422,13 +441,44 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
           minLength={6}
         />
       </div>
+      <label htmlFor="su-terms" className="flex items-start gap-2 text-sm text-muted-foreground">
+        <input
+          id="su-terms"
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
+          required
+          className="mt-1 h-4 w-4 shrink-0 accent-primary"
+        />
+        <span>
+          I agree to the{" "}
+          <a
+            href="/terms.html"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-primary underline"
+          >
+            Terms &amp; Conditions
+          </a>{" "}
+          and{" "}
+          <a
+            href="/privacy.html"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-primary underline"
+          >
+            Privacy Policy
+          </a>
+          .
+        </span>
+      </label>
       {smsUnavailable && (
         <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
           Number verification is not available on this app yet, so no account was created. MiniPort
           support must switch on SMS sending before new sign-ups can be verified.
         </p>
       )}
-      <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
+      <Button type="submit" className="h-11 w-full text-base" disabled={busy || !agreed}>
         {busy ? "Sending code\u2026" : "Send verification code"}
       </Button>
       <p className="text-center text-xs text-muted-foreground">
