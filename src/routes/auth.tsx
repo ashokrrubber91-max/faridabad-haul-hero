@@ -271,19 +271,29 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
   const [step, setStep] = useState<"details" | "verify">("details");
   const [code, setCode] = useState("");
   const [smsUnavailable, setSmsUnavailable] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const consentAt = () => new Date().toISOString();
 
   const sendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
     if (password.length < 6) return toast.error("Password must be at least 6 characters");
     if (name.trim().length < 2) return toast.error("Enter your name");
+    if (!agreed)
+      return toast.error("Please accept the Terms & Conditions and Privacy Policy to continue");
 
     setBusy(true);
     const { error } = await supabase.auth.signInWithOtp({
       phone: `+91${normalisePhone(phone)}`,
       options: {
         shouldCreateUser: true,
-        data: { phone: normalisePhone(phone), name: name.trim(), role },
+        data: {
+          phone: normalisePhone(phone),
+          name: name.trim(),
+          role,
+          terms_version: TERMS_VERSION,
+          terms_accepted_at: consentAt(),
+        },
       },
     });
     setBusy(false);
