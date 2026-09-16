@@ -248,6 +248,7 @@ function AccountPage() {
       </section>
       {isAdmin && <AdminAccountProfile />}
       {isDriverMode && <DriverAccountProfile />}
+      {user && <LegalConsentCard userId={user.id} />}
       <NotificationsCard />
       {showCustomerSections && (
         <>
@@ -400,12 +401,7 @@ function AccountPage() {
             >
               Terms of service
             </a>
-            <a
-              className="flex w-full items-center justify-start rounded-md border border-destructive/30 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/5"
-              href="/delete-account.html"
-            >
-              Delete account
-            </a>
+            <DeleteAccountCard />
             <Button
               variant="ghost"
               className="w-full justify-start text-destructive"
@@ -432,12 +428,7 @@ function AccountPage() {
             >
               Terms of service
             </a>
-            <a
-              className="flex w-full items-center justify-start rounded-md border border-destructive/30 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/5"
-              href="/delete-account.html"
-            >
-              Delete account
-            </a>
+            <DeleteAccountCard />
             <Button
               variant="ghost"
               className="w-full justify-start text-destructive"
