@@ -1,64 +1,47 @@
-# MiniPort — Google Play & App Store release compliance checklist
+# MiniPort — Google Play & App Store release gate
 
-Last reviewed: 2026-09-14
+Last reviewed: 2026-09-16
 
-This checklist is based on the current Google Play and Apple requirements. It is a release gate, not a guarantee of approval.
+This is a release gate, not a guarantee of approval. Google and Apple make the final review decision. Nothing here may be marked done on the basis of intent — only on verified behaviour of the exact build being submitted.
 
-## Already covered in the product/codebase
+## 1. Verified in application source
 
-- Account authentication and role separation.
-- Customer/driver privacy boundaries and RLS.
-- Location permission is requested only when a location feature needs it, with manual-address fallback.
-- Emergency 112 and trip sharing are user-facing safety actions.
-- Payment failures are kept separate from ride cancellation; a failed online payment can be switched to cash on the same booking.
-- Driver KYC and vehicle-document flows are separated from customer account data.
-- Prohibited-goods acknowledgement is shown before booking.
-- Admin-only financial/vehicle configuration is protected server-side.
-- Real driver GPS is treated as stale/unavailable when the latest fix is too old; the UI does not invent a GPS position.
+- **Consent at account creation.** Sign-up requires an explicitly unchecked-by-default agreement to the Terms & Conditions and Privacy Policy, with both documents linked and opening the public pages. The create-account action cannot complete without it. Ordinary sign-in is not interrupted.
+- **Consent records.** `user_consents` stores account id, terms version, privacy version, timestamp and source (`signup` / `reconsent`). Rows are insert-and-read only; each account reads its own, admins read all. A version bump surfaces an in-app re-consent card instead of silently assuming acceptance.
+- **In-app account deletion.** Account → Delete account requires a typed `DELETE` confirmation, then runs the server-side `delete_my_account()` routine scoped to the caller's own id, removes stored KYC/vehicle/proof files, deletes the login itself and signs out everywhere. One account can never delete another; there is no admin-only-only deletion path. Deletion is refused while a trip is open. `account_deletions` records that a deletion happened, without personal data.
+- **Retention on deletion.** Completed trip/payment/payout records are detached from the deleted account and stripped of personal fields rather than destroyed, matching the disclosure in the privacy policy.
+- **Public deletion resource.** `public/delete-account.html` describes the in-app path, the off-app request path, what is deleted, what is kept and why, with no fabricated support address.
+- **Privacy policy accessible in-app** from the Account screen and as a public page, describing the data this codebase actually handles: name/mobile/login, booking addresses and coordinates, precise location, driver KYC and vehicle documents, payout and payment status, notification/device tokens, proof-of-delivery photos, support conversations.
+- **Location minimisation.** Geolocation is requested only from an explicit user action on a feature that needs it, never from behind a modal; denied/off/timeout/stale states produce plain guidance plus a manual address-search and map-pin fallback. No background-location code and no claim of background permission. No fabricated coordinates, distance or ETA — the live trip shows real values or an honest latest-known state.
+- **Driver tracking scope.** Live driver location is shared for active service only, with a single watcher, stale detection and cleanup; rows are readable only by the parties to the trip.
+- **Access boundaries.** Row-level security on every user table, role storage separate from profiles, server-authoritative fares, commissions, booking states, OTP verification, assignments, wallets and payouts. Public trip-share links expose non-sensitive trip details only — no phone numbers, OTPs, fares or tokens — and expire and can be revoked.
+- **Authentication.** Mobile number verified by a real one-time code before an account becomes usable; no universal or fake code exists. No Android SMS or Call Log permission is used or needed. Sign in with Apple is **not** implemented and is not claimed anywhere.
+- **Payments.** Physical transport is charged through the external payment provider, server-authoritative, with booking lifecycle state kept separate from payment state; a failed payment is never recorded as a cancellation and the same booking can switch to cash. No in-app-purchase billing is used for rides.
+- **Safety.** The in-trip Emergency 112 action hands off to the phone's dialler and claims nothing more; trip sharing is described accurately.
 
-## Mandatory before store submission
+## 2. Needs production configuration (cannot be satisfied by source)
 
-### 1. Privacy policy
+- SMS provider credentials so sign-up verification codes are actually delivered. Until then sign-up fails closed with a clear message and no account is created.
+- A Google Maps key authorised for the production origin (maps rendering, geocoding, place imagery).
+- Payment provider live keys and the webhook signing secret; run a real end-to-end paid booking.
+- Push notification (Firebase) production credentials.
+- Real privacy/support contact published on the privacy page, the deletion page and the store listings.
+- Legal review of the privacy policy, terms, retention periods and transport terms.
 
-Publish the MiniPort privacy policy at a permanent HTTPS URL and link it from inside the app. It must accurately cover phone/name, account data, precise location, driver KYC documents, vehicle documents, bank/payout information, payment data, notifications/device tokens, trip photos/POD, support conversations, and third-party services such as Supabase, Google Maps, Firebase, Razorpay and any AI provider actually used.
+## 3. Needs Play Console / App Store Connect entries
 
-### 2. Account deletion
+- Play **Data safety** form completed from the production build and every bundled SDK: location, personal info, financial/payment info, photos/files, authentication info, device/notification identifiers, plus the data-deletion questions (declare both the in-app path and the public deletion URL).
+- Apple **App Privacy** questionnaire completed from the shipped iOS build and its SDKs, with the Privacy Policy URL.
+- Privacy policy URL, account-deletion URL, app category and content rating.
+- Review credentials/test accounts for customer, driver and admin, with notes covering booking, assignment, KYC, payment, location and cancellation flows. Never hand reviewers production secrets.
+- Any declaration required for permissions actually shipped by the native wrapper.
 
-The app creates accounts, so deletion must be a real deletion flow, not only logout, deactivation, or an email request. Provide a clearly discoverable Account → Delete account action and an external web deletion resource. Delete associated personal data, except data that must legally be retained and is clearly disclosed in the privacy policy. If Sign in with Apple is used, revoke the Apple authorization/token as part of deletion.
+## 4. Needs a native wrapper (not in this repository)
 
-### 3. Google Play Data Safety
-
-Complete the Play Console Data safety form from the actual production build and third-party SDK behavior. Declare location, personal information, financial/payment information, photos/files, authentication information, device/notification data and any AI/analytics sharing that is actually present. Also complete the account/data deletion questions.
-
-### 4. Apple App Privacy
-
-Complete App Store Connect App Privacy from the actual iOS build and all third-party SDKs. Provide the Privacy Policy URL. Keep the in-app privacy/deletion controls easy to find.
-
-### 5. Google Play target API
-
-For a new Android app submitted on/after 2026-08-31, the native Android package must target Android 16 / API 36 or higher. This web repository currently does not contain an Android native project, so the eventual Capacitor/native Android wrapper must be configured to API 36+ before upload.
-
-### 6. iOS native packaging
-
-The current repository is a web application; there is no committed Xcode/iOS project. Before App Store submission, create the iOS wrapper, configure bundle identifier, signing, permissions strings, privacy manifests where applicable, Apple Sign in token revocation, production URLs, push configuration and App Store Connect metadata.
-
-### 7. Review access
-
-Prepare stable review credentials/test accounts for customer, driver and admin review where needed. Do not give reviewers production secrets. Provide review notes explaining how to reach booking, driver assignment, KYC, payment, location and cancellation flows.
-
-### 8. Production integrations
-
-Before submission, verify production configuration for SMS/phone OTP, Razorpay live payments/webhooks, Google Maps billing/API restrictions, Firebase push, and any AI/support provider. A UI message saying an integration is configured is not enough; run a real end-to-end test.
-
-## Current blockers that cannot be solved by source code alone
-
-- Native Android/iOS packaging and signing.
-- Play Console / App Store Connect declarations and developer verification.
-- Live SMS provider credentials and sender configuration.
-- Razorpay production webhook secret and live payment verification.
-- A real-device GPS test with the production native shell.
-- Legal review of the privacy policy, retention periods and transport terms.
+- Android project targeting API 36 or higher for submissions on/after 2026-08-31, with signing and the Play developer verification steps.
+- iOS project: bundle identifier, signing, permission purpose strings for location, camera and photos, privacy manifest, push configuration. If Sign in with Apple is ever added, token revocation must be wired into the deletion flow.
+- A real-device GPS test through the production shell.
 
 ## Release rule
 
-Do not submit the store builds until every item above is verified against the exact production build and the store forms match the real data flows. No code change can honestly guarantee store approval because Google/Apple make the final review decision.
+Do not submit until every item in sections 2–4 is verified against the exact production build and the store forms match the real data flows. The app is not "approved" until an actual store review says so.
