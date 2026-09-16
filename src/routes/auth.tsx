@@ -339,6 +339,8 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
         terms_accepted_at: consentAt(),
       },
     });
+    // Store the acceptance against the new account (versions + timestamp + source).
+    await recordConsent("signup");
     setBusy(false);
     if (linkError) toast.success("Number verified — welcome to MiniPort!");
     else toast.success("Welcome to MiniPort!");
