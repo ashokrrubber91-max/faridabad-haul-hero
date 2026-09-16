@@ -37,6 +37,8 @@ import { DriverAccountProfile } from "@/components/driver/DriverAccountProfile";
 import { AdminAccountProfile } from "@/components/admin/AdminAccountProfile";
 import { signOutEverywhere } from "@/lib/session";
 import { BecomeDriverCard } from "@/components/driver/BecomeDriverCard";
+import { DeleteAccountCard } from "@/components/account/DeleteAccountCard";
+import { LegalConsentCard } from "@/components/account/LegalConsentCard";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
