@@ -17,9 +17,7 @@ import {
   phoneToEmail,
   useAuth,
 } from "@/hooks/useAuth";
-
-/** Effective date of /terms.html and /privacy.html, stored with each consent. */
-const TERMS_VERSION = "2026-09-14";
+import { recordConsent, TERMS_VERSION } from "@/lib/legal";
 
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
@@ -339,6 +337,8 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
         terms_accepted_at: consentAt(),
       },
     });
+    // Store the acceptance against the new account (versions + timestamp + source).
+    await recordConsent("signup");
     setBusy(false);
     if (linkError) toast.success("Number verified — welcome to MiniPort!");
     else toast.success("Welcome to MiniPort!");
