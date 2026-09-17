@@ -1,0 +1,11 @@
+{
+  "appId": "app.miniport.faridabad",
+  "appName": "MiniPort",
+  "webDir": "dist/client",
+  "android": {
+    "allowMixedContent": false
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}
