@@ -109,40 +109,74 @@ function AuthPage() {
   );
 }
 
+/** Countdown that re-enables the "resend code" action. */
+function useCooldown() {
+  const [left, setLeft] = useState(0);
+  useEffect(() => {
+    if (left <= 0) return;
+    const t = setTimeout(() => setLeft((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [left]);
+  return [left, setLeft] as const;
+}
+
+/**
+ * Sign-in with a real one-time code sent by SMS. The code is created, delivered
+ * and checked entirely on the server by the SMS provider — it is never sent to
+ * this screen, never stored in the browser and never written to any log.
+ */
 function OtpSignInForm() {
+  const start = useServerFn(startPhoneOtp);
+  const verify = useServerFn(verifyPhoneOtp);
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const e164 = (raw: string) => `+91${normalisePhone(raw)}`;
+  const [cooldown, setCooldown] = useCooldown();
 
   const sendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
     setBusy(true);
-    const { error } = await supabase.auth.signInWithOtp({ phone: e164(phone) });
-    setBusy(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const res = await start({ data: { phone: normalisePhone(phone), intent: "signin" } });
+      if (!res.ok) {
+        toast.error(res.message);
+        return;
+      }
+      setSent(true);
+      setCooldown(RESEND_COOLDOWN_SECONDS);
+      toast.success(`Code sent to +91 ${normalisePhone(phone)}`);
+    } catch {
+      toast.error("Network problem — please check your connection and try again.");
+    } finally {
+      setBusy(false);
     }
-    setSent(true);
-    toast.success("OTP sent to your phone");
   };
 
   const verifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.length < 4) return toast.error("Enter the OTP you received");
+    if (code.length < 4) return toast.error("Enter the code you received");
     setBusy(true);
-    const { error } = await supabase.auth.verifyOtp({
-      phone: e164(phone),
-      token: code,
-      type: "sms",
-    });
-    setBusy(false);
-    if (error) toast.error(error.message);
-    else toast.success("Signed in");
+    try {
+      const res = await verify({
+        data: { phone: normalisePhone(phone), code, intent: "signin" },
+      });
+      if (!res.ok || !("tokenHash" in res)) {
+        toast.error(res.ok ? "Please try again." : res.message);
+        return;
+      }
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: res.tokenHash,
+        type: "email",
+      });
+      if (error) toast.error("We could not sign you in right now. Please try again.");
+      else toast.success("Signed in");
+    } catch {
+      toast.error("Network problem — please check your connection and try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   if (!sent) {
@@ -189,6 +223,14 @@ function OtpSignInForm() {
       <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
         {busy ? "Verifying\u2026" : "Verify & sign in"}
       </Button>
+      <button
+        type="button"
+        disabled={busy || cooldown > 0}
+        onClick={(e) => void sendOtp(e)}
+        className="w-full text-center text-xs text-muted-foreground underline disabled:opacity-50"
+      >
+        {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
+      </button>
       <button
         type="button"
         onClick={() => {
@@ -259,89 +301,83 @@ function SignInForm() {
 
 /**
  * Sign-up is gated on a real SMS one-time code: the account is only created and
- * activated after the code sent to that number is verified. If SMS delivery is
- * not configured, the person is told exactly that — no code is faked, and no
- * account is activated from an unverified number.
+ * activated after the code sent to that number is verified by the provider on
+ * the server. No code is faked, no account is activated from an unverified
+ * number, and the account's role is always decided by the backend (customer) —
+ * nothing chosen on this screen can grant driver or admin access.
  */
 function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
+  const start = useServerFn(startPhoneOtp);
+  const verify = useServerFn(verifyPhoneOtp);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
   const [role, setRole] = useState<"customer" | "driver">(defaultRole);
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState<"details" | "verify">("details");
   const [code, setCode] = useState("");
-  const [smsUnavailable, setSmsUnavailable] = useState(false);
   const [agreed, setAgreed] = useState(false);
-  const consentAt = () => new Date().toISOString();
+  const [cooldown, setCooldown] = useCooldown();
 
   const sendCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
-    if (password.length < 6) return toast.error("Password must be at least 6 characters");
     if (name.trim().length < 2) return toast.error("Enter your name");
+    if (!isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
     if (!agreed)
       return toast.error("Please accept the Terms & Conditions and Privacy Policy to continue");
 
     setBusy(true);
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: `+91${normalisePhone(phone)}`,
-      options: {
-        shouldCreateUser: true,
-        data: {
-          phone: normalisePhone(phone),
-          name: name.trim(),
-          role,
-          terms_version: TERMS_VERSION,
-          terms_accepted_at: consentAt(),
-        },
-      },
-    });
-    setBusy(false);
-    if (error) {
-      setSmsUnavailable(true);
-      toast.error(
-        "We can't verify your number yet — SMS sending isn't set up on this app, so no account was created. Please contact MiniPort support.",
-      );
-      return;
+    try {
+      const res = await start({ data: { phone: normalisePhone(phone), intent: "signup" } });
+      if (!res.ok) {
+        toast.error(res.message);
+        return;
+      }
+      setStep("verify");
+      setCooldown(RESEND_COOLDOWN_SECONDS);
+      toast.success(`Verification code sent to +91 ${normalisePhone(phone)}`);
+    } catch {
+      toast.error("Network problem — please check your connection and try again.");
+    } finally {
+      setBusy(false);
     }
-    setSmsUnavailable(false);
-    setStep("verify");
-    toast.success(`Verification code sent to +91 ${normalisePhone(phone)}`);
   };
 
   const verifyAndCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (code.length < 4) return toast.error("Enter the code you received");
     setBusy(true);
-    const { error } = await supabase.auth.verifyOtp({
-      phone: `+91${normalisePhone(phone)}`,
-      token: code,
-      type: "sms",
-    });
-    if (error) {
+    try {
+      const res = await verify({
+        data: {
+          phone: normalisePhone(phone),
+          code,
+          intent: "signup",
+          name: name.trim(),
+          acceptedTerms: agreed,
+        },
+      });
+      if (!res.ok || !("tokenHash" in res)) {
+        toast.error(res.ok ? "Please try again." : res.message);
+        return;
+      }
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: res.tokenHash,
+        type: "email",
+      });
+      if (error) {
+        toast.error("Your number is verified, but sign-in failed. Please use the OTP tab.");
+        return;
+      }
+      // Acceptance is stored against the new account (versions + timestamp).
+      await recordConsent("signup");
+      toast.success("Welcome to MiniPort!");
+      if (role === "driver")
+        toast.info("Complete driver verification from your account to start accepting rides.");
+    } catch {
+      toast.error("Network problem — please check your connection and try again.");
+    } finally {
       setBusy(false);
-      toast.error(error.message);
-      return;
     }
-    // Number verified — attach the email/password login to the same account so
-    // the person can also sign in with a password later.
-    const { error: linkError } = await supabase.auth.updateUser({
-      email: phoneToEmail(phone),
-      password,
-      data: {
-        phone: normalisePhone(phone),
-        name: name.trim(),
-        role,
-        terms_version: TERMS_VERSION,
-        terms_accepted_at: consentAt(),
-      },
-    });
-    // Store the acceptance against the new account (versions + timestamp + source).
-    await recordConsent("signup");
-    setBusy(false);
-    if (linkError) toast.success("Number verified — welcome to MiniPort!");
-    else toast.success("Welcome to MiniPort!");
   };
 
   if (step === "verify") {
@@ -366,6 +402,14 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
         </Button>
         <button
           type="button"
+          disabled={busy || cooldown > 0}
+          onClick={(e) => void sendCode(e)}
+          className="w-full text-center text-xs text-muted-foreground underline disabled:opacity-50"
+        >
+          {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
+        </button>
+        <button
+          type="button"
           onClick={() => {
             setStep("details");
             setCode("");
@@ -378,10 +422,8 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
     );
   }
 
-  const submit = sendCode;
-
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={sendCode} className="space-y-4">
       <div>
         <Label>I want to</Label>
         <RadioGroup
@@ -429,18 +471,6 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
           required
         />
       </div>
-      <div>
-        <Label htmlFor="su-pw">Password</Label>
-        <Input
-          id="su-pw"
-          type="password"
-          autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          minLength={6}
-        />
-      </div>
       <label htmlFor="su-terms" className="flex items-start gap-2 text-sm text-muted-foreground">
         <input
           id="su-terms"
@@ -472,12 +502,6 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
           .
         </span>
       </label>
-      {smsUnavailable && (
-        <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
-          Number verification is not available on this app yet, so no account was created. MiniPort
-          support must switch on SMS sending before new sign-ups can be verified.
-        </p>
-      )}
       <Button type="submit" className="h-11 w-full text-base" disabled={busy || !agreed}>
         {busy ? "Sending code\u2026" : "Send verification code"}
       </Button>
