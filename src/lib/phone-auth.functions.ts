@@ -146,6 +146,7 @@ export const verifyPhoneOtp = createServerFn({ method: "POST" })
 
     const email = loginEmail(phone);
     let user = await findUserByEmail(supabaseAdmin, email);
+    let created_new = false;
 
     if (!user) {
       if (data.intent === "signin") {
@@ -169,6 +170,7 @@ export const verifyPhoneOtp = createServerFn({ method: "POST" })
         };
       }
       user = { id: created.user.id };
+      created_new = true;
     }
 
     const tokenHash = await issueSessionToken(supabaseAdmin, email);
@@ -180,5 +182,5 @@ export const verifyPhoneOtp = createServerFn({ method: "POST" })
     }
 
     await clearAttempts(supabaseAdmin, phone);
-    return { ok: true as const, tokenHash, isNewAccount: !data.acceptedTerms ? false : true };
+    return { ok: true as const, tokenHash, isNewAccount: created_new };
   });
