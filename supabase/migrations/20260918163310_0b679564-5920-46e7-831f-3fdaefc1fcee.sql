@@ -1,0 +1,2 @@
+REVOKE TRUNCATE ON public.bookings, public.coupon_redemptions, public.withdrawal_requests FROM authenticated;
+REVOKE TRUNCATE ON public.bookings, public.coupon_redemptions, public.withdrawal_requests FROM anon;
