@@ -981,6 +981,39 @@ export type Database = {
           },
         ]
       }
+      phone_verification_attempts: {
+        Row: {
+          checks: number
+          created_at: string
+          last_sent_at: string | null
+          locked_until: string | null
+          phone: string
+          sends: number
+          updated_at: string
+          window_started_at: string
+        }
+        Insert: {
+          checks?: number
+          created_at?: string
+          last_sent_at?: string | null
+          locked_until?: string | null
+          phone: string
+          sends?: number
+          updated_at?: string
+          window_started_at?: string
+        }
+        Update: {
+          checks?: number
+          created_at?: string
+          last_sent_at?: string | null
+          locked_until?: string | null
+          phone?: string
+          sends?: number
+          updated_at?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           commission_rate: number
