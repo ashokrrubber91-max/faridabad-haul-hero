@@ -117,9 +117,8 @@ export const verifyPhoneOtp = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { registerCheck, clearAttempts, findUserByEmail, issueSessionToken } = await import(
-      "@/lib/phone-auth.server"
-    );
+    const { registerCheck, clearAttempts, findUserByEmail, issueSessionToken } =
+      await import("@/lib/phone-auth.server");
     const { checkVerification } = await import("@/lib/twilio-verify.server");
 
     if (!(await registerCheck(supabaseAdmin, phone))) {
