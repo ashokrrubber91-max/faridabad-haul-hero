@@ -922,6 +922,89 @@ export type Database = {
           },
         ]
       }
+      ops_tasks: {
+        Row: {
+          assigned_to: string | null
+          booking_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          details: string | null
+          due_at: string | null
+          id: string
+          priority: string
+          scope: string
+          source: string
+          source_message_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          booking_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          details?: string | null
+          due_at?: string | null
+          id?: string
+          priority?: string
+          scope: string
+          source?: string
+          source_message_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          booking_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          details?: string | null
+          due_at?: string | null
+          id?: string
+          priority?: string
+          scope?: string
+          source?: string
+          source_message_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_tasks_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_tasks_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -1383,6 +1466,232 @@ export type Database = {
           provider?: string
         }
         Relationships: []
+      }
+      whatsapp_booking_drafts: {
+        Row: {
+          booking_id: string | null
+          cancelled_at: string | null
+          confirmed_at: string | null
+          created_at: string
+          customer_id: string
+          dimensions: string | null
+          distance_km: number | null
+          drop_address: string | null
+          drop_lat: number | null
+          drop_lng: number | null
+          id: string
+          instructions: string | null
+          material: string | null
+          missing_fields: string[]
+          pickup_address: string | null
+          pickup_lat: number | null
+          pickup_lng: number | null
+          quantity: string | null
+          quoted_fare: number | null
+          schedule_text: string | null
+          scheduled_at: string | null
+          source_message_id: string | null
+          status: string
+          updated_at: string
+          vehicle_type: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          booking_id?: string | null
+          cancelled_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          customer_id: string
+          dimensions?: string | null
+          distance_km?: number | null
+          drop_address?: string | null
+          drop_lat?: number | null
+          drop_lng?: number | null
+          id?: string
+          instructions?: string | null
+          material?: string | null
+          missing_fields?: string[]
+          pickup_address?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          quantity?: string | null
+          quoted_fare?: number | null
+          schedule_text?: string | null
+          scheduled_at?: string | null
+          source_message_id?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_type?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          booking_id?: string | null
+          cancelled_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          customer_id?: string
+          dimensions?: string | null
+          distance_km?: number | null
+          drop_address?: string | null
+          drop_lat?: number | null
+          drop_lng?: number | null
+          id?: string
+          instructions?: string | null
+          material?: string | null
+          missing_fields?: string[]
+          pickup_address?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          quantity?: string | null
+          quoted_fare?: number | null
+          schedule_text?: string | null
+          scheduled_at?: string | null
+          source_message_id?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_type?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_booking_drafts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_booking_drafts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_booking_drafts_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_booking_drafts_vehicle_type_fkey"
+            columns: ["vehicle_type"]
+            isOneToOne: false
+            referencedRelation: "vehicle_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_messages: {
+        Row: {
+          body: string
+          created_at: string
+          direction: string
+          from_phone: string
+          id: string
+          intent: string | null
+          latitude: number | null
+          longitude: number | null
+          num_media: number
+          payload: Json
+          processed_at: string | null
+          processing_error: string | null
+          provider_sid: string
+          received_at: string
+          sender_role: Database["public"]["Enums"]["app_role"] | null
+          to_phone: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          direction?: string
+          from_phone: string
+          id?: string
+          intent?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          num_media?: number
+          payload?: Json
+          processed_at?: string | null
+          processing_error?: string | null
+          provider_sid: string
+          received_at?: string
+          sender_role?: Database["public"]["Enums"]["app_role"] | null
+          to_phone: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          direction?: string
+          from_phone?: string
+          id?: string
+          intent?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          num_media?: number
+          payload?: Json
+          processed_at?: string | null
+          processing_error?: string | null
+          provider_sid?: string
+          received_at?: string
+          sender_role?: Database["public"]["Enums"]["app_role"] | null
+          to_phone?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_outbound: {
+        Row: {
+          body: string
+          created_at: string
+          error: string | null
+          id: string
+          in_reply_to: string | null
+          provider_sid: string | null
+          status: string
+          to_phone: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          in_reply_to?: string | null
+          provider_sid?: string | null
+          status?: string
+          to_phone: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          in_reply_to?: string | null
+          provider_sid?: string | null
+          status?: string
+          to_phone?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_outbound_in_reply_to_fkey"
+            columns: ["in_reply_to"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       withdrawal_requests: {
         Row: {
@@ -1978,6 +2287,32 @@ export type Database = {
       }
       is_kyc_approved: { Args: { _user_id: string }; Returns: boolean }
       is_trusted_booking_write: { Args: never; Returns: boolean }
+      ops_task_set_status: {
+        Args: { _id: string; _status: string }
+        Returns: {
+          assigned_to: string | null
+          booking_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          details: string | null
+          due_at: string | null
+          id: string
+          priority: string
+          scope: string
+          source: string
+          source_message_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ops_tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       record_consent: {
         Args: {
           _privacy_version: string
