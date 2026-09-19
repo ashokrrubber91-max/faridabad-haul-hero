@@ -92,10 +92,7 @@ export async function clearAttempts(admin: Admin, phone: string): Promise<void> 
 }
 
 /** Finds the account behind a phone-derived login email, if any. */
-export async function findUserByEmail(
-  admin: Admin,
-  email: string,
-): Promise<{ id: string } | null> {
+export async function findUserByEmail(admin: Admin, email: string): Promise<{ id: string } | null> {
   // The Admin API list is paged; MiniPort logins are email-unique so one
   // targeted page lookup is enough.
   const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });

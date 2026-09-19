@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -17,7 +18,11 @@ import {
   phoneToEmail,
   useAuth,
 } from "@/hooks/useAuth";
-import { recordConsent, TERMS_VERSION } from "@/lib/legal";
+import { recordConsent } from "@/lib/legal";
+import { startPhoneOtp, verifyPhoneOtp } from "@/lib/phone-auth.functions";
+
+/** Kept in step with the server-side cooldown; only used for the countdown UI. */
+const RESEND_COOLDOWN_SECONDS = 45;
 
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
@@ -101,8 +106,7 @@ function AuthPage() {
           </Tabs>
         </div>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          OTP delivery needs an SMS provider connected to your backend — until then, use password
-          sign-in.
+          We confirm your number with a one-time code sent by SMS. Never share the code with anyone.
         </p>
       </main>
     </div>
