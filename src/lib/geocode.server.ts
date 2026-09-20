@@ -143,3 +143,43 @@ export async function placeDetailsServer(
   if (typeof lat !== "number" || typeof lng !== "number" || !address) return null;
   return { address, lat, lng };
 }
+
+/**
+ * Forward geocoding: a written address to coordinates, through the same
+ * gateway. Returns null when the address cannot be resolved — callers must ask
+ * the person for a clearer address rather than guessing a point.
+ */
+export async function geocodeAddressServer(
+  address: string,
+): Promise<{ address: string; lat: number; lng: number } | null> {
+  const lovableKey = process.env["LOVABLE_API_KEY"];
+  const mapsKey = process.env["GOOGLE_MAPS_API_KEY"];
+  if (!lovableKey || !mapsKey) return null;
+
+  const query = `${address}, Faridabad, Haryana, India`;
+  const response = await fetch(
+    `${GATEWAY_URL}/maps/api/geocode/json?address=${encodeURIComponent(query)}&region=in`,
+    {
+      headers: {
+        Authorization: `Bearer ${lovableKey}`,
+        "X-Connection-Api-Key": mapsKey,
+      },
+    },
+  );
+  if (!response.ok) {
+    console.error(`Forward geocoding failed [${response.status}]`);
+    return null;
+  }
+  const payload = (await response.json()) as {
+    status?: string;
+    results?: Array<{
+      formatted_address?: string;
+      geometry?: { location?: { lat?: number; lng?: number } };
+    }>;
+  };
+  const hit = payload.results?.[0];
+  const lat = hit?.geometry?.location?.lat;
+  const lng = hit?.geometry?.location?.lng;
+  if (payload.status !== "OK" || typeof lat !== "number" || typeof lng !== "number") return null;
+  return { address: hit?.formatted_address ?? address, lat, lng };
+}
