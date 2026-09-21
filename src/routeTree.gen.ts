@@ -19,6 +19,7 @@ import { Route as AuthenticatedDriverRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedDriverKycRouteImport } from './routes/_authenticated/driver-kyc'
 import { Route as AuthenticatedDriverRidesRouteImport } from './routes/_authenticated/driver-rides'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
+import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AdminLoginRouteImport } from './routes/admin_.login'
 import { Route as TripTokenRouteImport } from './routes/trip.$token'
@@ -75,6 +76,11 @@ const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedWalletRoute = AuthenticatedWalletRouteImport.update({
   id: '/wallet',
   path: '/wallet',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/driver-kyc': typeof AuthenticatedDriverKycRoute
   '/driver-rides': typeof AuthenticatedDriverRidesRoute
   '/orders': typeof AuthenticatedOrdersRoute
+  '/tasks': typeof AuthenticatedTasksRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/admin/login': typeof AdminLoginRoute
   '/trip/$token': typeof TripTokenRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/driver-kyc': typeof AuthenticatedDriverKycRoute
   '/driver-rides': typeof AuthenticatedDriverRidesRoute
   '/orders': typeof AuthenticatedOrdersRoute
+  '/tasks': typeof AuthenticatedTasksRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/admin/login': typeof AdminLoginRoute
   '/trip/$token': typeof TripTokenRoute
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/_authenticated/driver-kyc': typeof AuthenticatedDriverKycRoute
   '/_authenticated/driver-rides': typeof AuthenticatedDriverRidesRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
+  '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/admin_/login': typeof AdminLoginRoute
   '/trip/$token': typeof TripTokenRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/driver-kyc'
     | '/driver-rides'
     | '/orders'
+    | '/tasks'
     | '/wallet'
     | '/admin/login'
     | '/trip/$token'
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/driver-kyc'
     | '/driver-rides'
     | '/orders'
+    | '/tasks'
     | '/wallet'
     | '/admin/login'
     | '/trip/$token'
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/_authenticated/driver-kyc'
     | '/_authenticated/driver-rides'
     | '/_authenticated/orders'
+    | '/_authenticated/tasks'
     | '/_authenticated/wallet'
     | '/admin_/login'
     | '/trip/$token'
@@ -288,6 +300,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrdersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tasks': {
+      id: '/_authenticated/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof AuthenticatedTasksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/wallet': {
       id: '/_authenticated/wallet'
       path: '/wallet'
@@ -333,6 +352,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDriverKycRoute: typeof AuthenticatedDriverKycRoute
   AuthenticatedDriverRidesRoute: typeof AuthenticatedDriverRidesRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
+  AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
 }
 
@@ -343,6 +363,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDriverKycRoute: AuthenticatedDriverKycRoute,
   AuthenticatedDriverRidesRoute: AuthenticatedDriverRidesRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
+  AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
 }
 

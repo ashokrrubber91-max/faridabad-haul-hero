@@ -11,14 +11,7 @@ import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 
 export type ParsedWhatsApp = {
   intent:
-    | "booking_request"
-    | "confirm"
-    | "cancel"
-    | "edit"
-    | "task"
-    | "status_query"
-    | "help"
-    | "other";
+    "booking_request" | "confirm" | "cancel" | "edit" | "task" | "status_query" | "help" | "other";
   pickup_address: string | null;
   drop_address: string | null;
   schedule_text: string | null;

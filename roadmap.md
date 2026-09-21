@@ -56,3 +56,13 @@
 - [x] Driver job addresses stay human-readable (coordinates secondary, navigation still uses exact coordinates).
 - [x] Review Booking already had Edit actions for pickup and drop; verified working.
 - Platform limitation: MiniPort cannot override an Android or browser permission block; it can only detect it and tell the person exactly which setting to change.
+
+## WhatsApp AI dispatch assistant (this turn)
+- [x] Inbound Twilio WhatsApp webhook at `/api/public/whatsapp/webhook` — signature-verified, stores every message once (provider message id is unique), so Twilio retries never duplicate work.
+- [x] Sender is identified only by the verified mobile number on their MiniPort account; role comes from the database (customer / driver / ops). Unknown numbers are told to sign up and nothing is created.
+- [x] Customer messages (English / Hindi / Hinglish, plus shared WhatsApp locations) become a booking DRAFT with pickup, drop, real coordinates, date/time, material, quantity, weight, dimensions, vehicle and notes. Missing pickup/drop is asked for, never guessed.
+- [x] Real booking is created only after the customer replies CONFIRM; fare is recomputed from the vehicle catalogue and distance from road routing — never from the message. Cash on delivery, status pending, normal driver matching.
+- [x] Driver messages create tasks for that driver only; JOBS and TASKS give live answers from their own data.
+- [x] Ops messages create ops tasks; TODAY gives a trip summary. Driver assignment, fares and payouts stay in the console — WhatsApp can never change a role, assign a driver or move money.
+- [x] `/tasks` page for drivers and ops, with start / mark done through a permission-checked server action.
+- Needs credentials before it can send or receive: Twilio account SID, auth token and the WhatsApp sender number.
