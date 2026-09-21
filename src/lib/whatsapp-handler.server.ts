@@ -17,7 +17,11 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { parseWhatsAppMessage, quickReplyIntent, type ParsedWhatsApp } from "@/lib/whatsapp-ai.server";
+import {
+  parseWhatsAppMessage,
+  quickReplyIntent,
+  type ParsedWhatsApp,
+} from "@/lib/whatsapp-ai.server";
 
 type Admin = SupabaseClient<Database>;
 type Draft = Database["public"]["Tables"]["whatsapp_booking_drafts"]["Row"];
@@ -85,7 +89,8 @@ function draftSummary(draft: Draft): string {
   if (draft.dimensions) lines.push(`Dimensions: ${draft.dimensions}`);
   lines.push(`Vehicle: ${draft.vehicle_type ?? "Not selected yet"}`);
   if (draft.distance_km) lines.push(`Distance: ${Number(draft.distance_km).toFixed(1)} km`);
-  if (draft.quoted_fare) lines.push(`Estimated fare: ${inr(Number(draft.quoted_fare))} (cash on delivery)`);
+  if (draft.quoted_fare)
+    lines.push(`Estimated fare: ${inr(Number(draft.quoted_fare))} (cash on delivery)`);
   if (draft.instructions) lines.push(`Note: ${draft.instructions}`);
   lines.push("", "Reply *CONFIRM* to book, *CANCEL* to drop it, or send corrections.");
   return lines.join("\n");
@@ -114,7 +119,10 @@ async function pickVehicle(admin: Admin, hint: string | null, weightKg: number |
     const match = list.find(
       (v) =>
         v.id.replace(/[^a-z0-9]/g, "") === needle ||
-        v.label.toLowerCase().replace(/[^a-z0-9]/g, "").includes(needle),
+        v.label
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "")
+          .includes(needle),
     );
     if (match) return match;
   }
@@ -180,7 +188,11 @@ async function upsertDraft(
 
   const merged = { ...(existing ?? {}), ...patch } as Draft;
 
-  const vehicle = await pickVehicle(admin, parsed.vehicle_hint, merged.weight_kg ? Number(merged.weight_kg) : null);
+  const vehicle = await pickVehicle(
+    admin,
+    parsed.vehicle_hint,
+    merged.weight_kg ? Number(merged.weight_kg) : null,
+  );
   if (vehicle) patch.vehicle_type = vehicle.id;
 
   // Distance and fare only when both real points are known — never estimated.
@@ -211,7 +223,12 @@ async function upsertDraft(
   patch.status = missing.length === 0 ? "awaiting_confirmation" : "collecting";
 
   const saved = existing
-    ? await admin.from("whatsapp_booking_drafts").update(patch).eq("id", existing.id).select().single()
+    ? await admin
+        .from("whatsapp_booking_drafts")
+        .update(patch)
+        .eq("id", existing.id)
+        .select()
+        .single()
     : await admin
         .from("whatsapp_booking_drafts")
         .insert(patch as Database["public"]["Tables"]["whatsapp_booking_drafts"]["Insert"])
@@ -234,16 +251,14 @@ async function confirmDraft(admin: Admin, draft: Draft): Promise<string> {
     return askForMissing(draft.missing_fields.length ? draft.missing_fields : ["pickup_address"]);
   }
   if (!draft.vehicle_type || draft.distance_km == null) {
-    await admin
-      .from("ops_tasks")
-      .insert({
-        scope: "admin",
-        title: "WhatsApp booking needs manual pricing",
-        details: `Customer confirmed a WhatsApp request but the route or vehicle could not be priced automatically.\nPickup: ${draft.pickup_address}\nDrop: ${draft.drop_address}\nMaterial: ${draft.material ?? "—"}`,
-        priority: "high",
-        source: "whatsapp",
-        source_message_id: draft.source_message_id,
-      });
+    await admin.from("ops_tasks").insert({
+      scope: "admin",
+      title: "WhatsApp booking needs manual pricing",
+      details: `Customer confirmed a WhatsApp request but the route or vehicle could not be priced automatically.\nPickup: ${draft.pickup_address}\nDrop: ${draft.drop_address}\nMaterial: ${draft.material ?? "—"}`,
+      priority: "high",
+      source: "whatsapp",
+      source_message_id: draft.source_message_id,
+    });
     return "Your request is confirmed, but I could not price the route automatically. Our Faridabad team will call you shortly to finish the booking.";
   }
 
@@ -253,7 +268,8 @@ async function confirmDraft(admin: Admin, draft: Draft): Promise<string> {
     .eq("id", draft.vehicle_type)
     .eq("active", true)
     .maybeSingle();
-  if (!vehicle) return "That vehicle is not available right now. Please open the MiniPort app to pick another one.";
+  if (!vehicle)
+    return "That vehicle is not available right now. Please open the MiniPort app to pick another one.";
 
   // Fare is recomputed from the catalogue at confirmation time — the message
   // never sets the price.
@@ -286,10 +302,7 @@ async function confirmDraft(admin: Admin, draft: Draft): Promise<string> {
 
   if (error || !booking) {
     console.error("[whatsapp] booking insert failed:", error?.message);
-    await admin
-      .from("whatsapp_booking_drafts")
-      .update({ status: "failed" })
-      .eq("id", draft.id);
+    await admin.from("whatsapp_booking_drafts").update({ status: "failed" }).eq("id", draft.id);
     return "I could not create the booking just now. Please try again from the MiniPort app or reply and our team will help.";
   }
 

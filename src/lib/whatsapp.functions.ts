@@ -14,9 +14,8 @@ export const getWhatsAppStatus = createServerFn({ method: "GET" })
     });
     if (!isAdmin) throw new Error("Forbidden");
 
-    const { isWhatsAppConfigured, isWebhookVerifiable, whatsappFrom } = await import(
-      "@/lib/whatsapp.server"
-    );
+    const { isWhatsAppConfigured, isWebhookVerifiable, whatsappFrom } =
+      await import("@/lib/whatsapp.server");
     return {
       sending: isWhatsAppConfigured(),
       signatureVerification: isWebhookVerifiable(),
