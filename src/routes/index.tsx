@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { Truck, ShieldCheck, Clock, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { RouteErrorFallback } from "@/components/RouteErrorFallback";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/")({
     ],
   }),
   component: Index,
+  errorComponent: RouteErrorFallback,
 });
 
 function Index() {
