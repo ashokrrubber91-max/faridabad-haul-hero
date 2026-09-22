@@ -58,10 +58,12 @@ import { WithdrawalsTab, DisputesTab, AuditTab } from "@/components/admin/OpsTab
 import { getAdminSetupState, claimFirstAdmin } from "@/lib/admin.functions";
 import { SystemStatus } from "@/components/admin/SystemStatus";
 import { signOutEverywhere } from "@/lib/session";
+import { RouteErrorFallback } from "@/components/RouteErrorFallback";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — MiniPort" }] }),
   component: AdminGate,
+  errorComponent: RouteErrorFallback,
 });
 
 /**

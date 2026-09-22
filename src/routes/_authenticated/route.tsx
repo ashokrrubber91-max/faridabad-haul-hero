@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "@/components/nav/BottomNav";
+import { RouteErrorFallback } from "@/components/RouteErrorFallback";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/_authenticated")({
     return { user: data.user };
   },
   component: AuthedLayout,
+  errorComponent: RouteErrorFallback,
 });
 
 function AuthedLayout() {
