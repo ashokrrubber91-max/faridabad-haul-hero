@@ -20,6 +20,7 @@ export const Route = createFileRoute("/_authenticated")({
     return { user: data.user };
   },
   component: AuthedLayout,
+  errorComponent: RouteErrorFallback,
 });
 
 function AuthedLayout() {
