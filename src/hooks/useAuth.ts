@@ -78,14 +78,24 @@ export function useAuth(): AuthState {
       );
       setLoading(false);
     };
+    let currentUserId: string | null = null;
     supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
-      loadFor(data.session?.user ?? null);
+      const u = data.session?.user ?? null;
+      currentUserId = u?.id ?? null;
+      setUser(u);
+      loadFor(u);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    // Only identity changes matter. Without this filter the listener also fires on
+    // hourly token refreshes and on every mount (INITIAL_SESSION), which would put
+    // the screen back into its loading state again and again and refetch endlessly.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      const u = session?.user ?? null;
+      if (u?.id === currentUserId && event !== "USER_UPDATED") return;
+      currentUserId = u?.id ?? null;
+      setUser(u);
       setLoading(true);
-      loadFor(session?.user ?? null);
+      loadFor(u);
     });
     return () => {
       active = false;
