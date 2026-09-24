@@ -59,6 +59,7 @@ import { getAdminSetupState, claimFirstAdmin } from "@/lib/admin.functions";
 import { SystemStatus } from "@/components/admin/SystemStatus";
 import { signOutEverywhere } from "@/lib/session";
 import { RouteErrorFallback } from "@/components/RouteErrorFallback";
+import { AccountManagementTab } from "@/components/admin/AccountManagementTab";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — MiniPort" }] }),
@@ -381,7 +382,7 @@ function AdminPage() {
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-muted/50">
-          <TabsTrigger value="overview" className="gap-1.5">
+          <TabsTrigger value="accounts" className="gap-1.5">\n            <UserCog className="h-3.5 w-3.5" />\n            Authentication\n          </TabsTrigger>\n          <TabsTrigger value="overview" className="gap-1.5">
             <LayoutDashboard className="h-3.5 w-3.5" />
             Overview
           </TabsTrigger>
@@ -435,7 +436,7 @@ function AdminPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* OVERVIEW */}
+        <TabsContent value="accounts" className="space-y-4">\n          <AccountManagementTab />\n        </TabsContent>\n\n        {/* OVERVIEW */}
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat
