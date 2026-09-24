@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_admin_audit: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          role: string | null
+          target_user_id: string
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          role?: string | null
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          role?: string | null
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       account_deletions: {
         Row: {
           deleted_at: string
@@ -2573,7 +2603,7 @@ export type Database = {
     }
     Enums: {
       address_kind: "home" | "shop" | "other"
-      app_role: "customer" | "driver" | "admin"
+      app_role: "customer" | "driver" | "admin" | "staff"
       booking_status:
         | "pending"
         | "accepted"
@@ -2736,7 +2766,7 @@ export const Constants = {
   public: {
     Enums: {
       address_kind: ["home", "shop", "other"],
-      app_role: ["customer", "driver", "admin"],
+      app_role: ["customer", "driver", "admin", "staff"],
       booking_status: [
         "pending",
         "accepted",
