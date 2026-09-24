@@ -13,7 +13,6 @@ export type LocationShareState = "idle" | "starting" | "live" | "error";
 export interface DriverLocationShare {
   state: LocationShareState;
   message: string | null;
-  /** Time of the last real device fix that was saved, or null if none yet. */
   lastFixAt: number | null;
   stale: boolean;
   retry: () => void;
@@ -45,6 +44,18 @@ export function useAuth(): AuthState {
 
   useEffect(() => {
     let active = true;
+    let subscription: { unsubscribe: () => void } | null = null;
+
+    const failClosed = () => {
+      if (!active) return;
+      // A preview/configuration failure must not blank the public app.
+      // Keep the user signed out until Supabase becomes available.
+      setUser(null);
+      setRoles([]);
+      setProfile(null);
+      setLoading(false);
+    };
+
     const loadFor = async (u: User | null) => {
       if (!u) {
         if (!active) return;
@@ -53,62 +64,71 @@ export function useAuth(): AuthState {
         setLoading(false);
         return;
       }
-      const [{ data: roleRows }, { data: profileRow }] = await Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", u.id),
-        supabase
-          .from("profiles")
-          .select("name, phone, active_mode, is_online, kyc_status, service_zone")
-          .eq("id", u.id)
-          .maybeSingle(),
-      ]);
-      if (!active) return;
-      setRoles((roleRows ?? []).map((r) => r.role as AppRole));
-      setProfile(
-        profileRow
-          ? {
-              name: profileRow.name ?? "",
-              phone: profileRow.phone ?? "",
-              active_mode: (profileRow.active_mode as ActiveMode) ?? "customer",
-              is_online: profileRow.is_online ?? false,
-              kyc_status: ((profileRow as { kyc_status?: KycStatus }).kyc_status ??
-                "not_submitted") as KycStatus,
-              service_zone: profileRow.service_zone ?? "Faridabad",
-            }
-          : null,
-      );
-      setLoading(false);
+
+      try {
+        const [{ data: roleRows }, { data: profileRow }] = await Promise.all([
+          supabase.from("user_roles").select("role").eq("user_id", u.id),
+          supabase
+            .from("profiles")
+            .select("name, phone, active_mode, is_online, kyc_status, service_zone")
+            .eq("id", u.id)
+            .maybeSingle(),
+        ]);
+
+        if (!active) return;
+        setRoles((roleRows ?? []).map((r) => r.role as AppRole));
+        setProfile(
+          profileRow
+            ? {
+                name: profileRow.name ?? "",
+                phone: profileRow.phone ?? "",
+                active_mode: (profileRow.active_mode as ActiveMode) ?? "customer",
+                is_online: profileRow.is_online ?? false,
+                kyc_status: ((profileRow as { kyc_status?: KycStatus }).kyc_status ??
+                  "not_submitted") as KycStatus,
+                service_zone: profileRow.service_zone ?? "Faridabad",
+              }
+            : null,
+        );
+        setLoading(false);
+      } catch {
+        failClosed();
+      }
     };
+
     let currentUserId: string | null = null;
-    supabase.auth.getSession().then(({ data }) => {
-      const u = data.session?.user ?? null;
-      currentUserId = u?.id ?? null;
-      setUser(u);
-      loadFor(u);
-    });
-    // Only identity changes matter. Without this filter the listener also fires on
-    // hourly token refreshes and on every mount (INITIAL_SESSION), which would put
-    // the screen back into its loading state again and again and refetch endlessly.
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-      const u = session?.user ?? null;
-      if (u?.id === currentUserId && event !== "USER_UPDATED") return;
-      currentUserId = u?.id ?? null;
-      setUser(u);
-      setLoading(true);
-      loadFor(u);
-    });
+
+    try {
+      supabase.auth
+        .getSession()
+        .then(({ data }) => {
+          const u = data.session?.user ?? null;
+          currentUserId = u?.id ?? null;
+          setUser(u);
+          void loadFor(u);
+        })
+        .catch(() => failClosed());
+
+      const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+        const u = session?.user ?? null;
+        if (u?.id === currentUserId && event !== "USER_UPDATED") return;
+        currentUserId = u?.id ?? null;
+        setUser(u);
+        setLoading(true);
+        void loadFor(u);
+      });
+      subscription = sub.subscription;
+    } catch {
+      failClosed();
+    }
+
     return () => {
       active = false;
-      sub.subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 
-  /**
-   * Real driver GPS, shared from one watcher only. A blocked or failing device
-   * is reported honestly (MiniPort cannot override an Android/browser block),
-   * saving is throttled so a moving vehicle does not flood the database, and a
-   * failed watcher is retried with a growing delay until it works.
-   */
   const [share, setShare] = useState<{
     state: LocationShareState;
     message: string | null;
@@ -151,28 +171,37 @@ export function useAuth(): AuthState {
           notifiedCode = null;
           const now = Date.now();
           setShare({ state: "live", message: null, lastFixAt: position.timestamp || now });
-          // At most one write every 10 seconds; the watcher can fire far more often.
           if (now - lastSentAt < 10_000) return;
           lastSentAt = now;
           const { latitude, longitude, accuracy, heading, speed } = position.coords;
-          const { error } = await supabase.from("driver_locations").upsert(
-            {
-              driver_id: user.id,
-              latitude,
-              longitude,
-              accuracy_m: accuracy ?? null,
-              heading_deg: heading ?? null,
-              speed_mps: speed ?? null,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "driver_id" },
-          );
-          if (error && !cancelled) {
-            lastSentAt = 0;
-            setShare((s) => ({
-              ...s,
-              message: "Your live location could not be saved. Check your internet connection.",
-            }));
+          try {
+            const { error } = await supabase.from("driver_locations").upsert(
+              {
+                driver_id: user.id,
+                latitude,
+                longitude,
+                accuracy_m: accuracy ?? null,
+                heading_deg: heading ?? null,
+                speed_mps: speed ?? null,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "driver_id" },
+            );
+            if (error && !cancelled) {
+              lastSentAt = 0;
+              setShare((s) => ({
+                ...s,
+                message: "Your live location could not be saved. Check your internet connection.",
+              }));
+            }
+          } catch {
+            if (!cancelled) {
+              lastSentAt = 0;
+              setShare((s) => ({
+                ...s,
+                message: "Your live location could not be saved. Check your internet connection.",
+              }));
+            }
           }
         },
         (error) => {
@@ -188,7 +217,7 @@ export function useAuth(): AuthState {
             notifiedCode = error.code;
             toast.error(message);
           }
-          if (error.code === error.PERMISSION_DENIED) return; // retrying cannot help
+          if (error.code === error.PERMISSION_DENIED) return;
           failures += 1;
           if (watchId !== null) navigator.geolocation.clearWatch(watchId);
           watchId = null;
@@ -227,11 +256,13 @@ export function useAuth(): AuthState {
     async (m: ActiveMode) => {
       if (!user) return;
       setProfile((p) => (p ? { ...p, active_mode: m } : p));
-      const { error } = await supabase
-        .from("profiles")
-        .update({ active_mode: m })
-        .eq("id", user.id);
-      if (error) {
+      try {
+        const { error } = await supabase
+          .from("profiles")
+          .update({ active_mode: m })
+          .eq("id", user.id);
+        if (error) throw error;
+      } catch (error) {
         setProfile((p) =>
           p ? { ...p, active_mode: m === "customer" ? "driver" : "customer" } : p,
         );
@@ -244,10 +275,6 @@ export function useAuth(): AuthState {
   return { user, role, roles, profile, activeMode, setActiveMode, loading, locationShare };
 }
 
-/**
- * Indian mobile numbers are exactly 10 digits starting 6-9. Anything shorter,
- * longer or starting 0-5 is rejected — never silently trimmed to 10 digits.
- */
 export const INDIAN_MOBILE = /^[6-9]\d{9}$/;
 
 export function normalisePhone(raw: string): string {
