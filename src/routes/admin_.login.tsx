@@ -54,13 +54,30 @@ function AdminLoginPage() {
     }
     setBusy(true);
     setDenied(false);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: phoneToEmail(phone),
-      password,
-    });
+    let error: Error | null = null;
+    try {
+      const result = await Promise.race([
+        supabase.auth.signInWithPassword({
+          email: phoneToEmail(phone),
+          password,
+        }),
+        new Promise<{ data: { user: null; session: null }; error: Error }>((resolve) =>
+          setTimeout(() => resolve({ data: { user: null, session: null }, error: new Error("AUTH_TIMEOUT") }), 15000),
+        ),
+      ]);
+      error = result.error;
+    } catch {
+      error = new Error("AUTH_REQUEST_FAILED");
+    }
     if (error) {
       setBusy(false);
-      toast.error(error.message);
+      toast.error(
+        error.message === "AUTH_TIMEOUT"
+          ? "Sign-in timed out. Check your connection and try again."
+          : error.message === "AUTH_REQUEST_FAILED"
+            ? "Could not sign in right now. Please check your connection and try again."
+            : error.message,
+      );
       return;
     }
     // The role is confirmed by the server, never by anything the browser holds.
