@@ -106,7 +106,7 @@ function AuthPage() {
           </Tabs>
         </div>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          We confirm your number with a one-time code sent by SMS. Never share the code with anyone.
+          Password sign-in is available now. SMS OTP will be enabled after Twilio is connected.
         </p>
       </main>
     </div>
@@ -281,8 +281,6 @@ function SignInForm() {
     } finally {
       setBusy(false);
     }
-    return;
-    if (error) toast.error(error.message);
   };
 
   return (
