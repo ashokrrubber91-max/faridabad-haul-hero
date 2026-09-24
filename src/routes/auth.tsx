@@ -260,24 +260,65 @@ function SignInForm() {
       toast.error(PHONE_ERROR);
       return;
     }
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters.");
+      return;
+    }
+
     setBusy(true);
+    const email = phoneToEmail(phone);
+
     try {
-      const { error } = await Promise.race([
-        supabase.auth.signInWithPassword({
-          email: phoneToEmail(phone),
-          password,
-        }),
-        new Promise<{ data: { user: null; session: null }; error: Error }>((resolve) =>
-          setTimeout(() => resolve({ data: { user: null, session: null }, error: new Error("AUTH_TIMEOUT") }), 15000),
-        ),
-      ]);
-      if (error) {
-        toast.error(error.message === "AUTH_TIMEOUT" ? "Sign-in timed out. Check your connection and try again." : error.message);
+      let result: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>> | null = null;
+      let lastThrown: unknown = null;
+
+      // Auth can briefly fail at the network layer on a mobile preview.
+      // Retry once before showing an error; normal Supabase auth errors are
+      // returned as { error } and are shown directly to the user.
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          result = await Promise.race([
+            supabase.auth.signInWithPassword({ email, password }),
+            new Promise<Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>>((resolve) =>
+              setTimeout(
+                () =>
+                  resolve({
+                    data: { user: null, session: null },
+                    error: new Error("AUTH_TIMEOUT"),
+                  } as Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>),
+                20000,
+              ),
+            ),
+          ]);
+          lastThrown = null;
+          break;
+        } catch (error) {
+          lastThrown = error;
+          if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 800));
+        }
+      }
+
+      if (!result) {
+        const message = lastThrown instanceof Error ? lastThrown.message : "Network request failed";
+        toast.error(
+          message === "AUTH_TIMEOUT"
+            ? "Sign-in timed out. Please check your internet connection and try again."
+            : `Unable to reach MiniPort authentication right now (${message}). Please retry.`,
+        );
         return;
       }
+
+      if (result.error) {
+        const message = result.error.message ?? "Sign-in failed";
+        toast.error(
+          message === "AUTH_TIMEOUT"
+            ? "Sign-in timed out. Please check your internet connection and try again."
+            : message,
+        );
+        return;
+      }
+
       toast.success("Signed in");
-    } catch {
-      toast.error("Could not sign in right now. Please check your connection and try again.");
     } finally {
       setBusy(false);
     }
@@ -306,11 +347,11 @@ function SignInForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          minLength={6}
+          minLength={8}
         />
       </div>
       <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
-        {busy ? "Signing in\u2026" : "Sign in"}
+        {busy ? "Signing in…" : "Sign in"}
       </Button>
     </form>
   );
