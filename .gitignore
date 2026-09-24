@@ -20,10 +20,7 @@ dist-ssr
 .wrangler/
 .dev.vars
 
-# Environment files — never commit runtime configuration or API keys
-.env
-.env.*
-!.env.example
+# .env holds only public (publishable) backend values and must ship with builds; secrets live in Lovable Secrets.
 
 # Editor directories and files
 .vscode/*
