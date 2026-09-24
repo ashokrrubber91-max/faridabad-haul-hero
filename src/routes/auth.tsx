@@ -261,13 +261,28 @@ function SignInForm() {
       return;
     }
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: phoneToEmail(phone),
-      password,
-    });
-    setBusy(false);
+    try {
+      const { error } = await Promise.race([
+        supabase.auth.signInWithPassword({
+          email: phoneToEmail(phone),
+          password,
+        }),
+        new Promise<{ data: { user: null; session: null }; error: Error }>((resolve) =>
+          setTimeout(() => resolve({ data: { user: null, session: null }, error: new Error("AUTH_TIMEOUT") }), 15000),
+        ),
+      ]);
+      if (error) {
+        toast.error(error.message === "AUTH_TIMEOUT" ? "Sign-in timed out. Check your connection and try again." : error.message);
+        return;
+      }
+      toast.success("Signed in");
+    } catch {
+      toast.error("Could not sign in right now. Please check your connection and try again.");
+    } finally {
+      setBusy(false);
+    }
+    return;
     if (error) toast.error(error.message);
-    else toast.success("Signed in");
   };
 
   return (
