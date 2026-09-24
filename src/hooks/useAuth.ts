@@ -66,13 +66,17 @@ export function useAuth(): AuthState {
       }
 
       try {
-        const [{ data: roleRows }, { data: profileRow }] = await Promise.all([
+        const query = Promise.all([
           supabase.from("user_roles").select("role").eq("user_id", u.id),
           supabase
             .from("profiles")
             .select("name, phone, active_mode, is_online, kyc_status, service_zone")
             .eq("id", u.id)
             .maybeSingle(),
+        ]);
+        const [{ data: roleRows }, { data: profileRow }] = await Promise.race([
+          query,
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("AUTH_PROFILE_TIMEOUT")), 12000)),
         ]);
 
         if (!active) return;
