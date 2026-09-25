@@ -382,7 +382,12 @@ function AdminPage() {
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-muted/50">
-          <TabsTrigger value="accounts" className="gap-1.5">\n            <UserCog className="h-3.5 w-3.5" />\n            Authentication\n          </TabsTrigger>\n          <TabsTrigger value="overview" className="gap-1.5">
+          <TabsTrigger value="accounts" className="gap-1.5">
+            \n <UserCog className="h-3.5 w-3.5" />
+            \n Authentication\n{" "}
+          </TabsTrigger>
+          \n{" "}
+          <TabsTrigger value="overview" className="gap-1.5">
             <LayoutDashboard className="h-3.5 w-3.5" />
             Overview
           </TabsTrigger>
@@ -435,8 +440,11 @@ function AdminPage() {
             Broadcast
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="accounts" className="space-y-4">\n          <AccountManagementTab />\n        </TabsContent>\n\n        {/* OVERVIEW */}
+        <TabsContent value="accounts" className="space-y-4">
+          \n <AccountManagementTab />
+          \n{" "}
+        </TabsContent>
+        \n\n {/* OVERVIEW */}
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat
@@ -568,7 +576,6 @@ function AdminPage() {
             }
           />
         </TabsContent>
-
         {/* DRIVERS */}
         <TabsContent value="drivers">
           <DriversTab
@@ -581,17 +588,14 @@ function AdminPage() {
             }}
           />
         </TabsContent>
-
         {/* KYC REVIEW */}
         <TabsContent value="kyc">
           <KycReviewTab />
         </TabsContent>
-
         {/* CUSTOMERS */}
         <TabsContent value="customers">
           <CustomersTab customers={customers} bookings={all} />
         </TabsContent>
-
         {/* LIVE TRIPS */}
         <TabsContent value="trips">
           <LiveTripsTab
@@ -601,7 +605,6 @@ function AdminPage() {
             onChanged={() => qc.invalidateQueries({ queryKey: ["admin-bookings"] })}
           />
         </TabsContent>
-
         {/* FARES */}
         <TabsContent value="fares">
           <FaresVehiclesTab
@@ -610,7 +613,6 @@ function AdminPage() {
               .reduce((sum, b) => sum + Number(b.commission_amount ?? 0), 0)}
           />
         </TabsContent>
-
         {/* INCENTIVES */}
         <TabsContent value="incentives">
           <IncentivesTab
@@ -618,7 +620,6 @@ function AdminPage() {
             onChanged={() => qc.invalidateQueries({ queryKey: ["admin-incentives"] })}
           />
         </TabsContent>
-
         {/* COUPONS */}
         <TabsContent value="coupons">
           <CouponsTab
@@ -626,27 +627,22 @@ function AdminPage() {
             onChanged={() => qc.invalidateQueries({ queryKey: ["admin-coupons"] })}
           />
         </TabsContent>
-
         {/* PAYOUTS */}
         <TabsContent value="payouts">
           <WithdrawalsTab />
         </TabsContent>
-
         {/* DISPUTES */}
         <TabsContent value="disputes">
           <DisputesTab profileMap={profileMap} />
         </TabsContent>
-
         {/* AUDIT & SECURITY */}
         <TabsContent value="audit">
           <AuditTab profileMap={profileMap} />
         </TabsContent>
-
         {/* SMS */}
         <TabsContent value="sms">
           <SmsLogsSection logs={smsLogs.data ?? []} />
         </TabsContent>
-
         {/* BROADCAST */}
         <TabsContent value="broadcast">
           <BroadcastTab drivers={drivers} customers={customers} />

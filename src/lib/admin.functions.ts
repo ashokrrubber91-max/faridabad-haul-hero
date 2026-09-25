@@ -63,16 +63,17 @@ export const claimFirstAdmin = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 export const adminCreateAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({
-      name: z.string().trim().min(2).max(80),
-      phone: z.string().regex(/^\d{10}$/, "Enter a valid 10-digit Indian mobile number"),
-      password: z.string().min(8).max(128),
-      role: z.enum(["customer", "driver", "staff"]),
-    }).parse(input),
+    z
+      .object({
+        name: z.string().trim().min(2).max(80),
+        phone: z.string().regex(/^\d{10}$/, "Enter a valid 10-digit Indian mobile number"),
+        password: z.string().min(8).max(128),
+        role: z.enum(["customer", "driver", "staff"]),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", {
@@ -101,7 +102,10 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
       throw new Error(profileError.message);
     }
 
-    const { error: roleDeleteError } = await supabaseAdmin.from("user_roles").delete().eq("user_id", uid);
+    const { error: roleDeleteError } = await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", uid);
     if (roleDeleteError) throw new Error(roleDeleteError.message);
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
@@ -109,7 +113,9 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
     if (roleError) throw new Error(roleError.message);
 
     if (data.role === "driver") {
-      await supabaseAdmin.from("driver_profiles").upsert({ user_id: uid }, { onConflict: "user_id" });
+      await supabaseAdmin
+        .from("driver_profiles")
+        .upsert({ user_id: uid }, { onConflict: "user_id" });
     }
 
     await supabaseAdmin.from("account_admin_audit").insert({
@@ -126,10 +132,12 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
 export const adminUpdateAccountStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({
-      userId: z.string().uuid(),
-      active: z.boolean(),
-    }).parse(input),
+    z
+      .object({
+        userId: z.string().uuid(),
+        active: z.boolean(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", {
@@ -137,7 +145,8 @@ export const adminUpdateAccountStatus = createServerFn({ method: "POST" })
       _role: "admin",
     });
     if (!isAdmin) throw new Error("Admin access required");
-    if (data.userId === context.userId && !data.active) throw new Error("You cannot suspend your own admin account");
+    if (data.userId === context.userId && !data.active)
+      throw new Error("You cannot suspend your own admin account");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
@@ -156,10 +165,12 @@ export const adminUpdateAccountStatus = createServerFn({ method: "POST" })
 export const adminResetPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({
-      userId: z.string().uuid(),
-      password: z.string().min(8).max(128),
-    }).parse(input),
+    z
+      .object({
+        userId: z.string().uuid(),
+        password: z.string().min(8).max(128),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", {
@@ -192,14 +203,31 @@ export const adminListAccounts = createServerFn({ method: "GET" })
     if (!isAdmin) throw new Error("Admin access required");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: users, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const { data: users, error } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
     if (error) throw new Error(error.message);
 
     const ids = users.users.map((u) => u.id);
     const [{ data: profiles }, { data: roles }, { data: audits }] = await Promise.all([
-      ids.length ? supabaseAdmin.from("profiles").select("id,name,phone,active_mode,is_online,kyc_status,created_at").in("id", ids) : Promise.resolve({ data: [] }),
-      ids.length ? supabaseAdmin.from("user_roles").select("user_id,role").in("user_id", ids) : Promise.resolve({ data: [] }),
-      ids.length ? supabaseAdmin.from("account_admin_audit").select("target_user_id,action,created_at").in("target_user_id", ids).order("created_at", { ascending: false }).limit(500) : Promise.resolve({ data: [] }),
+      ids.length
+        ? supabaseAdmin
+            .from("profiles")
+            .select("id,name,phone,active_mode,is_online,kyc_status,created_at")
+            .in("id", ids)
+        : Promise.resolve({ data: [] }),
+      ids.length
+        ? supabaseAdmin.from("user_roles").select("user_id,role").in("user_id", ids)
+        : Promise.resolve({ data: [] }),
+      ids.length
+        ? supabaseAdmin
+            .from("account_admin_audit")
+            .select("target_user_id,action,created_at")
+            .in("target_user_id", ids)
+            .order("created_at", { ascending: false })
+            .limit(500)
+        : Promise.resolve({ data: [] }),
     ]);
 
     return {
