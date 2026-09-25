@@ -62,7 +62,11 @@ function AdminLoginPage() {
           password,
         }),
         new Promise<{ data: { user: null; session: null }; error: Error }>((resolve) =>
-          setTimeout(() => resolve({ data: { user: null, session: null }, error: new Error("AUTH_TIMEOUT") }), 15000),
+          setTimeout(
+            () =>
+              resolve({ data: { user: null, session: null }, error: new Error("AUTH_TIMEOUT") }),
+            15000,
+          ),
         ),
       ]);
       error = result.error;

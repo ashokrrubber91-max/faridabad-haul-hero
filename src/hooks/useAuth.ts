@@ -76,7 +76,9 @@ export function useAuth(): AuthState {
         ]);
         const [{ data: roleRows }, { data: profileRow }] = await Promise.race([
           query,
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("AUTH_PROFILE_TIMEOUT")), 12000)),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("AUTH_PROFILE_TIMEOUT")), 12000),
+          ),
         ]);
 
         if (!active) return;
