@@ -27,7 +27,7 @@ const vehicleId = z
  */
 export const computeRoadRoute = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ points: z.array(point).min(2).max(6) }).parse(input))
+  .validator((input) => z.object({ points: z.array(point).min(2).max(6) }).parse(input))
   .handler(async ({ data }) => {
     const { computeRoadRouteServer } = await import("@/lib/routing.server");
     return computeRoadRouteServer(data.points);
@@ -40,7 +40,7 @@ export const computeRoadRoute = createServerFn({ method: "POST" })
  */
 export const createBooking = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         pickup: place,

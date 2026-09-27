@@ -9,7 +9,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  */
 export const reviewDriverKyc = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         driverId: z.string().uuid(),
@@ -65,12 +65,19 @@ export const claimFirstAdmin = createServerFn({ method: "POST" })
 
 export const adminCreateAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         name: z.string().trim().min(2).max(80),
         phone: z.string().regex(/^\d{10}$/, "Enter a valid 10-digit Indian mobile number"),
-        password: z.string().min(8).max(128),
+        password: z
+          .string()
+          .min(12, "Use at least 12 characters")
+          .max(128)
+          .regex(/[a-z]/, "Include a lowercase letter")
+          .regex(/[A-Z]/, "Include an uppercase letter")
+          .regex(/\d/, "Include a number")
+          .regex(/[^A-Za-z0-9]/, "Include a symbol"),
         role: z.enum(["customer", "driver", "staff"]),
       })
       .parse(input),
@@ -131,7 +138,7 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
 
 export const adminUpdateAccountStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         userId: z.string().uuid(),
@@ -164,11 +171,18 @@ export const adminUpdateAccountStatus = createServerFn({ method: "POST" })
 
 export const adminResetPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         userId: z.string().uuid(),
-        password: z.string().min(8).max(128),
+        password: z
+          .string()
+          .min(12, "Use at least 12 characters")
+          .max(128)
+          .regex(/[a-z]/, "Include a lowercase letter")
+          .regex(/[A-Z]/, "Include an uppercase letter")
+          .regex(/\d/, "Include a number")
+          .regex(/[^A-Za-z0-9]/, "Include a symbol"),
       })
       .parse(input),
   )

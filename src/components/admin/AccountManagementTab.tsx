@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { KeyRound, Plus, RefreshCw, Search, Shield, UserCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
@@ -40,7 +40,13 @@ type Account = {
 };
 
 function makeTempPassword() {
-  return `MP-${Math.random().toString(36).slice(2, 8)}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+  const values = new Uint32Array(16);
+  crypto.getRandomValues(values);
+  const random = Array.from(values, (value) => alphabet[value % alphabet.length]).join("");
+  // Prefixes guarantee the strength requirements while the random portion
+  // keeps every admin-generated credential unguessable.
+  return `Mp!7${random}`;
 }
 
 export function AccountManagementTab() {
@@ -56,13 +62,13 @@ export function AccountManagementTab() {
   const [form, setForm] = useState({
     name: "",
     phone: "",
-    password: makeTempPassword(),
+    password: "",
     role: "customer",
   });
   const [resetPasswordValue, setResetPasswordValue] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const result = await list({});
@@ -72,11 +78,11 @@ export function AccountManagementTab() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [list]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   const createAccount = async () => {
     if (!/^\d{10}$/.test(form.phone))
@@ -88,7 +94,7 @@ export function AccountManagementTab() {
         `${form.role} account created. Give the temporary password securely to the user.`,
       );
       setOpen(false);
-      setForm({ name: "", phone: "", password: makeTempPassword(), role: "customer" });
+      setForm({ name: "", phone: "", password: "", role: "customer" });
       await load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not create account");
@@ -111,8 +117,11 @@ export function AccountManagementTab() {
   };
 
   const doReset = async () => {
-    if (!resetOpen || resetPasswordValue.length < 8)
-      return toast.error("Password must be at least 8 characters");
+    if (
+      !resetOpen ||
+      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,128}$/.test(resetPasswordValue)
+    )
+      return toast.error("Use 12+ characters with upper/lowercase, a number and a symbol");
     setBusy(true);
     try {
       await resetPassword({ data: { userId: resetOpen.id, password: resetPasswordValue } });
@@ -148,7 +157,13 @@ export function AccountManagementTab() {
             <Button size="sm" variant="outline" onClick={() => void load()} disabled={loading}>
               <RefreshCw className="h-3.5 w-3.5" /> Refresh
             </Button>
-            <Button size="sm" onClick={() => setOpen(true)}>
+            <Button
+              size="sm"
+              onClick={() => {
+                setForm((current) => ({ ...current, password: makeTempPassword() }));
+                setOpen(true);
+              }}
+            >
               <Plus className="h-3.5 w-3.5" /> Create account
             </Button>
           </div>
@@ -285,8 +300,9 @@ export function AccountManagementTab() {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              No SMS is sent. Give the temporary password to the user through a secure channel.
-              Twilio can be connected later for OTP.
+              Generated securely. Use 12+ characters with uppercase, lowercase, a number and a
+              symbol. Give the temporary password to the user through a secure channel; no SMS is
+              sent.
             </p>
           </div>
           <DialogFooter>

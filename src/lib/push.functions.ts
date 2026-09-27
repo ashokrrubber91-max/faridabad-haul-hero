@@ -14,7 +14,7 @@ export const getPushConfig = createServerFn({ method: "GET" })
 
 export const registerDeviceToken = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         token: z.string().min(20).max(500),
@@ -39,7 +39,7 @@ export const registerDeviceToken = createServerFn({ method: "POST" })
 
 export const removeDeviceToken = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ token: z.string().min(20).max(500) }).parse(input))
+  .validator((input) => z.object({ token: z.string().min(20).max(500) }).parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("device_tokens").delete().eq("token", data.token);
     if (error) throw new Error(error.message);
@@ -49,7 +49,7 @@ export const removeDeviceToken = createServerFn({ method: "POST" })
 /** Fired by the customer app right after a booking is created. */
 export const notifyDriversOfNewBooking = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ bookingId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ bookingId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { data: booking, error } = await context.supabase
       .from("bookings")

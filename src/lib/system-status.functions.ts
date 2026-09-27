@@ -34,6 +34,10 @@ export const getSystemStatus = createServerFn({ method: "GET" })
         provider:
           has("TWILIO_ACCOUNT_SID") && has("TWILIO_AUTH_TOKEN") && has("TWILIO_FROM_NUMBER"),
       },
+      phoneVerification: {
+        provider:
+          has("TWILIO_ACCOUNT_SID") && has("TWILIO_AUTH_TOKEN") && has("TWILIO_VERIFY_SERVICE_SID"),
+      },
       ai: { gateway: has("LOVABLE_API_KEY") },
     };
   });
