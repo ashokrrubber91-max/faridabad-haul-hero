@@ -83,7 +83,11 @@ export function AccountManagementTab() {
       return toast.error("Enter a valid 10-digit Indian mobile number");
     setBusy(true);
     try {
-      await create({ data: form });
+      const result = (await create({ data: form })) as { ok?: boolean; error?: string } | undefined;
+      if (result && result.ok === false) {
+        toast.error(result.error ?? "Could not create account");
+        return;
+      }
       toast.success(
         `${form.role} account created. Give the temporary password securely to the user.`,
       );
