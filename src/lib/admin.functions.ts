@@ -93,7 +93,8 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
     if (error && ((error as { code?: string }).code === "email_exists" || error.status === 422)) {
       return {
         ok: false as const,
-        error: "An account with this mobile number already exists. Find it in the list below instead.",
+        error:
+          "An account with this mobile number already exists. Find it in the list below instead.",
       };
     }
     if (error || !created.user) throw new Error(error?.message ?? "Could not create account");
