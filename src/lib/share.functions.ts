@@ -7,7 +7,7 @@ import { z } from "zod";
  * function returns only safe fields — no phone numbers, codes or fare details.
  */
 export const getSharedTrip = createServerFn({ method: "GET" })
-  .inputValidator((data) => z.object({ token: z.string().min(16).max(128) }).parse(data))
+  .validator((data) => z.object({ token: z.string().min(16).max(128) }).parse(data))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: view, error } = await supabaseAdmin.rpc("shared_trip_view", {

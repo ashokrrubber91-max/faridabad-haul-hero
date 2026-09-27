@@ -12,7 +12,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  */
 export const processSmsQueue = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z.object({ limit: z.number().int().min(1).max(50).default(20) }).parse(input ?? {}),
   )
   .handler(async ({ data, context }) => {

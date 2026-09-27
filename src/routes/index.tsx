@@ -40,11 +40,9 @@ function Index() {
           </div>
           <span className="font-display text-2xl tracking-wide text-secondary">MINIPORT</span>
         </div>
-        <Link to="/auth">
-          <Button variant="outline" size="sm">
-            Sign in
-          </Button>
-        </Link>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/auth">Sign in</Link>
+        </Button>
       </header>
 
       <main className="mx-auto max-w-5xl px-5 pb-16 pt-8 sm:px-8 sm:pt-16">
@@ -63,16 +61,16 @@ function Index() {
               within minutes, fares are flat-rate and shown upfront.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link to="/auth" search={{ mode: "signup", as: "customer" }}>
-                <Button size="lg" className="h-12 px-6 text-base">
+              <Button asChild size="lg" className="h-12 px-6 text-base">
+                <Link to="/auth" search={{ mode: "signup", as: "customer" }}>
                   Book a truck
-                </Button>
-              </Link>
-              <Link to="/auth" search={{ mode: "signup", as: "driver" }}>
-                <Button size="lg" variant="secondary" className="h-12 px-6 text-base">
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="secondary" className="h-12 px-6 text-base">
+                <Link to="/auth" search={{ mode: "signup", as: "driver" }}>
                   Drive with MiniPort
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
           </div>
 

@@ -65,9 +65,14 @@ export function SystemStatus() {
             note="Map keys incomplete — address search or routing may be limited."
           />
           <Row
-            label="Customer SMS"
+            label="Customer SMS alerts"
             ok={!!status.data?.sms.provider}
             note="No SMS provider connected — messages are only recorded in the SMS log, not delivered."
+          />
+          <Row
+            label="Phone verification"
+            ok={!!status.data?.phoneVerification.provider}
+            note="Twilio Verify credentials are incomplete — phone OTP sign-in and sign-up are unavailable."
           />
           <Row
             label="Support assistant"

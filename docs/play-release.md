@@ -72,7 +72,8 @@ manually; autofill of codes is not implemented.
 
 ## Known release blockers outside this repository
 
-1. SMS provider credentials for sign-up verification codes (deferred integration).
+1. Twilio Verify and Messaging secrets configured, followed by a real-device OTP and alert test
+   as described in [`docs/twilio.md`](./twilio.md).
 2. Google Maps key authorised for the production origin (maps, geocoding, place imagery).
 3. Payment provider live keys and the webhook signing secret.
 4. Push notification production credentials.

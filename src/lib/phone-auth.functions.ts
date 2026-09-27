@@ -29,7 +29,7 @@ const startSchema = z.object({
 });
 
 export const startPhoneOtp = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => startSchema.parse(input))
+  .validator((input: unknown) => startSchema.parse(input))
   .handler(async ({ data }) => {
     const phone = normalise(data.phone);
     if (!phone) {
@@ -46,7 +46,8 @@ export const startPhoneOtp = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { throttleSend, findUserByEmail } = await import("@/lib/phone-auth.server");
+    const { throttleSend, clearAttempts, findUserByEmail } =
+      await import("@/lib/phone-auth.server");
 
     const existing = await findUserByEmail(supabaseAdmin, loginEmail(phone));
     if (data.intent === "signup" && existing) {
@@ -75,6 +76,10 @@ export const startPhoneOtp = createServerFn({ method: "POST" })
 
     const result = await startVerification(`+91${phone}`);
     if (result.outcome === "sent") return { ok: true as const };
+    // Do not make a temporary provider/network failure count against a
+    // customer. The provider remains the source of truth for rate limiting;
+    // this only removes our local cooldown/counter for an unsent request.
+    await clearAttempts(supabaseAdmin, phone);
     if (result.outcome === "too_many_attempts") {
       return {
         ok: false as const,
@@ -103,7 +108,7 @@ const verifySchema = z.object({
 });
 
 export const verifyPhoneOtp = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => verifySchema.parse(input))
+  .validator((input: unknown) => verifySchema.parse(input))
   .handler(async ({ data }) => {
     const phone = normalise(data.phone);
     if (!phone) {

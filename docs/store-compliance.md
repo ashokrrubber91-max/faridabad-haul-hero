@@ -21,7 +21,9 @@ This is a release gate, not a guarantee of approval. Google and Apple make the f
 
 ## 2. Needs production configuration (cannot be satisfied by source)
 
-- SMS provider credentials so sign-up verification codes are actually delivered. Until then sign-up fails closed with a clear message and no account is created.
+- Configure the Twilio Verify and Messaging secrets documented in
+  [`docs/twilio.md`](./twilio.md), then complete a real-device OTP and alert-delivery test. Until
+  then sign-up fails closed with a clear message and no account is created.
 - A Google Maps key authorised for the production origin (maps rendering, geocoding, place imagery).
 - Payment provider live keys and the webhook signing secret; run a real end-to-end paid booking.
 - Push notification (Firebase) production credentials.

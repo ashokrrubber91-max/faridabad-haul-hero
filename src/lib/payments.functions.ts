@@ -15,7 +15,7 @@ export const getPaymentConfig = createServerFn({ method: "GET" }).handler(async 
  */
 export const createTripOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ bookingId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ bookingId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { createRazorpayOrder, getRazorpayCredentials } = await import("@/lib/razorpay.server");
     const creds = getRazorpayCredentials();
@@ -81,7 +81,7 @@ export const createTripOrder = createServerFn({ method: "POST" })
  */
 export const confirmTripPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         orderId: z.string().min(6).max(120),

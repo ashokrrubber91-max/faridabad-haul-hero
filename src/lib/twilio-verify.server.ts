@@ -8,8 +8,9 @@
  * Two setups are supported, whichever is configured:
  *  1. The Twilio connector (gateway): LOVABLE_API_KEY + TWILIO_API_KEY.
  *  2. Direct Twilio credentials: TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN.
- * The Verify service is taken from TWILIO_VERIFY_SERVICE_SID when set,
- * otherwise the account's first Verify service is discovered once.
+ * TWILIO_VERIFY_SERVICE_SID is required. Selecting the first service in an
+ * account is unsafe: an account can have multiple services and a newly added
+ * one must never silently change the authentication channel.
  */
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
@@ -30,7 +31,7 @@ function transport(): Transport | null {
 }
 
 export function isVerifyConfigured(): boolean {
-  return transport() !== null;
+  return transport() !== null && !!process.env["TWILIO_VERIFY_SERVICE_SID"]?.trim();
 }
 
 async function twilioFetch(
@@ -60,17 +61,8 @@ async function twilioFetch(
   return { ok: res.ok, status: res.status, json };
 }
 
-let cachedServiceSid: string | null = null;
-
-async function serviceSid(t: Transport): Promise<string | null> {
-  const configured = process.env["TWILIO_VERIFY_SERVICE_SID"]?.trim();
-  if (configured) return configured;
-  if (cachedServiceSid) return cachedServiceSid;
-  const { ok, json } = await twilioFetch(t, "/verify/v2/Services?PageSize=1");
-  if (!ok || !json) return null;
-  const services = (json["services"] as Array<{ sid?: string }> | undefined) ?? [];
-  cachedServiceSid = services[0]?.sid ?? null;
-  return cachedServiceSid;
+function serviceSid(): string | null {
+  return process.env["TWILIO_VERIFY_SERVICE_SID"]?.trim() || null;
 }
 
 export type VerifyOutcome =
@@ -86,7 +78,7 @@ export type VerifyOutcome =
 export async function startVerification(e164: string): Promise<VerifyOutcome> {
   const t = transport();
   if (!t) return { outcome: "not_configured" };
-  const sid = await serviceSid(t);
+  const sid = serviceSid();
   if (!sid) return { outcome: "not_configured" };
 
   const { ok, status, json } = await twilioFetch(t, `/verify/v2/Services/${sid}/Verifications`, {
@@ -106,7 +98,7 @@ export async function startVerification(e164: string): Promise<VerifyOutcome> {
 export async function checkVerification(e164: string, code: string): Promise<VerifyOutcome> {
   const t = transport();
   if (!t) return { outcome: "not_configured" };
-  const sid = await serviceSid(t);
+  const sid = serviceSid();
   if (!sid) return { outcome: "not_configured" };
 
   const { ok, status, json } = await twilioFetch(

@@ -75,8 +75,7 @@ function AuthPage() {
         <div className="surface-card p-6">
           <h1 className="font-display text-3xl tracking-wide text-secondary">Welcome</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Sign in with your phone number and password. SMS OTP will be available after Twilio is
-            connected.
+            Sign in with your phone number and password, or use a secure SMS one-time code.
           </p>
 
           <Tabs
@@ -85,15 +84,11 @@ function AuthPage() {
             className="mt-5"
           >
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="otp">OTP (later)</TabsTrigger>
+              <TabsTrigger value="otp">SMS OTP</TabsTrigger>
               <TabsTrigger value="signin">Password</TabsTrigger>
               <TabsTrigger value="signup">Sign up</TabsTrigger>
             </TabsList>
             <TabsContent value="otp" className="pt-5 space-y-5">
-              \n{" "}
-              <p className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-                SMS verification is not connected yet. Connect Twilio later to enable OTP.
-              </p>
               <OtpSignInForm />
               <OrDivider />
               <SocialAuthButtons />
@@ -111,7 +106,7 @@ function AuthPage() {
           </Tabs>
         </div>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Password sign-in is available now. SMS OTP will be enabled after Twilio is connected.
+          SMS verification is protected by rate limits and expires automatically.
         </p>
       </main>
     </div>
