@@ -92,7 +92,7 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
     });
     let uid: string;
     let restored = false;
-    if (error && ((error as { code?: string }).code === "email_exists" || error.status === 422)) {
+    if (error && isEmailAlreadyRegistered(error)) {
       // A sign-in entry exists. If it has no profile it's a leftover from an
       // earlier half-finished attempt — reuse it instead of blocking the admin.
       const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
@@ -123,7 +123,10 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
       uid = existing.id;
       restored = true;
     } else {
-      if (error || !created.user) throw new Error(error?.message ?? "Could not create account");
+      if (error) {
+        return { ok: false as const, error: adminAuthErrorMessage(error) };
+      }
+      if (!created.user) throw new Error("Could not create account");
       uid = created.user.id;
     }
     const { error: profileError } = await supabaseAdmin
@@ -216,7 +219,7 @@ export const adminResetPassword = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       password: data.password,
     });
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(adminAuthErrorMessage(error));
 
     await supabaseAdmin.from("account_admin_audit").insert({
       actor_id: context.userId,
@@ -287,4 +290,16 @@ export const adminListAccounts = createServerFn({ method: "GET" })
 
 function phoneToEmailForAdmin(phone: string) {
   return `${phone}@miniport.app`;
+}
+
+function isEmailAlreadyRegistered(error: { code?: string }) {
+  return error.code === "email_exists";
+}
+
+function adminAuthErrorMessage(error: { message: string }) {
+  const message = error.message.toLowerCase();
+  if (message.includes("password") && (message.includes("weak") || message.includes("guess"))) {
+    return "This password is too common or easy to guess. Use a unique password with letters, numbers and symbols.";
+  }
+  return error.message;
 }
