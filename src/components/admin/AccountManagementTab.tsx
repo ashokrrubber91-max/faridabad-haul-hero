@@ -37,6 +37,7 @@ type Account = {
   createdAt: string;
   lastSignIn: string | null;
   lastAction: string | null;
+  incomplete?: boolean;
 };
 
 function makeTempPassword() {
@@ -185,6 +186,7 @@ export function AccountManagementTab() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-semibold text-secondary">{a.name || "Unnamed account"}</p>
+                  {a.incomplete && <Badge variant="outline">Incomplete account</Badge>}
                   {a.roles.map((r) => (
                     <Badge key={r} variant={r === "admin" ? "default" : "outline"}>
                       {r}

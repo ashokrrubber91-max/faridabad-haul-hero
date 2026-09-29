@@ -279,6 +279,7 @@ export const adminListAccounts = createServerFn({ method: "GET" })
           lastSignIn: u.last_sign_in_at,
           lastAction: lastAudit?.action ?? null,
           lastActionAt: lastAudit?.created_at ?? null,
+          incomplete: !p,
         };
       }),
     };
