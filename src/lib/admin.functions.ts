@@ -90,16 +90,42 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
       email_confirm: true,
       user_metadata: { name: data.name, created_by_admin: true },
     });
+    let uid: string;
+    let restored = false;
     if (error && ((error as { code?: string }).code === "email_exists" || error.status === 422)) {
-      return {
-        ok: false as const,
-        error:
-          "An account with this mobile number already exists. Find it in the list below instead.",
-      };
+      // A sign-in entry exists. If it has no profile it's a leftover from an
+      // earlier half-finished attempt — reuse it instead of blocking the admin.
+      const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const existing = (list?.users ?? []).find(
+        (u) => u.email?.toLowerCase() === email.toLowerCase(),
+      );
+      const { data: prof } = existing
+        ? await supabaseAdmin.from("profiles").select("id").eq("id", existing.id).maybeSingle()
+        : { data: null };
+      if (!existing || prof) {
+        return {
+          ok: false as const,
+          error:
+            "An account with this mobile number already exists. Find it in the list below instead.",
+        };
+      }
+      const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(existing.id, {
+        password: data.password,
+        email_confirm: true,
+        ban_duration: "none",
+        user_metadata: { name: data.name, created_by_admin: true },
+      });
+      if (updErr) throw new Error(updErr.message);
+      const { error: insErr } = await supabaseAdmin
+        .from("profiles")
+        .upsert({ id: existing.id, name: data.name, phone: data.phone }, { onConflict: "id" });
+      if (insErr) throw new Error(insErr.message);
+      uid = existing.id;
+      restored = true;
+    } else {
+      if (error || !created.user) throw new Error(error?.message ?? "Could not create account");
+      uid = created.user.id;
     }
-    if (error || !created.user) throw new Error(error?.message ?? "Could not create account");
-
-    const uid = created.user.id;
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
       .update({ name: data.name, phone: data.phone })
