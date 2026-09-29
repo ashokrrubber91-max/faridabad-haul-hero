@@ -131,7 +131,7 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
       .update({ name: data.name, phone: data.phone })
       .eq("id", uid);
     if (profileError) {
-      await supabaseAdmin.auth.admin.deleteUser(uid);
+      if (!restored) await supabaseAdmin.auth.admin.deleteUser(uid);
       throw new Error(profileError.message);
     }
 
