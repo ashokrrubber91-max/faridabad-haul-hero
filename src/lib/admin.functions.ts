@@ -237,17 +237,31 @@ export const adminResetPassword = createServerFn({ method: "POST" })
     if (!isAdmin) throw new Error("Admin access required");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: target, error: getErr } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    if (getErr || !target?.user) return { ok: false as const, error: "This account no longer exists." };
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (!prof) {
+      return {
+        ok: false as const,
+        error:
+          "This account is incomplete, so a password alone won't let them sign in. Use Create account with the same mobile number to finish it.",
+      };
+    }
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       password: data.password,
     });
-    if (error) throw new Error(adminAuthErrorMessage(error));
+    if (error) return { ok: false as const, error: adminAuthErrorMessage(error) };
 
     await supabaseAdmin.from("account_admin_audit").insert({
       actor_id: context.userId,
       target_user_id: data.userId,
       action: "reset_password",
     });
-    return { ok: true };
+    return { ok: true as const };
   });
 
 export const adminListAccounts = createServerFn({ method: "GET" })
