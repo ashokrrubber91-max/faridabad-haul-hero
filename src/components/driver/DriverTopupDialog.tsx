@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CreditCard, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,16 +84,6 @@ export function DriverTopupDialog() {
                 placeholder="100"
               />
               <p className="mt-1 text-xs text-muted-foreground">Minimum ₹100 · maximum ₹100,000</p>
-            </div>
-            <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
-              <div className="flex items-start gap-2">
-                <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <p>
-                  Pay online just like a booking. Razorpay will open the secure payment screen.
-                  After successful payment, the amount is credited directly to your MiniPort wallet.
-                  No admin approval is required.
-                </p>
-              </div>
             </div>
           </div>
           <DialogFooter>
