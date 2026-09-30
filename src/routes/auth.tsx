@@ -30,6 +30,7 @@ const searchSchema = z.object({
   // Only a known in-app destination is accepted, so this can never be used to
   // bounce someone to an external site after signing in.
   next: z.enum(["/admin"]).optional(),
+  ref: z.string().trim().max(20).optional(),
 });
 
 export const Route = createFileRoute("/auth")({
@@ -104,7 +105,7 @@ function AuthPage() {
               <SocialAuthButtons />
             </TabsContent>
             <TabsContent value="signup" className="pt-5 space-y-5">
-              <SignUpForm defaultRole={search.as ?? "customer"} />
+              <SignUpForm defaultRole={search.as ?? "customer"} referralCode={search.ref} />
               <OrDivider />
               <SocialAuthButtons />
             </TabsContent>
@@ -369,7 +370,13 @@ function SignInForm() {
  * number, and the account's role is always decided by the backend (customer) —
  * nothing chosen on this screen can grant driver or admin access.
  */
-function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
+function SignUpForm({
+  defaultRole,
+  referralCode: initialReferralCode,
+}: {
+  defaultRole: "customer" | "driver";
+  referralCode?: string;
+}) {
   const start = useServerFn(startPhoneOtp);
   const verify = useServerFn(verifyPhoneOtp);
   const [name, setName] = useState("");
@@ -379,6 +386,7 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
   const [step, setStep] = useState<"details" | "verify">("details");
   const [code, setCode] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [referralCode, setReferralCode] = useState(initialReferralCode?.toUpperCase() ?? "");
   const [cooldown, setCooldown] = useCooldown();
 
   const sendCode = async (e: React.FormEvent) => {
@@ -417,6 +425,8 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
           intent: "signup",
           name: name.trim(),
           acceptedTerms: agreed,
+          referralCode: referralCode || undefined,
+          requestedRole: role,
         },
       });
       if (!res.ok || !("tokenHash" in res)) {
@@ -533,6 +543,20 @@ function SignUpForm({ defaultRole }: { defaultRole: "customer" | "driver" }) {
           onChange={(e) => setPhone(e.target.value)}
           required
         />
+      </div>
+      <div>
+        <Label htmlFor="su-referral">Referral code (optional)</Label>
+        <Input
+          id="su-referral"
+          value={referralCode}
+          onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20))}
+          placeholder="MPXXXXXXXX"
+          maxLength={20}
+          readOnly={!!initialReferralCode}
+        />
+        {initialReferralCode && (
+          <p className="mt-1 text-xs text-success">Referral code applied</p>
+        )}
       </div>
       <label htmlFor="su-terms" className="flex items-start gap-2 text-sm text-muted-foreground">
         <input
