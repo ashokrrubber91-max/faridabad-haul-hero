@@ -164,3 +164,82 @@ export const confirmTripPayment = createServerFn({ method: "POST" })
 
     return { ok: true, bookingId: record.booking_id };
   });
+
+export const createWalletTopupOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ amount: z.number().finite().min(100).max(100000) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: roleOk } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "driver" });
+    if (!roleOk) throw new Error("Driver access required");
+    const { createRazorpayOrder, getRazorpayCredentials } = await import("@/lib/razorpay.server");
+    const creds = getRazorpayCredentials();
+    if (!creds) throw new Error("Online payments are not configured yet.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: existing } = await supabaseAdmin.from("payments")
+      .select("provider_order_id, amount, currency, state")
+      .eq("customer_id", context.userId).eq("method", "wallet_topup").eq("state", "created")
+      .is("booking_id", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (existing && Math.abs(Number(existing.amount) - data.amount) < 0.01) {
+      return { orderId: existing.provider_order_id, amount: data.amount, keyId: creds.keyId, currency: existing.currency ?? "INR" };
+    }
+    const order = await createRazorpayOrder(creds, {
+      amountRupees: data.amount,
+      receipt: "mp_topup_" + context.userId.slice(0, 18) + "_" + Date.now().toString(36),
+      notes: { type: "wallet_topup", driver_id: context.userId },
+    });
+    const { error } = await supabaseAdmin.from("payments").insert({
+      booking_id: null, customer_id: context.userId, provider_order_id: order.id,
+      amount: data.amount, currency: order.currency, state: "created", method: "wallet_topup",
+    });
+    if (error) throw new Error(error.message);
+    return { orderId: order.id, amount: data.amount, keyId: creds.keyId, currency: order.currency };
+  });
+
+export const confirmWalletTopupPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({
+    orderId: z.string().min(6).max(120),
+    paymentId: z.string().min(6).max(120),
+    signature: z.string().min(16).max(256),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { getRazorpayCredentials, verifyCheckoutSignature, fetchRazorpayPayment } =
+      await import("@/lib/razorpay.server");
+    const creds = getRazorpayCredentials();
+    if (!creds) throw new Error("Online payments are not configured yet.");
+    if (!(await verifyCheckoutSignature(creds.keySecret, data.orderId, data.paymentId, data.signature))) {
+      throw new Error("Payment could not be verified");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: record } = await supabaseAdmin.from("payments")
+      .select("id, customer_id, amount, state, currency, method")
+      .eq("provider_order_id", data.orderId).eq("method", "wallet_topup").is("booking_id", null)
+      .maybeSingle();
+    if (!record || record.customer_id !== context.userId) throw new Error("Top-up payment not found");
+    if (record.currency && record.currency !== "INR") throw new Error("Unsupported payment currency");
+    if (record.state === "paid") {
+      const { data: existingRequest } = await supabaseAdmin.from("wallet_topup_requests")
+        .select("id,status").eq("driver_id", context.userId).eq("reference", data.paymentId).maybeSingle();
+      return { ok: true, requestId: existingRequest?.id ?? null, status: existingRequest?.status ?? "pending" };
+    }
+    const payment = await fetchRazorpayPayment(creds, data.paymentId);
+    const amountMatches = Math.abs(payment.amount / 100 - Number(record.amount)) < 0.01;
+    if (payment.status !== "captured" || payment.order_id !== data.orderId || !amountMatches) {
+      await supabaseAdmin.from("payments").update({
+        state: "failed", provider_payment_id: data.paymentId, error: payment.status
+      }).eq("id", record.id).eq("state", "created");
+      throw new Error("Payment was not completed");
+    }
+    await supabaseAdmin.from("payments").update({
+      state: "paid", provider_payment_id: data.paymentId, provider_signature: data.signature, method: "wallet_topup"
+    }).eq("id", record.id).eq("state", "created");
+    const topupMethod = payment.method === "upi" ? "upi" : "bank_transfer";
+    const { data: request, error: requestError } = await supabaseAdmin.from("wallet_topup_requests").insert({
+      driver_id: context.userId, amount: Number(record.amount), method: topupMethod,
+      reference: data.paymentId,
+      note: "Paid online via Razorpay; waiting for admin wallet verification.",
+      status: "pending",
+    }).select("id,status").single();
+    if (requestError) throw new Error(requestError.message);
+    return { ok: true, requestId: request.id, status: request.status };
+  });
