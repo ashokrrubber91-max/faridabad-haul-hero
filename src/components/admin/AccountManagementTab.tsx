@@ -41,7 +41,12 @@ type Account = {
 };
 
 function makeTempPassword() {
-  return `MP-${Math.random().toString(36).slice(2, 8)}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
+  const bytes = new Uint32Array(10);
+  crypto.getRandomValues(bytes);
+  const word = Array.from(bytes.slice(0, 6), (b) => alphabet[b % alphabet.length]).join("");
+  const num = 1000 + (bytes[6] % 9000);
+  return `MP-${word}-${num}`;
 }
 
 export function AccountManagementTab() {
@@ -85,12 +90,13 @@ export function AccountManagementTab() {
     setBusy(true);
     try {
       const result = (await create({ data: form })) as { ok?: boolean; error?: string } | undefined;
-      if (result && result.ok === false) {
-        toast.error(result.error ?? "Could not create account");
+      if (!result || result.ok === false) {
+        toast.error(result?.error ?? "Could not create account");
         return;
       }
       toast.success(
-        `${form.role} account created. Give the temporary password securely to the user.`,
+        `${form.role} account created for ${form.phone}. Temporary password: ${form.password}`,
+        { duration: 30000 },
       );
       setOpen(false);
       setForm({ name: "", phone: "", password: makeTempPassword(), role: "customer" });
@@ -120,8 +126,16 @@ export function AccountManagementTab() {
       return toast.error("Password must be at least 8 characters");
     setBusy(true);
     try {
-      await resetPassword({ data: { userId: resetOpen.id, password: resetPasswordValue } });
-      toast.success("Password reset successfully");
+      const r = (await resetPassword({
+        data: { userId: resetOpen.id, password: resetPasswordValue },
+      })) as { ok?: boolean; error?: string } | undefined;
+      if (!r || r.ok === false) {
+        toast.error(r?.error ?? "Could not reset password");
+        return;
+      }
+      toast.success(`Password reset. New temporary password: ${resetPasswordValue}`, {
+        duration: 30000,
+      });
       setResetOpen(null);
       setResetPasswordValue("");
       await load();
