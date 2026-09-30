@@ -19,16 +19,6 @@ export function DriverTopupDialog() {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
 
-  const requests = useQuery({
-    queryKey: ["wallet-topup-requests", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("wallet_topup_requests")
-        .select("id,amount,method,reference,status,created_at")
-        .eq("driver_id", user!.id).order("created_at", { ascending: false }).limit(5);
-      if (error) throw error;
-      return data ?? [];
-    },
   });
 
   const payOnline = async () => {
@@ -62,13 +52,11 @@ export function DriverTopupDialog() {
           orderId: result.razorpay_order_id,
           paymentId: result.razorpay_payment_id,
           signature: result.razorpay_signature,
-        },
       });
 
-      toast.success("Payment successful. Add Money request sent to admin for verification.");
+      toast.success("Payment successful. Money has been added to your wallet.");
       setOpen(false);
       setAmount("");
-      qc.invalidateQueries({ queryKey: ["wallet-topup-requests", user?.id] });
       qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Payment failed. Please try again.");
@@ -121,15 +109,7 @@ export function DriverTopupDialog() {
         </DialogContent>
       </Dialog>
 
-      {requests.isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin text-primary" />
-      ) : (
-        requests.data?.some((r) => r.status === "pending") && (
-          <p className="text-xs text-warning-foreground">
-            You have a pending Add Money request. It will be credited after admin verification.
-          </p>
-        )
-      )}
+
     </div>
   );
 }
