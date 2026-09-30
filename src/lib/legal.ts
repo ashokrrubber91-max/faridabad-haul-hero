@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const TERMS_VERSION = "2026-09-14";
 export const PRIVACY_VERSION = "2026-09-14";
 
-export type ConsentSource = "signup" | "reconsent" | "account";
+export type ConsentSource = "signup" | "reconsent" | "login" | "account";
 
 /**
  * Records acceptance server-side (account id, versions, timestamp, source).
@@ -31,6 +31,6 @@ export async function hasCurrentConsent(userId: string): Promise<boolean> {
     .eq("terms_version", TERMS_VERSION)
     .eq("privacy_version", PRIVACY_VERSION)
     .limit(1);
-  if (error) return true; // fail open: never block the app on a read error
+  if (error) return true;
   return (data ?? []).length > 0;
 }
