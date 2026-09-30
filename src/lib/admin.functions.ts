@@ -63,13 +63,21 @@ export const claimFirstAdmin = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const DUPLICATE_PHONE_MESSAGE =
+  "An account with this mobile number already exists. Find it in the list below instead.";
+
 export const adminCreateAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
     z
       .object({
         name: z.string().trim().min(2).max(80),
-        phone: z.string().regex(/^\d{10}$/, "Enter a valid 10-digit Indian mobile number"),
+        phone: z
+          .string()
+          .regex(
+            /^[6-9]\d{9}$/,
+            "Enter a valid 10-digit Indian mobile number starting with 6, 7, 8 or 9",
+          ),
         password: z.string().min(8).max(128),
         role: z.enum(["customer", "driver", "staff"]),
       })
@@ -84,11 +92,23 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const email = phoneToEmailForAdmin(data.phone);
+
+    // 1. Any real profile already using this mobile number blocks creation
+    //    before a sign-in entry is ever made.
+    const { data: phoneOwners, error: phoneErr } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("phone", data.phone)
+      .limit(1);
+    if (phoneErr) return { ok: false as const, error: "Could not check the mobile number. Try again." };
+    if ((phoneOwners ?? []).length > 0) return { ok: false as const, error: DUPLICATE_PHONE_MESSAGE };
+
+    const metadata = { name: data.name, phone: data.phone, created_by_admin: true };
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password: data.password,
       email_confirm: true,
-      user_metadata: { name: data.name, created_by_admin: true },
+      user_metadata: metadata,
     });
     let uid: string;
     let restored = false;
@@ -102,56 +122,57 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
       const { data: prof } = existing
         ? await supabaseAdmin.from("profiles").select("id").eq("id", existing.id).maybeSingle()
         : { data: null };
-      if (!existing || prof) {
-        return {
-          ok: false as const,
-          error:
-            "An account with this mobile number already exists. Find it in the list below instead.",
-        };
-      }
+      if (!existing || prof) return { ok: false as const, error: DUPLICATE_PHONE_MESSAGE };
       const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(existing.id, {
         password: data.password,
         email_confirm: true,
         ban_duration: "none",
-        user_metadata: { name: data.name, created_by_admin: true },
+        user_metadata: metadata,
       });
-      if (updErr) throw new Error(updErr.message);
+      if (updErr) return { ok: false as const, error: adminAuthErrorMessage(updErr) };
       const { error: insErr } = await supabaseAdmin
         .from("profiles")
         .upsert({ id: existing.id, name: data.name, phone: data.phone }, { onConflict: "id" });
-      if (insErr) throw new Error(insErr.message);
+      if (insErr) return { ok: false as const, error: insErr.message };
+      await supabaseAdmin.from("customer_profiles").upsert({ user_id: existing.id }, { onConflict: "user_id" });
       uid = existing.id;
       restored = true;
     } else {
-      if (error) {
-        return { ok: false as const, error: adminAuthErrorMessage(error) };
-      }
-      if (!created.user) throw new Error("Could not create account");
+      if (error) return { ok: false as const, error: adminAuthErrorMessage(error) };
+      if (!created.user) return { ok: false as const, error: "Could not create account" };
       uid = created.user.id;
     }
+
+    // Any later failure on a brand-new entry removes it so nothing is left half-created.
+    const fail = async (message: string) => {
+      if (!restored) await supabaseAdmin.auth.admin.deleteUser(uid);
+      return { ok: false as const, error: message };
+    };
+
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
       .update({ name: data.name, phone: data.phone })
       .eq("id", uid);
-    if (profileError) {
-      if (!restored) await supabaseAdmin.auth.admin.deleteUser(uid);
-      throw new Error(profileError.message);
-    }
+    if (profileError) return fail(profileError.message);
 
+    // Add the chosen role first, then drop any other role (e.g. the automatic
+    // customer role) so the account is never left without a role.
+    const { error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: uid, role: data.role as never }, { onConflict: "user_id,role", ignoreDuplicates: true });
+    if (roleError) return fail(roleError.message);
     const { error: roleDeleteError } = await supabaseAdmin
       .from("user_roles")
       .delete()
-      .eq("user_id", uid);
-    if (roleDeleteError) throw new Error(roleDeleteError.message);
-    const { error: roleError } = await supabaseAdmin
-      .from("user_roles")
-      .insert({ user_id: uid, role: data.role as never });
-    if (roleError) throw new Error(roleError.message);
+      .eq("user_id", uid)
+      .neq("role", data.role as never);
+    if (roleDeleteError) return fail(roleDeleteError.message);
 
     if (data.role === "driver") {
-      await supabaseAdmin
+      const { error: dpErr } = await supabaseAdmin
         .from("driver_profiles")
         .upsert({ user_id: uid }, { onConflict: "user_id" });
+      if (dpErr) return fail(dpErr.message);
     }
 
     await supabaseAdmin.from("account_admin_audit").insert({
@@ -159,10 +180,10 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
       target_user_id: uid,
       action: "create",
       role: data.role,
-      metadata: { name: data.name, phone: data.phone },
+      metadata: { name: data.name, phone: data.phone, restored },
     });
 
-    return { ok: true, userId: uid, email };
+    return { ok: true as const, userId: uid, email };
   });
 
 export const adminUpdateAccountStatus = createServerFn({ method: "POST" })
@@ -216,17 +237,31 @@ export const adminResetPassword = createServerFn({ method: "POST" })
     if (!isAdmin) throw new Error("Admin access required");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: target, error: getErr } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    if (getErr || !target?.user) return { ok: false as const, error: "This account no longer exists." };
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (!prof) {
+      return {
+        ok: false as const,
+        error:
+          "This account is incomplete, so a password alone won't let them sign in. Use Create account with the same mobile number to finish it.",
+      };
+    }
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       password: data.password,
     });
-    if (error) throw new Error(adminAuthErrorMessage(error));
+    if (error) return { ok: false as const, error: adminAuthErrorMessage(error) };
 
     await supabaseAdmin.from("account_admin_audit").insert({
       actor_id: context.userId,
       target_user_id: data.userId,
       action: "reset_password",
     });
-    return { ok: true };
+    return { ok: true as const };
   });
 
 export const adminListAccounts = createServerFn({ method: "GET" })
