@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { DriverTopupDialog } from "@/components/driver/DriverTopupDialog";
 
 function formatMoney(n: number) {
   const abs = Math.abs(n).toFixed(2);
@@ -154,14 +155,17 @@ function WalletPage() {
             </p>
           )}
           {isDriver ? (
-            <WithdrawDialog
-              cash={cash}
-              banks={banks.data ?? []}
-              onDone={() => {
-                qc.invalidateQueries({ queryKey: ["withdrawals", user?.id] });
-                qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
-              }}
-            />
+            <div className="mt-4 flex flex-wrap gap-2">
+              <DriverTopupDialog />
+              <WithdrawDialog
+                cash={cash}
+                banks={banks.data ?? []}
+                onDone={() => {
+                  qc.invalidateQueries({ queryKey: ["withdrawals", user?.id] });
+                  qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
+                }}
+              />
+            </div>
           ) : (
             // Honest state: there is no customer top-up rail yet. Customers pay
             // per trip at checkout, so a "Add money" button here would be a
