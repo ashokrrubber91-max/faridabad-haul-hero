@@ -155,8 +155,7 @@ function WalletPage() {
             </p>
           )}
           {isDriver ? (
-            <div className="mt-4 flex flex-wrap gap-2">
-              <DriverTopupDialog />
+            <div className="mt-4 space-y-2">
               <WithdrawDialog
                 cash={cash}
                 banks={banks.data ?? []}
@@ -165,6 +164,7 @@ function WalletPage() {
                   qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
                 }}
               />
+              <DriverTopupDialog />
             </div>
           ) : (
             // Honest state: there is no customer top-up rail yet. Customers pay
