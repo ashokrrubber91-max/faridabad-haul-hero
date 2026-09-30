@@ -17,6 +17,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DriverTopupDialog } from "@/components/driver/DriverTopupDialog";
+import { ReferralCard } from "@/components/referrals/ReferralCard";
 
 function formatMoney(n: number) {
   const abs = Math.abs(n).toFixed(2);
@@ -211,6 +212,8 @@ function WalletPage() {
       {isDriver && (
         <BankAccounts userId={user?.id} accounts={banks.data ?? []} loading={banks.isLoading} />
       )}
+
+      <ReferralCard />
 
       {isDriver && (withdrawals.data ?? []).length > 0 && (
         <section className="surface-card p-5">
