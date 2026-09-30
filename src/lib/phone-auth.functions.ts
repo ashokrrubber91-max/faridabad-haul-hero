@@ -100,6 +100,8 @@ const verifySchema = z.object({
   intent: z.enum(["signin", "signup"]),
   name: z.string().trim().min(2).max(60).optional(),
   acceptedTerms: z.boolean().optional(),
+  referralCode: z.string().trim().max(20).optional(),
+  requestedRole: z.enum(["customer", "driver"]).optional(),
 });
 
 export const verifyPhoneOtp = createServerFn({ method: "POST" })
@@ -170,6 +172,16 @@ export const verifyPhoneOtp = createServerFn({ method: "POST" })
       }
       user = { id: created.user.id };
       created_new = true;
+
+      // Store referral attribution server-side; referral rewards are awarded only
+      // by the database after the invited user's qualifying ride action.
+      if (data.referralCode) {
+        await (supabaseAdmin as any).rpc("attach_referral_to_new_user", {
+          _referred_user_id: user.id,
+          _referral_code: data.referralCode,
+          _referred_type: data.requestedRole === "driver" ? "driver" : "customer",
+        });
+      }
     }
 
     const tokenHash = await issueSessionToken(supabaseAdmin, email);
