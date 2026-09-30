@@ -66,12 +66,13 @@ function AccountPage() {
   const qc = useQueryClient();
   const [name, setName] = useState("");
   const isAdmin = roles.includes("admin");
-  const isDriverMode = roles.includes("driver") && activeMode === "driver";
-  const showCustomerSections = !isDriverMode && !isAdmin;
+  const isDriverAccount = roles.includes("driver");
+  const isDriverMode = isDriverAccount && activeMode === "driver";
+  const showCustomerSections = !isDriverAccount && !isAdmin;
 
   const monthlyDriverEarnings = useQuery({
     queryKey: ["driver-monthly-earnings", user?.id],
-    enabled: !!user && isDriverMode,
+    enabled: !!user && isDriverAccount && !isAdmin,
     queryFn: async () => {
       const start = new Date();
       start.setMonth(start.getMonth() - 5, 1);
@@ -262,11 +263,11 @@ function AccountPage() {
       </section>
 
       {isAdmin && <AdminAccountProfile />}
-      {isDriverMode && <DriverAccountProfile />}
+      {isDriverAccount && !isAdmin && <DriverAccountProfile />}
       {user && <LegalConsentCard userId={user.id} />}
       <NotificationsCard />
 
-      {isDriverMode && (
+      {isDriverAccount && !isAdmin && (
         <section className="surface-card p-5">
           <div className="flex items-center gap-2">
             <Wallet className="h-5 w-5 text-primary" />
