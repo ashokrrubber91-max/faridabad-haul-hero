@@ -39,6 +39,7 @@ export function DriverTopupDialog() {
         currency: order.currency,
         customerPhone: user?.phone ?? "",
         description: "MiniPort driver wallet top-up",
+        testMode: order.keyId.startsWith("rzp_test_"),
       });
       if (!result) return;
 
