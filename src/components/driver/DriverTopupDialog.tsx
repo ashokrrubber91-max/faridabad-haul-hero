@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CreditCard, Loader2, Plus } from "lucide-react";
+import { CreditCard, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,18 +7,14 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { createWalletTopupOrder, confirmWalletTopupPayment, getPaymentConfig } from "@/lib/payments.functions";
 import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
 
 export function DriverTopupDialog() {
   const { user } = useAuth();
-  const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
-
-  });
 
   const payOnline = async () => {
     const value = Number(amount);
@@ -52,12 +47,12 @@ export function DriverTopupDialog() {
           orderId: result.razorpay_order_id,
           paymentId: result.razorpay_payment_id,
           signature: result.razorpay_signature,
+        },
       });
 
       toast.success("Payment successful. Money has been added to your wallet.");
       setOpen(false);
       setAmount("");
-      qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Payment failed. Please try again.");
     }
@@ -94,8 +89,8 @@ export function DriverTopupDialog() {
                 <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <p>
                   Pay online just like a booking. Razorpay will open the secure payment screen.
-                  After successful payment, an Add Money request is sent to admin for wallet verification.
-                  The wallet is credited only after admin approval.
+                  After successful payment, the amount is credited directly to your MiniPort wallet.
+                  No admin approval is required.
                 </p>
               </div>
             </div>
@@ -108,8 +103,6 @@ export function DriverTopupDialog() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-
     </div>
   );
 }
