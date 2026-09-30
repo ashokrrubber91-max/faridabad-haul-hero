@@ -6,7 +6,7 @@ RETURNS text LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 DECLARE candidate text;
 BEGIN
   LOOP
-    candidate := 'MP' || upper(substr(encode(gen_random_bytes(6), 'hex'), 1, 8));
+    candidate := 'MP' || upper(substr(md5(random()::text || clock_timestamp()::text), 1, 8));
     EXIT WHEN NOT EXISTS (SELECT 1 FROM public.profiles WHERE referral_code = candidate);
   END LOOP;
   RETURN candidate;
