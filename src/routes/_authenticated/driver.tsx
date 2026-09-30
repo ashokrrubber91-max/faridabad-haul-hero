@@ -53,6 +53,9 @@ function DriverPage() {
 
   const setOnline = useMutation({
     mutationFn: async (next: boolean) => {
+      if (next && profile?.kyc_status !== "approved" && role !== "admin") {
+        throw new Error("Driver must complete verification before going online.");
+      }
       const { error } = await supabase
         .from("profiles")
         .update({ is_online: next })
@@ -325,7 +328,9 @@ function DriverPage() {
     (b) => b.status === "pending" && !b.driver_id && !b.cancelled_at,
   );
   const mine = (queue.data ?? []).filter((b) => b.driver_id === user?.id && b.status !== "pending");
-  const isOnline = setOnline.variables ?? profile?.is_online ?? false;
+  const kycStatus = profile?.kyc_status ?? "not_submitted";
+  const kycVerified = kycStatus === "approved" || role === "admin";
+  const isOnline = kycVerified && (setOnline.variables ?? profile?.is_online ?? false);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -348,9 +353,6 @@ function DriverPage() {
   const nextTier = sortedTiers.find((t) => t.rides_required > ridesToday);
   const earnedTier = [...sortedTiers].reverse().find((t) => t.rides_required <= ridesToday);
   const earnedToday = earnedTier?.bonus_amount ?? 0;
-
-  const kycStatus = profile?.kyc_status ?? "not_submitted";
-  const kycVerified = kycStatus === "approved" || role === "admin";
 
   // Full-screen incoming-ride alert: only when verified, online, free, and not dismissed.
   const incoming =
@@ -419,6 +421,10 @@ function DriverPage() {
         <Switch
           checked={isOnline}
           onCheckedChange={(v) => {
+            if (v && !kycVerified) {
+              toast.error("Complete driver verification before going online.");
+              return;
+            }
             if (activeJob && !v) {
               toast.error(
                 "You cannot go offline while on an active trip. Please complete the trip first.",
@@ -427,7 +433,7 @@ function DriverPage() {
             }
             setOnline.mutate(v);
           }}
-          disabled={setOnline.isPending || !!activeJob}
+          disabled={setOnline.isPending || !!activeJob || !kycVerified}
           aria-label="Toggle online"
         />
       </section>
@@ -998,31 +1004,3 @@ function Center({ children }: { children: React.ReactNode }) {
  * Drivers must be able to read the address without opening navigation. The
  * human line comes first; exact coordinates stay visible as small secondary
  * text (and navigation still uses the stored pin).
- */
-function JobAddress({
-  label,
-  address,
-  lat,
-  lng,
-}: {
-  label: string;
-  address?: string | null;
-  lat?: number | null;
-  lng?: number | null;
-}) {
-  const lines = addressLines(address, lat, lng);
-  return (
-    <div className="mt-1 flex items-start gap-1.5">
-      <MapPin
-        className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${label === "Pickup" ? "text-primary" : "text-muted-foreground"}`}
-      />
-      <div className="min-w-0">
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-        <p className="text-sm font-medium text-secondary">{lines.primary}</p>
-        {lines.secondary && (
-          <p className="text-[11px] text-muted-foreground">Pin: {lines.secondary}</p>
-        )}
-      </div>
-    </div>
-  );
-}
