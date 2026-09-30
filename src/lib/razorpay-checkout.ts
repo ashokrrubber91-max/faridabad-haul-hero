@@ -50,6 +50,8 @@ export interface CheckoutRequest {
   customerPhone?: string;
   description: string;
   method?: string;
+  /** In sandbox/test mode, show only simulated methods. */
+  testMode?: boolean;
 }
 
 /** Resolves with the signed callback, or null when the customer dismisses the popup. */
@@ -64,7 +66,7 @@ export async function openRazorpayCheckout(req: CheckoutRequest): Promise<Checko
       resolve(value);
     };
 
-    const rzp = new Razorpay({
+    const checkoutOptions: Record<string, unknown> = {
       key: req.keyId,
       order_id: req.orderId,
       amount: Math.round(req.amountRupees * 100),
@@ -81,12 +83,38 @@ export async function openRazorpayCheckout(req: CheckoutRequest): Promise<Checko
         ondismiss: () => finish(null),
       },
       handler: (response: CheckoutSuccess) => finish(response),
-    });
+    };
+
+    // Razorpay Test Mode must be tested with sandbox data, not real bank
+    // authentication. Keep netbanking out of the test checkout so users don't
+    // get routed into real-bank-style flows that cannot complete in sandbox.
+    if (req.testMode) {
+      checkoutOptions.method = {
+        card: true,
+        upi: true,
+        netbanking: false,
+        wallet: false,
+        emi: false,
+        paylater: false,
+      };
+    }
+
+    const rzp = new Razorpay(checkoutOptions);
 
     rzp.on("payment.failed", (response: unknown) => {
+      const error = (response as {
+        error?: {
+          description?: string;
+          reason?: string;
+          code?: string;
+        };
+      })?.error;
+
       const description =
-        (response as { error?: { description?: string } })?.error?.description ??
+        error?.description ??
+        (error?.reason ? `Payment failed: ${error.reason}` : null) ??
         "Payment failed. Please try another method.";
+
       if (settled) return;
       settled = true;
       reject(new Error(description));
