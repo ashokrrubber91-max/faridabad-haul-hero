@@ -50,7 +50,7 @@ export interface CheckoutRequest {
   customerPhone?: string;
   description: string;
   method?: string;
-  /** In sandbox/test mode, show only simulated methods. */
+  /** Kept for compatibility; Razorpay account settings control available methods. */
   testMode?: boolean;
 }
 
@@ -85,20 +85,9 @@ export async function openRazorpayCheckout(req: CheckoutRequest): Promise<Checko
       handler: (response: CheckoutSuccess) => finish(response),
     };
 
-    // Razorpay Test Mode must be tested with sandbox data, not real bank
-    // authentication. Keep netbanking out of the test checkout so users don't
-    // get routed into real-bank-style flows that cannot complete in sandbox.
-    if (req.testMode) {
-      checkoutOptions.method = {
-        card: true,
-        upi: true,
-        netbanking: false,
-        wallet: false,
-        emi: false,
-        paylater: false,
-      };
-    }
-
+    // Do not force a payment-method restriction here. Razorpay decides which
+    // methods are available for the merchant account; this lets enabled UPI,
+    // cards and other supported methods appear in Test Mode as configured.
     const rzp = new Razorpay(checkoutOptions);
 
     rzp.on("payment.failed", (response: unknown) => {
