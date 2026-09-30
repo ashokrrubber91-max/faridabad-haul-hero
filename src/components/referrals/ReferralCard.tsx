@@ -51,13 +51,10 @@ export function ReferralCard() {
     void load();
   }, [user?.id]);
 
-  const link = useMemo(
-    () =>
-      code
-        ? `${window.location.origin}/auth?mode=signup&ref=${encodeURIComponent(code)}`
-        : "",
-    [code],
-  );
+  const link = useMemo(() => {
+    if (!code || typeof window === "undefined") return "";
+    return `${window.location.origin}/auth?mode=signup&ref=${encodeURIComponent(code)}`;
+  }, [code]);
 
   const rewarded = rows.filter((r) => r.status === "rewarded");
   const pending = rows.filter((r) => r.status === "pending");
