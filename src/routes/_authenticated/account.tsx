@@ -15,6 +15,8 @@ import {
   Trash2,
   Truck,
   User as UserIcon,
+  Wallet,
+  IndianRupee,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +32,6 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { SupportChat } from "@/components/support/SupportChat";
-import { buildInvoiceHtml, openInvoice } from "@/lib/invoice";
 import { vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
 import { NotificationsCard } from "@/components/NotificationsCard";
 import { DriverAccountProfile } from "@/components/driver/DriverAccountProfile";
@@ -46,12 +47,12 @@ export const Route = createFileRoute("/_authenticated/account")({
       { title: "My account — MiniPort" },
       {
         name: "description",
-        content: "Manage your MiniPort profile, saved addresses, GST numbers and monthly invoices.",
+        content: "Manage your MiniPort profile and account settings.",
       },
       { property: "og:title", content: "My account — MiniPort" },
       {
         property: "og:description",
-        content: "Profile, saved addresses, GSTIN management and bulk invoice downloads.",
+        content: "Manage your MiniPort profile and account settings.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -64,18 +65,49 @@ function AccountPage() {
   const { user, profile, roles, activeMode } = useAuth();
   const qc = useQueryClient();
   const [name, setName] = useState("");
-  const [gstOpen, setGstOpen] = useState(false);
-  const [gstin, setGstin] = useState("");
-  const [bizName, setBizName] = useState("");
-  const [bizAddr, setBizAddr] = useState("");
   const isAdmin = roles.includes("admin");
   const isDriverMode = roles.includes("driver") && activeMode === "driver";
-  // Customer billing details only belong to a customer-mode, non-admin session.
   const showCustomerSections = !isDriverMode && !isAdmin;
+
+  const monthlyDriverEarnings = useQuery({
+    queryKey: ["driver-monthly-earnings", user?.id],
+    enabled: !!user && isDriverMode,
+    queryFn: async () => {
+      const start = new Date();
+      start.setMonth(start.getMonth() - 5, 1);
+      start.setHours(0, 0, 0, 0);
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("id, fare, driver_net_earning, updated_at, created_at, status")
+        .eq("driver_id", user!.id)
+        .eq("status", "completed")
+        .gte("updated_at", start.toISOString())
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+
+      const months = new Map<string, { label: string; earnings: number; rides: number }>();
+      for (const booking of data ?? []) {
+        const date = new Date(booking.updated_at ?? booking.created_at);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        const current = months.get(key) ?? {
+          label: date.toLocaleDateString("en-IN", { month: "long", year: "numeric" }),
+          earnings: 0,
+          rides: 0,
+        };
+        current.earnings += Number(booking.driver_net_earning ?? booking.fare ?? 0);
+        current.rides += 1;
+        months.set(key, current);
+      }
+
+      return Array.from(months.entries())
+        .sort(([a], [b]) => b.localeCompare(a))
+        .map(([key, value]) => ({ key, ...value }));
+    },
+  });
 
   const addresses = useQuery({
     queryKey: ["saved-addresses", user?.id],
-    enabled: !!user,
+    enabled: !!user && showCustomerSections,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("saved_addresses")
@@ -86,9 +118,10 @@ function AccountPage() {
       return data ?? [];
     },
   });
+
   const gstins = useQuery({
     queryKey: ["gstins", user?.id],
-    enabled: !!user,
+    enabled: !!user && showCustomerSections,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("customer_gstins")
@@ -99,6 +132,12 @@ function AccountPage() {
       return data ?? [];
     },
   });
+
+  const [gstOpen, setGstOpen] = useState(false);
+  const [gstin, setGstin] = useState("");
+  const [bizName, setBizName] = useState("");
+  const [bizAddr, setBizAddr] = useState("");
+
   const saveName = useMutation({
     mutationFn: async (next: string) => {
       const { error } = await supabase.from("profiles").update({ name: next }).eq("id", user!.id);
@@ -107,6 +146,7 @@ function AccountPage() {
     onSuccess: () => toast.success("Profile updated"),
     onError: (e: Error) => toast.error(e.message),
   });
+
   const addGstin = useMutation({
     mutationFn: async () => {
       const code = gstin.trim().toUpperCase();
@@ -132,6 +172,7 @@ function AccountPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
   const setDefaultGstin = useMutation({
     mutationFn: async (id: string) => {
       const { error: clearError } = await supabase
@@ -148,6 +189,7 @@ function AccountPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["gstins", user?.id] }),
     onError: (e: Error) => toast.error(e.message),
   });
+
   const removeGstin = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("customer_gstins").delete().eq("id", id);
@@ -159,6 +201,7 @@ function AccountPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
   const removeAddress = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("saved_addresses").delete().eq("id", id);
@@ -170,37 +213,7 @@ function AccountPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-  const downloadMonthly = async () => {
-    const start = new Date();
-    start.setDate(1);
-    start.setHours(0, 0, 0, 0);
-    const { data, error } = await supabase
-      .from("bookings")
-      .select(BOOKING_FIELDS)
-      .eq("customer_id", user!.id)
-      .eq("status", "completed")
-      .gte("created_at", start.toISOString())
-      .order("created_at");
-    if (error) return toast.error(error.message);
-    if (!data || data.length === 0) return toast.info("No completed trips this month yet");
-    const defaultGst = (gstins.data ?? []).find((g) => g.is_default);
-    const html = data
-      .map((b) =>
-        buildInvoiceHtml(
-          b,
-          {
-            name: profile?.name ?? "Customer",
-            phone: profile?.phone ?? "",
-            gstin: defaultGst?.gstin ?? null,
-            businessName: defaultGst?.business_name ?? null,
-            businessAddress: defaultGst?.business_address ?? null,
-          },
-          vehicleLabel(b.vehicle_type),
-        ),
-      )
-      .join('<div style="page-break-after:always"></div>');
-    if (!openInvoice(html)) toast.error("Allow pop-ups to download invoices");
-  };
+
   const signOut = () => void signOutEverywhere(qc);
 
   return (
@@ -215,6 +228,7 @@ function AccountPage() {
               : "Profile, addresses, GST and invoices."}
         </p>
       </header>
+
       <section className="surface-card p-5">
         <div className="flex items-center gap-3">
           <div className="brand-gradient grid h-12 w-12 place-items-center rounded-full">
@@ -246,10 +260,45 @@ function AccountPage() {
           </Button>
         </div>
       </section>
+
       {isAdmin && <AdminAccountProfile />}
       {isDriverMode && <DriverAccountProfile />}
       {user && <LegalConsentCard userId={user.id} />}
       <NotificationsCard />
+
+      {isDriverMode && (
+        <section className="surface-card p-5">
+          <div className="flex items-center gap-2">
+            <Wallet className="h-5 w-5 text-primary" />
+            <div>
+              <h2 className="font-display text-xl tracking-wide text-secondary">Monthly earnings</h2>
+              <p className="text-xs text-muted-foreground">
+                Completed rides and your net earning, month by month.
+              </p>
+            </div>
+          </div>
+          {monthlyDriverEarnings.isLoading ? (
+            <Loader2 className="mt-4 h-4 w-4 animate-spin text-primary" />
+          ) : monthlyDriverEarnings.isError ? (
+            <p className="mt-4 text-sm text-destructive">Could not load monthly earnings.</p>
+          ) : (monthlyDriverEarnings.data ?? []).length === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">No completed rides in the last 6 months.</p>
+          ) : (
+            <div className="mt-4 overflow-hidden rounded-md border">
+              {(monthlyDriverEarnings.data ?? []).map((month) => (
+                <div key={month.key} className="flex items-center justify-between gap-3 border-b p-3 last:border-b-0">
+                  <div>
+                    <p className="text-sm font-semibold text-secondary">{month.label}</p>
+                    <p className="text-xs text-muted-foreground">{month.rides} completed {month.rides === 1 ? "ride" : "rides"}</p>
+                  </div>
+                  <p className="font-display text-lg text-success">₹{month.earnings.toFixed(0)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {showCustomerSections && (
         <>
           <section className="surface-card p-5">
@@ -317,9 +366,7 @@ function AccountPage() {
                   <li key={g.id} className="flex items-center gap-3 py-2.5">
                     <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-secondary">
-                        {g.business_name}
-                      </p>
+                      <p className="truncate text-sm font-semibold text-secondary">{g.business_name}</p>
                       <p className="text-xs text-muted-foreground">{g.gstin}</p>
                     </div>
                     {g.is_default ? (
@@ -327,20 +374,11 @@ function AccountPage() {
                         <CheckCircle2 className="h-3.5 w-3.5" /> Default
                       </span>
                     ) : (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setDefaultGstin.mutate(g.id)}
-                      >
+                      <Button size="sm" variant="ghost" onClick={() => setDefaultGstin.mutate(g.id)}>
                         Set default
                       </Button>
                     )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeGstin.mutate(g.id)}
-                      aria-label="Remove GSTIN"
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => removeGstin.mutate(g.id)} aria-label="Remove GSTIN">
                       <Trash2 className="h-3.5 w-3.5 text-destructive" />
                     </Button>
                   </li>
@@ -348,6 +386,7 @@ function AccountPage() {
               </ul>
             )}
           </section>
+
           <section className="surface-card p-5">
             <h2 className="mb-3 flex items-center gap-2 font-display text-xl tracking-wide text-secondary">
               <MapPin className="h-4 w-4 text-primary" /> Saved addresses
@@ -364,17 +403,10 @@ function AccountPage() {
                   <li key={a.id} className="flex items-center gap-3 py-2.5">
                     <Home className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-secondary">
-                        {a.alias || a.kind}
-                      </p>
+                      <p className="truncate text-sm font-semibold text-secondary">{a.alias || a.kind}</p>
                       <p className="truncate text-xs text-muted-foreground">{a.address}</p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeAddress.mutate(a.id)}
-                      aria-label="Remove address"
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => removeAddress.mutate(a.id)} aria-label="Remove address">
                       <Trash2 className="h-3.5 w-3.5 text-destructive" />
                     </Button>
                   </li>
@@ -382,63 +414,43 @@ function AccountPage() {
               </ul>
             )}
           </section>
+
           {user && <BecomeDriverCard userId={user.id} />}
+
           <section className="surface-card space-y-2 p-5">
             <h2 className="font-display text-xl tracking-wide text-secondary">More</h2>
-            <Button variant="outline" className="w-full justify-start" onClick={downloadMonthly}>
-              <FileText className="h-4 w-4" /> Download this month&rsquo;s invoices
-            </Button>
-
-            <a
-              className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-              href="/privacy.html"
-            >
+            <a className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted" href="/privacy.html">
               Privacy policy
             </a>
-            <a
-              className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-              href="/terms.html"
-            >
+            <a className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted" href="/terms.html">
               Terms of service
             </a>
             <DeleteAccountCard />
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-destructive"
-              onClick={signOut}
-            >
+            <Button variant="ghost" className="w-full justify-start text-destructive" onClick={signOut}>
               <LogOut className="h-4 w-4" /> Sign out
             </Button>
           </section>
         </>
       )}
+
       {!showCustomerSections && (
         <section className="surface-card p-5">
           <h2 className="font-display text-xl tracking-wide text-secondary">Account actions</h2>
           <div className="mt-2 space-y-2">
-            <a
-              className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-              href="/privacy.html"
-            >
+            <a className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted" href="/privacy.html">
               Privacy policy
             </a>
-            <a
-              className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-              href="/terms.html"
-            >
+            <a className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted" href="/terms.html">
               Terms of service
             </a>
             <DeleteAccountCard />
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-destructive"
-              onClick={signOut}
-            >
+            <Button variant="ghost" className="w-full justify-start text-destructive" onClick={signOut}>
               <LogOut className="h-4 w-4" /> Sign out
             </Button>
           </div>
         </section>
       )}
+
       <SupportChat role={isDriverMode ? "driver" : "customer"} />
     </div>
   );
