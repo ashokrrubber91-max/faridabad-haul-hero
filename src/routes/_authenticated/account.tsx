@@ -67,8 +67,27 @@ function AccountPage() {
   const [name, setName] = useState("");
   const isAdmin = roles.includes("admin");
   const isDriverAccount = roles.includes("driver");
-  const isDriverMode = isDriverAccount && activeMode === "driver";
-  const showCustomerSections = !isDriverAccount && !isAdmin;
+  const driverKycStatus = useQuery({
+    queryKey: ["account-driver-kyc-status", user?.id],
+    enabled: !!user && !isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("driver_kyc")
+        .select("status")
+        .eq("driver_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.status ?? null;
+    },
+  });
+  // Once a user has entered driver verification, their Account page is the
+  // driver profile. Customer-only GST/address/invoice sections must never
+  // appear in that view, even before the driver role is refreshed locally.
+  const isDriverProfile =
+    isDriverAccount ||
+    ["pending", "approved", "rejected"].includes(driverKycStatus.data ?? "");
+  const isDriverMode = isDriverProfile && activeMode === "driver";
+  const showCustomerSections = !isDriverProfile && !isAdmin;
 
   const monthlyDriverEarnings = useQuery({
     queryKey: ["driver-monthly-earnings", user?.id],
@@ -224,7 +243,7 @@ function AccountPage() {
         <p className="text-sm text-muted-foreground">
           {isAdmin
             ? "Admin identity, platform controls and sign-out."
-            : isDriverMode
+            : isDriverProfile
               ? "Driver profile, vehicle documents and account settings."
               : "Profile, addresses, GST and invoices."}
         </p>
@@ -263,11 +282,11 @@ function AccountPage() {
       </section>
 
       {isAdmin && <AdminAccountProfile />}
-      {isDriverAccount && !isAdmin && <DriverAccountProfile />}
+      {isDriverProfile && !isAdmin && <DriverAccountProfile />}
       {user && <LegalConsentCard userId={user.id} />}
       <NotificationsCard />
 
-      {isDriverAccount && !isAdmin && (
+      {isDriverProfile && !isAdmin && (
         <section className="surface-card p-5">
           <div className="flex items-center gap-2">
             <Wallet className="h-5 w-5 text-primary" />
@@ -416,7 +435,7 @@ function AccountPage() {
             )}
           </section>
 
-          {user && <BecomeDriverCard userId={user.id} />}
+          {user && !isDriverProfile && <BecomeDriverCard userId={user.id} />}
 
           <section className="surface-card space-y-2 p-5">
             <h2 className="font-display text-xl tracking-wide text-secondary">More</h2>
