@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { FileImage, Loader2, Save, ShieldCheck, Truck } from "lucide-react";
+import { FileImage, Gift, Loader2, Save, ShieldCheck, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
@@ -149,6 +149,11 @@ export function DriverAccountProfile() {
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="outline" asChild>
+          <Link to="/refer">
+            <Gift className="h-4 w-4" /> Refer & Earn
+          </Link>
+        </Button>
         <Badge
           variant={
             status === "approved" ? "default" : status === "rejected" ? "destructive" : "secondary"
