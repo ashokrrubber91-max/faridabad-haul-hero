@@ -18,8 +18,6 @@ import {
   phoneToEmail,
   useAuth,
 } from "@/hooks/useAuth";
-import { hasCurrentConsent, recordConsent } from "@/lib/legal";
-import { requestDevicePermissionsOnce } from "@/lib/device-permissions";
 import { startPhoneOtp, verifyPhoneOtp } from "@/lib/phone-auth.functions";
 
 /** Kept in step with the server-side cooldown; only used for the countdown UI. */
