@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Package, Wallet, User, Truck } from "lucide-react";
+import { Gift, Home, Package, Wallet, User, Truck } from "lucide-react";
 
 export function BottomNav({ variant }: { variant: "customer" | "driver" }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -10,12 +10,14 @@ export function BottomNav({ variant }: { variant: "customer" | "driver" }) {
           { to: "/customer", label: "Home", icon: Home },
           { to: "/orders", label: "Orders", icon: Package },
           { to: "/wallet", label: "Wallet", icon: Wallet },
+          { to: "/refer", label: "Refer", icon: Gift },
           { to: "/account", label: "Account", icon: User },
         ] as const)
       : ([
           { to: "/driver", label: "Home", icon: Truck },
           { to: "/driver-rides", label: "Rides", icon: Package },
           { to: "/wallet", label: "Earnings", icon: Wallet },
+          { to: "/refer", label: "Refer", icon: Gift },
           { to: "/account", label: "Account", icon: User },
         ] as const);
 
