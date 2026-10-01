@@ -74,6 +74,24 @@ function AccountPage() {
         .from("driver_kyc")
         .select("status")
         .eq("driver_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.status ?? null;
+    },
+  });
+
+  const driverApplication = useQuery({
+    queryKey: ["account-driver-application-status", user?.id],
+    enabled: !!user && !isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("driver_applications")
+        .select("status")
+        .eq("user_id", user!.id)
+        .order("applied_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data?.status ?? null;
@@ -85,7 +103,8 @@ function AccountPage() {
   const isDriverProfile =
     isDriverAccount ||
     activeMode === "driver" ||
-    ["pending", "approved", "rejected"].includes(driverKycStatus.data ?? "");
+    ["pending", "approved", "rejected"].includes(driverKycStatus.data ?? "") ||
+    ["submitted", "approved", "rejected", "pending"].includes(driverApplication.data ?? "");
   const isDriverMode = isDriverProfile && activeMode === "driver";
   // GSTIN, saved-address and customer invoice records belong only to customer
   // accounts. Never render them in driver mode, even if role state is stale.
