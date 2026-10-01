@@ -1,7 +1,7 @@
-/** Request the device permissions MiniPort needs once after login.
- * Browsers still require the user to explicitly allow each permission.
- * We stop media tracks immediately so the camera/microphone are not left active.
- */
+/** Request MiniPort device permissions once after login.
+ * Browsers/Android still require the user to explicitly allow each permission.
+ * Camera/microphone tracks are stopped immediately after the permission prompt.
+ */ 
 export async function requestDevicePermissionsOnce(userId?: string): Promise<void> {
   if (typeof window === "undefined") return;
   const permissionKey = `miniport-device-permissions-requested:${userId ?? "guest"}`;
@@ -25,6 +25,15 @@ export async function requestDevicePermissionsOnce(userId?: string): Promise<voi
           { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
         );
       });
+    }
+
+    // Ask for push notification permission at the same post-login point.
+    if ("Notification" in window && Notification.permission === "default") {
+      try {
+        await Notification.requestPermission();
+      } catch {
+        // Notification permission errors must never block login.
+      }
     }
   } finally {
     window.localStorage.setItem(permissionKey, "1");
