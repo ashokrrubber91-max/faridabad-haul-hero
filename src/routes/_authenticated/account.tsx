@@ -39,6 +39,7 @@ import { AdminAccountProfile } from "@/components/admin/AdminAccountProfile";
 import { signOutEverywhere } from "@/lib/session";
 import { BecomeDriverCard } from "@/components/driver/BecomeDriverCard";
 import { DeleteAccountCard } from "@/components/account/DeleteAccountCard";
+import { ReferralCard } from "@/components/referrals/ReferralCard";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -319,6 +320,7 @@ function AccountPage() {
       {isAdmin && <AdminAccountProfile />}
       {isDriverProfile && !isAdmin && <DriverAccountProfile />}
       <NotificationsCard />
+      <ReferralCard />
 
       {isDriverProfile && !isAdmin && (
         <section className="surface-card p-5">
