@@ -91,7 +91,7 @@ function AccountPage() {
 
   const monthlyDriverEarnings = useQuery({
     queryKey: ["driver-monthly-earnings", user?.id],
-    enabled: !!user && isDriverAccount && !isAdmin,
+    enabled: !!user && isDriverProfile && !isAdmin,
     queryFn: async () => {
       const start = new Date();
       start.setMonth(start.getMonth() - 5, 1);
