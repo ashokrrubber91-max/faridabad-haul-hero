@@ -13,6 +13,7 @@ import {
   Plus,
   ReceiptText,
   Trash2,
+  Gift,
   Truck,
   User as UserIcon,
   Wallet,
@@ -39,7 +40,6 @@ import { AdminAccountProfile } from "@/components/admin/AdminAccountProfile";
 import { signOutEverywhere } from "@/lib/session";
 import { BecomeDriverCard } from "@/components/driver/BecomeDriverCard";
 import { DeleteAccountCard } from "@/components/account/DeleteAccountCard";
-import { ReferralCard } from "@/components/referrals/ReferralCard";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -314,13 +314,19 @@ function AccountPage() {
           >
             Save
           </Button>
+          {!isAdmin && !isDriverProfile && (
+            <Button variant="outline" asChild>
+              <Link to="/refer">
+                <Gift className="h-4 w-4" /> Refer & Earn
+              </Link>
+            </Button>
+          )}
         </div>
       </section>
 
       {isAdmin && <AdminAccountProfile />}
       {isDriverProfile && !isAdmin && <DriverAccountProfile />}
       <NotificationsCard />
-      <ReferralCard />
 
       {isDriverProfile && !isAdmin && (
         <section className="surface-card p-5">
