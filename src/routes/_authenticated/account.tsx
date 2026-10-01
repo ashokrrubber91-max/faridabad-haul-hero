@@ -123,11 +123,11 @@ function AccountPage() {
   const isDriverMode = isDriverProfile && activeMode === "driver";
   // GSTIN, saved-address and customer invoice records belong only to customer
   // accounts. Never render them in driver mode, even if role state is stale.
-  const showCustomerSections = !isDriverProfile && !isAdmin;
+  const showCustomerSections = !isDriverProfile && !isAdmin && activeMode !== "driver";
 
   const monthlyDriverEarnings = useQuery({
     queryKey: ["driver-monthly-earnings", user?.id],
-    enabled: !!user && isDriverProfile && !isAdmin,
+    enabled: !!user && (isDriverProfile || activeMode === "driver") && !isAdmin,
     queryFn: async () => {
       const start = new Date();
       start.setMonth(start.getMonth() - 5, 1);
