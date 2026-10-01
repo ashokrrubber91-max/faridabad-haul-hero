@@ -56,38 +56,12 @@ function AuthPage() {
 
   useEffect(() => {
     if (loading || !user) return;
-
-    let cancelled = false;
-    const finishLogin = async () => {
-      const alreadyAccepted = await hasCurrentConsent(user.id);
-      if (!alreadyAccepted) {
-        const accepted = window.confirm(
-          "MiniPort Terms & Conditions and Privacy Policy must be accepted once for this account. Please read them before continuing."
-        );
-        if (!accepted) {
-          toast.error("Please accept the Terms & Conditions and Privacy Policy to continue.");
-          return;
-        }
-        const saved = await recordConsent("login");
-        if (!saved) {
-          toast.error("We could not save your acceptance. Please try again.");
-          return;
-        }
-      }
-
-      await requestDevicePermissionsOnce(user.id);
-      if (cancelled) return;
-
-      if (search.next) navigate({ to: search.next, replace: true });
-      else if (role === "admin") navigate({ to: "/admin", replace: true });
-      else if (role === "driver") navigate({ to: "/driver", replace: true });
-      else navigate({ to: "/customer", replace: true });
-    };
-
-    void finishLogin();
-    return () => {
-      cancelled = true;
-    };
+    // Terms acceptance and device permissions are handled once by the
+    // onboarding dialog in the signed-in layout.
+    if (search.next) navigate({ to: search.next, replace: true });
+    else if (role === "admin") navigate({ to: "/admin", replace: true });
+    else if (role === "driver") navigate({ to: "/driver", replace: true });
+    else navigate({ to: "/customer", replace: true });
   }, [user, role, loading, navigate, search.next]);
 
   return (
