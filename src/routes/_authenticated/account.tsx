@@ -82,6 +82,20 @@ function AccountPage() {
     },
   });
 
+  const driverProfile = useQuery({
+    queryKey: ["account-driver-profile", user?.id],
+    enabled: !!user && !isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("driver_profiles")
+        .select("user_id")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const driverApplication = useQuery({
     queryKey: ["account-driver-application-status", user?.id],
     enabled: !!user && !isAdmin,
@@ -102,6 +116,7 @@ function AccountPage() {
   // appear in that view, even before the driver role is refreshed locally.
   const isDriverProfile =
     isDriverAccount ||
+    !!driverProfile.data ||
     activeMode === "driver" ||
     ["pending", "approved", "rejected"].includes(driverKycStatus.data ?? "") ||
     ["submitted", "approved", "rejected", "pending"].includes(driverApplication.data ?? "");
