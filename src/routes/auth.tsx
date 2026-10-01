@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
+import { recordConsent } from "@/lib/legal";
 import { Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,8 +19,6 @@ import {
   phoneToEmail,
   useAuth,
 } from "@/hooks/useAuth";
-import { hasCurrentConsent, recordConsent } from "@/lib/legal";
-import { requestDevicePermissionsOnce } from "@/lib/device-permissions";
 import { startPhoneOtp, verifyPhoneOtp } from "@/lib/phone-auth.functions";
 
 /** Kept in step with the server-side cooldown; only used for the countdown UI. */
@@ -56,38 +55,12 @@ function AuthPage() {
 
   useEffect(() => {
     if (loading || !user) return;
-
-    let cancelled = false;
-    const finishLogin = async () => {
-      const alreadyAccepted = await hasCurrentConsent(user.id);
-      if (!alreadyAccepted) {
-        const accepted = window.confirm(
-          "MiniPort Terms & Conditions and Privacy Policy must be accepted once for this account. Please read them before continuing."
-        );
-        if (!accepted) {
-          toast.error("Please accept the Terms & Conditions and Privacy Policy to continue.");
-          return;
-        }
-        const saved = await recordConsent("login");
-        if (!saved) {
-          toast.error("We could not save your acceptance. Please try again.");
-          return;
-        }
-      }
-
-      await requestDevicePermissionsOnce(user.id);
-      if (cancelled) return;
-
-      if (search.next) navigate({ to: search.next, replace: true });
-      else if (role === "admin") navigate({ to: "/admin", replace: true });
-      else if (role === "driver") navigate({ to: "/driver", replace: true });
-      else navigate({ to: "/customer", replace: true });
-    };
-
-    void finishLogin();
-    return () => {
-      cancelled = true;
-    };
+    // Terms acceptance and device permissions are handled once by the
+    // onboarding dialog in the signed-in layout.
+    if (search.next) navigate({ to: search.next, replace: true });
+    else if (role === "admin") navigate({ to: "/admin", replace: true });
+    else if (role === "driver") navigate({ to: "/driver", replace: true });
+    else navigate({ to: "/customer", replace: true });
   }, [user, role, loading, navigate, search.next]);
 
   return (
@@ -578,14 +551,19 @@ function SignUpForm({
         <Input
           id="su-referral"
           value={referralCode}
-          onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20))}
+          onChange={(e) =>
+            setReferralCode(
+              e.target.value
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, "")
+                .slice(0, 20),
+            )
+          }
           placeholder="MPXXXXXXXX"
           maxLength={20}
           readOnly={!!initialReferralCode}
         />
-        {initialReferralCode && (
-          <p className="mt-1 text-xs text-success">Referral code applied</p>
-        )}
+        {initialReferralCode && <p className="mt-1 text-xs text-success">Referral code applied</p>}
       </div>
       <label htmlFor="su-terms" className="flex items-start gap-2 text-sm text-muted-foreground">
         <input

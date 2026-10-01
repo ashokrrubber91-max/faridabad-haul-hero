@@ -61,7 +61,7 @@ export const Route = createFileRoute("/_authenticated/account")({
 });
 
 function AccountPage() {
-  const { user, profile, roles, activeMode } = useAuth();
+  const { user, profile, roles, activeMode, loading: authLoading } = useAuth();
   const qc = useQueryClient();
   const [name, setName] = useState("");
   const isAdmin = roles.includes("admin");
@@ -74,8 +74,6 @@ function AccountPage() {
         .from("driver_kyc")
         .select("status")
         .eq("driver_id", user!.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data?.status ?? null;
@@ -108,7 +106,13 @@ function AccountPage() {
   const isDriverMode = isDriverProfile && activeMode === "driver";
   // GSTIN, saved-address and customer invoice records belong only to customer
   // accounts. Never render them in driver mode, even if role state is stale.
-  const showCustomerSections = !isDriverProfile && !isAdmin;
+  // Don't decide until roles and driver state have loaded — otherwise a driver
+  // briefly (or on query error) falls through to the customer view.
+  const driverStateKnown =
+    !authLoading &&
+    (isAdmin || isDriverAccount || (!driverKycStatus.isLoading && !driverApplication.isLoading));
+  const showCustomerSections =
+    driverStateKnown && !isDriverProfile && !isAdmin && !driverKycStatus.isError;
 
   const monthlyDriverEarnings = useQuery({
     queryKey: ["driver-monthly-earnings", user?.id],
@@ -123,6 +127,7 @@ function AccountPage() {
         .eq("driver_id", user!.id)
         .eq("status", "completed")
         .gte("updated_at", start.toISOString())
+        .limit(1000)
         .order("updated_at", { ascending: false });
       if (error) throw error;
 
@@ -311,7 +316,9 @@ function AccountPage() {
           <div className="flex items-center gap-2">
             <Wallet className="h-5 w-5 text-primary" />
             <div>
-              <h2 className="font-display text-xl tracking-wide text-secondary">Monthly earnings</h2>
+              <h2 className="font-display text-xl tracking-wide text-secondary">
+                Monthly earnings &amp; rides
+              </h2>
               <p className="text-xs text-muted-foreground">
                 Completed rides and your net earning, month by month.
               </p>
@@ -322,14 +329,21 @@ function AccountPage() {
           ) : monthlyDriverEarnings.isError ? (
             <p className="mt-4 text-sm text-destructive">Could not load monthly earnings.</p>
           ) : (monthlyDriverEarnings.data ?? []).length === 0 ? (
-            <p className="mt-4 text-sm text-muted-foreground">No completed rides in the last 6 months.</p>
+            <p className="mt-4 text-sm text-muted-foreground">
+              No completed rides in the last 6 months.
+            </p>
           ) : (
             <div className="mt-4 overflow-hidden rounded-md border">
               {(monthlyDriverEarnings.data ?? []).map((month) => (
-                <div key={month.key} className="flex items-center justify-between gap-3 border-b p-3 last:border-b-0">
+                <div
+                  key={month.key}
+                  className="flex items-center justify-between gap-3 border-b p-3 last:border-b-0"
+                >
                   <div>
                     <p className="text-sm font-semibold text-secondary">{month.label}</p>
-                    <p className="text-xs text-muted-foreground">{month.rides} completed {month.rides === 1 ? "ride" : "rides"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {month.rides} completed {month.rides === 1 ? "ride" : "rides"}
+                    </p>
                   </div>
                   <p className="font-display text-lg text-success">₹{month.earnings.toFixed(0)}</p>
                 </div>
@@ -406,7 +420,9 @@ function AccountPage() {
                   <li key={g.id} className="flex items-center gap-3 py-2.5">
                     <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-secondary">{g.business_name}</p>
+                      <p className="truncate text-sm font-semibold text-secondary">
+                        {g.business_name}
+                      </p>
                       <p className="text-xs text-muted-foreground">{g.gstin}</p>
                     </div>
                     {g.is_default ? (
@@ -414,11 +430,20 @@ function AccountPage() {
                         <CheckCircle2 className="h-3.5 w-3.5" /> Default
                       </span>
                     ) : (
-                      <Button size="sm" variant="ghost" onClick={() => setDefaultGstin.mutate(g.id)}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setDefaultGstin.mutate(g.id)}
+                      >
                         Set default
                       </Button>
                     )}
-                    <Button size="sm" variant="ghost" onClick={() => removeGstin.mutate(g.id)} aria-label="Remove GSTIN">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => removeGstin.mutate(g.id)}
+                      aria-label="Remove GSTIN"
+                    >
                       <Trash2 className="h-3.5 w-3.5 text-destructive" />
                     </Button>
                   </li>
@@ -443,10 +468,17 @@ function AccountPage() {
                   <li key={a.id} className="flex items-center gap-3 py-2.5">
                     <Home className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-secondary">{a.alias || a.kind}</p>
+                      <p className="truncate text-sm font-semibold text-secondary">
+                        {a.alias || a.kind}
+                      </p>
                       <p className="truncate text-xs text-muted-foreground">{a.address}</p>
                     </div>
-                    <Button size="sm" variant="ghost" onClick={() => removeAddress.mutate(a.id)} aria-label="Remove address">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => removeAddress.mutate(a.id)}
+                      aria-label="Remove address"
+                    >
                       <Trash2 className="h-3.5 w-3.5 text-destructive" />
                     </Button>
                   </li>
@@ -459,14 +491,24 @@ function AccountPage() {
 
           <section className="surface-card space-y-2 p-5">
             <h2 className="font-display text-xl tracking-wide text-secondary">More</h2>
-            <a className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted" href="/privacy.html">
+            <a
+              className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
+              href="/privacy.html"
+            >
               Privacy policy
             </a>
-            <a className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted" href="/terms.html">
+            <a
+              className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
+              href="/terms.html"
+            >
               Terms of service
             </a>
             <DeleteAccountCard />
-            <Button variant="ghost" className="w-full justify-start text-destructive" onClick={signOut}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-destructive"
+              onClick={signOut}
+            >
               <LogOut className="h-4 w-4" /> Sign out
             </Button>
           </section>
@@ -477,14 +519,24 @@ function AccountPage() {
         <section className="surface-card p-5">
           <h2 className="font-display text-xl tracking-wide text-secondary">Account actions</h2>
           <div className="mt-2 space-y-2">
-            <a className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted" href="/privacy.html">
+            <a
+              className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
+              href="/privacy.html"
+            >
               Privacy policy
             </a>
-            <a className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted" href="/terms.html">
+            <a
+              className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
+              href="/terms.html"
+            >
               Terms of service
             </a>
             <DeleteAccountCard />
-            <Button variant="ghost" className="w-full justify-start text-destructive" onClick={signOut}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-destructive"
+              onClick={signOut}
+            >
               <LogOut className="h-4 w-4" /> Sign out
             </Button>
           </div>

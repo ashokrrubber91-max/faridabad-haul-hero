@@ -70,9 +70,7 @@ export function ReferralCard() {
 
   const share = async () => {
     if (!link) return;
-    const text =
-      "Join me on MiniPort. Use my referral link and sign up: " +
-      link;
+    const text = "Join me on MiniPort. Use my referral link and sign up: " + link;
     try {
       if (navigator.share) {
         await navigator.share({ title: "Join MiniPort", text, url: link });
@@ -96,8 +94,8 @@ export function ReferralCard() {
             <Gift className="h-5 w-5 text-primary" /> Refer & Earn
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Earn <span className="font-semibold text-secondary">₹100</span> for every successful referral.
-            No invite limit.
+            Earn <span className="font-semibold text-secondary">₹100</span> for every successful
+            referral. No invite limit.
           </p>
         </div>
         <Users className="h-5 w-5 text-primary" />

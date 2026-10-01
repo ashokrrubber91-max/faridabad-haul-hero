@@ -29,7 +29,12 @@ function TataAceSharedTimer({ booking, ratePerMin }: { booking: BookingLike; rat
     if (!running) return;
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
-  }, [booking.loading_started_at, booking.loading_stopped_at, booking.unloading_started_at, booking.unloading_stopped_at]);
+  }, [
+    booking.loading_started_at,
+    booking.loading_stopped_at,
+    booking.unloading_started_at,
+    booking.unloading_stopped_at,
+  ]);
 
   const duration = (start?: string | null, stop?: string | null) => {
     if (!start) return 0;
@@ -39,7 +44,8 @@ function TataAceSharedTimer({ booking, ratePerMin }: { booking: BookingLike; rat
     return Math.max(0, Math.floor((e - s) / 1000));
   };
 
-  const totalSec = duration(booking.loading_started_at, booking.loading_stopped_at) +
+  const totalSec =
+    duration(booking.loading_started_at, booking.loading_stopped_at) +
     duration(booking.unloading_started_at, booking.unloading_stopped_at);
   const freeSec = 90 * 60;
   const remainingSec = Math.max(0, freeSec - totalSec);
@@ -53,23 +59,45 @@ function TataAceSharedTimer({ booking, ratePerMin }: { booking: BookingLike; rat
   const mmss = `${String(Math.floor(remainingSec / 60)).padStart(2, "0")}:${String(remainingSec % 60).padStart(2, "0")}`;
 
   return (
-    <div className={`mt-3 rounded-md border p-3 ${overtimeMinutes > 0 ? "border-destructive/40 bg-destructive/5" : "border-border bg-muted/40"}`}>
+    <div
+      className={`mt-3 rounded-md border p-3 ${overtimeMinutes > 0 ? "border-destructive/40 bg-destructive/5" : "border-border bg-muted/40"}`}
+    >
       <div className="flex items-center justify-between gap-3">
         <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          <Timer className={`h-3.5 w-3.5 ${overtimeMinutes > 0 ? "text-destructive" : "text-primary"}`} />
+          <Timer
+            className={`h-3.5 w-3.5 ${overtimeMinutes > 0 ? "text-destructive" : "text-primary"}`}
+          />
           Total loading + unloading time{isRunning ? "" : " (stopped)"}
         </p>
-        <p className={`font-display text-2xl ${overtimeMinutes > 0 ? "text-destructive" : "text-secondary"}`}>
+        <p
+          className={`font-display text-2xl ${overtimeMinutes > 0 ? "text-destructive" : "text-secondary"}`}
+        >
           {overtimeMinutes > 0 ? `+${overtimeMinutes}m` : mmss}
         </p>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
         90 min total free for Tata Ace. Loading and unloading share the same 90-minute allowance.
-        {totalMinutes > 0 && <> Used: <span className="font-semibold text-secondary">{totalMinutes} min</span>.</>}
+        {totalMinutes > 0 && (
+          <>
+            {" "}
+            Used: <span className="font-semibold text-secondary">{totalMinutes} min</span>.
+          </>
+        )}
         {overtimeMinutes > 0 ? (
-          <> Waiting charge so far <span className="font-semibold text-destructive">₹{charge}</span> ({overtimeMinutes} min × ₹{ratePerMin}/min).</>
+          <>
+            {" "}
+            Waiting charge so far <span className="font-semibold text-destructive">
+              ₹{charge}
+            </span>{" "}
+            ({overtimeMinutes} min × ₹{ratePerMin}/min).
+          </>
         ) : (
-          <> Remaining: <span className="font-semibold text-secondary">{Math.ceil(remainingSec / 60)} min</span>.</>
+          <>
+            {" "}
+            Remaining:{" "}
+            <span className="font-semibold text-secondary">{Math.ceil(remainingSec / 60)} min</span>
+            .
+          </>
         )}
       </p>
     </div>

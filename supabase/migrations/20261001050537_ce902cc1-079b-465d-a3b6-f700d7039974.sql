@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Vehicle images readable for listed vehicles" ON storage.objects;
