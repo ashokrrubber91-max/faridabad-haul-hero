@@ -2,9 +2,10 @@
  * Browsers still require the user to explicitly allow each permission.
  * We stop media tracks immediately so the camera/microphone are not left active.
  */
-export async function requestDevicePermissionsOnce(): Promise<void> {
+export async function requestDevicePermissionsOnce(userId?: string): Promise<void> {
   if (typeof window === "undefined") return;
-  if (window.localStorage.getItem("miniport-device-permissions-requested") === "1") return;
+  const permissionKey = `miniport-device-permissions-requested:${userId ?? "guest"}`;
+  if (window.localStorage.getItem(permissionKey) === "1") return;
 
   try {
     if (navigator.mediaDevices?.getUserMedia) {
@@ -26,6 +27,6 @@ export async function requestDevicePermissionsOnce(): Promise<void> {
       });
     }
   } finally {
-    window.localStorage.setItem("miniport-device-permissions-requested", "1");
+    window.localStorage.setItem(permissionKey, "1");
   }
 }
