@@ -98,9 +98,7 @@ function AuthedLayout() {
           </nav>
         )}
       </header>
-      {user && !loading && (
-        <OnboardingGate userId={user.id} isDriver={roles.includes("driver")} />
-      )}
+      {user && !loading && <OnboardingGate userId={user.id} isDriver={roles.includes("driver")} />}
       <main className="mx-auto max-w-5xl px-4 pb-24 pt-6">
         <Outlet />
       </main>

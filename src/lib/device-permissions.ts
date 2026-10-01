@@ -38,14 +38,19 @@ export const PERMISSIONS: Array<{
 const recordKey = (u: string) => `miniport-permissions:${u}`;
 const doneKey = (u: string) => `miniport-permissions-done:${u}`;
 
-export function loadPermissionRecord(userId: string): Partial<Record<PermissionKey, PermissionOutcome>> {
+export function loadPermissionRecord(
+  userId: string,
+): Partial<Record<PermissionKey, PermissionOutcome>> {
   try {
     return JSON.parse(window.localStorage.getItem(recordKey(userId)) ?? "{}");
   } catch {
     return {};
   }
 }
-export function savePermissionRecord(userId: string, r: Partial<Record<PermissionKey, PermissionOutcome>>) {
+export function savePermissionRecord(
+  userId: string,
+  r: Partial<Record<PermissionKey, PermissionOutcome>>,
+) {
   window.localStorage.setItem(recordKey(userId), JSON.stringify(r));
 }
 export function permissionFlowDone(userId: string): boolean {
@@ -77,11 +82,16 @@ export async function requestPermission(key: PermissionKey): Promise<PermissionO
         return "granted";
       } catch (e) {
         const name = (e as DOMException)?.name;
-        return name === "NotFoundError" || name === "OverconstrainedError" ? "unsupported" : "denied";
+        return name === "NotFoundError" || name === "OverconstrainedError"
+          ? "unsupported"
+          : "denied";
       }
     }
     if (!("Notification" in window)) return "unsupported";
-    const p = Notification.permission === "default" ? await Notification.requestPermission() : Notification.permission;
+    const p =
+      Notification.permission === "default"
+        ? await Notification.requestPermission()
+        : Notification.permission;
     return p === "granted" ? "granted" : "denied";
   } catch {
     return "denied";

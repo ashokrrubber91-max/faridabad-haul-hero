@@ -71,8 +71,10 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
     const next = { ...record, [key]: outcome };
     setRecord(next);
     savePermissionRecord(userId, next);
-    if (outcome === "denied") toast.error("Permission was not granted. You can allow it later in browser/app settings.");
-    if (outcome === "unsupported") toast.info("This device or browser can't grant this permission.");
+    if (outcome === "denied")
+      toast.error("Permission was not granted. You can allow it later in browser/app settings.");
+    if (outcome === "unsupported")
+      toast.info("This device or browser can't grant this permission.");
   };
 
   const finish = () => {
@@ -99,15 +101,29 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
               </DialogDescription>
             </DialogHeader>
             <div className="flex gap-3 text-sm">
-              <a href="/terms.html" target="_blank" rel="noreferrer" className="font-medium text-primary underline">
+              <a
+                href="/terms.html"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-primary underline"
+              >
                 Terms &amp; Conditions
               </a>
-              <a href="/privacy.html" target="_blank" rel="noreferrer" className="font-medium text-primary underline">
+              <a
+                href="/privacy.html"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-primary underline"
+              >
                 Privacy Policy
               </a>
             </div>
             <label className="flex items-start gap-2 text-sm">
-              <Checkbox checked={agree} onCheckedChange={(v) => setAgree(v === true)} className="mt-0.5" />
+              <Checkbox
+                checked={agree}
+                onCheckedChange={(v) => setAgree(v === true)}
+                className="mt-0.5"
+              />
               I have read and accept the Terms &amp; Conditions and Privacy Policy.
             </label>
             <Button onClick={() => void accept()} disabled={!agree || saving}>
@@ -141,10 +157,16 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
                       </span>
                     ) : outcome === "denied" || outcome === "unsupported" ? (
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                        <XCircle className="h-4 w-4" /> {outcome === "denied" ? "Blocked" : "Not available"}
+                        <XCircle className="h-4 w-4" />{" "}
+                        {outcome === "denied" ? "Blocked" : "Not available"}
                       </span>
                     ) : (
-                      <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => void ask(p.key)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busy !== null}
+                        onClick={() => void ask(p.key)}
+                      >
                         {busy === p.key ? "Asking…" : "Allow"}
                       </Button>
                     )}

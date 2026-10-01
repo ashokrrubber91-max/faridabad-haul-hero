@@ -551,14 +551,19 @@ function SignUpForm({
         <Input
           id="su-referral"
           value={referralCode}
-          onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20))}
+          onChange={(e) =>
+            setReferralCode(
+              e.target.value
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, "")
+                .slice(0, 20),
+            )
+          }
           placeholder="MPXXXXXXXX"
           maxLength={20}
           readOnly={!!initialReferralCode}
         />
-        {initialReferralCode && (
-          <p className="mt-1 text-xs text-success">Referral code applied</p>
-        )}
+        {initialReferralCode && <p className="mt-1 text-xs text-success">Referral code applied</p>}
       </div>
       <label htmlFor="su-terms" className="flex items-start gap-2 text-sm text-muted-foreground">
         <input

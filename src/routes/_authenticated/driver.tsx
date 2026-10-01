@@ -999,8 +999,3 @@ function extractContact(notes: string | null, prefix: "Sender" | "Receiver") {
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="flex justify-center py-10">{children}</div>;
 }
-
-/**
- * Drivers must be able to read the address without opening navigation. The
- * human line comes first; exact coordinates stay visible as small secondary
- * text (and navigation still uses the stored pin).
