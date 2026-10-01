@@ -75,7 +75,7 @@ function AuthPage() {
         }
       }
 
-      await requestDevicePermissionsOnce();
+      await requestDevicePermissionsOnce(user.id);
       if (cancelled) return;
 
       if (search.next) navigate({ to: search.next, replace: true });
