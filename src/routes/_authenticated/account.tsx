@@ -74,7 +74,6 @@ function AccountPage() {
         .from("driver_kyc")
         .select("status")
         .eq("driver_id", user!.id)
-        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (error) throw error;
