@@ -61,7 +61,7 @@ export const Route = createFileRoute("/_authenticated/account")({
 });
 
 function AccountPage() {
-  const { user, profile, roles, activeMode } = useAuth();
+  const { user, profile, roles, activeMode, loading: authLoading } = useAuth();
   const qc = useQueryClient();
   const [name, setName] = useState("");
   const isAdmin = roles.includes("admin");
@@ -74,8 +74,6 @@ function AccountPage() {
         .from("driver_kyc")
         .select("status")
         .eq("driver_id", user!.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data?.status ?? null;
@@ -108,7 +106,13 @@ function AccountPage() {
   const isDriverMode = isDriverProfile && activeMode === "driver";
   // GSTIN, saved-address and customer invoice records belong only to customer
   // accounts. Never render them in driver mode, even if role state is stale.
-  const showCustomerSections = !isDriverProfile && !isAdmin;
+  // Don't decide until roles and driver state have loaded — otherwise a driver
+  // briefly (or on query error) falls through to the customer view.
+  const driverStateKnown =
+    !authLoading &&
+    (isAdmin || isDriverAccount || (!driverKycStatus.isLoading && !driverApplication.isLoading));
+  const showCustomerSections =
+    driverStateKnown && !isDriverProfile && !isAdmin && !driverKycStatus.isError;
 
   const monthlyDriverEarnings = useQuery({
     queryKey: ["driver-monthly-earnings", user?.id],
@@ -123,6 +127,7 @@ function AccountPage() {
         .eq("driver_id", user!.id)
         .eq("status", "completed")
         .gte("updated_at", start.toISOString())
+        .limit(1000)
         .order("updated_at", { ascending: false });
       if (error) throw error;
 
@@ -311,7 +316,7 @@ function AccountPage() {
           <div className="flex items-center gap-2">
             <Wallet className="h-5 w-5 text-primary" />
             <div>
-              <h2 className="font-display text-xl tracking-wide text-secondary">Monthly earnings</h2>
+              <h2 className="font-display text-xl tracking-wide text-secondary">Monthly earnings &amp; rides</h2>
               <p className="text-xs text-muted-foreground">
                 Completed rides and your net earning, month by month.
               </p>
