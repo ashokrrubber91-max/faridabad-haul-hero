@@ -39,7 +39,6 @@ import { AdminAccountProfile } from "@/components/admin/AdminAccountProfile";
 import { signOutEverywhere } from "@/lib/session";
 import { BecomeDriverCard } from "@/components/driver/BecomeDriverCard";
 import { DeleteAccountCard } from "@/components/account/DeleteAccountCard";
-import { LegalConsentCard } from "@/components/account/LegalConsentCard";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -85,8 +84,11 @@ function AccountPage() {
   // appear in that view, even before the driver role is refreshed locally.
   const isDriverProfile =
     isDriverAccount ||
+    activeMode === "driver" ||
     ["pending", "approved", "rejected"].includes(driverKycStatus.data ?? "");
   const isDriverMode = isDriverProfile && activeMode === "driver";
+  // GSTIN, saved-address and customer invoice records belong only to customer
+  // accounts. Never render them in driver mode, even if role state is stale.
   const showCustomerSections = !isDriverProfile && !isAdmin;
 
   const monthlyDriverEarnings = useQuery({
@@ -283,7 +285,6 @@ function AccountPage() {
 
       {isAdmin && <AdminAccountProfile />}
       {isDriverProfile && !isAdmin && <DriverAccountProfile />}
-      {user && <LegalConsentCard userId={user.id} />}
       <NotificationsCard />
 
       {isDriverProfile && !isAdmin && (
