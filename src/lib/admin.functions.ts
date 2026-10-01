@@ -100,8 +100,10 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
       .select("id")
       .eq("phone", data.phone)
       .limit(1);
-    if (phoneErr) return { ok: false as const, error: "Could not check the mobile number. Try again." };
-    if ((phoneOwners ?? []).length > 0) return { ok: false as const, error: DUPLICATE_PHONE_MESSAGE };
+    if (phoneErr)
+      return { ok: false as const, error: "Could not check the mobile number. Try again." };
+    if ((phoneOwners ?? []).length > 0)
+      return { ok: false as const, error: DUPLICATE_PHONE_MESSAGE };
 
     const metadata = { name: data.name, phone: data.phone, created_by_admin: true };
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
@@ -134,7 +136,9 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
         .from("profiles")
         .upsert({ id: existing.id, name: data.name, phone: data.phone }, { onConflict: "id" });
       if (insErr) return { ok: false as const, error: insErr.message };
-      await supabaseAdmin.from("customer_profiles").upsert({ user_id: existing.id }, { onConflict: "user_id" });
+      await supabaseAdmin
+        .from("customer_profiles")
+        .upsert({ user_id: existing.id }, { onConflict: "user_id" });
       uid = existing.id;
       restored = true;
     } else {
@@ -159,7 +163,10 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
     // customer role) so the account is never left without a role.
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
-      .upsert({ user_id: uid, role: data.role as never }, { onConflict: "user_id,role", ignoreDuplicates: true });
+      .upsert(
+        { user_id: uid, role: data.role as never },
+        { onConflict: "user_id,role", ignoreDuplicates: true },
+      );
     if (roleError) return fail(roleError.message);
     const { error: roleDeleteError } = await supabaseAdmin
       .from("user_roles")
@@ -238,7 +245,8 @@ export const adminResetPassword = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: target, error: getErr } = await supabaseAdmin.auth.admin.getUserById(data.userId);
-    if (getErr || !target?.user) return { ok: false as const, error: "This account no longer exists." };
+    if (getErr || !target?.user)
+      return { ok: false as const, error: "This account no longer exists." };
     const { data: prof } = await supabaseAdmin
       .from("profiles")
       .select("id")
