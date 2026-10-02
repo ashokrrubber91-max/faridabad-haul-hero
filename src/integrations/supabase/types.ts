@@ -2645,6 +2645,12 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      activate_driver_daily_pass: { Args: never; Returns: Database["public"]["Tables"]["driver_daily_passes"]["Row"] }
+      attach_delivery_signature: { Args: { _booking_id: string; _signature_path: string }; Returns: boolean }
+      driver_daily_pass_active: { Args: { _driver_id: string }; Returns: boolean }
+      reserve_driver_payout: { Args: { _amount: number; _bank_account_id?: string | null; _method: string; _upi_id?: string | null }; Returns: Database["public"]["Tables"]["driver_payouts"]["Row"] }
+      schedule_booking_dispatch: { Args: { _booking_id: string; _scheduled_for: string }; Returns: Database["public"]["Tables"]["scheduled_dispatch_jobs"]["Row"] }
+      settle_driver_payout: { Args: { _error?: string | null; _payout_id: string; _provider_payout_id?: string | null; _status: string }; Returns: Database["public"]["Tables"]["driver_payouts"]["Row"] }
       validate_coupon:
         | {
             Args: { _code: string; _fare: number }
