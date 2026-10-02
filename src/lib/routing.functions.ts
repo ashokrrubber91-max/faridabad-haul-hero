@@ -116,9 +116,12 @@ export const createBooking = createServerFn({ method: "POST" })
 
     // Structured itinerary: sequence 0 = pickup, 1..3 = extra stops, 10 = drop.
     // Persisting stops properly replaces the old "Stops: ..." note text.
+    const orderedStops = route.optimizedIntermediateWaypointIndex?.length
+      ? route.optimizedIntermediateWaypointIndex.map((i) => data.stops[i]).filter(Boolean)
+      : data.stops;
     const itinerary = [
       { seq: 0, kind: "pickup" as const, place: data.pickup },
-      ...data.stops.map((s, i) => ({ seq: i + 1, kind: "stop" as const, place: s })),
+      ...orderedStops.map((s, i) => ({ seq: i + 1, kind: "stop" as const, place: s })),
       { seq: 10, kind: "drop" as const, place: data.drop },
     ];
     const { error: stopsError } = await context.supabase.from("booking_stops").insert(
