@@ -125,4 +125,4 @@ export const createBooking = createServerFn({ method: "POST" })
       distanceKm: Number(booking.distance_km),
       durationMin: route.durationMin,
     };
-  }, { source: "booking", action: "createBooking" });
+  }, { source: "booking", action: "createBooking" }));
