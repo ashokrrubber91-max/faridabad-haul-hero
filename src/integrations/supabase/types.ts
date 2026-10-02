@@ -1346,6 +1346,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      credit_driver_wallet_topup: {
+        Args: {
+          _amount: number
+          _driver_id: string
+          _payment_id: string
+          _provider_payment_id: string
+        }
+        Returns: Json
+      }
       driver_daily_pass_active: {
         Args: { _driver_id: string }
         Returns: boolean
@@ -1411,6 +1420,44 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "scheduled_dispatch_jobs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_my_active_mode: {
+        Args: { _mode: string }
+        Returns: {
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_my_online: {
+        Args: { _is_online: boolean }
+        Returns: {
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
           isOneToOne: true
           isSetofReturn: false
         }
