@@ -182,7 +182,7 @@ export function CheckoutExtras({
       <div>
         <Label className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Loading / unloading help</Label>
         <div className="mt-1 grid gap-1.5">
-          {([{n:0,label:"Driver Only (No loading)",fee:0},{n:1,label:"Driver + 1 Helper",fee:250},{n:2,label:"Driver + 2 Helpers",fee:500}]).map((h) => (
+          {([{n:0,label:"Driver Only",fee:0},{n:1,label:"Driver + 1 Helper",fee:250},{n:2,label:"Driver + 2 Helpers",fee:500}]).map((h) => (
             <button key={h.n} type="button" onClick={() => setHelperCount(h.n)} className={`flex items-center justify-between rounded-md border p-2.5 text-left text-sm ${helperCount===h.n ? "border-primary bg-accent" : "border-border hover:bg-muted"}`}>
               <span className="font-medium text-secondary">{h.label}</span><span className="text-xs text-muted-foreground">{h.fee ? "+₹"+h.fee : "₹0"}</span>
             </button>
