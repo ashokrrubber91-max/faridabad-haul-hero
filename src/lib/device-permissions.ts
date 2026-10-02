@@ -1,3 +1,4 @@
+import { requestNativePermission } from "@/lib/native-bridge";
 /** One-time device permission onboarding. Real browser prompts only — never faked. */
 export type PermissionKey = "location" | "camera" | "microphone" | "notifications";
 export type PermissionOutcome = "granted" | "denied" | "unsupported";
@@ -58,6 +59,8 @@ export function markPermissionFlowDone(userId: string) {
 export async function requestPermission(key: PermissionKey): Promise<PermissionOutcome> {
   try {
     if (key === "location") {
+      const native = await requestNativePermission("Geolocation");
+      if (native !== "unsupported") return native;
       if (!navigator.geolocation) return "unsupported";
       return await new Promise((resolve) =>
         navigator.geolocation.getCurrentPosition(
@@ -69,6 +72,10 @@ export async function requestPermission(key: PermissionKey): Promise<PermissionO
       );
     }
     if (key === "camera" || key === "microphone") {
+      if (key === "camera") {
+        const native = await requestNativePermission("Camera");
+        if (native !== "unsupported") return native;
+      }
       if (!navigator.mediaDevices?.getUserMedia) return "unsupported";
       try {
         const stream = await navigator.mediaDevices.getUserMedia(
@@ -84,6 +91,8 @@ export async function requestPermission(key: PermissionKey): Promise<PermissionO
       }
     }
     if (!("Notification" in window)) return "unsupported";
+    const nativeNotifications = await requestNativePermission("PushNotifications");
+    if (nativeNotifications !== "unsupported") return nativeNotifications;
     const p =
       Notification.permission === "default"
         ? await Notification.requestPermission()
