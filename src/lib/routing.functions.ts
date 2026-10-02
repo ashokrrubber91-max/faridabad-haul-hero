@@ -95,7 +95,13 @@ export const createBooking = createServerFn({ method: "POST" })
         service_zone: "Faridabad",
         vehicle_type: data.vehicle,
         distance_km: route.distanceKm,
-        fare: Math.round(Number(vt.base_fare) + Number(vt.per_km_fare) * route.distanceKm),
+        fare:
+          Math.round(
+            Number(vt.base_fare) +
+              Number(vt.per_km_fare) * route.distanceKm +
+              (data.helperCount === 1 ? 250 : data.helperCount === 2 ? 500 : 0) +
+              (data.insuranceOpted ? 10 : 0),
+          ),
         coupon_code: data.couponCode,
         coins_redeemed: data.coins,
         payment_method: data.paymentMethod,
