@@ -13,6 +13,11 @@ export type InvoiceBooking = {
   loading_overtime_minutes?: number | string | null;
   unloading_overtime_minutes?: number | string | null;
   final_fare?: number | string | null;
+  helper_count?: number | string | null;
+  helper_fee?: number | string | null;
+  insurance_opted?: boolean | null;
+  insurance_fee?: number | string | null;
+  eway_bill_number?: string | null;
 };
 
 export type InvoiceParty = {
@@ -45,6 +50,8 @@ export function buildInvoiceHtml(
   const overtime = Number(b.overtime_charge) || 0;
   const overtimeMins =
     (Number(b.loading_overtime_minutes) || 0) + (Number(b.unloading_overtime_minutes) || 0);
+  const helperFee = Number(b.helper_fee) || 0;
+  const insuranceFee = Number(b.insurance_fee) || 0;
   const rows: Array<[string, string]> = [
     ["Taxable value", `\u20b9 ${taxable.toFixed(2)}`],
     ["CGST @ 2.5%", `\u20b9 ${half.toFixed(2)}`],
