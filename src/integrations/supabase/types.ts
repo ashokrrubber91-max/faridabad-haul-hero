@@ -244,6 +244,18 @@ export type Database = {
           fare: number
           final_fare: number | null
           id: string
+          helper_count: number
+          helper_fee: number
+          scheduled_for: string | null
+          insurance_opted: boolean
+          insurance_fee: number
+          insurance_limit: number
+          cargo_value: number
+          gstin_id: string | null
+          eway_bill_number: string | null
+          pod_signature_url: string | null
+          pod_receipt_url: string | null
+          business_account_id: string | null
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -291,6 +303,18 @@ export type Database = {
           fare: number
           final_fare?: number | null
           id?: string
+          helper_count?: number
+          helper_fee?: number
+          scheduled_for?: string | null
+          insurance_opted?: boolean
+          insurance_fee?: number
+          insurance_limit?: number
+          cargo_value?: number
+          gstin_id?: string | null
+          eway_bill_number?: string | null
+          pod_signature_url?: string | null
+          pod_receipt_url?: string | null
+          business_account_id?: string | null
           loading_overtime_minutes?: number
           loading_started_at?: string | null
           loading_stopped_at?: string | null
@@ -369,6 +393,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      booking_documents: {
+        Row: { id: string; booking_id: string; document_type: string; storage_path: string; created_by: string | null; created_at: string }
+        Insert: { id?: string; booking_id: string; document_type: string; storage_path: string; created_by?: string | null; created_at?: string }
+        Update: { id?: string; booking_id?: string; document_type?: string; storage_path?: string; created_by?: string | null; created_at?: string }
+        Relationships: []
+      }
+      driver_daily_passes: {
+        Row: { id: string; driver_id: string; starts_at: string; ends_at: string; amount: number; status: string; provider_payment_id: string | null; created_at: string }
+        Insert: { id?: string; driver_id: string; starts_at?: string; ends_at: string; amount?: number; status?: string; provider_payment_id?: string | null; created_at?: string }
+        Update: { id?: string; driver_id?: string; starts_at?: string; ends_at?: string; amount?: number; status?: string; provider_payment_id?: string | null; created_at?: string }
+        Relationships: []
+      }
+      driver_payouts: {
+        Row: { id: string; driver_id: string; amount: number; method: string; upi_id: string | null; bank_account_id: string | null; provider: string; provider_payout_id: string | null; status: string; error: string | null; created_at: string; updated_at: string }
+        Insert: { id?: string; driver_id: string; amount: number; method?: string; upi_id?: string | null; bank_account_id?: string | null; provider?: string; provider_payout_id?: string | null; status?: string; error?: string | null; created_at?: string; updated_at?: string }
+        Update: { id?: string; driver_id?: string; amount?: number; method?: string; upi_id?: string | null; bank_account_id?: string | null; provider?: string; provider_payout_id?: string | null; status?: string; error?: string | null; created_at?: string; updated_at?: string }
+        Relationships: []
+      }
+      merchant_accounts: {
+        Row: { id: string; user_id: string; business_name: string; gstin: string | null; business_address: string | null; billing_email: string | null; verified: boolean; postpaid_enabled: boolean; credit_limit: number; billing_cycle: string; created_at: string; updated_at: string }
+        Insert: { id?: string; user_id: string; business_name: string; gstin?: string | null; business_address?: string | null; billing_email?: string | null; verified?: boolean; postpaid_enabled?: boolean; credit_limit?: number; billing_cycle?: string; created_at?: string; updated_at?: string }
+        Update: { id?: string; user_id?: string; business_name?: string; gstin?: string | null; business_address?: string | null; billing_email?: string | null; verified?: boolean; postpaid_enabled?: boolean; credit_limit?: number; billing_cycle?: string; created_at?: string; updated_at?: string }
+        Relationships: []
+      }
+      merchant_billing_cycles: {
+        Row: { id: string; merchant_id: string; period_start: string; period_end: string; subtotal: number; tax: number; total: number; status: string; invoice_url: string | null; created_at: string }
+        Insert: { id?: string; merchant_id: string; period_start: string; period_end: string; subtotal?: number; tax?: number; total?: number; status?: string; invoice_url?: string | null; created_at?: string }
+        Update: { id?: string; merchant_id?: string; period_start?: string; period_end?: string; subtotal?: number; tax?: number; total?: number; status?: string; invoice_url?: string | null; created_at?: string }
+        Relationships: []
+      }
+      scheduled_dispatch_jobs: {
+        Row: { id: string; booking_id: string; dispatch_at: string; status: string; last_error: string | null; created_at: string; updated_at: string }
+        Insert: { id?: string; booking_id: string; dispatch_at: string; status?: string; last_error?: string | null; created_at?: string; updated_at?: string }
+        Update: { id?: string; booking_id?: string; dispatch_at?: string; status?: string; last_error?: string | null; created_at?: string; updated_at?: string }
+        Relationships: []
+      }
+      voice_booking_drafts: {
+        Row: { id: string; requester_phone: string | null; source: string; media_url: string | null; transcript: string | null; parsed_data: Json; status: string; public_token: string; created_at: string; expires_at: string }
+        Insert: { id?: string; requester_phone?: string | null; source?: string; media_url?: string | null; transcript?: string | null; parsed_data?: Json; status?: string; public_token?: string; created_at?: string; expires_at?: string }
+        Update: { id?: string; requester_phone?: string | null; source?: string; media_url?: string | null; transcript?: string | null; parsed_data?: Json; status?: string; public_token?: string; created_at?: string; expires_at?: string }
+        Relationships: []
       }
       broadcasts: {
         Row: {
