@@ -263,10 +263,7 @@ export function useAuth(): AuthState {
       if (!user) return;
       setProfile((p) => (p ? { ...p, active_mode: m } : p));
       try {
-        const { error } = await supabase
-          .from("profiles")
-          .update({ active_mode: m })
-          .eq("id", user.id);
+        const { error } = await supabase.rpc("set_my_active_mode", { _mode: m });
         if (error) throw error;
       } catch (error) {
         setProfile((p) =>
