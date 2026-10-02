@@ -91,7 +91,7 @@ function RideCard({ ride }: { ride: AnyRow }) {
   const viewProof = async () => {
     setBusy(true);
     const { data, error } = await supabase.storage
-      .from("delivery-proof")
+      .from("pod-files")
       .createSignedUrl(ride.pod_photo_url, 300);
     setBusy(false);
     if (!error && data) setProofUrl(data.signedUrl);
