@@ -615,6 +615,11 @@ function CustomerPage() {
             fare={fare}
             notes={notes}
             gstin={selectedGstin}
+            helperCount={helperCount}
+            helperFee={helperFee}
+            insuranceOpted={insuranceOpted}
+            insuranceFee={insuranceFee}
+            scheduledFor={scheduledFor}
             onBack={() => setStep("form")}
             onEditPickup={() => {
               setPending(pickup);
