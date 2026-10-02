@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useVehicleTypes } from "@/lib/vehicles";
-import { logError } from "@/lib/error-logger";
+import { logError, logSupabaseError } from "@/lib/error-logger";
 
 export const Route = createFileRoute("/_authenticated/driver-kyc")({
   head: () => ({ meta: [{ title: "Driver verification — MiniPort" }] }),
