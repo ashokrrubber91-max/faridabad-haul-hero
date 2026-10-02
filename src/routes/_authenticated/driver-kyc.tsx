@@ -129,7 +129,10 @@ function DriverKycPage() {
         _id_proof_url: urls.id_proof,
         _vehicle_photo_url: urls.vehicle_photo,
       });
-      if (insertErr) throw insertErr;
+      if (insertErr) {
+        logSupabaseError(insertErr, { action: "submit_driver_kyc", driverId: user.id });
+        throw insertErr;
+      }
       toast.success("KYC submitted — admin will review within 24 hours");
       navigate({ to: "/driver" });
     } catch (e) {
