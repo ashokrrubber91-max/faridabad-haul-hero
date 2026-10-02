@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { GEO_MESSAGES, isStaleFix } from "@/lib/geolocation";
+import { clearNativeWatch, watchNativePosition } from "@/lib/native-bridge";
 
 export type AppRole = "customer" | "driver" | "admin";
 export type ActiveMode = "customer" | "driver";
@@ -161,6 +162,7 @@ export function useAuth(): AuthState {
 
     let cancelled = false;
     let watchId: number | null = null;
+    let nativeWatchId: string | null = null;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let failures = 0;
     let lastSentAt = 0;
@@ -168,68 +170,94 @@ export function useAuth(): AuthState {
 
     setShare((s) => ({ ...s, state: "starting", message: null }));
 
-    const start = () => {
+    const handlePosition = async (position: {
+      coords: { latitude: number; longitude: number; accuracy?: number | null; heading?: number | null; speed?: number | null };
+      timestamp?: number;
+    }) => {
+      if (cancelled) return;
+      failures = 0;
+      notifiedCode = null;
+      const now = Date.now();
+      setShare({ state: "live", message: null, lastFixAt: position.timestamp || now });
+      if (now - lastSentAt < 10_000) return;
+      lastSentAt = now;
+      const { latitude, longitude, accuracy, heading, speed } = position.coords;
+      try {
+        const { error } = await supabase.from("driver_locations").upsert(
+          {
+            driver_id: user.id,
+            latitude,
+            longitude,
+            accuracy_m: accuracy ?? null,
+            heading_deg: heading ?? null,
+            speed_mps: speed ?? null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "driver_id" },
+        );
+        if (error && !cancelled) {
+          lastSentAt = 0;
+          setShare((s) => ({
+            ...s,
+            message: "Your live location could not be saved. Check your internet connection.",
+          }));
+        }
+      } catch {
+        if (!cancelled) {
+          lastSentAt = 0;
+          setShare((s) => ({
+            ...s,
+            message: "Your live location could not be saved. Check your internet connection.",
+          }));
+        }
+      }
+    };
+
+    const handleError = (error: unknown) => {
+      if (cancelled) return;
+      const nativeCode =
+        error instanceof GeolocationPositionError ? error.code : undefined;
+      const message =
+        nativeCode === nativeCode?.toString().includes("1")
+          ? GEO_MESSAGES.denied
+          : GEO_MESSAGES.unavailable;
+      setShare((s) => ({ ...s, state: "error", message }));
+      if (notifiedCode !== (nativeCode ?? -1)) {
+        notifiedCode = nativeCode ?? -1;
+        toast.error(message);
+      }
+      if (nativeCode === GeolocationPositionError.PERMISSION_DENIED) return;
+      failures += 1;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+      void clearNativeWatch(nativeWatchId).catch(() => undefined);
+      nativeWatchId = null;
+      const delay = Math.min(60_000, 5_000 * 2 ** (failures - 1));
+      retryTimer = setTimeout(() => void start(), delay);
+    };
+
+    const start = async () => {
+      if (cancelled) return;
+      try {
+        const nativeId = await watchNativePosition(
+          { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 },
+          (position, error) => {
+            if (position) void handlePosition(position);
+            else handleError(error);
+          },
+        );
+        if (nativeId) {
+          nativeWatchId = nativeId;
+          return;
+        }
+      } catch {
+        // Fall back to browser geolocation below.
+      }
+
       if (cancelled) return;
       watchId = navigator.geolocation.watchPosition(
-        async (position) => {
-          if (cancelled) return;
-          failures = 0;
-          notifiedCode = null;
-          const now = Date.now();
-          setShare({ state: "live", message: null, lastFixAt: position.timestamp || now });
-          if (now - lastSentAt < 10_000) return;
-          lastSentAt = now;
-          const { latitude, longitude, accuracy, heading, speed } = position.coords;
-          try {
-            const { error } = await supabase.from("driver_locations").upsert(
-              {
-                driver_id: user.id,
-                latitude,
-                longitude,
-                accuracy_m: accuracy ?? null,
-                heading_deg: heading ?? null,
-                speed_mps: speed ?? null,
-                updated_at: new Date().toISOString(),
-              },
-              { onConflict: "driver_id" },
-            );
-            if (error && !cancelled) {
-              lastSentAt = 0;
-              setShare((s) => ({
-                ...s,
-                message: "Your live location could not be saved. Check your internet connection.",
-              }));
-            }
-          } catch {
-            if (!cancelled) {
-              lastSentAt = 0;
-              setShare((s) => ({
-                ...s,
-                message: "Your live location could not be saved. Check your internet connection.",
-              }));
-            }
-          }
-        },
-        (error) => {
-          if (cancelled) return;
-          const message =
-            error.code === error.PERMISSION_DENIED
-              ? GEO_MESSAGES.denied
-              : error.code === error.TIMEOUT
-                ? GEO_MESSAGES.timeout
-                : GEO_MESSAGES.unavailable;
-          setShare((s) => ({ ...s, state: "error", message }));
-          if (notifiedCode !== error.code) {
-            notifiedCode = error.code;
-            toast.error(message);
-          }
-          if (error.code === error.PERMISSION_DENIED) return;
-          failures += 1;
-          if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-          watchId = null;
-          const delay = Math.min(60_000, 5_000 * 2 ** (failures - 1));
-          retryTimer = setTimeout(start, delay);
-        },
+        (position) => void handlePosition(position),
+        handleError,
         { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 },
       );
     };
@@ -238,6 +266,7 @@ export function useAuth(): AuthState {
     return () => {
       cancelled = true;
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      void clearNativeWatch(nativeWatchId).catch(() => undefined);
       if (retryTimer) clearTimeout(retryTimer);
     };
   }, [sharingEnabled, user, geoAttempt]);
