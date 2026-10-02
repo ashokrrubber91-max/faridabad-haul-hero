@@ -26,7 +26,7 @@ import { GstinSelect, type CustomerGstin } from "@/components/booking/GstinSelec
 import { ReviewBooking } from "@/components/booking/ReviewBooking";
 import { LocationSearchOverlay, type PlacePick } from "@/components/booking/LocationSearchOverlay";
 import { MapPinConfirm } from "@/components/booking/MapPinConfirm";
-const LiveTripMap = lazy(() => import("@/components/booking/LiveTripMap").then((m) => ({ default: m.LiveTripMap })));
+import { LazyLiveTripMap } from "@/components/booking/LazyLiveTripMap";
 import { DriverApproachCard } from "@/components/booking/DriverApproachCard";
 
 import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
@@ -714,7 +714,7 @@ function CustomerPage() {
                     />
                   )}
                   {(b.status === "accepted" || b.status === "in_progress") && (
-                    <Suspense fallback={<div className="surface-card h-64 animate-pulse" />}><LiveTripMap$1 /></Suspense>
+                    <Suspense fallback={<div className="surface-card h-64 animate-pulse" />}><LazyLiveTripMap$1 /></Suspense>
                   )}
                   <WaitingChargesCard booking={b} vehicle={vehicleFor(b.vehicle_type)} />
 
