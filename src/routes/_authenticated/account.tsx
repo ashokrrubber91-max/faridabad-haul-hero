@@ -22,32 +22,39 @@ export const Route = createFileRoute("/_authenticated/account")({
 });
 
 /**
- * Account is intentionally only a role router.
+ * Account is a strict role router.
  *
- * Customer and Driver profile UIs are isolated in separate components so a
- * stale query, active-mode switch, or conditional branch can never render
- * customer fields inside the driver profile (or vice versa).
+ * Customer and Driver UIs are isolated in separate components. The router uses
+ * only the freshly-read authoritative role rows and active_mode; cached auth
+ * roles are deliberately NOT merged into the decision because a stale driver
+ * role must never cause customer fields to bleed into the Driver interface.
  */
 function AccountPage() {
-  const { user, profile, activeMode, roles: cachedRoles, loading: authLoading } = useAuth();
+  const { user, profile, activeMode, loading: authLoading } = useAuth();
 
-  const freshRoles = useQuery({
-    queryKey: ["account-authoritative-roles", user?.id],
+  const accountAuthority = useQuery({
+    queryKey: ["account-authority", user?.id],
     enabled: !!user,
     staleTime: 0,
     refetchOnMount: "always",
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user!.id);
+      const [{ data: roleRows, error: roleError }, { data: profileRow, error: profileError }] =
+        await Promise.all([
+          supabase.from("user_roles").select("role").eq("user_id", user!.id),
+          supabase.from("profiles").select("active_mode").eq("id", user!.id).maybeSingle(),
+        ]);
 
-      if (error) throw error;
-      return (data ?? []).map((row) => String(row.role));
+      if (roleError) throw roleError;
+      if (profileError) throw profileError;
+
+      const roles = Array.from(new Set((roleRows ?? []).map((row) => String(row.role))));
+      const active = String(profileRow?.active_mode ?? profile?.active_mode ?? activeMode ?? "");
+
+      return { roles, activeMode: active };
     },
   });
 
-  if (!user || authLoading || freshRoles.isLoading) {
+  if (!user || authLoading || accountAuthority.isLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -55,7 +62,7 @@ function AccountPage() {
     );
   }
 
-  if (freshRoles.isError) {
+  if (accountAuthority.isError) {
     return (
       <div className="surface-card p-5 text-sm text-destructive">
         Could not verify your account role. Please refresh and try again.
@@ -63,19 +70,11 @@ function AccountPage() {
     );
   }
 
-  const roles = Array.from(new Set([...(cachedRoles ?? []), ...(freshRoles.data ?? [])]));
-  const isAdmin = roles.includes("admin");
-  const hasDriverRole = roles.includes("driver");
-  const hasCustomerRole = roles.includes("customer");
+  const roles = accountAuthority.data?.roles ?? [];
+  const authoritativeMode = accountAuthority.data?.activeMode ?? "";
 
-  // active_mode decides between Customer and Driver only when both roles exist.
-  // If the account has only the driver role, it is always a Driver interface.
-  // Admin is handled separately and never falls through to Customer/Driver.
-  const effectiveActiveMode = profile?.active_mode ?? activeMode;
-  const isDriver = !isAdmin && hasDriverRole && (effectiveActiveMode === "driver" || !hasCustomerRole);
-  const isCustomer = !isAdmin && !isDriver && hasCustomerRole;
-
-  if (isAdmin) {
+  // Admin is a separate interface and never falls through to Customer/Driver.
+  if (roles.includes("admin")) {
     return (
       <div className="space-y-5">
         <AdminAccountProfile />
@@ -83,17 +82,30 @@ function AccountPage() {
     );
   }
 
-  if (isDriver) {
+  const hasDriverRole = roles.includes("driver");
+  const hasCustomerRole = roles.includes("customer");
+
+  // Exact role/mode matching:
+  // - driver-only accounts => Driver
+  // - customer-only accounts => Customer
+  // - dual-mode accounts => active_mode decides
+  // - unknown/stale combinations => render neither profile
+  const isDriver =
+    hasDriverRole && (!hasCustomerRole || authoritativeMode === "driver");
+  const isCustomer =
+    hasCustomerRole && (!hasDriverRole || authoritativeMode === "customer");
+
+  if (isDriver && !isCustomer) {
     return <DriverProfileView />;
   }
 
-  if (isCustomer) {
+  if (isCustomer && !isDriver) {
     return <CustomerProfileView />;
   }
 
   return (
     <div className="surface-card p-5 text-sm text-muted-foreground">
-      Your account role is not available yet. Please sign out and sign in again.
+      Your account role/mode is not available yet. Please sign out and sign in again.
     </div>
   );
 }
