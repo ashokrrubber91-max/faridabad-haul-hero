@@ -317,7 +317,7 @@ function DriverPage() {
           ? "Pickup verified — trip started"
           : "Delivery confirmed — trip completed 🎉",
       );
-      if (v.next === "completed") downloadDeliveryReceipt(activeJob);
+      if (v.next === "completed") {\n        downloadDeliveryReceipt({\n          ...activeJob,\n          helper_count: Number(activeJob.helper_count ?? 0),\n          helper_fee: Number(activeJob.helper_fee ?? 0),\n          insurance_fee: Number(activeJob.insurance_fee ?? 0),\n          cargo_value: Number(activeJob.cargo_value ?? 0),\n          gstin_id: activeJob.gstin_id ?? null,\n          eway_bill_number: activeJob.eway_bill_number ?? null,\n          pod_photo_url: v.podPath ?? activeJob.pod_photo_url ?? null,\n          pod_signature_url: v.signaturePath ?? activeJob.pod_signature_url ?? null,\n        });\n      }
       void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
