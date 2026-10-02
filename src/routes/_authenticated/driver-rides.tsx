@@ -90,11 +90,14 @@ function RideCard({ ride }: { ride: AnyRow }) {
 
   const viewProof = async () => {
     setBusy(true);
-    const { data, error } = await supabase.storage
-      .from("pod-files")
-      .createSignedUrl(ride.pod_photo_url, 300);
+    let { data, error } = await supabase.storage.from("pod-files").createSignedUrl(ride.pod_photo_url, 300);
+    if (error || !data?.signedUrl) {
+      const fallback = await supabase.storage.from("delivery-proof").createSignedUrl(ride.pod_photo_url, 300);
+      data = fallback.data;
+      error = fallback.error;
+    }
     setBusy(false);
-    if (!error && data) setProofUrl(data.signedUrl);
+    if (!error && data?.signedUrl) setProofUrl(data.signedUrl);
   };
 
   return (
