@@ -33,7 +33,7 @@ function AuthedLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
-    let cleanup = () => undefined;
+    let cleanup: () => void = () => undefined;
     let active = true;
     void installNativeAppPolish(() => {
       if (window.history.length > 1) window.history.back();
