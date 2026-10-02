@@ -87,7 +87,7 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
   useEffect(() => {
     if (!consent.data || !permsDone) return;
     let active = true;
-    let cleanup = () => undefined;
+    let cleanup: () => void = () => undefined;
     void registerNativePushForUser(userId).then((dispose) => {
       if (active) cleanup = dispose;
       else dispose();
