@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LogOut, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -258,7 +259,7 @@ function RootComponent() {
           </Button>
         </div>
       )}
-      <Outlet />
+      <ErrorBoundary label="application"><Outlet /></ErrorBoundary>
       <Toaster richColors position="top-center" />
       <OfflineBanner />
     </QueryClientProvider>
