@@ -6,6 +6,7 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Truck, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { RouteErrorFallback } from "@/components/RouteErrorFallback";
 import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
+import { installNativeAppPolish } from "@/lib/native-app";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -29,6 +31,12 @@ function AuthedLayout() {
   const { user, role, roles, profile, activeMode, loading } = useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    return void installNativeAppPolish(() => {
+      if (window.history.length > 1) window.history.back();
+    });
+  }, []);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -52,7 +60,7 @@ function AuthedLayout() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" style={{ paddingTop: "env(safe-area-inset-top)" }}>
       <header className="sticky top-0 z-10 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
           <Link to="/" className="flex items-center gap-2">
