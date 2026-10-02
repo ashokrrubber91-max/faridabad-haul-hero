@@ -58,6 +58,7 @@ export const createTripOrder = createServerFn({ method: "POST" })
       amountRupees: amount,
       receipt: `mp_${booking.id.slice(0, 30)}`,
       notes: { booking_id: booking.id, customer_id: context.userId },
+      configId: creds.checkoutConfigId,
     });
     if (order.currency !== "INR") throw new Error("Unsupported payment currency");
 
@@ -202,6 +203,7 @@ export const createWalletTopupOrder = createServerFn({ method: "POST" })
       amountRupees: data.amount,
       receipt: "mp_topup_" + context.userId.slice(0, 18) + "_" + Date.now().toString(36),
       notes: { type: "wallet_topup", driver_id: context.userId },
+      configId: creds.checkoutConfigId,
     });
     const { error } = await supabaseAdmin.from("payments").insert({
       booking_id: null,
