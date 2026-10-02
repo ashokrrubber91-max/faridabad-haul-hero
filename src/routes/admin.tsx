@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RouteErrorFallback } from "@/components/RouteErrorFallback";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAuth } from "@/hooks/useAuth";
 import { getAdminSetupState, claimFirstAdmin } from "@/lib/admin.functions";
 import { AdminConsole } from "@/components/admin/AdminConsole";
@@ -32,7 +33,7 @@ function AdminGate() {
   }
 
   if (!roles.includes("admin")) return <AdminSetupOrDenied />;
-  return <AdminConsole />;
+  return <ErrorBoundary label="admin console"><AdminConsole /></ErrorBoundary>;
 }
 
 function AdminSetupOrDenied() {
