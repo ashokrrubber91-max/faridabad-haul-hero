@@ -41,7 +41,7 @@ function SharedTripPage() {
   const fetchTrip = useServerFn(getSharedTrip);
   const trip = useQuery({
     queryKey: ["shared-trip", token],
-    refetchInterval: 20_000,
+    refetchInterval: 15_000,
     queryFn: () => fetchTrip({ data: { token } }),
   });
 
