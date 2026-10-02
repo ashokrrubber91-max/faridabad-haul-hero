@@ -138,7 +138,7 @@ export function LiveTripMap({
   const location = useQuery({
     queryKey: ["driver-location", driverId, bookingId],
     enabled: !!driverId,
-    refetchInterval: 15_000,
+    refetchInterval: 10_000,
     refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase
