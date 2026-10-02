@@ -13,7 +13,8 @@ export function OfflineBanner() {
     setOffline(typeof navigator !== "undefined" && !navigator.onLine);
     const result = await flushOfflineQueue(async (item) => {
       if (item.kind === "driver_location") {
-        const payload = item.payload as { driver_id: string; latitude: number; longitude: number; accuracy_m?: number | null; speed_mps?: number | null; heading_deg?: number | null; updated_at?: string };\n        const { error } = await supabase.from("driver_locations").upsert(payload, { onConflict: "driver_id" });
+        const payload = item.payload as { driver_id: string; latitude: number; longitude: number; accuracy_m?: number | null; speed_mps?: number | null; heading_deg?: number | null; updated_at?: string };
+        const { error } = await supabase.from("driver_locations").upsert(payload, { onConflict: "driver_id" });
         if (error) throw error;
       } else if (item.kind === "pod_upload" && item.blob) {
         const bucket = String(item.payload.bucket || "delivery-proof");
