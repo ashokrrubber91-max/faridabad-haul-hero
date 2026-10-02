@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RouteErrorFallback } from "@/components/RouteErrorFallback";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAuth } from "@/hooks/useAuth";
 import { getAdminSetupState, claimFirstAdmin } from "@/lib/admin.functions";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
