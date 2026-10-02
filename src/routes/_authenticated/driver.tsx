@@ -1004,3 +1004,31 @@ function Center({ children }: { children: React.ReactNode }) {
  * Drivers must be able to read the address without opening navigation. The
  * human line comes first; exact coordinates stay visible as small secondary
  * text (and navigation still uses the stored pin).
+ */
+function JobAddress({
+  label,
+  address,
+  lat,
+  lng,
+}: {
+  label: string;
+  address?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+}) {
+  const lines = addressLines(address, lat, lng);
+  return (
+    <div className="mt-1 flex items-start gap-1.5">
+      <MapPin
+        className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${label === "Pickup" ? "text-primary" : "text-muted-foreground"}`}
+      />
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="text-sm font-medium text-secondary">{lines.primary}</p>
+        {lines.secondary && (
+          <p className="text-[11px] text-muted-foreground">Pin: {lines.secondary}</p>
+        )}
+      </div>
+    </div>
+  );
+}

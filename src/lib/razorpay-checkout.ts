@@ -91,13 +91,15 @@ export async function openRazorpayCheckout(req: CheckoutRequest): Promise<Checko
     const rzp = new Razorpay(checkoutOptions);
 
     rzp.on("payment.failed", (response: unknown) => {
-      const error = (response as {
-        error?: {
-          description?: string;
-          reason?: string;
-          code?: string;
-        };
-      })?.error;
+      const error = (
+        response as {
+          error?: {
+            description?: string;
+            reason?: string;
+            code?: string;
+          };
+        }
+      )?.error;
 
       const description =
         error?.description ??

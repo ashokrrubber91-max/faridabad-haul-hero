@@ -90,12 +90,12 @@ export function fareFor(v: Pick<VehicleType, "base_fare" | "per_km_fare">, dista
   return Math.round(v.base_fare + v.per_km_fare * distanceKm);
 }
 
-/** Signed URL for a catalogue photo stored in the private vehicle-images bucket. */
+/** Signed URL for a catalogue photo in the public vehicle-images bucket. */
 export async function vehicleImageSrc(path: string | null): Promise<string | null> {
   if (!path) return null;
   if (/^https?:\/\//.test(path)) return path;
-  const { data } = await supabase.storage.from("vehicle-images").createSignedUrl(path, 3600);
-  return data?.signedUrl ?? null;
+  const { data } = supabase.storage.from("vehicle-images").getPublicUrl(path);
+  return data?.publicUrl ?? null;
 }
 
 /**

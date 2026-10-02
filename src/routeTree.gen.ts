@@ -19,6 +19,7 @@ import { Route as AuthenticatedDriverRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedDriverKycRouteImport } from './routes/_authenticated/driver-kyc'
 import { Route as AuthenticatedDriverRidesRouteImport } from './routes/_authenticated/driver-rides'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
+import { Route as AuthenticatedReferRouteImport } from './routes/_authenticated/refer'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AdminLoginRouteImport } from './routes/admin_.login'
@@ -76,6 +77,11 @@ const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedReferRoute = AuthenticatedReferRouteImport.update({
+  id: '/refer',
+  path: '/refer',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/driver-kyc': typeof AuthenticatedDriverKycRoute
   '/driver-rides': typeof AuthenticatedDriverRidesRoute
   '/orders': typeof AuthenticatedOrdersRoute
+  '/refer': typeof AuthenticatedReferRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/admin/login': typeof AdminLoginRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/driver-kyc': typeof AuthenticatedDriverKycRoute
   '/driver-rides': typeof AuthenticatedDriverRidesRoute
   '/orders': typeof AuthenticatedOrdersRoute
+  '/refer': typeof AuthenticatedReferRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/wallet': typeof AuthenticatedWalletRoute
   '/admin/login': typeof AdminLoginRoute
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   '/_authenticated/driver-kyc': typeof AuthenticatedDriverKycRoute
   '/_authenticated/driver-rides': typeof AuthenticatedDriverRidesRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
+  '/_authenticated/refer': typeof AuthenticatedReferRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/admin_/login': typeof AdminLoginRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/driver-kyc'
     | '/driver-rides'
     | '/orders'
+    | '/refer'
     | '/tasks'
     | '/wallet'
     | '/admin/login'
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
     | '/driver-kyc'
     | '/driver-rides'
     | '/orders'
+    | '/refer'
     | '/tasks'
     | '/wallet'
     | '/admin/login'
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/_authenticated/driver-kyc'
     | '/_authenticated/driver-rides'
     | '/_authenticated/orders'
+    | '/_authenticated/refer'
     | '/_authenticated/tasks'
     | '/_authenticated/wallet'
     | '/admin_/login'
@@ -300,6 +312,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrdersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/refer': {
+      id: '/_authenticated/refer'
+      path: '/refer'
+      fullPath: '/refer'
+      preLoaderRoute: typeof AuthenticatedReferRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/tasks': {
       id: '/_authenticated/tasks'
       path: '/tasks'
@@ -352,6 +371,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDriverKycRoute: typeof AuthenticatedDriverKycRoute
   AuthenticatedDriverRidesRoute: typeof AuthenticatedDriverRidesRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
+  AuthenticatedReferRoute: typeof AuthenticatedReferRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
 }
@@ -363,6 +383,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDriverKycRoute: AuthenticatedDriverKycRoute,
   AuthenticatedDriverRidesRoute: AuthenticatedDriverRidesRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
+  AuthenticatedReferRoute: AuthenticatedReferRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
 }
