@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Tag, Coins, CreditCard, Loader2, X } from "lucide-react";
+import { Tag, Coins, CreditCard, Loader2, X, Users, ShieldCheck, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,16 @@ export function CheckoutExtras({
   setCoins,
   method,
   setMethod,
+  helperCount,
+  setHelperCount,
+  insuranceOpted,
+  setInsuranceOpted,
+  cargoValue,
+  setCargoValue,
+  ewayBillNumber,
+  setEwayBillNumber,
+  scheduledFor,
+  setScheduledFor,
 }: {
   fare: number;
   promo: { code: string; discount: number } | null;
@@ -35,6 +45,16 @@ export function CheckoutExtras({
   setCoins: (n: number) => void;
   method: PaymentMethod;
   setMethod: (m: PaymentMethod) => void;
+  helperCount: number;
+  setHelperCount: (n: number) => void;
+  insuranceOpted: boolean;
+  setInsuranceOpted: (v: boolean) => void;
+  cargoValue: number;
+  setCargoValue: (n: number) => void;
+  ewayBillNumber: string;
+  setEwayBillNumber: (v: string) => void;
+  scheduledFor: string;
+  setScheduledFor: (v: string) => void;
 }) {
   const { user } = useAuth();
   const [code, setCode] = useState("");
@@ -155,6 +175,44 @@ export function CheckoutExtras({
               ? "Complete a trip to earn coins (2% cashback)."
               : "Enter pickup/drop to redeem coins."}
           </p>
+        )}
+      </div>
+
+      {/* Loading helpers */}
+      <div>
+        <Label className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Loading / unloading help</Label>
+        <div className="mt-1 grid gap-1.5">
+          {([{n:0,label:"Driver Only (No loading)",fee:0},{n:1,label:"Driver + 1 Helper",fee:250},{n:2,label:"Driver + 2 Helpers",fee:500}]).map((h) => (
+            <button key={h.n} type="button" onClick={() => setHelperCount(h.n)} className={`flex items-center justify-between rounded-md border p-2.5 text-left text-sm ${helperCount===h.n ? "border-primary bg-accent" : "border-border hover:bg-muted"}`}>
+              <span className="font-medium text-secondary">{h.label}</span><span className="text-xs text-muted-foreground">{h.fee ? "+₹"+h.fee : "₹0"}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Scheduled booking */}
+      <div>
+        <Label className="flex items-center gap-1.5"><CalendarClock className="h-3.5 w-3.5" /> Schedule booking</Label>
+        <Input className="mt-1" type="datetime-local" value={scheduledFor} min={new Date(Date.now()+15*60*1000).toISOString().slice(0,16)} onChange={(e) => setScheduledFor(e.target.value)} />
+        <p className="mt-1 text-xs text-muted-foreground">Leave blank for immediate dispatch. Scheduled jobs enter the driver queue 30 minutes before the selected time.</p>
+      </div>
+
+      {/* Cargo insurance + GST/E-way data */}
+      <div className="space-y-3">
+        <label className="flex cursor-pointer items-start gap-2 rounded-md border p-3 text-sm">
+          <input type="checkbox" className="mt-1 h-4 w-4 accent-primary" checked={insuranceOpted} onChange={(e) => setInsuranceOpted(e.target.checked)} />
+          <span><span className="flex items-center gap-1 font-semibold text-secondary"><ShieldCheck className="h-4 w-4 text-primary" /> Insure cargo up to ₹50,000</span><span className="text-xs text-muted-foreground">+₹10 cargo micro-insurance</span></span>
+        </label>
+        <div>
+          <Label htmlFor="cargo-value">Cargo value (₹)</Label>
+          <Input id="cargo-value" type="number" min={0} value={cargoValue || ""} onChange={(e) => setCargoValue(Math.max(0, Number(e.target.value) || 0))} placeholder="Optional" />
+        </div>
+        {cargoValue > 50000 && (
+          <div>
+            <Label htmlFor="eway-number">E-Way Bill number <span className="text-destructive">*</span></Label>
+            <Input id="eway-number" value={ewayBillNumber} onChange={(e) => setEwayBillNumber(e.target.value.toUpperCase().slice(0, 30))} placeholder="Enter E-Way Bill number" />
+            <p className="mt-1 text-xs text-muted-foreground">Required for shipments valued over ₹50,000.</p>
+          </div>
         )}
       </div>
 
