@@ -40,6 +40,7 @@ import { AdminAccountProfile } from "@/components/admin/AdminAccountProfile";
 import { signOutEverywhere } from "@/lib/session";
 import { BecomeDriverCard } from "@/components/driver/BecomeDriverCard";
 import { DeleteAccountCard } from "@/components/account/DeleteAccountCard";
+import { MerchantAccountCard } from "@/components/account/MerchantAccountCard";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -399,6 +400,7 @@ function AccountPage() {
 
       {showCustomerSections && (
         <>
+          <MerchantAccountCard userId={user?.id} />
           <section className="surface-card p-5">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="flex items-center gap-2 font-display text-xl tracking-wide text-secondary">
