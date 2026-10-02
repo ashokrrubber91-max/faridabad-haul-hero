@@ -1250,6 +1250,67 @@ export type Database = {
         }
         Relationships: []
       }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          qualifying_booking_id: string | null
+          referral_code: string
+          referred_type: string
+          referred_user_id: string
+          referrer_id: string
+          reward_amount: number
+          rewarded_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          qualifying_booking_id?: string | null
+          referral_code: string
+          referred_type: string
+          referred_user_id: string
+          referrer_id: string
+          reward_amount?: number
+          rewarded_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          qualifying_booking_id?: string | null
+          referral_code?: string
+          referred_type?: string
+          referred_user_id?: string
+          referrer_id?: string
+          reward_amount?: number
+          rewarded_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_qualifying_booking_id_fkey"
+            columns: ["qualifying_booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referred_user_id_fkey"
+            columns: ["referred_user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_addresses: {
         Row: {
           address: string
@@ -2645,6 +2706,625 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_my_active_mode: {
+        Args: { _mode: string }
+        Returns: {
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_my_online: {
+        Args: { _is_online: boolean }
+        Returns: {
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      settle_daily_incentives: {
+        Args: { _day?: string }
+        Returns: {
+          bonus: number
+          driver_id: string
+          rides: number
+        }[]
+      }
+      settle_driver_payout: {
+        Args: {
+          _error?: string
+          _payout_id: string
+          _provider_payout_id?: string
+          _status: string
+        }
+        Returns: {
+          amount: number
+          bank_account_id: string | null
+          created_at: string
+          driver_id: string
+          error: string | null
+          id: string
+          method: string
+          provider: string
+          provider_payout_id: string | null
+          status: string
+          updated_at: string
+          upi_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "driver_payouts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      validate_coupon: {
+        Args: { _code: string; _fare: number }
+        Returns: {
+          code: string
+          discount: number
+          message: string
+        }[]
+      }
+    }
+    Enums: {
+      address_kind: "home" | "shop" | "other"
+      app_role: "customer" | "driver" | "admin"
+      booking_status:
+        | "pending"
+        | "accepted"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+      coupon_kind: "flat" | "percent"
+      kyc_status: "not_submitted" | "pending" | "approved" | "rejected"
+      payment_method: "cod" | "wallet" | "upi" | "card" | "netbanking"
+      payment_state: "created" | "paid" | "failed" | "refunded"
+      payment_status: "pending" | "paid" | "failed" | "refunded"
+      sms_event: "accepted" | "started" | "completed"
+      sms_recipient: "customer" | "driver"
+      sms_status: "queued" | "sent" | "failed"
+      vehicle_type: "tata_ace" | "pickup_8ft" | "tata_407"
+      withdrawal_status: "requested" | "paid" | "rejected"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      address_kind: ["home", "shop", "other"],
+      app_role: ["customer", "driver", "admin"],
+      booking_status: [
+        "pending",
+        "accepted",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ],
+      coupon_kind: ["flat", "percent"],
+      kyc_status: ["not_submitted", "pending", "approved", "rejected"],
+      payment_method: ["cod", "wallet", "upi", "card", "netbanking"],
+      payment_state: ["created", "paid", "failed", "refunded"],
+      payment_status: ["pending", "paid", "failed", "refunded"],
+      sms_event: ["accepted", "started", "completed"],
+      sms_recipient: ["customer", "driver"],
+      sms_status: ["queued", "sent", "failed"],
+      vehicle_type: ["tata_ace", "pickup_8ft", "tata_407"],
+      withdrawal_status: ["requested", "paid", "rejected"],
+    },
+  },
+} as const
+      admin_set_driver_online: {
+        Args: { _driver_id: string; _is_online: boolean }
+        Returns: {
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      attach_delivery_signature: {
+        Args: { _booking_id: string; _signature_path: string }
+        Returns: boolean
+      }
+      attach_referral_to_new_user: {
+        Args: {
+          _referral_code: string
+          _referred_type: string
+          _referred_user_id: string
+        }
+        Returns: boolean
+      }
+      award_referral_reward: {
+        Args: {
+          _booking_id: string
+          _referred_type: string
+          _referred_user_id: string
+        }
+        Returns: boolean
+      }
+      credit_driver_wallet_topup: {
+        Args: {
+          _amount: number
+          _driver_id: string
+          _payment_id: string
+          _provider_payment_id: string
+        }
+        Returns: Json
+      }
+      driver_daily_pass_active: {
+        Args: { _driver_id: string }
+        Returns: boolean
+      }
+      generate_unique_referral_code: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_kyc_approved: { Args: { _user_id: string }; Returns: boolean }
+      merchant_monthly_statement: {
+        Args: { _end: string; _merchant_id: string; _start: string }
+        Returns: {
+          bookings: number
+          subtotal: number
+          tax: number
+          total: number
+        }[]
+      }
+      process_scheduled_dispatch_jobs: { Args: never; Returns: number }
+      reserve_driver_payout: {
+        Args: {
+          _amount: number
+          _bank_account_id?: string
+          _method: string
+          _upi_id?: string
+        }
+        Returns: {
+          amount: number
+          bank_account_id: string | null
+          created_at: string
+          driver_id: string
+          error: string | null
+          id: string
+          method: string
+          provider: string
+          provider_payout_id: string | null
+          status: string
+          updated_at: string
+          upi_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "driver_payouts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      schedule_booking_dispatch: {
+        Args: { _booking_id: string; _scheduled_for: string }
+        Returns: {
+          booking_id: string
+          created_at: string
+          dispatch_at: string
+          id: string
+          last_error: string | null
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "scheduled_dispatch_jobs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_my_active_mode: {
+        Args: { _mode: string }
+        Returns: {
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_my_online: {
+        Args: { _is_online: boolean }
+        Returns: {
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      settle_daily_incentives: {
+        Args: { _day?: string }
+        Returns: {
+          bonus: number
+          driver_id: string
+          rides: number
+        }[]
+      }
+      settle_driver_payout: {
+        Args: {
+          _error?: string
+          _payout_id: string
+          _provider_payout_id?: string
+          _status: string
+        }
+        Returns: {
+          amount: number
+          bank_account_id: string | null
+          created_at: string
+          driver_id: string
+          error: string | null
+          id: string
+          method: string
+          provider: string
+          provider_payout_id: string | null
+          status: string
+          updated_at: string
+          upi_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "driver_payouts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      validate_coupon: {
+        Args: { _code: string; _fare: number }
+        Returns: {
+          code: string
+          discount: number
+          message: string
+        }[]
+      }
+    }
+    Enums: {
+      address_kind: "home" | "shop" | "other"
+      app_role: "customer" | "driver" | "admin"
+      booking_status:
+        | "pending"
+        | "accepted"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+      coupon_kind: "flat" | "percent"
+      kyc_status: "not_submitted" | "pending" | "approved" | "rejected"
+      payment_method: "cod" | "wallet" | "upi" | "card" | "netbanking"
+      payment_state: "created" | "paid" | "failed" | "refunded"
+      payment_status: "pending" | "paid" | "failed" | "refunded"
+      sms_event: "accepted" | "started" | "completed"
+      sms_recipient: "customer" | "driver"
+      sms_status: "queued" | "sent" | "failed"
+      vehicle_type: "tata_ace" | "pickup_8ft" | "tata_407"
+      withdrawal_status: "requested" | "paid" | "rejected"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      address_kind: ["home", "shop", "other"],
+      app_role: ["customer", "driver", "admin"],
+      booking_status: [
+        "pending",
+        "accepted",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ],
+      coupon_kind: ["flat", "percent"],
+      kyc_status: ["not_submitted", "pending", "approved", "rejected"],
+      payment_method: ["cod", "wallet", "upi", "card", "netbanking"],
+      payment_state: ["created", "paid", "failed", "refunded"],
+      payment_status: ["pending", "paid", "failed", "refunded"],
+      sms_event: ["accepted", "started", "completed"],
+      sms_recipient: ["customer", "driver"],
+      sms_status: ["queued", "sent", "failed"],
+      vehicle_type: ["tata_ace", "pickup_8ft", "tata_407"],
+      withdrawal_status: ["requested", "paid", "rejected"],
+    },
+  },
+} as const
       activate_driver_daily_pass: { Args: never; Returns: Database["public"]["Tables"]["driver_daily_passes"]["Row"] }
       attach_delivery_signature: { Args: { _booking_id: string; _signature_path: string }; Returns: boolean }
       driver_daily_pass_active: { Args: { _driver_id: string }; Returns: boolean }
