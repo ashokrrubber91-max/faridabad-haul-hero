@@ -75,7 +75,7 @@ export const createTripOrder = createServerFn({ method: "POST" })
     if (insertError) throw new Error(insertError.message);
 
     return { orderId: order.id, amount, keyId: creds.keyId, currency: order.currency };
-  }, { source: "razorpay", action: "createTripOrder" }),
+  }, { source: "razorpay", action: "createTripOrder" });
 
 /**
  * Verifies the checkout callback signature, re-checks the payment with Razorpay,
@@ -165,7 +165,7 @@ export const confirmTripPayment = createServerFn({ method: "POST" })
     }
 
     return { ok: true, bookingId: record.booking_id };
-  }, { source: "razorpay", action: "confirmTripPayment" }),
+  }, { source: "razorpay", action: "confirmTripPayment" });
 
 export const createWalletTopupOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -217,7 +217,7 @@ export const createWalletTopupOrder = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
     return { orderId: order.id, amount: data.amount, keyId: creds.keyId, currency: order.currency };
-  }, { source: "wallet", action: "createWalletTopupOrder" }),
+  }, { source: "wallet", action: "createWalletTopupOrder" });
 
 export const confirmWalletTopupPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -298,4 +298,4 @@ export const confirmWalletTopupPayment = createServerFn({ method: "POST" })
     if (!result?.ok) throw new Error("Wallet top-up could not be completed");
 
     return { ok: true, credited: true, balance: Number(result.balance ?? 0) };
-  }, { source: "wallet", action: "confirmWalletTopupPayment" }),
+  }, { source: "wallet", action: "confirmWalletTopupPayment" });
