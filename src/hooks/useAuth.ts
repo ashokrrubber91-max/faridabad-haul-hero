@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { GEO_MESSAGES, isStaleFix } from "@/lib/geolocation";
 import { clearNativeWatch, watchNativePosition, isNativeCapacitor } from "@/lib/native-bridge";
+import { enqueueOffline, flushOfflineQueue } from "@/lib/offline-queue";
 
 export type AppRole = "customer" | "driver" | "admin";
 export type ActiveMode = "customer" | "driver";
@@ -183,23 +184,27 @@ export function useAuth(): AuthState {
       lastSentAt = now;
       const { latitude, longitude, accuracy, heading, speed } = position.coords;
       try {
-        const { error } = await supabase.from("driver_locations").upsert(
-          {
-            driver_id: user.id,
-            latitude,
-            longitude,
-            accuracy_m: accuracy ?? null,
-            heading_deg: heading ?? null,
-            speed_mps: speed ?? null,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "driver_id" },
-        );
+        const payload = {
+          driver_id: user.id,
+          latitude,
+          longitude,
+          accuracy_m: accuracy ?? null,
+          heading_deg: heading ?? null,
+          speed_mps: speed ?? null,
+          updated_at: new Date().toISOString(),
+        };
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          await enqueueOffline({ kind: "driver_location", payload });
+          setShare((s) => ({ ...s, message: "Offline — location queued and will sync automatically." }));
+          return;
+        }
+        const { error } = await supabase.from("driver_locations").upsert(payload, { onConflict: "driver_id" });
         if (error && !cancelled) {
+          await enqueueOffline({ kind: "driver_location", payload });
           lastSentAt = 0;
           setShare((s) => ({
             ...s,
-            message: "Your live location could not be saved. Check your internet connection.",
+            message: "Location queued. It will sync automatically when the connection returns.",
           }));
         }
       } catch {
@@ -269,11 +274,23 @@ export function useAuth(): AuthState {
     };
 
     start();
+    const flush = () => {
+      void flushOfflineQueue(async (item) => {
+        if (item.kind !== "driver_location") return;
+        const { error } = await supabase.from("driver_locations").upsert(item.payload, { onConflict: "driver_id" });
+        if (error) throw error;
+      });
+    };
+    window.addEventListener("online", flush);
+    window.addEventListener("miniport:offline-ready", flush);
+    flush();
     return () => {
       cancelled = true;
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       void clearNativeWatch(nativeWatchId).catch(() => undefined);
       if (retryTimer) clearTimeout(retryTimer);
+      window.removeEventListener("online", flush);
+      window.removeEventListener("miniport:offline-ready", flush);
     };
   }, [sharingEnabled, user, geoAttempt]);
 
