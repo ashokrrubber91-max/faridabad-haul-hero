@@ -317,17 +317,24 @@ function DriverPage() {
           ? "Pickup verified — trip started"
           : "Delivery confirmed — trip completed 🎉",
       );
-      if (v.next === "completed") {
+      if (v.next === "completed" && activeJob?.id) {
+        const job = activeJob;
         downloadDeliveryReceipt({
-          ...activeJob,
-          helper_count: Number(activeJob.helper_count ?? 0),
-          helper_fee: Number(activeJob.helper_fee ?? 0),
-          insurance_fee: Number(activeJob.insurance_fee ?? 0),
-          cargo_value: Number(activeJob.cargo_value ?? 0),
-          gstin_id: activeJob.gstin_id ?? null,
-          eway_bill_number: activeJob.eway_bill_number ?? null,
-          pod_photo_url: v.podPath ?? activeJob.pod_photo_url ?? null,
-          pod_signature_url: v.signaturePath ?? activeJob.pod_signature_url ?? null,
+          id: job.id,
+          pickup_address: job.pickup_address,
+          drop_address: job.drop_address,
+          vehicle_type: job.vehicle_type,
+          fare: Number(job.fare ?? 0),
+          driver_net_earning: Number(job.driver_net_earning ?? 0),
+          helper_count: Number(job.helper_count ?? 0),
+          helper_fee: Number(job.helper_fee ?? 0),
+          insurance_fee: Number(job.insurance_fee ?? 0),
+          cargo_value: Number(job.cargo_value ?? 0),
+          gstin_id: job.gstin_id ?? null,
+          eway_bill_number: job.eway_bill_number ?? null,
+          pod_photo_url: v.podPath ?? job.pod_photo_url ?? null,
+          pod_signature_url: v.signaturePath ?? job.pod_signature_url ?? null,
+          updated_at: job.updated_at,
         });
       }
       void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
