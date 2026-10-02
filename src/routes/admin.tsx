@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Ban, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -10,7 +10,9 @@ import { RouteErrorFallback } from "@/components/RouteErrorFallback";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAuth } from "@/hooks/useAuth";
 import { getAdminSetupState, claimFirstAdmin } from "@/lib/admin.functions";
-import { AdminConsole } from "@/components/admin/AdminConsole";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+const AdminConsole = lazy(() => import("@/components/admin/AdminConsole").then((m) => ({ default: m.AdminConsole })));
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — MiniPort" }] }),
