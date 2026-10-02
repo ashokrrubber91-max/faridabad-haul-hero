@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { hasCurrentConsent, recordConsent, TERMS_VERSION } from "@/lib/legal";
+import { registerNativePushForUser } from "@/lib/native-push";
 import {
   PERMISSIONS,
   type PermissionKey,
@@ -52,6 +53,20 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
     setPermsDone(permissionFlowDone(userId));
     setRecord(loadPermissionRecord(userId));
   }, [userId]);
+
+  useEffect(() => {
+    if (!consent.data || !permsDone) return;
+    let active = true;
+    let cleanup = () => undefined;
+    void registerNativePushForUser(userId).then((dispose) => {
+      if (active) cleanup = dispose;
+      else dispose();
+    });
+    return () => {
+      active = false;
+      cleanup();
+    };
+  }, [consent.data, permsDone, userId]);
 
   const needsConsent = consent.data === false;
   const open = needsConsent || (consent.data === true && !permsDone);
