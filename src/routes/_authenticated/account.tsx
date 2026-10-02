@@ -1,60 +1,19 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import {
-  Building2,
-  CheckCircle2,
-  FileText,
-  Home,
-  Loader2,
-  LogOut,
-  MapPin,
-  Plus,
-  ReceiptText,
-  Trash2,
-  Gift,
-  Truck,
-  User as UserIcon,
-  Wallet,
-  IndianRupee,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { SupportChat } from "@/components/support/SupportChat";
-import { vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
-import { NotificationsCard } from "@/components/NotificationsCard";
-import { DriverAccountProfile } from "@/components/driver/DriverAccountProfile";
 import { AdminAccountProfile } from "@/components/admin/AdminAccountProfile";
-import { signOutEverywhere } from "@/lib/session";
-import { BecomeDriverCard } from "@/components/driver/BecomeDriverCard";
-import { DeleteAccountCard } from "@/components/account/DeleteAccountCard";
-import { MerchantAccountCard } from "@/components/account/MerchantAccountCard";
+import { CustomerProfileView } from "@/components/profile/CustomerProfileView";
+import { DriverProfileView } from "@/components/profile/DriverProfileView";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
     meta: [
       { title: "My account — MiniPort" },
-      {
-        name: "description",
-        content: "Manage your MiniPort profile and account settings.",
-      },
+      { name: "description", content: "Manage your MiniPort profile and account settings." },
       { property: "og:title", content: "My account — MiniPort" },
-      {
-        property: "og:description",
-        content: "Manage your MiniPort profile and account settings.",
-      },
+      { property: "og:description", content: "Manage your MiniPort profile and account settings." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -62,12 +21,18 @@ export const Route = createFileRoute("/_authenticated/account")({
   component: AccountPage,
 });
 
+/**
+ * Account is intentionally only a role router.
+ *
+ * Customer and Driver profile UIs are isolated in separate components so a
+ * stale query, active-mode switch, or conditional branch can never render
+ * customer fields inside the driver profile (or vice versa).
+ */
 function AccountPage() {
-  const { user, profile, roles: cachedRoles, role, activeMode, loading: authLoading } = useAuth();
-  // Authoritative role check straight from the database on every visit, so a
-  // stale cached role can never show customer-only sections to a driver.
+  const { user, profile, activeMode, roles: cachedRoles, loading: authLoading } = useAuth();
+
   const freshRoles = useQuery({
-    queryKey: ["account-roles", user?.id],
+    queryKey: ["account-authoritative-roles", user?.id],
     enabled: !!user,
     staleTime: 0,
     refetchOnMount: "always",
@@ -76,520 +41,59 @@ function AccountPage() {
         .from("user_roles")
         .select("role")
         .eq("user_id", user!.id);
+
       if (error) throw error;
-      return (data ?? []).map((r) => r.role as string);
+      return (data ?? []).map((row) => String(row.role));
     },
   });
-  const roles: string[] = [...cachedRoles, ...(freshRoles.data ?? [])];
-  const qc = useQueryClient();
-  const [name, setName] = useState("");
+
+  if (!user || authLoading || freshRoles.isLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (freshRoles.isError) {
+    return (
+      <div className="surface-card p-5 text-sm text-destructive">
+        Could not verify your account role. Please refresh and try again.
+      </div>
+    );
+  }
+
+  const roles = Array.from(new Set([...(cachedRoles ?? []), ...(freshRoles.data ?? [])]));
   const isAdmin = roles.includes("admin");
-  const isDriverAccount = roles.includes("driver");
-  const driverKycStatus = useQuery({
-    queryKey: ["account-driver-kyc-status", user?.id],
-    enabled: !!user && !isAdmin,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("driver_kyc")
-        .select("status")
-        .eq("driver_id", user!.id)
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data?.status ?? null;
-    },
-  });
+  const hasDriverRole = roles.includes("driver");
+  const hasCustomerRole = roles.includes("customer");
 
-  const driverProfile = useQuery({
-    queryKey: ["account-driver-profile", user?.id],
-    enabled: !!user && !isAdmin,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("driver_profiles")
-        .select("user_id")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
+  // active_mode decides between Customer and Driver only when both roles exist.
+  // If the account has only the driver role, it is always a Driver interface.
+  // Admin is handled separately and never falls through to Customer/Driver.
+  const effectiveActiveMode = profile?.active_mode ?? activeMode;
+  const isDriver = !isAdmin && hasDriverRole && (effectiveActiveMode === "driver" || !hasCustomerRole);
+  const isCustomer = !isAdmin && !isDriver && hasCustomerRole;
 
-  const driverApplication = useQuery({
-    queryKey: ["account-driver-application-status", user?.id],
-    enabled: !!user && !isAdmin,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("driver_applications")
-        .select("status")
-        .eq("user_id", user!.id)
-        .order("applied_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data?.status ?? null;
-    },
-  });
-  // Once a user has entered driver verification, their Account page is the
-  // driver profile. Customer-only GST/address/invoice sections must never
-  // appear in that view, even before the driver role is refreshed locally.
-  const isDriverProfile =
-    role === "driver" ||
-    activeMode === "driver" ||
-    isDriverAccount ||
-    !!driverProfile.data ||
-    ["pending", "approved", "rejected"].includes(driverKycStatus.data ?? "") ||
-    ["submitted", "approved", "rejected", "pending"].includes(driverApplication.data ?? "");
-  const isDriverMode = isDriverProfile && activeMode === "driver";
-  const showDriverAccountActions = isDriverProfile || role === "driver" || activeMode === "driver";
-  // GSTIN, saved-address and customer invoice records belong only to customer
-  // accounts. Never render them in driver mode, even if role state is stale.
-  // Only show customer sections once every driver signal has loaded cleanly.
-  const driverStateKnown =
-    !authLoading &&
-    freshRoles.isSuccess &&
-    (isAdmin ||
-      (driverKycStatus.isSuccess && driverProfile.isSuccess && driverApplication.isSuccess));
-  const showCustomerSections =
-    driverStateKnown && role === "customer" && !isDriverProfile && !isAdmin;
+  if (isAdmin) {
+    return (
+      <div className="space-y-5">
+        <AdminAccountProfile />
+      </div>
+    );
+  }
 
-  const monthlyDriverEarnings = useQuery({
-    queryKey: ["driver-monthly-earnings", user?.id],
-    enabled: !!user && isDriverProfile && !isAdmin,
-    queryFn: async () => {
-      const start = new Date();
-      start.setMonth(start.getMonth() - 5, 1);
-      start.setHours(0, 0, 0, 0);
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("id, fare, driver_net_earning, updated_at, created_at, status")
-        .eq("driver_id", user!.id)
-        .eq("status", "completed")
-        .gte("updated_at", start.toISOString())
-        .limit(1000)
-        .order("updated_at", { ascending: false });
-      if (error) throw error;
+  if (isDriver) {
+    return <DriverProfileView />;
+  }
 
-      const months = new Map<string, { label: string; earnings: number; rides: number }>();
-      for (const booking of data ?? []) {
-        const date = new Date(booking.updated_at ?? booking.created_at);
-        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-        const current = months.get(key) ?? {
-          label: date.toLocaleDateString("en-IN", { month: "long", year: "numeric" }),
-          earnings: 0,
-          rides: 0,
-        };
-        current.earnings += Number(booking.driver_net_earning ?? booking.fare ?? 0);
-        current.rides += 1;
-        months.set(key, current);
-      }
-
-      return Array.from(months.entries())
-        .sort(([a], [b]) => b.localeCompare(a))
-        .map(([key, value]) => ({ key, ...value }));
-    },
-  });
-
-  const addresses = useQuery({
-    queryKey: ["saved-addresses", user?.id],
-    enabled: !!user && showCustomerSections,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("saved_addresses")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  const gstins = useQuery({
-    queryKey: ["gstins", user?.id],
-    enabled: !!user && showCustomerSections,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("customer_gstins")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("is_default", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  const [gstOpen, setGstOpen] = useState(false);
-  const [gstin, setGstin] = useState("");
-  const [bizName, setBizName] = useState("");
-  const [bizAddr, setBizAddr] = useState("");
-
-  const saveName = useMutation({
-    mutationFn: async (next: string) => {
-      const { error } = await supabase.from("profiles").update({ name: next }).eq("id", user!.id);
-      if (error) throw error;
-    },
-    onSuccess: () => toast.success("Profile updated"),
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const addGstin = useMutation({
-    mutationFn: async () => {
-      const code = gstin.trim().toUpperCase();
-      if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]{3}$/.test(code))
-        throw new Error("Enter a valid 15-character GSTIN");
-      if (bizName.trim().length < 2) throw new Error("Enter the business name");
-      const { error } = await supabase.from("customer_gstins").insert({
-        user_id: user!.id,
-        gstin: code,
-        business_name: bizName.trim(),
-        business_address: bizAddr.trim() || null,
-        is_default: (gstins.data ?? []).length === 0,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("GSTIN saved");
-      setGstOpen(false);
-      setGstin("");
-      setBizName("");
-      setBizAddr("");
-      qc.invalidateQueries({ queryKey: ["gstins", user?.id] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const setDefaultGstin = useMutation({
-    mutationFn: async (id: string) => {
-      const { error: clearError } = await supabase
-        .from("customer_gstins")
-        .update({ is_default: false })
-        .eq("user_id", user!.id);
-      if (clearError) throw clearError;
-      const { error } = await supabase
-        .from("customer_gstins")
-        .update({ is_default: true })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["gstins", user?.id] }),
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const removeGstin = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("customer_gstins").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("GSTIN removed");
-      qc.invalidateQueries({ queryKey: ["gstins", user?.id] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const removeAddress = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("saved_addresses").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Address removed");
-      qc.invalidateQueries({ queryKey: ["saved-addresses", user?.id] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const signOut = () => void signOutEverywhere(qc);
+  if (isCustomer) {
+    return <CustomerProfileView />;
+  }
 
   return (
-    <div className="space-y-5">
-      <header>
-        <h1 className="font-display text-3xl tracking-wide text-secondary">Account</h1>
-        <p className="text-sm text-muted-foreground">
-          {isAdmin
-            ? "Admin identity, platform controls and sign-out."
-            : isDriverProfile
-              ? "Driver profile, vehicle documents and account settings."
-              : "Profile, addresses, GST and invoices."}
-        </p>
-      </header>
-
-      <section className="surface-card p-5">
-        <div className="flex items-center gap-3">
-          <div className="brand-gradient grid h-12 w-12 place-items-center rounded-full">
-            <UserIcon className="h-6 w-6 text-white" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate font-display text-xl tracking-wide text-secondary">
-              {profile?.name ?? "MiniPort user"}
-            </p>
-            <p className="text-sm text-muted-foreground">{profile?.phone}</p>
-            <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
-          </div>
-        </div>
-        <div className="mt-4 flex flex-wrap items-end gap-2">
-          <div className="min-w-[12rem] flex-1">
-            <Label htmlFor="acc-name">Display name</Label>
-            <Input
-              id="acc-name"
-              value={name || (profile?.name ?? "")}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={60}
-            />
-          </div>
-          <Button
-            onClick={() => saveName.mutate((name || profile?.name || "").trim())}
-            disabled={saveName.isPending || !(name || "").trim()}
-          >
-            Save
-          </Button>
-          {!isAdmin && !isDriverProfile && (
-            <Button variant="outline" asChild>
-              <Link to="/refer">
-                <Gift className="h-4 w-4" /> Refer & Earn
-              </Link>
-            </Button>
-          )}
-        </div>
-      </section>
-
-      {isAdmin && <AdminAccountProfile />}
-      {isDriverProfile && !isAdmin && <DriverAccountProfile />}
-      <NotificationsCard />
-
-      {isDriverProfile && !isAdmin && (
-        <section className="surface-card p-5">
-          <div className="flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-primary" />
-            <div>
-              <h2 className="font-display text-xl tracking-wide text-secondary">
-                Monthly earnings &amp; rides
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Completed rides and your net earning, month by month.
-              </p>
-            </div>
-          </div>
-          {monthlyDriverEarnings.isLoading ? (
-            <Loader2 className="mt-4 h-4 w-4 animate-spin text-primary" />
-          ) : monthlyDriverEarnings.isError ? (
-            <p className="mt-4 text-sm text-destructive">Could not load monthly earnings.</p>
-          ) : (monthlyDriverEarnings.data ?? []).length === 0 ? (
-            <p className="mt-4 text-sm text-muted-foreground">
-              No completed rides in the last 6 months.
-            </p>
-          ) : (
-            <div className="mt-4 overflow-hidden rounded-md border">
-              {(monthlyDriverEarnings.data ?? []).map((month) => (
-                <div
-                  key={month.key}
-                  className="flex items-center justify-between gap-3 border-b p-3 last:border-b-0"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-secondary">{month.label}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {month.rides} completed {month.rides === 1 ? "ride" : "rides"}
-                    </p>
-                  </div>
-                  <p className="font-display text-lg text-success">₹{month.earnings.toFixed(0)}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {showCustomerSections && (
-        <>
-          <MerchantAccountCard userId={user?.id} />
-          <section className="surface-card p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 font-display text-xl tracking-wide text-secondary">
-                <ReceiptText className="h-4 w-4 text-primary" /> GST numbers
-              </h2>
-              <Dialog open={gstOpen} onOpenChange={setGstOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="outline">
-                    <Plus className="h-3.5 w-3.5" /> Add
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add a GSTIN</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="g-num">GSTIN</Label>
-                      <Input
-                        id="g-num"
-                        value={gstin}
-                        onChange={(e) => setGstin(e.target.value.toUpperCase())}
-                        maxLength={15}
-                        placeholder="06ABCDE1234F1Z5"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="g-biz">Business name</Label>
-                      <Input
-                        id="g-biz"
-                        value={bizName}
-                        onChange={(e) => setBizName(e.target.value)}
-                        maxLength={80}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="g-addr">Business address (optional)</Label>
-                      <Input
-                        id="g-addr"
-                        value={bizAddr}
-                        onChange={(e) => setBizAddr(e.target.value)}
-                        maxLength={160}
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button onClick={() => addGstin.mutate()} disabled={addGstin.isPending}>
-                      {addGstin.isPending ? "Saving…" : "Save GSTIN"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-            {gstins.isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            ) : (gstins.data ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No GSTIN saved. Add one to get GST tax invoices for business bookings.
-              </p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {(gstins.data ?? []).map((g) => (
-                  <li key={g.id} className="flex items-center gap-3 py-2.5">
-                    <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-secondary">
-                        {g.business_name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{g.gstin}</p>
-                    </div>
-                    {g.is_default ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-success">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Default
-                      </span>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setDefaultGstin.mutate(g.id)}
-                      >
-                        Set default
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeGstin.mutate(g.id)}
-                      aria-label="Remove GSTIN"
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section className="surface-card p-5">
-            <h2 className="mb-3 flex items-center gap-2 font-display text-xl tracking-wide text-secondary">
-              <MapPin className="h-4 w-4 text-primary" /> Saved addresses
-            </h2>
-            {addresses.isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            ) : (addresses.data ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No saved addresses. Tap “Save address” while booking to store one.
-              </p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {(addresses.data ?? []).map((a) => (
-                  <li key={a.id} className="flex items-center gap-3 py-2.5">
-                    <Home className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-secondary">
-                        {a.alias || a.kind}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">{a.address}</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeAddress.mutate(a.id)}
-                      aria-label="Remove address"
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {user && !isDriverProfile && <BecomeDriverCard userId={user.id} />}
-
-          <section className="surface-card space-y-2 p-5">
-            <h2 className="font-display text-xl tracking-wide text-secondary">More</h2>
-            <a
-              className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-              href="/privacy.html"
-            >
-              Privacy policy
-            </a>
-            <a
-              className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-              href="/terms.html"
-            >
-              Terms of service
-            </a>
-            <DeleteAccountCard />
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-destructive"
-              onClick={signOut}
-            >
-              <LogOut className="h-4 w-4" /> Sign out
-            </Button>
-          </section>
-        </>
-      )}
-
-      {showDriverAccountActions && (
-        <section className="surface-card p-5">
-          <h2 className="font-display text-xl tracking-wide text-secondary">Account actions</h2>
-          <div className="mt-2 space-y-2">
-            <a
-              className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-              href="/privacy.html"
-            >
-              Privacy policy
-            </a>
-            <a
-              className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-              href="/terms.html"
-            >
-              Terms of service
-            </a>
-            <DeleteAccountCard />
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-destructive"
-              onClick={signOut}
-            >
-              <LogOut className="h-4 w-4" /> Sign out
-            </Button>
-          </div>
-        </section>
-      )}
-
-      <SupportChat role={isDriverMode ? "driver" : "customer"} />
+    <div className="surface-card p-5 text-sm text-muted-foreground">
+      Your account role is not available yet. Please sign out and sign in again.
     </div>
   );
 }
