@@ -7,6 +7,8 @@ export type OfflineQueueItem = {
   attempts: number;
   payload: Record<string, unknown>;
   blob?: Blob;
+  /** LocalStorage fallback cannot persist Blob objects, so keep a data URL copy. */
+  blobDataUrl?: string;
 };
 
 const DB_NAME = "miniport-offline";
@@ -18,6 +20,20 @@ function uuid() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : String(Date.now()) + "-" + Math.random().toString(36).slice(2);
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error("Could not serialize offline file"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
+  const response = await fetch(dataUrl);
+  return response.blob();
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -44,13 +60,17 @@ export async function enqueueOffline(
       });
     } else {
       const rows = JSON.parse(localStorage.getItem(KEY) || "[]") as OfflineQueueItem[];
-      rows.push({ ...row, blob: undefined });
+      const fallbackRow = { ...row, blob: undefined } as OfflineQueueItem;
+      if (row.blob) fallbackRow.blobDataUrl = await blobToDataUrl(row.blob);
+      rows.push(fallbackRow);
       localStorage.setItem(KEY, JSON.stringify(rows));
     }
   } catch {
     try {
       const rows = JSON.parse(localStorage.getItem(KEY) || "[]") as OfflineQueueItem[];
-      rows.push({ ...row, blob: undefined });
+      const fallbackRow = { ...row, blob: undefined } as OfflineQueueItem;
+      if (row.blob) fallbackRow.blobDataUrl = await blobToDataUrl(row.blob);
+      rows.push(fallbackRow);
       localStorage.setItem(KEY, JSON.stringify(rows));
     } catch {}
   }
@@ -70,7 +90,17 @@ export async function listOfflineQueue(): Promise<OfflineQueueItem[]> {
     } catch {}
   }
   try {
-    return JSON.parse(localStorage.getItem(KEY) || "[]") as OfflineQueueItem[];
+    const rows = JSON.parse(localStorage.getItem(KEY) || "[]") as OfflineQueueItem[];
+    return await Promise.all(
+      rows.map(async (row) => {
+        if (!row.blob && row.blobDataUrl) {
+          try {
+            return { ...row, blob: await dataUrlToBlob(row.blobDataUrl) };
+          } catch {}
+        }
+        return row;
+      }),
+    );
   } catch {
     return [];
   }
