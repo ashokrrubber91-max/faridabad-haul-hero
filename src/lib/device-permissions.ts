@@ -91,8 +91,11 @@ export async function requestPermission(key: PermissionKey): Promise<PermissionO
       }
     }
     if (!("Notification" in window)) return "unsupported";
-    const nativeNotifications = await requestNativePermission("PushNotifications");
-    if (nativeNotifications !== "unsupported") return nativeNotifications;
+    const nativeNotifications = await requestNativePermission("LocalNotifications");
+    const pushNotifications = nativeNotifications === "unsupported"
+      ? await requestNativePermission("PushNotifications")
+      : nativeNotifications;
+    if (pushNotifications !== "unsupported") return pushNotifications;
     const p =
       Notification.permission === "default"
         ? await Notification.requestPermission()
