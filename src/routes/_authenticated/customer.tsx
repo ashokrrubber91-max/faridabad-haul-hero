@@ -1,5 +1,5 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -714,7 +714,7 @@ function CustomerPage() {
                     />
                   )}
                   {(b.status === "accepted" || b.status === "in_progress") && (
-                    <Suspense fallback={<div className="surface-card h-64 animate-pulse" />}><LazyLiveTripMap$1 /></Suspense>
+                    <Suspense fallback={<div className="surface-card h-64 animate-pulse" />}><LazyLiveTripMap /></Suspense>
                   )}
                   <WaitingChargesCard booking={b} vehicle={vehicleFor(b.vehicle_type)} />
 
