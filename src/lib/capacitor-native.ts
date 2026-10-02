@@ -12,13 +12,7 @@ type NativeRuntime = {
   isNativePlatform?: () => boolean;
   isPluginAvailable?: (name: string) => boolean;
 };
-
-declare global {
-  interface Window {
-    Capacitor?: NativeRuntime & { Plugins?: Record<string, unknown> };
-  }
-}
-
+\n
 const getRuntime = (): NativeRuntime | null =>
   typeof window !== "undefined" ? (window.Capacitor ?? null) : null;
 
