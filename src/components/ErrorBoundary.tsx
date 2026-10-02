@@ -14,7 +14,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: unknown) {
-    logError(error, { source: "unknown", context: { boundary: this.props.label ?? "react" } });
+    logError(error, { source: "runtime", action: "react-error-boundary", boundary: this.props.label ?? "react" });
   }
 
   render() {
