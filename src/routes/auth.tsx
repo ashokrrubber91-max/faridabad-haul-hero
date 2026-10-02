@@ -18,8 +18,6 @@ import {
   phoneToEmail,
   useAuth,
 } from "@/hooks/useAuth";
-import { hasCurrentConsent, recordConsent } from "@/lib/legal";
-import { requestDevicePermissionsOnce } from "@/lib/device-permissions";
 import { startPhoneOtp, verifyPhoneOtp } from "@/lib/phone-auth.functions";
 
 /** Kept in step with the server-side cooldown; only used for the countdown UI. */
@@ -60,14 +58,6 @@ function AuthPage() {
 
     const finishLogin = async () => {
       try {
-        // Ask for legal consent once per current policy version.
-        if (!(await hasCurrentConsent(user.id))) {
-          await recordConsent("login");
-        }
-
-        // Ask for location/camera/microphone/notifications once after login.
-        // The browser/Android still controls the final allow/deny decision.
-        await requestDevicePermissionsOnce(user.id);
       } catch {
         // Permission/consent prompts must never trap the user on the auth page.
       } finally {
