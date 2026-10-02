@@ -76,7 +76,7 @@ type Booking = {
 };
 type Profile = { id: string; name: string; phone: string; active_mode: string; is_online: boolean };
 
-export function AdminPage() {
+export function AdminConsole() {
   const { role, loading } = useAuth();
   const qc = useQueryClient();
   const [tab, setTab] = useState("overview");
