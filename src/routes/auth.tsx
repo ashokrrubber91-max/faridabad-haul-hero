@@ -18,7 +18,7 @@ import {
   phoneToEmail,
   useAuth,
 } from "@/hooks/useAuth";
-import { startPhoneOtp, verifyPhoneOtp } from "@/lib/phone-auth.functions";
+import { startPhoneOtp, verifyPhoneOtp } from "@/lib/phone-auth.functions";\nimport { recordConsent } from "@/lib/legal";
 
 /** Kept in step with the server-side cooldown; only used for the countdown UI. */
 const RESEND_COOLDOWN_SECONDS = 45;
