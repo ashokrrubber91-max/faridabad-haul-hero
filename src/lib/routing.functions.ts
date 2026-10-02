@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { withErrorLogging } from "@/lib/error-logger";
+import { cargoInsuranceCharge, helperCharge } from "@/lib/booking-pricing";
 
 const point = z.object({
   lat: z.number().min(-90).max(90),
@@ -99,17 +100,16 @@ export const createBooking = createServerFn({ method: "POST" })
           Math.round(
             Number(vt.base_fare) +
               Number(vt.per_km_fare) * route.distanceKm +
-              (data.helperCount === 1 ? 250 : data.helperCount === 2 ? 500 : 0) +
-              (data.insuranceOpted ? 10 : 0),
+              helperCharge(data.helperCount) + cargoInsuranceCharge(data.insuranceOpted),
           ),
         coupon_code: data.couponCode,
         coins_redeemed: data.coins,
         payment_method: data.paymentMethod,
         notes: data.notes,
         helper_count: data.helperCount,
-        helper_fee: data.helperCount === 1 ? 250 : data.helperCount === 2 ? 500 : 0,
+        helper_fee: helperCharge(data.helperCount),
         insurance_opted: data.insuranceOpted,
-        insurance_fee: data.insuranceOpted ? 10 : 0,
+        insurance_fee: cargoInsuranceCharge(data.insuranceOpted),
         insurance_limit: data.insuranceOpted ? 50000 : 0,
         scheduled_for: data.scheduledFor,
         cargo_value: data.cargoValue,
