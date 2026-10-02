@@ -284,7 +284,11 @@ function CustomerPage() {
 
       // Ring every online, verified driver. Never let a push failure break booking.
       try {
-        await notifyDriversOfNewBooking({ data: { bookingId: booking.id } });
+        const scheduledTs = scheduledFor ? new Date(scheduledFor).getTime() : null;
+        const dispatchCutoff = Date.now() + 30 * 60 * 1000;
+        if (!scheduledTs || scheduledTs <= dispatchCutoff) {
+          await notifyDriversOfNewBooking({ data: { bookingId: booking.id } });
+        }
       } catch {
         /* alerts are best-effort */
       }
