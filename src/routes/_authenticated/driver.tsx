@@ -96,7 +96,11 @@ function DriverPage() {
       ]);
       if (error) throw error;
       const skipped = new Set((passed.data ?? []).map((p) => p.booking_id));
-      return (data ?? []).filter((b) => b.driver_id === user!.id || !skipped.has(b.id));
+      const dispatchCutoff = Date.now() + 30 * 60 * 1000;
+      return (data ?? []).filter((b) =>
+        (b.driver_id === user!.id || !skipped.has(b.id)) &&
+        (!b.scheduled_for || new Date(b.scheduled_for).getTime() <= dispatchCutoff)
+      );
     },
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
