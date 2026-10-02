@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { loadGoogleMaps, FARIDABAD_CENTER } from "@/lib/google-maps";
 import { supabase } from "@/integrations/supabase/client";
 import { computeRoadRoute } from "@/lib/routing.functions";
-import { Navigation, Loader2, MapPin, AlertTriangle } from "lucide-react";
+import { Navigation, Loader2, MapPin, AlertTriangle, LocateFixed, Route as RouteIcon } from "lucide-react";
 import { TripSafetyActions } from "@/components/booking/TripSafetyActions";
 
 interface Props {
@@ -18,8 +18,41 @@ interface Props {
   phase: "accepted" | "in_progress";
   distanceKm: number;
 }
+
 type LatLng = { lat: number; lng: number };
 const FRESH_MS = 120_000;
+const ANIMATION_MS = 900;
+
+function bearingBetween(a: LatLng, b: LatLng): number {
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return (Math.atan2(y, x) * 180) / Math.PI + 360 % 360;
+}
+
+function smoothAngle(from: number, to: number, t: number): number {
+  const delta = ((to - from + 540) % 360) - 180;
+  return from + delta * t;
+}
+
+function truckIcon(g: typeof google, bearing: number): google.maps.Icon {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+    <g transform="rotate(${bearing.toFixed(1)} 24 24)">
+      <rect x="7" y="12" width="24" height="20" rx="3" fill="#F97316" stroke="#fff" stroke-width="3"/>
+      <path d="M31 18h7l5 6v8H31z" fill="#F97316" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+      <circle cx="15" cy="35" r="4" fill="#1E293B" stroke="#fff" stroke-width="2"/>
+      <circle cx="35" cy="35" r="4" fill="#1E293B" stroke="#fff" stroke-width="2"/>
+      <path d="M34 21h4l3 4h-7z" fill="#fff" opacity=".9"/>
+    </g>
+  </svg>`;
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new g.maps.Size(48, 48),
+    anchor: new g.maps.Point(24, 24),
+  };
+}
 
 export function LiveTripMap({
   bookingId,
@@ -39,6 +72,11 @@ export function LiveTripMap({
   const driverMarker = useRef<google.maps.Marker | null>(null);
   const pickupMarker = useRef<google.maps.Marker | null>(null);
   const dropMarker = useRef<google.maps.Marker | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const animatedPositionRef = useRef<LatLng | null>(null);
+  const bearingRef = useRef(0);
+  const autoCenterRef = useRef(true);
+
   const exactPickup: LatLng | null =
     typeof pickupLat === "number" && typeof pickupLng === "number"
       ? { lat: pickupLat, lng: pickupLng }
@@ -47,9 +85,15 @@ export function LiveTripMap({
     typeof dropLat === "number" && typeof dropLng === "number"
       ? { lat: dropLat, lng: dropLng }
       : null;
+
   const [pickup, setPickup] = useState<LatLng | null>(exactPickup);
   const [drop, setDrop] = useState<LatLng | null>(exactDrop);
   const [mapError, setMapError] = useState(false);
+  const [autoCenter, setAutoCenter] = useState(true);
+
+  useEffect(() => {
+    autoCenterRef.current = autoCenter;
+  }, [autoCenter]);
 
   useEffect(() => {
     if (exactPickup && exactDrop) {
@@ -94,30 +138,26 @@ export function LiveTripMap({
   const location = useQuery({
     queryKey: ["driver-location", driverId, bookingId],
     enabled: !!driverId,
-    refetchInterval: 25_000,
+    refetchInterval: 15_000,
     refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("driver_locations")
-        .select("latitude, longitude, updated_at, speed_mps")
+        .select("latitude, longitude, updated_at, speed_mps, heading_deg")
         .eq("driver_id", driverId!)
         .maybeSingle();
       if (error) throw error;
       return data ?? null;
     },
   });
+
   useEffect(() => {
     if (!driverId) return;
     const ch = supabase
       .channel(`driver-loc-${driverId}`)
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "driver_locations",
-          filter: `driver_id=eq.${driverId}`,
-        },
+        { event: "*", schema: "public", table: "driver_locations", filter: `driver_id=eq.${driverId}` },
         () => void location.refetch(),
       )
       .subscribe();
@@ -125,29 +165,40 @@ export function LiveTripMap({
       void supabase.removeChannel(ch);
     };
   }, [driverId]);
-  const lastFix = useMemo<{ pos: LatLng; ageMs: number } | null>(() => {
+
+  const lastFix = useMemo<{ pos: LatLng; ageMs: number; heading: number | null } | null>(() => {
     const row = location.data;
     if (!row) return null;
-    const lat = Number(row.latitude),
-      lng = Number(row.longitude);
+    const lat = Number(row.latitude);
+    const lng = Number(row.longitude);
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180)
       return null;
     const ageMs = Date.now() - new Date(row.updated_at).getTime();
-    return Number.isFinite(ageMs) ? { pos: { lat, lng }, ageMs: Math.max(0, ageMs) } : null;
+    const heading = row.heading_deg == null ? null : Number(row.heading_deg);
+    return {
+      pos: { lat, lng },
+      ageMs: Number.isFinite(ageMs) ? Math.max(0, ageMs) : Infinity,
+      heading: Number.isFinite(heading) ? heading : null,
+    };
   }, [location.data]);
+
   const driverPos = lastFix && lastFix.ageMs <= FRESH_MS ? lastFix.pos : null;
   const staleMinutes =
     lastFix && lastFix.ageMs > FRESH_MS ? Math.round(lastFix.ageMs / 60000) : null;
+
   const target = phase === "accepted" ? pickup : drop;
   const origin = driverPos ?? pickup;
-  const roundedKey = (p: LatLng | null) => (p ? `${p.lat.toFixed(3)},${p.lng.toFixed(3)}` : "none");
+  const roundedKey = (p: LatLng | null) => (p ? `${p.lat.toFixed(4)},${p.lng.toFixed(4)}` : "none");
+
   const road = useQuery({
     queryKey: ["road-route", roundedKey(origin), roundedKey(target)],
     enabled: !!origin && !!target,
-    staleTime: 30_000,
+    staleTime: 20_000,
+    refetchInterval: 30_000,
     retry: 1,
     queryFn: () => computeRoadRoute({ data: { points: [origin!, target!] } }),
   });
+
   const remainingKm = driverPos && road.data ? road.data.distanceKm : null;
   const eta = driverPos && road.data?.durationMin ? road.data.durationMin : null;
 
@@ -179,15 +230,14 @@ export function LiveTripMap({
         bounds.extend(pickup);
         bounds.extend(drop);
         mapInstance.current.fitBounds(bounds, 60);
-        setTimeout(() => {
-          if (mapInstance.current) g.maps.event.trigger(mapInstance.current, "resize");
-        }, 250);
       })
       .catch(() => {
         if (!cancelled) setMapError(true);
       });
+
     return () => {
       cancelled = true;
+      if (animationFrameRef.current !== null) cancelAnimationFrame(animationFrameRef.current);
       routeRef.current?.setMap(null);
       driverMarker.current?.setMap(null);
       pickupMarker.current?.setMap(null);
@@ -195,6 +245,7 @@ export function LiveTripMap({
       routeRef.current = null;
       driverMarker.current = null;
       mapInstance.current = null;
+      animatedPositionRef.current = null;
     };
   }, [pickup, drop]);
 
@@ -217,9 +268,12 @@ export function LiveTripMap({
           strokeWeight: 5,
           map: mapInstance.current,
         });
+        if (!autoCenterRef.current) return;
         const bounds = new g.maps.LatLngBounds();
         path.forEach((pt) => bounds.extend(pt));
-        mapInstance.current.fitBounds(bounds, 60);
+        if (!driverPos) {
+          mapInstance.current.fitBounds(bounds, 60);
+        }
       })
       .catch(() => setMapError(true));
   }, [road.data?.polyline]);
@@ -227,31 +281,84 @@ export function LiveTripMap({
   useEffect(() => {
     const map = mapInstance.current;
     if (!map) return;
+
     if (!driverPos) {
       driverMarker.current?.setMap(null);
       driverMarker.current = null;
+      animatedPositionRef.current = null;
       return;
     }
+
     void loadGoogleMaps()
       .then((g) => {
         if (!mapInstance.current) return;
-        if (!driverMarker.current)
+
+        const previous = animatedPositionRef.current;
+        const targetBearing =
+          lastFix?.heading != null
+            ? lastFix.heading
+            : previous && (previous.lat !== driverPos.lat || previous.lng !== driverPos.lng)
+              ? bearingBetween(previous, driverPos)
+              : bearingRef.current;
+
+        if (!driverMarker.current) {
+          bearingRef.current = targetBearing;
           driverMarker.current = new g.maps.Marker({
             position: driverPos,
             map: mapInstance.current,
-            icon: {
-              path: g.maps.SymbolPath.CIRCLE,
-              scale: 8,
-              fillColor: "#F97316",
-              fillOpacity: 1,
-              strokeColor: "#fff",
-              strokeWeight: 3,
-            },
+            icon: truckIcon(g, targetBearing),
+            title: "MiniPort driver",
+            zIndex: 20,
           });
-        else driverMarker.current.setPosition(driverPos);
+          animatedPositionRef.current = driverPos;
+          if (autoCenterRef.current) mapInstance.current.panTo(driverPos);
+          return;
+        }
+
+        const start = animatedPositionRef.current ?? driverMarker.current.getPosition()?.toJSON() ?? driverPos;
+        const startBearing = bearingRef.current;
+        const startedAt = performance.now();
+        if (animationFrameRef.current !== null) cancelAnimationFrame(animationFrameRef.current);
+
+        const tick = (now: number) => {
+          const progress = Math.min(1, (now - startedAt) / ANIMATION_MS);
+          const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+          const next = {
+            lat: start.lat + (driverPos.lat - start.lat) * eased,
+            lng: start.lng + (driverPos.lng - start.lng) * eased,
+          };
+          const nextBearing = smoothAngle(startBearing, targetBearing, eased);
+          driverMarker.current?.setPosition(next);
+          driverMarker.current?.setIcon(truckIcon(g, nextBearing));
+          if (autoCenterRef.current) mapInstance.current?.panTo(next);
+          if (progress < 1) {
+            animationFrameRef.current = requestAnimationFrame(tick);
+          } else {
+            bearingRef.current = targetBearing;
+            animatedPositionRef.current = driverPos;
+            animationFrameRef.current = null;
+          }
+        };
+        animationFrameRef.current = requestAnimationFrame(tick);
       })
       .catch(() => setMapError(true));
-  }, [driverPos]);
+  }, [driverPos, lastFix?.heading]);
+
+  const recenterOrOverview = () => {
+    const map = mapInstance.current;
+    if (!map) return;
+    if (autoCenter) {
+      setAutoCenter(false);
+      const bounds = new google.maps.LatLngBounds();
+      if (pickup) bounds.extend(pickup);
+      if (drop) bounds.extend(drop);
+      if (driverPos) bounds.extend(driverPos);
+      map.fitBounds(bounds, 60);
+    } else {
+      setAutoCenter(true);
+      if (driverPos) map.panTo(driverPos);
+    }
+  };
 
   const routeFailed = road.isError;
   const headline = driverPos
@@ -271,16 +378,25 @@ export function LiveTripMap({
   return (
     <div className="mt-3 overflow-hidden rounded-md border border-primary/30">
       <div className="flex items-center justify-between gap-2 bg-primary/10 px-3 py-2 text-primary">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           {routeFailed ? (
-            <AlertTriangle className="h-4 w-4" />
+            <AlertTriangle className="h-4 w-4 shrink-0" />
           ) : driverPos ? (
-            <Navigation className="h-4 w-4 animate-pulse" />
+            <Navigation className="h-4 w-4 animate-pulse shrink-0" />
           ) : (
-            <MapPin className="h-4 w-4" />
+            <MapPin className="h-4 w-4 shrink-0" />
           )}
-          <p className="text-sm font-semibold">{headline}</p>
+          <p className="truncate text-sm font-semibold">{headline}</p>
         </div>
+        <button
+          type="button"
+          onClick={recenterOrOverview}
+          className="inline-flex shrink-0 items-center gap-1 rounded-md border bg-background px-2 py-1 text-[11px] font-semibold text-secondary shadow-sm"
+          aria-label={autoCenter ? "Overview route" : "Recenter on driver"}
+        >
+          {autoCenter ? <RouteIcon className="h-3.5 w-3.5" /> : <LocateFixed className="h-3.5 w-3.5" />}
+          {autoCenter ? "Overview Route" : "Recenter on Driver"}
+        </button>
       </div>
       <div className="relative h-[240px] w-full bg-muted">
         <div ref={mapRef} className="absolute inset-0 h-full w-full" />
@@ -292,30 +408,23 @@ export function LiveTripMap({
             </p>
           </div>
         ) : (
-          !pickup ||
-          (!drop && (
+          (!pickup || !drop) && (
             <div className="absolute inset-0 grid place-items-center">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
             </div>
-          ))
+          )
         )}
       </div>
       <p className="border-t bg-background px-3 py-1.5 text-[11px] text-muted-foreground">
         {routeFailed
           ? "Road route could not be loaded, so no route line is shown. Pickup and drop pins are exact."
           : driverPos
-            ? "Live driver location and road route · updates automatically"
+            ? "Live driver location, bearing and road ETA · updates automatically"
             : staleMinutes !== null
               ? "The last position shown was too old to be trusted, so the driver pin is hidden until a new GPS update arrives."
               : "Driver location appears once their app shares GPS (location permission needed)."}
       </p>
-      <TripSafetyActions
-        bookingId={bookingId}
-        pickupAddress={pickupAddress}
-        dropAddress={dropAddress}
-        phase={phase}
-        eta={eta}
-      />
+      <TripSafetyActions bookingId={bookingId} pickupAddress={pickupAddress} dropAddress={dropAddress} phase={phase} eta={eta} />
     </div>
   );
 }
