@@ -33,9 +33,18 @@ function AuthedLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
-    return void installNativeAppPolish(() => {
+    let cleanup = () => undefined;
+    let active = true;
+    void installNativeAppPolish(() => {
       if (window.history.length > 1) window.history.back();
+    }).then((dispose) => {
+      if (active) cleanup = dispose;
+      else dispose();
     });
+    return () => {
+      active = false;
+      cleanup();
+    };
   }, []);
 
   const signOut = async () => {
