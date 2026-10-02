@@ -12,6 +12,7 @@ export const Route = createFileRoute("/booking-draft/$token")({
 
 function VoiceBookingDraftPage() {
   const draft = Route.useLoaderData();
+  if (!draft) return <main className="mx-auto min-h-screen max-w-2xl p-5"><div className="surface-card p-5 text-sm text-muted-foreground">Draft not found or expired.</div></main>;
   const data = (draft.parsed_data ?? {}) as any;
   const download = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
