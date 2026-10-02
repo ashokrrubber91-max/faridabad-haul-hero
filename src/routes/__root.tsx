@@ -17,6 +17,7 @@ import { LogOut, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { installGlobalErrorLogger } from "@/lib/error-logger";
 
 function NotFoundComponent() {
   return (
@@ -142,17 +143,43 @@ function RootComponent() {
 
   useEffect(() => {
     let mounted = true;
+    const removeErrorLogger = installGlobalErrorLogger();
+
+    const refreshAppData = () => {
+      if (!mounted || typeof document === "undefined" || document.visibilityState !== "visible") return;
+      router.invalidate();
+      void queryClient.invalidateQueries();
+    };
+
+    const onOnline = () => refreshAppData();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") refreshAppData();
+    };
+
+    window.addEventListener("online", onOnline);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    // The service worker only caches safe static assets; dynamic/authenticated
+    // data always comes from the network.
+    if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
+      void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => undefined);
+    }
+
     import("@/integrations/supabase/client").then(({ supabase: client }) => {
       if (!mounted) return;
       const { data: sub } = client.auth.onAuthStateChange((event) => {
         if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
         router.invalidate();
-        if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+        if (event !== "SIGNED_OUT") void queryClient.invalidateQueries();
       });
       (window as unknown as { __sbSub?: { unsubscribe: () => void } }).__sbSub = sub.subscription;
     });
+
     return () => {
       mounted = false;
+      removeErrorLogger();
+      window.removeEventListener("online", onOnline);
+      document.removeEventListener("visibilitychange", onVisibility);
       (window as unknown as { __sbSub?: { unsubscribe: () => void } }).__sbSub?.unsubscribe();
     };
   }, [queryClient, router]);
