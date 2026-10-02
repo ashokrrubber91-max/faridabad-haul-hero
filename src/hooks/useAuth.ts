@@ -215,18 +215,24 @@ export function useAuth(): AuthState {
 
     const handleError = (error: unknown) => {
       if (cancelled) return;
-      const nativeCode =
-        error instanceof GeolocationPositionError ? error.code : undefined;
+      const nativeDenied = error instanceof Error && error.message === "NATIVE_LOCATION_DENIED";
+      const browserCode =
+        typeof GeolocationPositionError !== "undefined" && error instanceof GeolocationPositionError
+          ? error.code
+          : undefined;
       const message =
-        nativeCode === nativeCode?.toString().includes("1")
+        nativeDenied || browserCode === GeolocationPositionError.PERMISSION_DENIED
           ? GEO_MESSAGES.denied
-          : GEO_MESSAGES.unavailable;
+          : browserCode === GeolocationPositionError.TIMEOUT
+            ? GEO_MESSAGES.timeout
+            : GEO_MESSAGES.unavailable;
       setShare((s) => ({ ...s, state: "error", message }));
-      if (notifiedCode !== (nativeCode ?? -1)) {
-        notifiedCode = nativeCode ?? -1;
+      const notifyCode = nativeDenied ? 1 : (browserCode ?? -1);
+      if (notifiedCode !== notifyCode) {
+        notifiedCode = notifyCode;
         toast.error(message);
       }
-      if (nativeCode === GeolocationPositionError.PERMISSION_DENIED) return;
+      if (nativeDenied || browserCode === GeolocationPositionError.PERMISSION_DENIED) return;
       failures += 1;
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       watchId = null;
