@@ -46,7 +46,7 @@ export const createBooking = createServerFn({ method: "POST" })
       .object({
         pickup: place,
         drop: place,
-        stops: z.array(place).max(3).default([]),
+        stops: z.array(place).max(4).default([]),
         vehicle: vehicleId,
         couponCode: z.string().trim().max(40).nullable().default(null),
         coins: z.number().int().min(0).max(100000).default(0),
