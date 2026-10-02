@@ -34,6 +34,7 @@ import { vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
 import { addressLines } from "@/lib/address";
 
 import { SupportChat } from "@/components/support/SupportChat";
+import { DriverDailyPassCard } from "@/components/driver/DriverDailyPassCard";
 import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
 import { useVehicleTypes, type VehicleType } from "@/lib/vehicles";
@@ -454,6 +455,8 @@ function DriverPage() {
           </p>
         </Link>
       </section>
+
+      <DriverDailyPassCard />
 
       {/* Incentive card */}
       <section className="surface-card p-5">
