@@ -34,6 +34,7 @@ import { vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
 import { addressLines } from "@/lib/address";
 
 import { SupportChat } from "@/components/support/SupportChat";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SignaturePad } from "@/components/driver/SignaturePad";
 import { downloadDeliveryReceipt } from "@/lib/delivery-receipt";
 import { DriverDailyPassCard } from "@/components/driver/DriverDailyPassCard";
@@ -44,7 +45,7 @@ import { sweepStaleBookings } from "@/lib/notifications.functions";
 
 export const Route = createFileRoute("/_authenticated/driver")({
   head: () => ({ meta: [{ title: "Driver — MiniPort" }] }),
-  component: DriverPage,
+  component: () => <ErrorBoundary label="driver dashboard"><DriverPage /></ErrorBoundary>,
 });
 
 type IncentiveTier = { rides_required: number; bonus_amount: number; label: string };
