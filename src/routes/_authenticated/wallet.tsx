@@ -17,6 +17,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DriverTopupDialog } from "@/components/driver/DriverTopupDialog";
+import { InstantPayoutDialog } from "@/components/driver/InstantPayoutDialog";
 import { ReferralCard } from "@/components/referrals/ReferralCard";
 
 function formatMoney(n: number) {
@@ -157,6 +158,10 @@ function WalletPage() {
           )}
           {isDriver ? (
             <div className="mt-4 space-y-2">
+              <InstantPayoutDialog cash={cash} userId={user?.id} onDone={() => {
+                qc.invalidateQueries({ queryKey: ["withdrawals", user?.id] });
+                qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
+              }} />
               <WithdrawDialog
                 cash={cash}
                 banks={banks.data ?? []}
