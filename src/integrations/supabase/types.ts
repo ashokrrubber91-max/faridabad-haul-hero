@@ -1160,6 +1160,7 @@ export type Database = {
           kyc_status: Database["public"]["Enums"]["kyc_status"]
           name: string
           phone: string
+          referral_code: string | null
           service_zone: string
         }
         Insert: {
@@ -1170,6 +1171,7 @@ export type Database = {
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           name: string
           phone: string
+          referral_code?: string | null
           service_zone?: string
         }
         Update: {
@@ -1180,9 +1182,71 @@ export type Database = {
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           name?: string
           phone?: string
+          referral_code?: string | null
           service_zone?: string
         }
         Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          qualifying_booking_id: string | null
+          referral_code: string
+          referred_type: string
+          referred_user_id: string
+          referrer_id: string
+          reward_amount: number
+          rewarded_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          qualifying_booking_id?: string | null
+          referral_code: string
+          referred_type: string
+          referred_user_id: string
+          referrer_id: string
+          reward_amount?: number
+          rewarded_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          qualifying_booking_id?: string | null
+          referral_code?: string
+          referred_type?: string
+          referred_user_id?: string
+          referrer_id?: string
+          reward_amount?: number
+          rewarded_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_qualifying_booking_id_fkey"
+            columns: ["qualifying_booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referred_user_id_fkey"
+            columns: ["referred_user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       saved_addresses: {
         Row: {
@@ -1435,6 +1499,57 @@ export type Database = {
           coins_balance?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_topup_requests: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          driver_id: string
+          id: string
+          method: string
+          note: string | null
+          provider_order_id: string | null
+          provider_payment_id: string | null
+          provider_signature: string | null
+          reference: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          driver_id: string
+          id?: string
+          method: string
+          note?: string | null
+          provider_order_id?: string | null
+          provider_payment_id?: string | null
+          provider_signature?: string | null
+          reference?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          driver_id?: string
+          id?: string
+          method?: string
+          note?: string | null
+          provider_order_id?: string | null
+          provider_payment_id?: string | null
+          provider_signature?: string | null
+          reference?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
         }
         Relationships: []
       }
@@ -1990,6 +2105,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_review_wallet_topup: {
+        Args: { _decision: string; _note?: string; _request_id: string }
+        Returns: Json
+      }
       admin_send_broadcast: {
         Args: {
           _audience: string
@@ -2103,6 +2222,22 @@ export type Database = {
       }
       attach_delivery_photo: {
         Args: { _booking_id: string; _pod_path: string }
+        Returns: boolean
+      }
+      attach_referral_to_new_user: {
+        Args: {
+          _referral_code: string
+          _referred_type: string
+          _referred_user_id: string
+        }
+        Returns: boolean
+      }
+      award_referral_reward: {
+        Args: {
+          _booking_id: string
+          _referred_type: string
+          _referred_user_id: string
+        }
         Returns: boolean
       }
       booking_contacts: {
@@ -2236,6 +2371,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      confirm_driver_wallet_topup: {
+        Args: { _payment_id: string; _request_id: string; _signature: string }
+        Returns: Json
+      }
       create_booking_share_link: {
         Args: { _booking_id: string }
         Returns: {
@@ -2253,6 +2392,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      credit_driver_wallet_topup: {
+        Args: {
+          _amount: number
+          _driver_id: string
+          _payment_id: string
+          _provider_payment_id: string
+        }
+        Returns: Json
       }
       decline_booking: { Args: { _booking_id: string }; Returns: boolean }
       delete_my_account: { Args: never; Returns: Json }
@@ -2301,6 +2449,7 @@ export type Database = {
         }
       }
       expire_stale_bookings: { Args: never; Returns: number }
+      generate_unique_referral_code: { Args: never; Returns: string }
       get_booking_otps: {
         Args: { _booking_id: string }
         Returns: {
