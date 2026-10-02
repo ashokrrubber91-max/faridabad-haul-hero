@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { GEO_MESSAGES, isStaleFix } from "@/lib/geolocation";
-import { clearNativeWatch, watchNativePosition } from "@/lib/native-bridge";
+import { clearNativeWatch, watchNativePosition, isNativeCapacitor } from "@/lib/native-bridge";
 
 export type AppRole = "customer" | "driver" | "admin";
 export type ActiveMode = "customer" | "driver";
@@ -151,7 +151,7 @@ export function useAuth(): AuthState {
       setShare({ state: "idle", message: null, lastFixAt: null });
       return;
     }
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
+    if (!isNativeCapacitor() && (typeof navigator === "undefined" || !navigator.geolocation)) {
       setShare({
         state: "error",
         message: GEO_MESSAGES.unsupported,
