@@ -83,7 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "MiniPort — Mini truck booking in Faridabad" },
       {
         name: "description",
@@ -126,10 +126,7 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
+      <body>{children}<Scripts /></body>
     </html>
   );
 }
@@ -144,6 +141,58 @@ function RootComponent() {
   useEffect(() => {
     let mounted = true;
     const removeErrorLogger = installGlobalErrorLogger();
+    let removeBackButton: (() => void) | undefined;
+
+    const installNativeBackButton = async () => {
+      if (typeof window === "undefined" || !window.Capacitor?.isNativePlatform?.()) return;
+      try {
+        const importer = new Function("name", "return import(name)") as (
+          name: string,
+        ) => Promise<Record<string, any>>;
+        const mod = await importer("@capacitor/app");
+        const App = mod?.App as {
+          addListener?: (
+            event: string,
+            callback: () => void,
+          ) => Promise<{ remove?: () => Promise<void> | void }>;
+        };
+        if (!App?.addListener) return;
+
+        const listener = await App.addListener("backButton", () => {
+          if (!mounted) return;
+
+          // Close the top-most Radix/shadcn dialog, drawer or sheet first.
+          const openOverlay = document.querySelector(
+            '[role="dialog"][data-state="open"], [data-vaul-drawer][data-state="open"]',
+          ) as HTMLElement | null;
+          if (openOverlay) {
+            document.dispatchEvent(
+              new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }),
+            );
+            return;
+          }
+
+          if (window.history.length > 1) {
+            router.history.back();
+            return;
+          }
+
+          const fallback =
+            role === "admin"
+              ? "/admin"
+              : role === "driver" || profile?.active_mode === "driver"
+                ? "/driver"
+                : "/customer";
+          if (location.pathname !== fallback) void router.navigate({ to: fallback });
+        });
+
+        removeBackButton = () => void listener.remove?.();
+      } catch {
+        // Browser/PWA has no native back-button plugin.
+      }
+    };
+
+    void installNativeBackButton();
 
     const refreshAppData = () => {
       if (!mounted || typeof document === "undefined" || document.visibilityState !== "visible") return;
@@ -159,8 +208,6 @@ function RootComponent() {
     window.addEventListener("online", onOnline);
     document.addEventListener("visibilitychange", onVisibility);
 
-    // The service worker only caches safe static assets; dynamic/authenticated
-    // data always comes from the network.
     if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
       void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => undefined);
     }
@@ -178,11 +225,12 @@ function RootComponent() {
     return () => {
       mounted = false;
       removeErrorLogger();
+      removeBackButton?.();
       window.removeEventListener("online", onOnline);
       document.removeEventListener("visibilitychange", onVisibility);
       (window as unknown as { __sbSub?: { unsubscribe: () => void } }).__sbSub?.unsubscribe();
     };
-  }, [queryClient, router]);
+  }, [queryClient, router, role, profile?.active_mode, location.pathname]);
 
   const adminSignOut = async () => {
     await queryClient.cancelQueries();
