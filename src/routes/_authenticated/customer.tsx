@@ -134,6 +134,16 @@ function CustomerPage() {
   const discount = Math.min(baseFare, (promo?.discount ?? 0) + coins);
   const fare = Math.max(0, preDiscountFare - discount);
 
+  const merchantAccount = useQuery({
+    queryKey: ["merchant-account", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("merchant_accounts").select("id,verified").eq("user_id", user!.id).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const gstins = useQuery({
     queryKey: ["customer-gstins", user?.id],
     enabled: !!user,
@@ -226,7 +236,7 @@ function CustomerPage() {
           cargoValue,
           ewayBillNumber: ewayBillNumber.trim() || null,
           gstinId: selectedGstin?.id ?? null,
-          businessAccountId: null,
+          businessAccountId: merchantAccount.data?.verified ? merchantAccount.data.id : null,
           notes:
             [
               notes.trim(),
