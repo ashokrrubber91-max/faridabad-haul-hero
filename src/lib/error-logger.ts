@@ -47,7 +47,7 @@ export function logError(error: unknown, context: ErrorContext = {}): void {
 
   if (typeof window === "undefined") return;
 
-  window.__lovableEvents?.captureException?.(
+  (window as unknown as { __lovableEvents?: { captureException?: (error: unknown, context?: Record<string, unknown>, options?: Record<string, unknown>) => void } }).__lovableEvents?.captureException?.(
     normalized,
     { source: "miniport", ...context },
     { mechanism: "manual", handled: true, severity: "error" },
@@ -99,14 +99,3 @@ export function installGlobalErrorLogger(): () => void {
   };
 }
 
-declare global {
-  interface Window {
-    __lovableEvents?: {
-      captureException?: (
-        error: unknown,
-        context?: Record<string, unknown>,
-        options?: Record<string, unknown>,
-      ) => void;
-    };
-  }
-}
