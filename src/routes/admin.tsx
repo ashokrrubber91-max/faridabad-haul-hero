@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Ban, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { RouteErrorFallback } from "@/components/RouteErrorFallback";
 import { useAuth } from "@/hooks/useAuth";
 import { getAdminSetupState, claimFirstAdmin } from "@/lib/admin.functions";
@@ -26,9 +27,7 @@ function AdminGate() {
 
   if (loading || !user) {
     return (
-      <div className="mt-24 flex justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-primary" />
-      </div>
+      <div className="mx-auto mt-24 w-full max-w-xl space-y-3 px-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-24 w-full" /></div>
     );
   }
 
