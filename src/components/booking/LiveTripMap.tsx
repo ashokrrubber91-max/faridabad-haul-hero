@@ -194,7 +194,7 @@ export function LiveTripMap({
     queryKey: ["road-route", roundedKey(origin), roundedKey(target)],
     enabled: !!origin && !!target,
     staleTime: 20_000,
-    refetchInterval: 30_000,
+    refetchInterval: 15_000,
     retry: 1,
     queryFn: () => computeRoadRoute({ data: { points: [origin!, target!] } }),
   });
