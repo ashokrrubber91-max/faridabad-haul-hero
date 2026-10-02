@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -184,9 +185,11 @@ export function AdminConsole() {
 
   if (loading)
     return (
-      <Center>
-        <Loader2 className="h-5 w-5 animate-spin text-primary" />
-      </Center>
+      <div className="space-y-4">
+        <Skeleton className="h-9 w-56" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
+        <Skeleton className="h-56 w-full rounded-lg" />
+      </div>
     );
   // Role-gated in AdminGate above (and again by the database on every action).
   void role;
