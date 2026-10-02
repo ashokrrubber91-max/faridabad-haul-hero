@@ -93,3 +93,19 @@ export async function requestPermission(key: PermissionKey): Promise<PermissionO
     return "denied";
   }
 }
+
+
+/** Ask for the app's requested device permissions once after a successful login. */
+export async function requestDevicePermissionsOnce(userId: string): Promise<void> {
+  if (typeof window === "undefined" || permissionFlowDone(userId)) return;
+
+  const record = loadPermissionRecord(userId);
+  for (const permission of PERMISSIONS) {
+    if (record[permission.key]) continue;
+    const outcome = await requestPermission(permission.key);
+    record[permission.key] = outcome;
+    savePermissionRecord(userId, record);
+  }
+
+  markPermissionFlowDone(userId);
+}
