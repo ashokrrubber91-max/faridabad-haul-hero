@@ -63,6 +63,7 @@ export const createBooking = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(({ data, context }) => withErrorLogging(async () => {
+    if (data.cargoValue > 50000 && !data.ewayBillNumber) throw new Error("E-Way Bill number is required for cargo above ₹50,000");
     const { computeRoadRouteServer } = await import("@/lib/routing.server");
     const route = await computeRoadRouteServer([
       { lat: data.pickup.lat, lng: data.pickup.lng },
