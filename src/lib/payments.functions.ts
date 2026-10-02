@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withErrorLogging } from "@/lib/error-logger";
 
 /** Publishable Razorpay key id + whether payments are configured at all. */
 export const getPaymentConfig = createServerFn({ method: "GET" }).handler(async () => {
@@ -16,7 +17,7 @@ export const getPaymentConfig = createServerFn({ method: "GET" }).handler(async 
 export const createTripOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ bookingId: z.string().uuid() }).parse(input))
-  .handler(async ({ data, context }) => {
+  .handler(({ data, context }) => withErrorLogging(async () => {
     const { createRazorpayOrder, getRazorpayCredentials } = await import("@/lib/razorpay.server");
     const creds = getRazorpayCredentials();
     if (!creds) throw new Error("Online payments are not configured yet.");
@@ -74,7 +75,7 @@ export const createTripOrder = createServerFn({ method: "POST" })
     if (insertError) throw new Error(insertError.message);
 
     return { orderId: order.id, amount, keyId: creds.keyId, currency: order.currency };
-  });
+  }, { source: "razorpay", action: "createTripOrder" }),
 
 /**
  * Verifies the checkout callback signature, re-checks the payment with Razorpay,
@@ -91,7 +92,7 @@ export const confirmTripPayment = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data, context }) => {
+  .handler(({ data, context }) => withErrorLogging(async () => {
     const { getRazorpayCredentials, verifyCheckoutSignature, fetchRazorpayPayment } =
       await import("@/lib/razorpay.server");
     const creds = getRazorpayCredentials();
@@ -164,14 +165,14 @@ export const confirmTripPayment = createServerFn({ method: "POST" })
     }
 
     return { ok: true, bookingId: record.booking_id };
-  });
+  }, { source: "razorpay", action: "confirmTripPayment" }),
 
 export const createWalletTopupOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
     z.object({ amount: z.number().finite().min(100).max(100000) }).parse(input),
   )
-  .handler(async ({ data, context }) => {
+  .handler(({ data, context }) => withErrorLogging(async () => {
     const { data: roleOk } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
       _role: "driver",
@@ -216,7 +217,7 @@ export const createWalletTopupOrder = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
     return { orderId: order.id, amount: data.amount, keyId: creds.keyId, currency: order.currency };
-  });
+  }, { source: "wallet", action: "createWalletTopupOrder" }),
 
 export const confirmWalletTopupPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -229,7 +230,7 @@ export const confirmWalletTopupPayment = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data, context }) => {
+  .handler(({ data, context }) => withErrorLogging(async () => {
     const { getRazorpayCredentials, verifyCheckoutSignature, fetchRazorpayPayment } =
       await import("@/lib/razorpay.server");
     const creds = getRazorpayCredentials();
@@ -297,4 +298,4 @@ export const confirmWalletTopupPayment = createServerFn({ method: "POST" })
     if (!result?.ok) throw new Error("Wallet top-up could not be completed");
 
     return { ok: true, credited: true, balance: Number(result.balance ?? 0) };
-  });
+  }, { source: "wallet", action: "confirmWalletTopupPayment" }),
