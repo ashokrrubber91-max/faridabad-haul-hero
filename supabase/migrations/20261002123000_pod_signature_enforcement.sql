@@ -5,8 +5,14 @@ as $$
 declare uid uuid:=auth.uid();
 begin
  if uid is null then raise exception 'Not authenticated'; end if;
+ if _signature_path is null or btrim(_signature_path) = '' or length(_signature_path) > 400 then
+   raise exception 'Invalid signature reference';
+ end if;
+ if left(btrim(_signature_path), length(uid::text || '/')) <> uid::text || '/' or position('..' in btrim(_signature_path)) > 0 then
+   raise exception 'Invalid delivery signature ownership';
+ end if;
  if not exists(select 1 from public.bookings where id=_booking_id and driver_id=uid and status in ('in_progress','completed')) then raise exception 'Only the assigned driver can attach delivery signature'; end if;
- update public.bookings set pod_signature_url=_signature_path,updated_at=now() where id=_booking_id;
+ update public.bookings set pod_signature_url=btrim(_signature_path),updated_at=now() where id=_booking_id;
  insert into public.booking_documents(booking_id,document_type,storage_path,created_by) values(_booking_id,'pod_signature',_signature_path,uid);
  return true;
 end;$$;
