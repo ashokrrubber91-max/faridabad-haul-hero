@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";\nimport { lazy, Suspense } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowRight, MapPin, ShieldAlert, Truck } from "lucide-react";
