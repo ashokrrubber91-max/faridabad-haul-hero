@@ -12,7 +12,8 @@ type NativeRuntime = {
   isNativePlatform?: () => boolean;
   isPluginAvailable?: (name: string) => boolean;
 };
-\n
+
+
 const getRuntime = (): NativeRuntime | null =>
   typeof window !== "undefined" ? (window.Capacitor ?? null) : null;
 
