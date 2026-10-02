@@ -19,6 +19,11 @@ export function ReviewBooking({
   fare,
   notes,
   gstin,
+  helperCount,
+  helperFee,
+  insuranceOpted,
+  insuranceFee,
+  scheduledFor,
   onBack,
   onEditPickup,
   onEditDrop,
@@ -35,6 +40,11 @@ export function ReviewBooking({
   fare: number;
   notes: string;
   gstin: CustomerGstin | null;
+  helperCount: number;
+  helperFee: number;
+  insuranceOpted: boolean;
+  insuranceFee: number;
+  scheduledFor: string;
   onBack: () => void;
   onEditPickup?: () => void;
   onEditDrop?: () => void;
@@ -115,6 +125,22 @@ export function ReviewBooking({
             <span className="text-muted-foreground">Base fare</span>
             <span>₹{baseFare}</span>
           </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Loading / unloading</span>
+            <span>{helperCount === 0 ? "Driver only · ₹0" : `Driver + ${helperCount} helper${helperCount > 1 ? "s" : ""} · ₹${helperFee}`}</span>
+          </div>
+          {insuranceOpted && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Cargo insurance</span>
+              <span>₹{insuranceFee} · up to ₹50,000</span>
+            </div>
+          )}
+          {scheduledFor && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Scheduled</span>
+              <span>{new Date(scheduledFor).toLocaleString("en-IN")}</span>
+            </div>
+          )}
           {discount > 0 && (
             <div className="flex justify-between text-success">
               <span>Discount / coins</span>
