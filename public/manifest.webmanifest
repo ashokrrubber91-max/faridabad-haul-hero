@@ -10,7 +10,11 @@
   "background_color": "#ffffff",
   "theme_color": "#1E293B",
   "lang": "en-IN",
-  "categories": ["travel", "business", "utilities"],
+  "categories": [
+    "travel",
+    "business",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",
