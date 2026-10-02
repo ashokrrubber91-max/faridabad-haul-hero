@@ -107,4 +107,4 @@ export const createInstantDriverPayout = createServerFn({ method: "POST" })
     if (settleError) throw new Error(settleError.message);
 
     return { ok: true, payoutId: body.id, amount: data.amount };
-  }, { source: "razorpayx", action: "createInstantDriverPayout" }));
+  }, { source: "razorpay", action: "createInstantDriverPayout" }));
