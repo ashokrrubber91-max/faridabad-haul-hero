@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useVehicleTypes } from "@/lib/vehicles";
+import { logError } from "@/lib/error-logger";
 
 export const Route = createFileRoute("/_authenticated/driver-kyc")({
   head: () => ({ meta: [{ title: "Driver verification — MiniPort" }] }),
@@ -132,6 +133,7 @@ function DriverKycPage() {
       toast.success("KYC submitted — admin will review within 24 hours");
       navigate({ to: "/driver" });
     } catch (e) {
+      logError(e, { source: "kyc", action: "submit_driver_kyc", driverId: user.id });
       toast.error((e as Error).message);
     } finally {
       setSubmitting(false);
