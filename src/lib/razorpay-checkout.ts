@@ -91,7 +91,7 @@ export async function openRazorpayCheckout(req: CheckoutRequest): Promise<Checko
     if (req.testMode) {
       checkoutOptions.method = {
         card: true,
-        upi: true,
+        upi: false,
         netbanking: false,
         wallet: false,
         emi: false,
