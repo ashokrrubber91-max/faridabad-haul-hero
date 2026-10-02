@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { RouteErrorFallback } from "@/components/RouteErrorFallback";
+import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -25,7 +26,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthedLayout() {
-  const { role, roles, profile, activeMode } = useAuth();
+  const { user, role, roles, profile, activeMode, loading } = useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -97,6 +98,9 @@ function AuthedLayout() {
           </nav>
         )}
       </header>
+      {user && !loading && (
+        <OnboardingGate userId={user.id} isDriver={roles.includes("driver")} />
+      )}
       <main className="mx-auto max-w-5xl px-4 pb-24 pt-6">
         <Outlet />
       </main>

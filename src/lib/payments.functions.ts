@@ -244,7 +244,8 @@ export const confirmWalletTopupPayment = createServerFn({ method: "POST" })
       _provider_payment_id: data.paymentId,
     });
     if (creditError) throw new Error(creditError.message);
-    if (!credit?.ok) throw new Error("Wallet top-up could not be completed");
+    const result = credit as { ok?: boolean; balance?: number } | null;
+    if (!result?.ok) throw new Error("Wallet top-up could not be completed");
 
-    return { ok: true, credited: true, balance: Number(credit.balance ?? 0) };
+    return { ok: true, credited: true, balance: Number(result.balance ?? 0) };
   });
