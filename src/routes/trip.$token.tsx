@@ -125,7 +125,7 @@ function TripView({
 
       {trip.driver_location && (
         <div className="space-y-2">
-          <Suspense fallback={<div className="surface-card h-64 animate-pulse" />}><SharedTripMap pickup={trip.pickup} drop={trip.drop} driver={trip.driver_location ? { lat: trip.driver_location.latitude, lng: trip.driver_location.longitude } : null} route={trip.live_route ?? null} /></Suspense>
+          <Suspense fallback={<div className="surface-card h-64 animate-pulse" />}><SharedTripMap pickup={trip.pickup.lat != null && trip.pickup.lng != null ? { lat: trip.pickup.lat, lng: trip.pickup.lng } : null} drop={trip.drop.lat != null && trip.drop.lng != null ? { lat: trip.drop.lat, lng: trip.drop.lng } : null} driver={trip.driver_location ? { lat: trip.driver_location.lat, lng: trip.driver_location.lng } : null} route={trip.live_route ?? null} /></Suspense>
           {trip.live_route && (
             <div className="flex items-center justify-between rounded-md bg-primary/10 px-3 py-2 text-xs text-primary">
               <span>{trip.live_route.distanceKm.toFixed(1)} km remaining</span>
