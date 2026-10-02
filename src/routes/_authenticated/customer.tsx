@@ -714,7 +714,7 @@ function CustomerPage() {
                     />
                   )}
                   {(b.status === "accepted" || b.status === "in_progress") && (
-                    <Suspense fallback={<div className="surface-card h-64 animate-pulse" />}><LazyLiveTripMap /></Suspense>
+                    <Suspense fallback={<div className="surface-card h-64 animate-pulse" />}><LazyLiveTripMap bookingId={b.id} driverId={b.driver_id} pickupAddress={b.pickup_address} dropAddress={b.drop_address} pickupLat={b.pickup_lat} pickupLng={b.pickup_lng} dropLat={b.drop_lat} dropLng={b.drop_lng} phase={b.status === "in_progress" ? "in_progress" : "accepted"} distanceKm={Number(b.distance_km ?? 0)} /></Suspense>
                   )}
                   <WaitingChargesCard booking={b} vehicle={vehicleFor(b.vehicle_type)} />
 
