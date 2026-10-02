@@ -147,11 +147,11 @@ function AccountPage() {
     (isAdmin ||
       (driverKycStatus.isSuccess && driverProfile.isSuccess && driverApplication.isSuccess));
   const showCustomerSections =
-    driverStateKnown && !isDriverProfile && !isAdmin && activeMode !== "driver";
+    driverStateKnown && !isDriverProfile && !isAdmin;
 
   const monthlyDriverEarnings = useQuery({
     queryKey: ["driver-monthly-earnings", user?.id],
-    enabled: !!user && (isDriverProfile || activeMode === "driver") && !isAdmin,
+    enabled: !!user && isDriverProfile && !isAdmin,
     queryFn: async () => {
       const start = new Date();
       start.setMonth(start.getMonth() - 5, 1);
