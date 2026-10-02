@@ -131,7 +131,7 @@ function CustomerPage() {
   const helperFee = helperCount === 1 ? 250 : helperCount === 2 ? 500 : 0;
   const insuranceFee = insuranceOpted ? 10 : 0;
   const preDiscountFare = baseFare + helperFee + insuranceFee;
-  const discount = Math.min(preDiscountFare, (promo?.discount ?? 0) + coins);
+  const discount = Math.min(baseFare, (promo?.discount ?? 0) + coins);
   const fare = Math.max(0, preDiscountFare - discount);
 
   const gstins = useQuery({
