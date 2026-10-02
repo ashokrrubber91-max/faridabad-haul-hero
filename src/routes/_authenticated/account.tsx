@@ -1,11 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { AdminAccountProfile } from "@/components/admin/AdminAccountProfile";
-import { CustomerProfileView } from "@/components/profile/CustomerProfileView";
-import { DriverProfileView } from "@/components/profile/DriverProfileView";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+const AdminAccountProfile = lazy(() => import("@/components/admin/AdminAccountProfile").then((m) => ({ default: m.AdminAccountProfile })));
+const CustomerProfileView = lazy(() => import("@/components/profile/CustomerProfileView").then((m) => ({ default: m.CustomerProfileView })));
+const DriverProfileView = lazy(() => import("@/components/profile/DriverProfileView").then((m) => ({ default: m.DriverProfileView })));
+
+function ProfileLoader() { return <div className="space-y-4"><div className="h-10 animate-pulse rounded-md bg-muted" /><div className="h-48 animate-pulse rounded-md bg-muted" /></div>; }
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -75,11 +80,7 @@ function AccountPage() {
 
   // Admin is a separate interface and never falls through to Customer/Driver.
   if (roles.includes("admin")) {
-    return (
-      <div className="space-y-5">
-        <AdminAccountProfile />
-      </div>
-    );
+    return (<ErrorBoundary label="admin-account"><Suspense fallback={<ProfileLoader />}><AdminAccountProfile /></Suspense></ErrorBoundary>);
   }
 
   const hasDriverRole = roles.includes("driver");
@@ -95,13 +96,9 @@ function AccountPage() {
   const isCustomer =
     hasCustomerRole && (!hasDriverRole || authoritativeMode === "customer");
 
-  if (isDriver && !isCustomer) {
-    return <DriverProfileView />;
-  }
+  if (isDriver && !isCustomer) return (<ErrorBoundary label="driver-account"><Suspense fallback={<ProfileLoader />}><DriverProfileView /></Suspense></ErrorBoundary>);
 
-  if (isCustomer && !isDriver) {
-    return <CustomerProfileView />;
-  }
+  if (isCustomer && !isDriver) return (<ErrorBoundary label="customer-account"><Suspense fallback={<ProfileLoader />}><CustomerProfileView /></Suspense></ErrorBoundary>);
 
   return (
     <div className="surface-card p-5 text-sm text-muted-foreground">
