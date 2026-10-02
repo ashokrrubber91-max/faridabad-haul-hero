@@ -194,7 +194,7 @@ export function useAuth(): AuthState {
           updated_at: new Date().toISOString(),
         };
         if (typeof navigator !== "undefined" && !navigator.onLine) {
-          await enqueueOffline({ kind: "driver_location", payload });
+          await enqueueOffline({ kind: "driver_location", payload: payload as unknown as Record<string, unknown> });
           setShare((s) => ({ ...s, message: "Offline — location queued and will sync automatically." }));
           return;
         }
