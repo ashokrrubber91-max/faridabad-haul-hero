@@ -6,6 +6,7 @@ import { getSharedTrip } from "@/lib/share.functions";
 import { STATUS_META } from "@/lib/booking";
 import { addressLines } from "@/lib/address";
 import { isStaleFix } from "@/lib/geolocation";
+import { SharedTripMap } from "@/components/booking/SharedTripMap";
 
 export const Route = createFileRoute("/trip/$token")({
   head: () => ({
@@ -120,6 +121,23 @@ function TripView({
           <span className="ml-auto text-muted-foreground">Driver {trip.driver_first_name}</span>
         )}
       </div>
+
+      {trip.driver_location && (
+        <div className="space-y-2">
+          <SharedTripMap
+            pickup={trip.pickup.lat != null && trip.pickup.lng != null ? { lat: trip.pickup.lat, lng: trip.pickup.lng } : null}
+            drop={trip.drop.lat != null && trip.drop.lng != null ? { lat: trip.drop.lat, lng: trip.drop.lng } : null}
+            driver={{ lat: trip.driver_location.lat, lng: trip.driver_location.lng }}
+            route={trip.live_route}
+          />
+          {trip.live_route && (
+            <div className="flex items-center justify-between rounded-md bg-primary/10 px-3 py-2 text-xs text-primary">
+              <span>{trip.live_route.distanceKm.toFixed(1)} km remaining</span>
+              <span>ETA ~{trip.live_route.durationMin} min</span>
+            </div>
+          )}
+        </div>
+      )}
 
       <p className="text-xs text-muted-foreground">
         {Number(trip.distance_km).toFixed(1)} km trip ·{" "}
