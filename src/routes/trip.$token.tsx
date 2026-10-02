@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";\nimport { lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowRight, MapPin, ShieldAlert, Truck } from "lucide-react";
@@ -124,7 +124,7 @@ function TripView({
 
       {trip.driver_location && (
         <div className="space-y-2">
-          <Suspense fallback={<div className="surface-card h-64 animate-pulse" />}><SharedTripMap$1 /></Suspense>
+          <Suspense fallback={<div className="surface-card h-64 animate-pulse" />}><SharedTripMap /></Suspense>
           {trip.live_route && (
             <div className="flex items-center justify-between rounded-md bg-primary/10 px-3 py-2 text-xs text-primary">
               <span>{trip.live_route.distanceKm.toFixed(1)} km remaining</span>
