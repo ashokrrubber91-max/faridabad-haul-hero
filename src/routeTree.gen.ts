@@ -24,6 +24,7 @@ import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AdminLoginRouteImport } from './routes/admin_.login'
 import { Route as TripTokenRouteImport } from './routes/trip.$token'
+import { Route as BookingDraftTokenRouteImport } from './routes/booking-draft.$token'
 import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
 
@@ -102,6 +103,11 @@ const TripTokenRoute = TripTokenRouteImport.update({
   path: '/trip/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookingDraftTokenRoute = BookingDraftTokenRouteImport.update({
+  id: '/booking-draft/$token',
+  path: '/booking-draft/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicRazorpayWebhookRoute =
   ApiPublicRazorpayWebhookRouteImport.update({
     id: '/api/public/razorpay-webhook',
@@ -116,6 +122,8 @@ const ApiPublicWhatsappWebhookRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/booking-draft/$token': typeof BookingDraftTokenRoute
+
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
@@ -134,6 +142,8 @@ export interface FileRoutesByFullPath {
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRoutesByTo {
+  '/booking-draft/$token': typeof BookingDraftTokenRoute
+
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
@@ -152,6 +162,8 @@ export interface FileRoutesByTo {
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRoutesById {
+  '/booking-draft/$token': typeof BookingDraftTokenRoute
+
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
@@ -188,6 +200,7 @@ export interface FileRouteTypes {
     | '/wallet'
     | '/admin/login'
     | '/trip/$token'
+    | '/booking-draft/$token'
     | '/api/public/razorpay-webhook'
     | '/api/public/whatsapp/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -206,6 +219,7 @@ export interface FileRouteTypes {
     | '/wallet'
     | '/admin/login'
     | '/trip/$token'
+    | '/booking-draft/$token'
     | '/api/public/razorpay-webhook'
     | '/api/public/whatsapp/webhook'
   id:
@@ -236,6 +250,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   AdminLoginRoute: typeof AdminLoginRoute
   TripTokenRoute: typeof TripTokenRoute
+  BookingDraftTokenRoute: typeof BookingDraftTokenRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
 }
@@ -347,6 +362,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TripTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/booking-draft/$token': {
+      id: '/booking-draft/$token'
+      path: '/booking-draft/$token'
+      fullPath: '/booking-draft/$token'
+      preLoaderRoute: typeof BookingDraftTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/razorpay-webhook': {
       id: '/api/public/razorpay-webhook'
       path: '/api/public/razorpay-webhook'
@@ -398,6 +420,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   AdminLoginRoute: AdminLoginRoute,
   TripTokenRoute: TripTokenRoute,
+  BookingDraftTokenRoute: BookingDraftTokenRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
 }
