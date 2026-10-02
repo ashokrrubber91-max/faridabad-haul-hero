@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withErrorLogging } from "@/lib/error-logger";
 
 const point = z.object({
   lat: z.number().min(-90).max(90),
@@ -54,7 +55,7 @@ export const createBooking = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data, context }) => {
+  .handler(({ data, context }) => withErrorLogging(async () => {
     const { computeRoadRouteServer } = await import("@/lib/routing.server");
     const route = await computeRoadRouteServer([
       { lat: data.pickup.lat, lng: data.pickup.lng },
@@ -124,4 +125,4 @@ export const createBooking = createServerFn({ method: "POST" })
       distanceKm: Number(booking.distance_km),
       durationMin: route.durationMin,
     };
-  });
+  }, { source: "booking", action: "createBooking" }),
