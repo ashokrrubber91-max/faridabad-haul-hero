@@ -56,10 +56,7 @@ function DriverPage() {
       if (next && profile?.kyc_status !== "approved" && role !== "admin") {
         throw new Error("Driver must complete verification before going online.");
       }
-      const { error } = await supabase
-        .from("profiles")
-        .update({ is_online: next })
-        .eq("id", user!.id);
+      const { error } = await supabase.rpc("set_my_online", { _is_online: next });
       if (error) throw error;
       return next;
     },
