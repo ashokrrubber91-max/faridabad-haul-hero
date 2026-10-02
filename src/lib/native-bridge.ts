@@ -6,6 +6,15 @@
  * the native permission/location APIs; otherwise they return null and the
  * caller falls back to browser APIs.
  */
+async function dynamicImport(moduleName: string): Promise<Record<string, unknown> | null> {
+  try {
+    const importer = new Function("name", "return import(name)") as (name: string) => Promise<Record<string, unknown>>;
+    return await importer(moduleName);
+  } catch {
+    return null;
+  }
+}
+
 export type NativePosition = {
   coords: {
     latitude: number;
@@ -57,9 +66,20 @@ export function isNativeCapacitor(): boolean {
 }
 
 export async function requestNativePermission(
-  pluginName: "Camera" | "Geolocation" | "PushNotifications",
+  pluginName: "Camera" | "Geolocation" | "PushNotifications" | "LocalNotifications",
 ): Promise<"granted" | "denied" | "unsupported"> {
-  const plugin = getCapacitorPlugin(pluginName);
+  let plugin = getCapacitorPlugin(pluginName);
+  if (!plugin) {
+    const moduleName = pluginName === "Camera"
+      ? "@capacitor/camera"
+      : pluginName === "Geolocation"
+        ? "@capacitor/geolocation"
+        : pluginName === "LocalNotifications"
+          ? "@capacitor/local-notifications"
+          : "@capacitor/push-notifications";
+    const mod = await dynamicImport(moduleName);
+    plugin = (mod?.[pluginName] as CapacitorPlugin | undefined) ?? null;
+  }
   if (!plugin?.requestPermissions) return "unsupported";
   try {
     const result = await plugin.requestPermissions();
@@ -75,7 +95,11 @@ export async function requestNativePermission(
 export async function nativeGeolocationPermission(): Promise<
   "granted" | "prompt" | "denied" | "unknown"
 > {
-  const plugin = getCapacitorPlugin("Geolocation");
+  let plugin = getCapacitorPlugin("Geolocation");
+  if (!plugin) {
+    const mod = await dynamicImport("@capacitor/geolocation");
+    plugin = (mod?.Geolocation as CapacitorPlugin | undefined) ?? null;
+  }
   if (!plugin?.checkPermissions) return "unknown";
   try {
     const result = await plugin.checkPermissions();
@@ -92,7 +116,11 @@ export async function nativeGeolocationPermission(): Promise<
 export async function getNativeCurrentPosition(
   options: PositionOptions,
 ): Promise<NativePosition | null> {
-  const plugin = getCapacitorPlugin("Geolocation");
+  let plugin = getCapacitorPlugin("Geolocation");
+  if (!plugin) {
+    const mod = await dynamicImport("@capacitor/geolocation");
+    plugin = (mod?.Geolocation as CapacitorPlugin | undefined) ?? null;
+  }
   if (!plugin?.getCurrentPosition) return null;
   const permission = await nativeGeolocationPermission();
   if (permission === "denied") throw new Error("NATIVE_LOCATION_DENIED");
@@ -111,7 +139,11 @@ export async function watchNativePosition(
   options: PositionOptions,
   callback: (position: NativePosition | null, error?: unknown) => void,
 ): Promise<string | null> {
-  const plugin = getCapacitorPlugin("Geolocation");
+  let plugin = getCapacitorPlugin("Geolocation");
+  if (!plugin) {
+    const mod = await dynamicImport("@capacitor/geolocation");
+    plugin = (mod?.Geolocation as CapacitorPlugin | undefined) ?? null;
+  }
   if (!plugin?.watchPosition) return null;
   const permission = await nativeGeolocationPermission();
   if (permission !== "granted") {
@@ -133,7 +165,11 @@ export async function watchNativePosition(
 
 export async function clearNativeWatch(id: string | null): Promise<void> {
   if (!id) return;
-  const plugin = getCapacitorPlugin("Geolocation");
+  let plugin = getCapacitorPlugin("Geolocation");
+  if (!plugin) {
+    const mod = await dynamicImport("@capacitor/geolocation");
+    plugin = (mod?.Geolocation as CapacitorPlugin | undefined) ?? null;
+  }
   if (!plugin?.clearWatch) return;
   await plugin.clearWatch({ id });
 }
