@@ -986,7 +986,7 @@ function ActiveJobCard({
                 const uid = auth.user?.id;
                 if (!uid) { toast.error("Session expired — please sign in again"); return; }
                 const path = uid + "/" + job.id + "-signature-" + Date.now() + ".png";
-                const { error } = await supabase.storage.from("booking-pod").upload(path, signatureBlob, { contentType: "image/png", upsert: false });
+                const { error } = await supabase.storage.from("pod-files").upload(path, signatureBlob, { contentType: "image/png", upsert: false });
                 if (error) { toast.error(error.message); return; }
                 sigPath = path;
                 setSignaturePath(path);
