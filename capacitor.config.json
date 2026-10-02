@@ -2,6 +2,7 @@
   "appId": "app.miniport.faridabad",
   "appName": "MiniPort",
   "webDir": "dist/client",
+  "loggingBehavior": "production",
   "android": {
     "allowMixedContent": false
   },
@@ -9,15 +10,13 @@
     "androidScheme": "https"
   },
   "plugins": {
-    "PushNotifications": {
-      "presentationOptions": [
-        "badge",
-        "sound",
-        "alert"
-      ]
+    "Geolocation": {
+      "enableLocationFallback": true
     },
-    "Camera": {
-      "saveToGallery": false
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_miniport",
+      "iconColor": "#F97316",
+      "presentationOptions": ["badge", "sound", "banner", "list"]
     }
   }
 }
