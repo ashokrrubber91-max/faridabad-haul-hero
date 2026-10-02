@@ -34,6 +34,7 @@ import { vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
 import { addressLines } from "@/lib/address";
 
 import { SupportChat } from "@/components/support/SupportChat";
+import { SignaturePad } from "@/components/driver/SignaturePad";
 import { DriverDailyPassCard } from "@/components/driver/DriverDailyPassCard";
 import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
@@ -270,11 +271,13 @@ function DriverPage() {
       otp,
       next,
       podPath,
+      signaturePath,
     }: {
       id: string;
       otp: string;
       next: "in_progress" | "completed";
       podPath?: string | null;
+      signaturePath?: string | null;
     }) => {
       const code = otp.replace(/\D/g, "");
       if (code.length !== 4) throw new Error("Enter the 4-digit code from the customer");
@@ -285,6 +288,13 @@ function DriverPage() {
           _pod_path: podPath,
         });
         if (podError) throw podError;
+      }
+      if (signaturePath) {
+        const { error: signatureError } = await supabase.rpc("attach_delivery_signature", {
+          _booking_id: id,
+          _signature_path: signaturePath,
+        });
+        if (signatureError) throw signatureError;
       }
       const { data, error } = await supabase.rpc("verify_booking_otp", {
         _booking_id: id,
@@ -519,12 +529,13 @@ function DriverPage() {
       {activeJob && (
         <ActiveJobCard
           job={activeJob}
-          onVerify={(otp, next, podPath) =>
+          onVerify={(otp, next, podPath, signaturePath) =>
             verifyOtp.mutate({
               id: activeJob.id,
               otp,
               next,
               podPath,
+              signaturePath,
             })
           }
           onStage={(action) => setStage.mutate({ id: activeJob.id, action })}
@@ -794,7 +805,7 @@ function ActiveJobCard({
   pending,
 }: {
   job: AnyRow;
-  onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null) => void;
+  onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null, signaturePath?: string | null) => void;
   onStage: (
     action: "start_loading" | "stop_loading" | "start_unloading" | "stop_unloading",
   ) => void;
@@ -804,6 +815,8 @@ function ActiveJobCard({
 }) {
   const [otp, setOtp] = useState("");
   const [podPath, setPodPath] = useState<string | null>(null);
+  const [signatureBlob, setSignatureBlob] = useState<Blob | null>(null);
+  const [signaturePath, setSignaturePath] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
   const uploadProof = async (file: File) => {
@@ -944,9 +957,20 @@ function ActiveJobCard({
           <Button
             size="sm"
             // Proof of delivery is mandatory, so the photo must be added first.
-            disabled={pending || otp.length !== 4 || (next === "completed" && !podPath)}
-            onClick={() => {
-              onVerify(otp, next, podPath);
+            disabled={pending || otp.length !== 4 || (next === "completed" && (!podPath || !signatureBlob))}
+            onClick={async () => {
+              let sigPath = signaturePath;
+              if (next === "completed" && signatureBlob && !sigPath) {
+                const { data: auth } = await supabase.auth.getUser();
+                const uid = auth.user?.id;
+                if (!uid) { toast.error("Session expired — please sign in again"); return; }
+                const path = `${uid}/${job.id}-signature-${Date.now()}.png`;
+                const { error } = await supabase.storage.from("booking-pod").upload(path, signatureBlob, { contentType: "image/png", upsert: false });
+                if (error) { toast.error(error.message); return; }
+                sigPath = path;
+                setSignaturePath(path);
+              }
+              onVerify(otp, next, podPath, sigPath);
               setOtp("");
             }}
           >
@@ -957,7 +981,7 @@ function ActiveJobCard({
         {next === "completed" && (
           <div className="mt-3 border-t border-primary/20 pt-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-              Proof of delivery {!podPath && <span className="text-destructive">· required</span>}
+              Proof of delivery {!podPath && <span className="text-destructive">· photo required</span>}
             </p>
             <label className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-secondary">
               <Camera className="h-4 w-4 text-primary" />
@@ -979,9 +1003,19 @@ function ActiveJobCard({
             </label>
             {podPath && (
               <p className="mt-1 text-xs text-success">
-                Photo attached — it will be saved with the trip. The drop OTP is still required.
+                Photo attached — it will be saved with the trip.
               </p>
             )}
+            <div className="mt-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                Customer digital signature {!signatureBlob && <span className="text-destructive">· required</span>}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Ask the receiver to sign on the screen before entering the drop OTP.</p>
+              <div className="mt-2">
+                <SignaturePad onChange={(blob) => { setSignatureBlob(blob); setSignaturePath(null); }} />
+              </div>
+              {signatureBlob && <p className="mt-1 text-xs text-success">Signature captured.</p>}
+            </div>
           </div>
         )}
       </div>
