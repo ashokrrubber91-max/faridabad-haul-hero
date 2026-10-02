@@ -52,6 +52,13 @@ export const createBooking = createServerFn({ method: "POST" })
         coins: z.number().int().min(0).max(100000).default(0),
         paymentMethod: z.enum(["cod", "upi", "card", "netbanking", "wallet"]),
         notes: z.string().trim().max(2000).nullable().default(null),
+        helperCount: z.number().int().min(0).max(2).default(0),
+        insuranceOpted: z.boolean().default(false),
+        scheduledFor: z.string().datetime().nullable().default(null),
+        cargoValue: z.number().min(0).max(100000000).default(0),
+        ewayBillNumber: z.string().trim().max(40).nullable().default(null),
+        gstinId: z.string().uuid().nullable().default(null),
+        businessAccountId: z.string().uuid().nullable().default(null),
       })
       .parse(input),
   )
@@ -92,6 +99,16 @@ export const createBooking = createServerFn({ method: "POST" })
         coins_redeemed: data.coins,
         payment_method: data.paymentMethod,
         notes: data.notes,
+        helper_count: data.helperCount,
+        helper_fee: data.helperCount === 1 ? 250 : data.helperCount === 2 ? 500 : 0,
+        insurance_opted: data.insuranceOpted,
+        insurance_fee: data.insuranceOpted ? 10 : 0,
+        insurance_limit: data.insuranceOpted ? 50000 : 0,
+        scheduled_for: data.scheduledFor,
+        cargo_value: data.cargoValue,
+        eway_bill_number: data.ewayBillNumber,
+        gstin_id: data.gstinId,
+        business_account_id: data.businessAccountId,
       })
       .select("id, fare, distance_km")
       .single();
@@ -118,6 +135,13 @@ export const createBooking = createServerFn({ method: "POST" })
       })),
     );
     if (stopsError) throw new Error(stopsError.message);
+    if (data.scheduledFor) {
+      const { error: scheduleError } = await context.supabase.rpc("schedule_booking_dispatch", {
+        _booking_id: booking.id,
+        _scheduled_for: data.scheduledFor,
+      });
+      if (scheduleError) throw new Error(scheduleError.message);
+    }
 
     return {
       id: booking.id,
