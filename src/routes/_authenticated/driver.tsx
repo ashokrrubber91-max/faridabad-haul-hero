@@ -35,6 +35,7 @@ import { addressLines } from "@/lib/address";
 
 import { SupportChat } from "@/components/support/SupportChat";
 import { SignaturePad } from "@/components/driver/SignaturePad";
+import { downloadDeliveryReceipt } from "@/lib/delivery-receipt";
 import { DriverDailyPassCard } from "@/components/driver/DriverDailyPassCard";
 import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
@@ -311,6 +312,7 @@ function DriverPage() {
           ? "Pickup verified — trip started"
           : "Delivery confirmed — trip completed 🎉",
       );
+      if (v.next === "completed") downloadDeliveryReceipt(activeJob);
       void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
