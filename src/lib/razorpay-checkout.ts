@@ -85,9 +85,20 @@ export async function openRazorpayCheckout(req: CheckoutRequest): Promise<Checko
       handler: (response: CheckoutSuccess) => finish(response),
     };
 
-    // Do not force a payment-method restriction here. Razorpay decides which
-    // methods are available for the merchant account; this lets enabled UPI,
-    // cards and other supported methods appear in Test Mode as configured.
+    // Test Mode is deterministic: only sandbox-safe card/UPI methods are exposed.
+    // Merchant-side Checkout Configuration can further control what is actually
+    // enabled in the Razorpay dashboard.
+    if (req.testMode) {
+      checkoutOptions.method = {
+        card: true,
+        upi: true,
+        netbanking: false,
+        wallet: false,
+        emi: false,
+        paylater: false,
+      };
+    }
+
     const rzp = new Razorpay(checkoutOptions);
 
     rzp.on("payment.failed", (response: unknown) => {
