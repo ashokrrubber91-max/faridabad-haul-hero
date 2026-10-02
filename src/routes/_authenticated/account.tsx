@@ -62,7 +62,7 @@ export const Route = createFileRoute("/_authenticated/account")({
 });
 
 function AccountPage() {
-  const { user, profile, roles: cachedRoles, activeMode, loading: authLoading } = useAuth();
+  const { user, profile, roles: cachedRoles, role, activeMode, loading: authLoading } = useAuth();
   // Authoritative role check straight from the database on every visit, so a
   // stale cached role can never show customer-only sections to a driver.
   const freshRoles = useQuery({
@@ -132,12 +132,14 @@ function AccountPage() {
   // driver profile. Customer-only GST/address/invoice sections must never
   // appear in that view, even before the driver role is refreshed locally.
   const isDriverProfile =
+    role === "driver" ||
+    activeMode === "driver" ||
     isDriverAccount ||
     !!driverProfile.data ||
-    activeMode === "driver" ||
     ["pending", "approved", "rejected"].includes(driverKycStatus.data ?? "") ||
     ["submitted", "approved", "rejected", "pending"].includes(driverApplication.data ?? "");
   const isDriverMode = isDriverProfile && activeMode === "driver";
+  const showDriverAccountActions = isDriverProfile || role === "driver" || activeMode === "driver";
   // GSTIN, saved-address and customer invoice records belong only to customer
   // accounts. Never render them in driver mode, even if role state is stale.
   // Only show customer sections once every driver signal has loaded cleanly.
@@ -147,7 +149,7 @@ function AccountPage() {
     (isAdmin ||
       (driverKycStatus.isSuccess && driverProfile.isSuccess && driverApplication.isSuccess));
   const showCustomerSections =
-    driverStateKnown && !isDriverProfile && !isAdmin;
+    driverStateKnown && role === "customer" && !isDriverProfile && !isAdmin;
 
   const monthlyDriverEarnings = useQuery({
     queryKey: ["driver-monthly-earnings", user?.id],
@@ -557,7 +559,7 @@ function AccountPage() {
         </>
       )}
 
-      {driverStateKnown && !showCustomerSections && (
+      {showDriverAccountActions && (
         <section className="surface-card p-5">
           <h2 className="font-display text-xl tracking-wide text-secondary">Account actions</h2>
           <div className="mt-2 space-y-2">
