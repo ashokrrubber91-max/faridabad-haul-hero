@@ -22,6 +22,10 @@ function uuid() {
     : String(Date.now()) + "-" + Math.random().toString(36).slice(2);
 }
 
+export function offlineRetryDelay(attempts: number): number {
+  return Math.min(60_000, 1_000 * 2 ** Math.min(Math.max(0, attempts), 6));
+}
+
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -45,26 +49,33 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
+async function putOfflineItem(row: OfflineQueueItem): Promise<void> {
+  if (typeof indexedDB !== "undefined") {
+    const db = await openDb();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).put(row);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    return;
+  }
+
+  const rows = JSON.parse(localStorage.getItem(KEY) || "[]") as OfflineQueueItem[];
+  const fallbackRow = { ...row, blob: undefined } as OfflineQueueItem;
+  if (row.blob) fallbackRow.blobDataUrl = await blobToDataUrl(row.blob);
+  const index = rows.findIndex((item) => item.id === row.id);
+  if (index >= 0) rows[index] = fallbackRow;
+  else rows.push(fallbackRow);
+  localStorage.setItem(KEY, JSON.stringify(rows));
+}
+
 export async function enqueueOffline(
   item: Omit<OfflineQueueItem, "id" | "createdAt" | "attempts">,
 ): Promise<string> {
   const row: OfflineQueueItem = { ...item, id: uuid(), createdAt: Date.now(), attempts: 0 };
   try {
-    if (typeof indexedDB !== "undefined") {
-      const db = await openDb();
-      await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction(STORE, "readwrite");
-        tx.objectStore(STORE).put(row);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
-    } else {
-      const rows = JSON.parse(localStorage.getItem(KEY) || "[]") as OfflineQueueItem[];
-      const fallbackRow = { ...row, blob: undefined } as OfflineQueueItem;
-      if (row.blob) fallbackRow.blobDataUrl = await blobToDataUrl(row.blob);
-      rows.push(fallbackRow);
-      localStorage.setItem(KEY, JSON.stringify(rows));
-    }
+    await putOfflineItem(row);
   } catch {
     try {
       const rows = JSON.parse(localStorage.getItem(KEY) || "[]") as OfflineQueueItem[];
@@ -140,8 +151,12 @@ export async function flushOfflineQueue(
         await removeOffline(item.id);
         sent += 1;
       } catch {
-        item.attempts += 1;
-        const delay = Math.min(60_000, 1_000 * 2 ** Math.min(item.attempts, 6));
+        const nextAttempts = item.attempts + 1;
+        item.attempts = nextAttempts;
+        // Persist the attempt count so retries really back off across reconnects
+        // and page/app restarts instead of resetting to attempt zero.
+        await putOfflineItem(item).catch(() => undefined);
+        const delay = offlineRetryDelay(nextAttempts);
         await new Promise((resolve) => setTimeout(resolve, delay));
         break;
       }
