@@ -14,6 +14,7 @@ export const createInstantDriverPayout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((value) => input.parse(value))
   .handler(({ data, context }) => withErrorLogging(async () => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: profile } = await context.supabase
       .from("profiles")
       .select("kyc_status")
@@ -38,7 +39,7 @@ export const createInstantDriverPayout = createServerFn({ method: "POST" })
     const keySecret = process.env.RAZORPAYX_KEY_SECRET;
     const accountNumber = process.env.RAZORPAYX_ACCOUNT_NUMBER;
     if (!keyId || !keySecret || !accountNumber) {
-      await context.supabase.rpc("settle_driver_payout", {
+      await supabaseAdmin.rpc("settle_driver_payout", {
         _payout_id: row.id,
         _status: "failed",
         _error: "RazorpayX payout credentials are not configured",
@@ -97,7 +98,7 @@ export const createInstantDriverPayout = createServerFn({ method: "POST" })
       throw new Error(String(body?.error?.description ?? body?.message ?? "RazorpayX payout failed"));
     }
 
-    const { error: settleError } = await context.supabase.rpc("settle_driver_payout", {
+    const { error: settleError } = await supabaseAdmin.rpc("settle_driver_payout", {
       _payout_id: row.id,
       _status: "paid",
       _provider_payout_id: body.id,
