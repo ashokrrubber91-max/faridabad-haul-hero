@@ -1,7 +1,7 @@
 import type { AnyRow } from "@/lib/rows";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -34,7 +34,7 @@ import { addressLines } from "@/lib/address";
 
 import { SupportChat } from "@/components/support/SupportChat";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { PODUploadModal } from "@/components/driver/PODUploadModal";
+const PODUploadModal = lazy(() => import("@/components/driver/PODUploadModal").then((m) => ({ default: m.PODUploadModal })));
 import { enqueueOffline } from "@/lib/offline-queue";
 import { downloadDeliveryReceipt } from "@/lib/delivery-receipt";
 import { DriverDailyPassCard } from "@/components/driver/DriverDailyPassCard";
@@ -1000,7 +1000,7 @@ function ActiveJobCard({
         </div>
       </div>
 
-      <PODUploadModal
+      <Suspense fallback={null}><PODUploadModal
         open={podOpen}
         uploading={uploading}
         photoReady={photoUploaded}
@@ -1010,7 +1010,7 @@ function ActiveJobCard({
         onPhoto={uploadProof}
         onSignature={(blob) => { setSignatureBlob(blob); setSignaturePath(null); }}
         onContinue={async () => setPodOpen(false)}
-      />
+      /></Suspense>
     </section>
   );
 }
