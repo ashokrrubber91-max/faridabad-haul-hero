@@ -72,8 +72,11 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
     setRecord(next);
     savePermissionRecord(userId, next);
     if (outcome === "denied")
-      toast.error("Permission not granted. You can allow it later in your browser or app settings.");
-    if (outcome === "unsupported") toast.info("This device or browser can't grant this permission.");
+      toast.error(
+        "Permission not granted. You can allow it later in your browser or app settings.",
+      );
+    if (outcome === "unsupported")
+      toast.info("This device or browser can't grant this permission.");
   };
 
   const finish = () => {
