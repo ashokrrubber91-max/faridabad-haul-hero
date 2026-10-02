@@ -12,6 +12,7 @@ export type RoadRoute = {
   durationMin: number;
   /** Encoded road geometry from the Routes API. Never synthesised. */
   polyline: string;
+  optimizedIntermediateWaypointIndex?: number[];
 };
 
 function latLng(p: RoutePoint) {
@@ -49,6 +50,7 @@ export async function computeRoadRouteServer(points: RoutePoint[]): Promise<Road
       routingPreference: "TRAFFIC_AWARE",
       regionCode: "IN",
       units: "METRIC",
+      ...(intermediates.length > 1 ? { optimizeWaypointOrder: true } : {}),
     }),
   });
 
@@ -63,6 +65,7 @@ export async function computeRoadRouteServer(points: RoutePoint[]): Promise<Road
       distanceMeters?: number;
       duration?: string;
       polyline?: { encodedPolyline?: string };
+      optimizedIntermediateWaypointIndex?: number[];
     }>;
   };
   const route = payload.routes?.[0];
@@ -78,5 +81,6 @@ export async function computeRoadRouteServer(points: RoutePoint[]): Promise<Road
     durationMin:
       Number.isFinite(seconds) && seconds > 0 ? Math.max(1, Math.round(seconds / 60)) : 0,
     polyline: encoded,
+    optimizedIntermediateWaypointIndex: route.optimizedIntermediateWaypointIndex,
   };
 }
