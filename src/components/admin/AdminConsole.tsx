@@ -58,6 +58,9 @@ import { WithdrawalsTab, DisputesTab, AuditTab } from "@/components/admin/OpsTab
 import { SystemStatus } from "@/components/admin/SystemStatus";
 import { signOutEverywhere } from "@/lib/session";
 import { AccountManagementTab } from "@/components/admin/AccountManagementTab";
+import { useAdminBookings } from "@/hooks/admin/useAdminBookings";
+import { useAdminProfiles } from "@/hooks/admin/useAdminProfiles";
+import { useAdminWallets } from "@/hooks/admin/useAdminWallets";
 
 type Booking = {
   id: string;
@@ -87,29 +90,9 @@ export function AdminConsole() {
     showCommission?: boolean;
   } | null>(null);
 
-  const bookings = useQuery({
-    queryKey: ["admin-bookings"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("bookings")
-        .select(BOOKING_FIELDS)
-        .order("created_at", { ascending: false })
-        .limit(500);
-      if (error) throw error;
-      return (data ?? []) as Booking[];
-    },
-  });
+  const bookings = useAdminBookings();
 
-  const profiles = useQuery({
-    queryKey: ["admin-profiles"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, name, phone, active_mode, is_online");
-      if (error) throw error;
-      return (data ?? []) as Profile[];
-    },
-  });
+  const profiles = useAdminProfiles();
 
   const userRoles = useQuery({
     queryKey: ["admin-user-roles"],
@@ -120,16 +103,7 @@ export function AdminConsole() {
     },
   });
 
-  const wallets = useQuery({
-    queryKey: ["admin-wallets"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("wallet_accounts")
-        .select("user_id, cash_balance, coins_balance");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
+  const wallets = useAdminWallets();
 
   const smsLogs = useQuery({
     queryKey: ["admin-sms-logs"],
