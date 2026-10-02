@@ -35,7 +35,7 @@ function AdminGate() {
   }
 
   if (!roles.includes("admin")) return <AdminSetupOrDenied />;
-  return <ErrorBoundary label="admin console"><AdminConsole /></ErrorBoundary>;
+  return <ErrorBoundary label="admin console"><Suspense fallback={<div className="mx-auto mt-12 max-w-5xl px-4"><Skeleton className="h-8 w-48" /><Skeleton className="mt-4 h-64 w-full" /></div>}><AdminConsole /></Suspense></ErrorBoundary>;
 }
 
 function AdminSetupOrDenied() {
