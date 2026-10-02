@@ -16,7 +16,24 @@
     "LocalNotifications": {
       "smallIcon": "ic_stat_miniport",
       "iconColor": "#F97316",
-      "presentationOptions": ["badge", "sound", "banner", "list"]
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "banner",
+        "list"
+      ]
+    },
+    "PushNotifications": {
+      "presentationOptions": [
+        "sound",
+        "banner",
+        "list"
+      ]
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#1E293B",
+      "overlaysWebView": false
     }
   }
 }
