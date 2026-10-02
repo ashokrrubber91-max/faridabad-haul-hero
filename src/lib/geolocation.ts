@@ -1,4 +1,4 @@
-import { getNativeCurrentPosition, nativeGeolocationPermission } from "@/lib/native-bridge";
+import { getNativeCurrentPosition, nativeGeolocationPermission, isNativeCapacitor } from "@/lib/native-bridge";
 /**
  * Real device geolocation with honest, actionable errors.
  *
@@ -52,8 +52,10 @@ export async function readPermissionState(): Promise<"granted" | "prompt" | "den
 export async function getCurrentFix(
   options: PositionOptions = { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
 ): Promise<GeoFix> {
-  if (!isGeolocationSupported()) throw failure("unsupported");
+  const nativeRuntime = isNativeCapacitor();
+  if (!nativeRuntime && !isGeolocationSupported()) throw failure("unsupported");
   if (
+    !nativeRuntime &&
     typeof window !== "undefined" &&
     !window.isSecureContext &&
     window.location.hostname !== "localhost"
@@ -77,6 +79,8 @@ export async function getCurrentFix(
     // If a native plugin is unavailable or cannot produce a fix, continue with
     // the browser API so the same code works in a PWA/WebView.
   }
+
+  if (!isGeolocationSupported()) throw failure("unsupported");
 
   return new Promise<GeoFix>((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
