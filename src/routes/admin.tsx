@@ -682,7 +682,10 @@ function DriversTab({
 
   const toggleBlock = async (d: Profile) => {
     // "Block" = force offline
-    const { error } = await supabase.from("profiles").update({ is_online: false }).eq("id", d.id);
+    const { error } = await supabase.rpc("admin_set_driver_online", {
+      _driver_id: d.id,
+      _is_online: false,
+    });
     if (error) return toast.error(error.message);
     toast.success(`${d.name} taken offline`);
     onChanged();
