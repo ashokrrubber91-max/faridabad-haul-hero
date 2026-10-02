@@ -51,6 +51,7 @@ import { createTripOrder, confirmTripPayment } from "@/lib/payments.functions";
 import { notifyDriversOfNewBooking } from "@/lib/push.functions";
 import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
 import { computeRoadRoute, createBooking } from "@/lib/routing.functions";
+import { logError, logPaymentError, logSupabaseError } from "@/lib/error-logger";
 
 const ONLINE_METHODS: PaymentMethod[] = ["upi", "card", "netbanking"];
 
@@ -252,6 +253,7 @@ function CustomerPage() {
             },
           });
         } catch (paymentError) {
+          logPaymentError(paymentError, { action: "trip_payment", bookingId: booking.id });
           await supabase.rpc("cancel_booking", {
             _booking_id: booking.id,
             _reason:
@@ -287,6 +289,7 @@ function CustomerPage() {
       qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
     },
     onError: (e: Error) => {
+      logError(e, { source: "booking", action: "create_booking" });
       toast.error(e.message);
       qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
     },
