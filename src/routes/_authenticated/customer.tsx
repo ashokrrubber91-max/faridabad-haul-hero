@@ -93,6 +93,11 @@ function CustomerPage() {
   const [step, setStep] = useState<"form" | "review">("form");
   const [gstinEnabled, setGstinEnabled] = useState(false);
   const [gstinId, setGstinId] = useState<string | null>(null);
+  const [helperCount, setHelperCount] = useState(0);
+  const [insuranceOpted, setInsuranceOpted] = useState(false);
+  const [cargoValue, setCargoValue] = useState(0);
+  const [ewayBillNumber, setEwayBillNumber] = useState("");
+  const [scheduledFor, setScheduledFor] = useState("");
 
   // Distance always comes from the Routes API on the server — never a
   // straight-line estimate — because the fare is derived from it.
@@ -123,8 +128,11 @@ function CustomerPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalogue.data]);
-  const discount = Math.min(baseFare, (promo?.discount ?? 0) + coins);
-  const fare = Math.max(0, baseFare - discount);
+  const helperFee = helperCount === 1 ? 250 : helperCount === 2 ? 500 : 0;
+  const insuranceFee = insuranceOpted ? 10 : 0;
+  const preDiscountFare = baseFare + helperFee + insuranceFee;
+  const discount = Math.min(preDiscountFare, (promo?.discount ?? 0) + coins);
+  const fare = Math.max(0, preDiscountFare - discount);
 
   const gstins = useQuery({
     queryKey: ["customer-gstins", user?.id],
@@ -180,6 +188,7 @@ function CustomerPage() {
       if (!pickup) throw new Error("Choose pickup location");
       if (!drop) throw new Error("Choose drop location");
       if (distanceKm <= 0) throw new Error("Road distance is still being calculated");
+      if (cargoValue > 50000 && !ewayBillNumber.trim()) throw new Error("E-Way Bill number is required for cargo above ₹50,000");
       const booking = await createBooking({
         data: {
           pickup: {
@@ -211,9 +220,19 @@ function CustomerPage() {
           couponCode: promo?.code ?? null,
           coins,
           paymentMethod: method,
+          helperCount,
+          insuranceOpted,
+          scheduledFor: scheduledFor ? new Date(scheduledFor).toISOString() : null,
+          cargoValue,
+          ewayBillNumber: ewayBillNumber.trim() || null,
+          gstinId: selectedGstin?.id ?? null,
+          businessAccountId: null,
           notes:
             [
               notes.trim(),
+              helperCount > 0 && `Loading helper: ${helperCount}`,
+              insuranceOpted && "Cargo insurance: ₹10 up to ₹50,000",
+              cargoValue > 0 && `Cargo value: ₹${cargoValue}`,
               stops.length > 0 && `Stops: ${stops.map((s) => s.address).join(" → ")}`,
               pickup.contactName && `Sender: ${pickup.contactName} (${pickup.contactPhone ?? ""})`,
               drop.contactName && `Receiver: ${drop.contactName} (${drop.contactPhone ?? ""})`,
@@ -284,6 +303,11 @@ function CustomerPage() {
       setCoins(0);
       setGstinEnabled(false);
       setGstinId(null);
+      setHelperCount(0);
+      setInsuranceOpted(false);
+      setCargoValue(0);
+      setEwayBillNumber("");
+      setScheduledFor("");
       setStep("form");
       qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
       qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
@@ -409,7 +433,13 @@ function CustomerPage() {
 
             <WaypointManager
               stops={stops}
-              onAdd={() => setStopStage({ type: "search" })}
+              onAdd={() => {
+                if (stops.length >= 4) {
+                  toast.info("Up to 4 drop-off stops are supported");
+                  return;
+                }
+                setStopStage({ type: "search" });
+              }}
               onRemove={(i) => setStops((prev) => prev.filter((_, idx) => idx !== i))}
               onMoveUp={(i) =>
                 setStops((prev) => {
@@ -508,6 +538,16 @@ function CustomerPage() {
               setCoins={setCoins}
               method={method}
               setMethod={setMethod}
+              helperCount={helperCount}
+              setHelperCount={setHelperCount}
+              insuranceOpted={insuranceOpted}
+              setInsuranceOpted={setInsuranceOpted}
+              cargoValue={cargoValue}
+              setCargoValue={setCargoValue}
+              ewayBillNumber={ewayBillNumber}
+              setEwayBillNumber={setEwayBillNumber}
+              scheduledFor={scheduledFor}
+              setScheduledFor={setScheduledFor}
             />
 
             <div className="rounded-md bg-secondary/95 px-4 py-3 text-secondary-foreground">
@@ -527,6 +567,8 @@ function CustomerPage() {
                     <p className="text-xs opacity-80">
                       ₹{selectedVehicle.base_fare} base + ₹{selectedVehicle.per_km_fare}/km ×{" "}
                       {distanceKm} km = ₹{baseFare}
+                      {helperFee > 0 ? ` + ₹${helperFee} helper` : ""}
+                      {insuranceFee > 0 ? " + ₹10 insurance" : ""}
                       {discount > 0 ? ` − ₹${discount} off` : ""}
                     </p>
                   )}
