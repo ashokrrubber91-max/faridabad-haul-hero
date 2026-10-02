@@ -1281,6 +1281,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_set_driver_online: {
+        Args: { _driver_id: string; _is_online: boolean }
+        Returns: {
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       activate_driver_daily_pass: {
         Args: never
         Returns: {
