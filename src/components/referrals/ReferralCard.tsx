@@ -39,10 +39,13 @@ export function ReferralCard() {
 
       let next = profileResult.data?.referral_code ?? "";
       if (!next.trim()) {
-        const { data: made, error: makeError } = await supabase.rpc("ensure_my_referral_code" as never);
+        const { data: made, error: makeError } = await supabase.rpc(
+          "ensure_my_referral_code" as never,
+        );
         if (makeError) throw makeError;
         next = (made as unknown as string) ?? "";
       }
+      console.log("[MiniPort referral] referral_code:", next || null);
       setCode(next);
       setRows((referralsResult.data ?? []) as ReferralRow[]);
     } catch {
@@ -81,9 +84,7 @@ export function ReferralCard() {
 
   const share = async () => {
     if (!link) return;
-    const text =
-      "Join me on MiniPort. Use my referral link and sign up: " +
-      link;
+    const text = "Join me on MiniPort. Use my referral link and sign up: " + link;
     try {
       if (navigator.share) {
         await navigator.share({ title: "Join MiniPort", text, url: link });
@@ -107,8 +108,8 @@ export function ReferralCard() {
             <Gift className="h-5 w-5 text-primary" /> Refer & Earn
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Earn <span className="font-semibold text-secondary">₹100</span> for every successful referral.
-            No invite limit.
+            Earn <span className="font-semibold text-secondary">₹100</span> for every successful
+            referral. No invite limit.
           </p>
         </div>
         <Users className="h-5 w-5 text-primary" />
@@ -177,7 +178,8 @@ export function ReferralCard() {
         </Button>
       )}
       <p className="mt-3 text-xs font-medium text-secondary">
-        Total referral earnings: ₹{earned.toFixed(0)} · {rewarded.length} successful referral{rewarded.length === 1 ? "" : "s"}
+        Total referral earnings: ₹{earned.toFixed(0)} · {rewarded.length} successful referral
+        {rewarded.length === 1 ? "" : "s"}
       </p>
     </section>
   );

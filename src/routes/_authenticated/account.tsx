@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ReferralCard } from "@/components/referrals/ReferralCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -146,8 +148,7 @@ function AccountPage() {
     freshRoles.isSuccess &&
     (isAdmin ||
       (driverKycStatus.isSuccess && driverProfile.isSuccess && driverApplication.isSuccess));
-  const showCustomerSections =
-    driverStateKnown && !isDriverProfile && !isAdmin;
+  const showCustomerSections = driverStateKnown && !isDriverProfile && !isAdmin;
 
   const monthlyDriverEarnings = useQuery({
     queryKey: ["driver-monthly-earnings", user?.id],
@@ -297,6 +298,35 @@ function AccountPage() {
 
   const signOut = () => void signOutEverywhere(qc);
 
+  useEffect(() => {
+    if (!driverStateKnown) return;
+    console.log("[MiniPort account]", {
+      active_mode: activeMode,
+      user_roles: roles,
+      kyc_status: driverKycStatus.data ?? profile?.kyc_status ?? null,
+      view: isAdmin ? "admin" : isDriverProfile ? "driver" : "customer",
+    });
+  }, [
+    driverStateKnown,
+    activeMode,
+    roles.join(","),
+    driverKycStatus.data,
+    isDriverProfile,
+    isAdmin,
+  ]);
+
+  // Never fall back to the customer view while roles/driver state are loading.
+  if (!driverStateKnown) {
+    return (
+      <div className="space-y-5" aria-busy="true" aria-label="Loading account">
+        <Skeleton className="h-9 w-40" />
+        <Skeleton className="h-36 w-full" />
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <header>
@@ -352,6 +382,7 @@ function AccountPage() {
       {isAdmin && <AdminAccountProfile />}
       {isDriverProfile && !isAdmin && <DriverAccountProfile />}
       <NotificationsCard />
+      {!isAdmin && <ReferralCard />}
 
       {isDriverProfile && !isAdmin && (
         <section className="surface-card p-5">
