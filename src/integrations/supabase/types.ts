@@ -1,1 +1,1696 @@
-{"types":"export type Json =\n  | string\n  | number\n  | boolean\n  | null\n  | { [key: string]: Json | undefined }\n  | Json[]\n\nexport type Database = {\n  // Allows to automatically instantiate createClient with right options\n  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)\n  __InternalSupabase: {\n    PostgrestVersion: \"14.5\"\n  }\n  public: {\n    Tables: {\n      booking_documents: {\n        Row: {\n          booking_id: string\n          created_at: string\n          created_by: string | null\n          document_type: string\n          id: string\n          storage_path: string\n        }\n        Insert: {\n          booking_id: string\n          created_at?: string\n          created_by?: string | null\n          document_type: string\n          id?: string\n          storage_path: string\n        }\n        Update: {\n          booking_id?: string\n          created_at?: string\n          created_by?: string | null\n          document_type?: string\n          id?: string\n          storage_path?: string\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"booking_documents_booking_id_fkey\"\n            columns: [\"booking_id\"]\n            isOneToOne: false\n            referencedRelation: \"bookings\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"booking_documents_created_by_fkey\"\n            columns: [\"created_by\"]\n            isOneToOne: false\n            referencedRelation: \"profiles\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      booking_stops: {\n        Row: {\n          address: string\n          booking_id: string\n          contact_name: string | null\n          contact_phone: string | null\n          created_at: string\n          id: string\n          kind: string\n          latitude: number | null\n          longitude: number | null\n          place_id: string | null\n          sequence: number\n        }\n        Insert: {\n          address: string\n          booking_id: string\n          contact_name?: string | null\n          contact_phone?: string | null\n          created_at?: string\n          id?: string\n          kind: string\n          latitude?: number | null\n          longitude?: number | null\n          place_id?: string | null\n          sequence: number\n        }\n        Update: {\n          address?: string\n          booking_id?: string\n          contact_name?: string | null\n          contact_phone?: string | null\n          created_at?: string\n          id?: string\n          kind?: string\n          latitude?: number | null\n          longitude?: number | null\n          place_id?: string | null\n          sequence?: number\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"booking_stops_booking_id_fkey\"\n            columns: [\"booking_id\"]\n            isOneToOne: false\n            referencedRelation: \"bookings\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      bookings: {\n        Row: {\n          business_account_id: string | null\n          cancellation_reason: string | null\n          cargo_value: number\n          coins_redeemed: number\n          commission_amount: number\n          commission_rate: number\n          coupon_code: string | null\n          coupon_discount: number\n          created_at: string\n          customer_id: string\n          distance_km: number\n          driver_id: string | null\n          driver_net_earning: number\n          drop_address: string\n          drop_lat: number | null\n          drop_lng: number | null\n          drop_otp: string | null\n          drop_verified_at: string | null\n          eway_bill_number: string | null\n          fare: number\n          gstin_id: string | null\n          helper_count: number\n          helper_fee: number\n          id: string\n          insurance_fee: number\n          insurance_limit: number\n          insurance_opted: boolean\n          loading_started_at: string | null\n          loading_stopped_at: string | null\n          notes: string | null\n          payment_method: Database[\"public\"][\"Enums\"][\"payment_method\"]\n          payment_status: Database[\"public\"][\"Enums\"][\"payment_status\"]\n          pickup_address: string\n          pickup_lat: number | null\n          pickup_lng: number | null\n          pickup_otp: string | null\n          pickup_verified_at: string | null\n          pod_photo_url: string | null\n          pod_receipt_url: string | null\n          pod_signature_url: string | null\n          rating: number | null\n          review: string | null\n          scheduled_for: string | null\n          status: Database[\"public\"][\"Enums\"][\"booking_status\"]\n          unloading_started_at: string | null\n          unloading_stopped_at: string | null\n          updated_at: string\n          vehicle_type: Database[\"public\"][\"Enums\"][\"vehicle_type\"]\n        }\n        Insert: {\n          business_account_id?: string | null\n          cancellation_reason?: string | null\n          cargo_value?: number\n          coins_redeemed?: number\n          commission_amount?: number\n          commission_rate?: number\n          coupon_code?: string | null\n          coupon_discount?: number\n          created_at?: string\n          customer_id: string\n          distance_km: number\n          driver_id?: string | null\n          driver_net_earning?: number\n          drop_address: string\n          drop_lat?: number | null\n          drop_lng?: number | null\n          drop_otp?: string | null\n          drop_verified_at?: string | null\n          eway_bill_number?: string | null\n          fare: number\n          gstin_id?: string | null\n          helper_count?: number\n          helper_fee?: number\n          id?: string\n          insurance_fee?: number\n          insurance_limit?: number\n          insurance_opted?: boolean\n          loading_started_at?: string | null\n          loading_stopped_at?: string | null\n          notes?: string | null\n          payment_method?: Database[\"public\"][\"Enums\"][\"payment_method\"]\n          payment_status?: Database[\"public\"][\"Enums\"][\"payment_status\"]\n          pickup_address: string\n          pickup_lat?: number | null\n          pickup_lng?: number | null\n          pickup_otp?: string | null\n          pickup_verified_at?: string | null\n          pod_photo_url?: string | null\n          pod_receipt_url?: string | null\n          pod_signature_url?: string | null\n          rating?: number | null\n          review?: string | null\n          scheduled_for?: string | null\n          status?: Database[\"public\"][\"Enums\"][\"booking_status\"]\n          unloading_started_at?: string | null\n          unloading_stopped_at?: string | null\n          updated_at?: string\n          vehicle_type: Database[\"public\"][\"Enums\"][\"vehicle_type\"]\n        }\n        Update: {\n          business_account_id?: string | null\n          cancellation_reason?: string | null\n          cargo_value?: number\n          coins_redeemed?: number\n          commission_amount?: number\n          commission_rate?: number\n          coupon_code?: string | null\n          coupon_discount?: number\n          created_at?: string\n          customer_id?: string\n          distance_km?: number\n          driver_id?: string | null\n          driver_net_earning?: number\n          drop_address?: string\n          drop_lat?: number | null\n          drop_lng?: number | null\n          drop_otp?: string | null\n          drop_verified_at?: string | null\n          eway_bill_number?: string | null\n          fare?: number\n          gstin_id?: string | null\n          helper_count?: number\n          helper_fee?: number\n          id?: string\n          insurance_fee?: number\n          insurance_limit?: number\n          insurance_opted?: boolean\n          loading_started_at?: string | null\n          loading_stopped_at?: string | null\n          notes?: string | null\n          payment_method?: Database[\"public\"][\"Enums\"][\"payment_method\"]\n          payment_status?: Database[\"public\"][\"Enums\"][\"payment_status\"]\n          pickup_address?: string\n          pickup_lat?: number | null\n          pickup_lng?: number | null\n          pickup_otp?: string | null\n          pickup_verified_at?: string | null\n          pod_photo_url?: string | null\n          pod_receipt_url?: string | null\n          pod_signature_url?: string | null\n          rating?: number | null\n          review?: string | null\n          scheduled_for?: string | null\n          status?: Database[\"public\"][\"Enums\"][\"booking_status\"]\n          unloading_started_at?: string | null\n          unloading_stopped_at?: string | null\n          updated_at?: string\n          vehicle_type?: Database[\"public\"][\"Enums\"][\"vehicle_type\"]\n        }\n        Relationships: []\n      }\n      broadcasts: {\n        Row: {\n          audience: string\n          body: string\n          channel: string\n          created_at: string\n          created_by: string | null\n          id: string\n          idempotency_key: string | null\n          recipient_count: number\n          sms_status: string\n          title: string\n        }\n        Insert: {\n          audience: string\n          body: string\n          channel?: string\n          created_at?: string\n          created_by?: string | null\n          id?: string\n          idempotency_key?: string | null\n          recipient_count?: number\n          sms_status?: string\n          title: string\n        }\n        Update: {\n          audience?: string\n          body?: string\n          channel?: string\n          created_at?: string\n          created_by?: string | null\n          id?: string\n          idempotency_key?: string | null\n          recipient_count?: number\n          sms_status?: string\n          title?: string\n        }\n        Relationships: []\n      }\n      coupons: {\n        Row: {\n          active: boolean\n          code: string\n          created_at: string\n          expires_at: string | null\n          id: string\n          kind: Database[\"public\"][\"Enums\"][\"coupon_kind\"]\n          max_discount: number | null\n          max_uses: number | null\n          min_fare: number\n          uses: number\n          value: number\n        }\n        Insert: {\n          active?: boolean\n          code: string\n          created_at?: string\n          expires_at?: string | null\n          id?: string\n          kind: Database[\"public\"][\"Enums\"][\"coupon_kind\"]\n          max_discount?: number | null\n          max_uses?: number | null\n          min_fare?: number\n          uses?: number\n          value: number\n        }\n        Update: {\n          active?: boolean\n          code?: string\n          created_at?: string\n          expires_at?: string | null\n          id?: string\n          kind?: Database[\"public\"][\"Enums\"][\"coupon_kind\"]\n          max_discount?: number | null\n          max_uses?: number | null\n          min_fare?: number\n          uses?: number\n          value?: number\n        }\n        Relationships: []\n      }\n      customer_gstins: {\n        Row: {\n          business_address: string | null\n          business_name: string\n          created_at: string\n          gstin: string\n          id: string\n          is_default: boolean\n          updated_at: string\n          user_id: string\n        }\n        Insert: {\n          business_address?: string | null\n          business_name: string\n          created_at?: string\n          gstin: string\n          id?: string\n          is_default?: boolean\n          updated_at?: string\n          user_id: string\n        }\n        Update: {\n          business_address?: string | null\n          business_name?: string\n          created_at?: string\n          gstin?: string\n          id?: string\n          is_default?: boolean\n          updated_at?: string\n          user_id?: string\n        }\n        Relationships: []\n      }\n      device_tokens: {\n        Row: {\n          created_at: string\n          id: string\n          last_seen_at: string\n          platform: string\n          token: string\n          updated_at: string\n          user_id: string\n        }\n        Insert: {\n          created_at?: string\n          id?: string\n          last_seen_at?: string\n          platform?: string\n          token: string\n          updated_at?: string\n          user_id: string\n        }\n        Update: {\n          created_at?: string\n          id?: string\n          last_seen_at?: string\n          platform?: string\n          token?: string\n          updated_at?: string\n          user_id?: string\n        }\n        Relationships: []\n      }\n      driver_bank_accounts: {\n        Row: {\n          account_holder: string\n          account_number: string\n          bank_name: string\n          created_at: string\n          driver_id: string\n          id: string\n          ifsc: string\n          is_default: boolean\n          updated_at: string\n          upi_id: string | null\n        }\n        Insert: {\n          account_holder: string\n          account_number: string\n          bank_name: string\n          created_at?: string\n          driver_id: string\n          id?: string\n          ifsc: string\n          is_default?: boolean\n          updated_at?: string\n          upi_id?: string | null\n        }\n        Update: {\n          account_holder?: string\n          account_number?: string\n          bank_name?: string\n          created_at?: string\n          driver_id?: string\n          id?: string\n          ifsc?: string\n          is_default?: boolean\n          updated_at?: string\n          upi_id?: string | null\n        }\n        Relationships: []\n      }\n      driver_daily_passes: {\n        Row: {\n          amount: number\n          created_at: string\n          driver_id: string\n          ends_at: string\n          id: string\n          provider_payment_id: string | null\n          starts_at: string\n          status: string\n        }\n        Insert: {\n          amount?: number\n          created_at?: string\n          driver_id: string\n          ends_at: string\n          id?: string\n          provider_payment_id?: string | null\n          starts_at?: string\n          status?: string\n        }\n        Update: {\n          amount?: number\n          created_at?: string\n          driver_id?: string\n          ends_at?: string\n          id?: string\n          provider_payment_id?: string | null\n          starts_at?: string\n          status?: string\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"driver_daily_passes_driver_id_fkey\"\n            columns: [\"driver_id\"]\n            isOneToOne: false\n            referencedRelation: \"profiles\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      driver_incentive_config: {\n        Row: {\n          active: boolean\n          bonus_amount: number\n          created_at: string\n          id: string\n          label: string\n          rides_required: number\n        }\n        Insert: {\n          active?: boolean\n          bonus_amount: number\n          created_at?: string\n          id?: string\n          label: string\n          rides_required: number\n        }\n        Update: {\n          active?: boolean\n          bonus_amount?: number\n          created_at?: string\n          id?: string\n          label?: string\n          rides_required?: number\n        }\n        Relationships: []\n      }\n      driver_incentive_earnings: {\n        Row: {\n          bonus_amount: number\n          created_at: string\n          credited_at: string | null\n          driver_id: string\n          earned_on: string\n          id: string\n          rides_completed: number\n        }\n        Insert: {\n          bonus_amount: number\n          created_at?: string\n          credited_at?: string | null\n          driver_id: string\n          earned_on: string\n          id?: string\n          rides_completed: number\n        }\n        Update: {\n          bonus_amount?: number\n          created_at?: string\n          credited_at?: string | null\n          driver_id?: string\n          earned_on?: string\n          id?: string\n          rides_completed?: number\n        }\n        Relationships: []\n      }\n      driver_kyc: {\n        Row: {\n          city: string\n          dl_back_url: string | null\n          dl_front_url: string | null\n          driver_id: string\n          full_name: string\n          id_proof_url: string | null\n          insurance_url: string | null\n          number_plate_url: string | null\n          puc_url: string | null\n          rc_url: string | null\n          rejection_reason: string | null\n          reviewed_at: string | null\n          reviewed_by: string | null\n          status: Database[\"public\"][\"Enums\"][\"kyc_status\"]\n          submitted_at: string\n          updated_at: string\n          vehicle_id: string\n          vehicle_number: string | null\n          vehicle_photo_url: string | null\n        }\n        Insert: {\n          city?: string\n          dl_back_url?: string | null\n          dl_front_url?: string | null\n          driver_id: string\n          full_name: string\n          id_proof_url?: string | null\n          insurance_url?: string | null\n          number_plate_url?: string | null\n          puc_url?: string | null\n          rc_url?: string | null\n          rejection_reason?: string | null\n          reviewed_at?: string | null\n          reviewed_by?: string | null\n          status?: Database[\"public\"][\"Enums\"][\"kyc_status\"]\n          submitted_at?: string\n          updated_at?: string\n          vehicle_id: string\n          vehicle_number?: string | null\n          vehicle_photo_url?: string | null\n        }\n        Update: {\n          city?: string\n          dl_back_url?: string | null\n          dl_front_url?: string | null\n          driver_id?: string\n          full_name?: string\n          id_proof_url?: string | null\n          insurance_url?: string | null\n          number_plate_url?: string | null\n          puc_url?: string | null\n          rc_url?: string | null\n          rejection_reason?: string | null\n          reviewed_at?: string | null\n          reviewed_by?: string | null\n          status?: Database[\"public\"][\"Enums\"][\"kyc_status\"]\n          submitted_at?: string\n          updated_at?: string\n          vehicle_id?: string\n          vehicle_number?: string | null\n          vehicle_photo_url?: string | null\n        }\n        Relationships: []\n      }\n      driver_locations: {\n        Row: {\n          accuracy_m: number | null\n          driver_id: string\n          heading_deg: number | null\n          latitude: number\n          longitude: number\n          speed_mps: number | null\n          updated_at: string\n        }\n        Insert: {\n          accuracy_m?: number | null\n          driver_id: string\n          heading_deg?: number | null\n          latitude: number\n          longitude: number\n          speed_mps?: number | null\n          updated_at?: string\n        }\n        Update: {\n          accuracy_m?: number | null\n          driver_id?: string\n          heading_deg?: number | null\n          latitude?: number\n          longitude?: number\n          speed_mps?: number | null\n          updated_at?: string\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"driver_locations_driver_id_fkey\"\n            columns: [\"driver_id\"]\n            isOneToOne: true\n            referencedRelation: \"profiles\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      driver_payouts: {\n        Row: {\n          amount: number\n          bank_account_id: string | null\n          created_at: string\n          driver_id: string\n          error: string | null\n          id: string\n          method: string\n          provider: string\n          provider_payout_id: string | null\n          status: string\n          updated_at: string\n          upi_id: string | null\n        }\n        Insert: {\n          amount: number\n          bank_account_id?: string | null\n          created_at?: string\n          driver_id: string\n          error?: string | null\n          id?: string\n          method?: string\n          provider?: string\n          provider_payout_id?: string | null\n          status?: string\n          updated_at?: string\n          upi_id?: string | null\n        }\n        Update: {\n          amount?: number\n          bank_account_id?: string | null\n          created_at?: string\n          driver_id?: string\n          error?: string | null\n          id?: string\n          method?: string\n          provider?: string\n          provider_payout_id?: string | null\n          status?: string\n          updated_at?: string\n          upi_id?: string | null\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"driver_payouts_driver_id_fkey\"\n            columns: [\"driver_id\"]\n            isOneToOne: false\n            referencedRelation: \"profiles\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      merchant_accounts: {\n        Row: {\n          billing_cycle: string\n          billing_email: string | null\n          business_address: string | null\n          business_name: string\n          created_at: string\n          credit_limit: number\n          gstin: string | null\n          id: string\n          postpaid_enabled: boolean\n          updated_at: string\n          user_id: string\n          verified: boolean\n        }\n        Insert: {\n          billing_cycle?: string\n          billing_email?: string | null\n          business_address?: string | null\n          business_name: string\n          created_at?: string\n          credit_limit?: number\n          gstin?: string | null\n          id?: string\n          postpaid_enabled?: boolean\n          updated_at?: string\n          user_id: string\n          verified?: boolean\n        }\n        Update: {\n          billing_cycle?: string\n          billing_email?: string | null\n          business_address?: string | null\n          business_name?: string\n          created_at?: string\n          credit_limit?: number\n          gstin?: string | null\n          id?: string\n          postpaid_enabled?: boolean\n          updated_at?: string\n          user_id?: string\n          verified?: boolean\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"merchant_accounts_user_id_fkey\"\n            columns: [\"user_id\"]\n            isOneToOne: true\n            referencedRelation: \"profiles\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      merchant_billing_cycles: {\n        Row: {\n          created_at: string\n          id: string\n          invoice_url: string | null\n          merchant_id: string\n          period_end: string\n          period_start: string\n          status: string\n          subtotal: number\n          tax: number\n          total: number\n        }\n        Insert: {\n          created_at?: string\n          id?: string\n          invoice_url?: string | null\n          merchant_id: string\n          period_end: string\n          period_start: string\n          status?: string\n          subtotal?: number\n          tax?: number\n          total?: number\n        }\n        Update: {\n          created_at?: string\n          id?: string\n          invoice_url?: string | null\n          merchant_id?: string\n          period_end?: string\n          period_start?: string\n          status?: string\n          subtotal?: number\n          tax?: number\n          total?: number\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"merchant_billing_cycles_merchant_id_fkey\"\n            columns: [\"merchant_id\"]\n            isOneToOne: false\n            referencedRelation: \"merchant_accounts\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      notifications: {\n        Row: {\n          body: string\n          broadcast_id: string | null\n          created_at: string\n          id: string\n          kind: string\n          read_at: string | null\n          title: string\n          user_id: string\n        }\n        Insert: {\n          body: string\n          broadcast_id?: string | null\n          created_at?: string\n          id?: string\n          kind?: string\n          read_at?: string | null\n          title: string\n          user_id: string\n        }\n        Update: {\n          body?: string\n          broadcast_id?: string | null\n          created_at?: string\n          id?: string\n          kind?: string\n          read_at?: string | null\n          title?: string\n          user_id?: string\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"notifications_broadcast_id_fkey\"\n            columns: [\"broadcast_id\"]\n            isOneToOne: false\n            referencedRelation: \"broadcasts\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      payments: {\n        Row: {\n          amount: number\n          booking_id: string | null\n          created_at: string\n          currency: string\n          customer_id: string\n          error: string | null\n          id: string\n          method: string | null\n          provider: string\n          provider_order_id: string\n          provider_payment_id: string | null\n          provider_signature: string | null\n          state: Database[\"public\"][\"Enums\"][\"payment_state\"]\n          updated_at: string\n        }\n        Insert: {\n          amount: number\n          booking_id?: string | null\n          created_at?: string\n          currency?: string\n          customer_id: string\n          error?: string | null\n          id?: string\n          method?: string | null\n          provider?: string\n          provider_order_id: string\n          provider_payment_id?: string | null\n          provider_signature?: string | null\n          state?: Database[\"public\"][\"Enums\"][\"payment_state\"]\n          updated_at?: string\n        }\n        Update: {\n          amount?: number\n          booking_id?: string | null\n          created_at?: string\n          currency?: string\n          customer_id?: string\n          error?: string | null\n          id?: string\n          method?: string | null\n          provider?: string\n          provider_order_id?: string\n          provider_payment_id?: string | null\n          provider_signature?: string | null\n          state?: Database[\"public\"][\"Enums\"][\"payment_state\"]\n          updated_at?: string\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"payments_booking_id_fkey\"\n            columns: [\"booking_id\"]\n            isOneToOne: false\n            referencedRelation: \"bookings\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      profiles: {\n        Row: {\n          active_mode: string\n          created_at: string\n          id: string\n          is_online: boolean\n          kyc_status: Database[\"public\"][\"Enums\"][\"kyc_status\"]\n          name: string\n          phone: string\n          referral_code: string | null\n        }\n        Insert: {\n          active_mode?: string\n          created_at?: string\n          id: string\n          is_online?: boolean\n          kyc_status?: Database[\"public\"][\"Enums\"][\"kyc_status\"]\n          name: string\n          phone: string\n          referral_code?: string | null\n        }\n        Update: {\n          active_mode?: string\n          created_at?: string\n          id?: string\n          is_online?: boolean\n          kyc_status?: Database[\"public\"][\"Enums\"][\"kyc_status\"]\n          name?: string\n          phone?: string\n          referral_code?: string | null\n        }\n        Relationships: []\n      }\n      referrals: {\n        Row: {\n          created_at: string\n          id: string\n          qualifying_booking_id: string | null\n          referral_code: string\n          referred_type: string\n          referred_user_id: string\n          referrer_id: string\n          reward_amount: number\n          rewarded_at: string | null\n          status: string\n        }\n        Insert: {\n          created_at?: string\n          id?: string\n          qualifying_booking_id?: string | null\n          referral_code: string\n          referred_type: string\n          referred_user_id: string\n          referrer_id: string\n          reward_amount?: number\n          rewarded_at?: string | null\n          status?: string\n        }\n        Update: {\n          created_at?: string\n          id?: string\n          qualifying_booking_id?: string | null\n          referral_code?: string\n          referred_type?: string\n          referred_user_id?: string\n          referrer_id?: string\n          reward_amount?: number\n          rewarded_at?: string | null\n          status?: string\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"referrals_qualifying_booking_id_fkey\"\n            columns: [\"qualifying_booking_id\"]\n            isOneToOne: false\n            referencedRelation: \"bookings\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"referrals_referred_user_id_fkey\"\n            columns: [\"referred_user_id\"]\n            isOneToOne: true\n            referencedRelation: \"profiles\"\n            referencedColumns: [\"id\"]\n          },\n          {\n            foreignKeyName: \"referrals_referrer_id_fkey\"\n            columns: [\"referrer_id\"]\n            isOneToOne: false\n            referencedRelation: \"profiles\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      saved_addresses: {\n        Row: {\n          address: string\n          alias: string | null\n          contact_name: string | null\n          contact_phone: string | null\n          created_at: string\n          id: string\n          kind: Database[\"public\"][\"Enums\"][\"address_kind\"]\n          latitude: number | null\n          longitude: number | null\n          place_id: string | null\n          updated_at: string\n          user_id: string\n        }\n        Insert: {\n          address: string\n          alias?: string | null\n          contact_name?: string | null\n          contact_phone?: string | null\n          created_at?: string\n          id?: string\n          kind?: Database[\"public\"][\"Enums\"][\"address_kind\"]\n          latitude?: number | null\n          longitude?: number | null\n          place_id?: string | null\n          updated_at?: string\n          user_id: string\n        }\n        Update: {\n          address?: string\n          alias?: string | null\n          contact_name?: string | null\n          contact_phone?: string | null\n          created_at?: string\n          id?: string\n          kind?: Database[\"public\"][\"Enums\"][\"address_kind\"]\n          latitude?: number | null\n          longitude?: number | null\n          place_id?: string | null\n          updated_at?: string\n          user_id?: string\n        }\n        Relationships: []\n      }\n      scheduled_dispatch_jobs: {\n        Row: {\n          booking_id: string\n          created_at: string\n          dispatch_at: string\n          id: string\n          last_error: string | null\n          status: string\n          updated_at: string\n        }\n        Insert: {\n          booking_id: string\n          created_at?: string\n          dispatch_at: string\n          id?: string\n          last_error?: string | null\n          status?: string\n          updated_at?: string\n        }\n        Update: {\n          booking_id?: string\n          created_at?: string\n          dispatch_at?: string\n          id?: string\n          last_error?: string | null\n          status?: string\n          updated_at?: string\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"scheduled_dispatch_jobs_booking_id_fkey\"\n            columns: [\"booking_id\"]\n            isOneToOne: true\n            referencedRelation: \"bookings\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      sms_logs: {\n        Row: {\n          body: string\n          booking_id: string\n          created_at: string\n          error: string | null\n          event: Database[\"public\"][\"Enums\"][\"sms_event\"]\n          id: string\n          phone: string\n          provider_sid: string | null\n          recipient: Database[\"public\"][\"Enums\"][\"sms_recipient\"]\n          recipient_user_id: string | null\n          sent_at: string | null\n          status: Database[\"public\"][\"Enums\"][\"sms_status\"]\n          updated_at: string\n        }\n        Insert: {\n          body: string\n          booking_id: string\n          created_at?: string\n          error?: string | null\n          event: Database[\"public\"][\"Enums\"][\"sms_event\"]\n          id?: string\n          phone: string\n          provider_sid?: string | null\n          recipient: Database[\"public\"][\"Enums\"][\"sms_recipient\"]\n          recipient_user_id?: string | null\n          sent_at?: string | null\n          status?: Database[\"public\"][\"Enums\"][\"sms_status\"]\n          updated_at?: string\n        }\n        Update: {\n          body?: string\n          booking_id?: string\n          created_at?: string\n          error?: string | null\n          event?: Database[\"public\"][\"Enums\"][\"sms_event\"]\n          id?: string\n          phone?: string\n          provider_sid?: string | null\n          recipient?: Database[\"public\"][\"Enums\"][\"sms_recipient\"]\n          recipient_user_id?: string | null\n          sent_at?: string | null\n          status?: Database[\"public\"][\"Enums\"][\"sms_status\"]\n          updated_at?: string\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"sms_logs_booking_id_fkey\"\n            columns: [\"booking_id\"]\n            isOneToOne: false\n            referencedRelation: \"bookings\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      user_roles: {\n        Row: {\n          id: string\n          role: Database[\"public\"][\"Enums\"][\"app_role\"]\n          user_id: string\n        }\n        Insert: {\n          id?: string\n          role: Database[\"public\"][\"Enums\"][\"app_role\"]\n          user_id: string\n        }\n        Update: {\n          id?: string\n          role?: Database[\"public\"][\"Enums\"][\"app_role\"]\n          user_id?: string\n        }\n        Relationships: []\n      }\n      voice_booking_drafts: {\n        Row: {\n          created_at: string\n          expires_at: string\n          id: string\n          media_url: string | null\n          parsed_data: Json\n          public_token: string\n          requester_phone: string | null\n          source: string\n          status: string\n          transcript: string | null\n        }\n        Insert: {\n          created_at?: string\n          expires_at?: string\n          id?: string\n          media_url?: string | null\n          parsed_data?: Json\n          public_token?: string\n          requester_phone?: string | null\n          source?: string\n          status?: string\n          transcript?: string | null\n        }\n        Update: {\n          created_at?: string\n          expires_at?: string\n          id?: string\n          media_url?: string | null\n          parsed_data?: Json\n          public_token?: string\n          requester_phone?: string | null\n          source?: string\n          status?: string\n          transcript?: string | null\n        }\n        Relationships: []\n      }\n      wallet_accounts: {\n        Row: {\n          cash_balance: number\n          coins_balance: number\n          updated_at: string\n          user_id: string\n        }\n        Insert: {\n          cash_balance?: number\n          coins_balance?: number\n          updated_at?: string\n          user_id: string\n        }\n        Update: {\n          cash_balance?: number\n          coins_balance?: number\n          updated_at?: string\n          user_id?: string\n        }\n        Relationships: []\n      }\n      wallet_transactions: {\n        Row: {\n          booking_id: string | null\n          created_at: string\n          delta: number\n          id: string\n          reason: string\n          user_id: string\n        }\n        Insert: {\n          booking_id?: string | null\n          created_at?: string\n          delta: number\n          id?: string\n          reason: string\n          user_id: string\n        }\n        Update: {\n          booking_id?: string | null\n          created_at?: string\n          delta?: number\n          id?: string\n          reason?: string\n          user_id?: string\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"wallet_transactions_booking_id_fkey\"\n            columns: [\"booking_id\"]\n            isOneToOne: false\n            referencedRelation: \"bookings\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      withdrawal_requests: {\n        Row: {\n          amount: number\n          created_at: string\n          driver_id: string\n          id: string\n          method: string\n          note: string | null\n          status: Database[\"public\"][\"Enums\"][\"withdrawal_status\"]\n          updated_at: string\n        }\n        Insert: {\n          amount: number\n          created_at?: string\n          driver_id: string\n          id?: string\n          method?: string\n          note?: string | null\n          status?: Database[\"public\"][\"Enums\"][\"withdrawal_status\"]\n          updated_at?: string\n        }\n        Update: {\n          amount?: number\n          created_at?: string\n          driver_id?: string\n          id?: string\n          method?: string\n          note?: string | null\n          status?: Database[\"public\"][\"Enums\"][\"withdrawal_status\"]\n          updated_at?: string\n        }\n        Relationships: []\n      }\n    }\n    Views: {\n      [_ in never]: never\n    }\n    Functions: {\n      activate_driver_daily_pass: {\n        Args: never\n        Returns: {\n          amount: number\n          created_at: string\n          driver_id: string\n          ends_at: string\n          id: string\n          provider_payment_id: string | null\n          starts_at: string\n          status: string\n        }\n        SetofOptions: {\n          from: \"*\"\n          to: \"driver_daily_passes\"\n          isOneToOne: true\n          isSetofReturn: false\n        }\n      }\n      admin_send_broadcast: {\n        Args: {\n          _audience: string\n          _body: string\n          _idempotency_key?: string\n          _title: string\n        }\n        Returns: {\n          audience: string\n          body: string\n          channel: string\n          created_at: string\n          created_by: string | null\n          id: string\n          idempotency_key: string | null\n          recipient_count: number\n          sms_status: string\n          title: string\n        }\n        SetofOptions: {\n          from: \"*\"\n          to: \"broadcasts\"\n          isOneToOne: true\n          isSetofReturn: false\n        }\n      }\n      admin_set_driver_online: {\n        Args: { _driver_id: string; _is_online: boolean }\n        Returns: {\n          active_mode: string\n          created_at: string\n          id: string\n          is_online: boolean\n          kyc_status: Database[\"public\"][\"Enums\"][\"kyc_status\"]\n          name: string\n          phone: string\n          referral_code: string | null\n        }\n        SetofOptions: {\n          from: \"*\"\n          to: \"profiles\"\n          isOneToOne: true\n          isSetofReturn: false\n        }\n      }\n      attach_delivery_signature: {\n        Args: { _booking_id: string; _signature_path: string }\n        Returns: boolean\n      }\n      attach_referral_to_new_user: {\n        Args: {\n          _referral_code: string\n          _referred_type: string\n          _referred_user_id: string\n        }\n        Returns: boolean\n      }\n      award_referral_reward: {\n        Args: {\n          _booking_id: string\n          _referred_type: string\n          _referred_user_id: string\n        }\n        Returns: boolean\n      }\n      credit_driver_wallet_topup: {\n        Args: {\n          _amount: number\n          _driver_id: string\n          _payment_id: string\n          _provider_payment_id: string\n        }\n        Returns: Json\n      }\n      driver_daily_pass_active: {\n        Args: { _driver_id: string }\n        Returns: boolean\n      }\n      generate_unique_referral_code: { Args: never; Returns: string }\n      has_role: {\n        Args: {\n          _role: Database[\"public\"][\"Enums\"][\"app_role\"]\n          _user_id: string\n        }\n        Returns: boolean\n      }\n      is_kyc_approved: { Args: { _user_id: string }; Returns: boolean }\n      merchant_monthly_statement: {\n        Args: { _end: string; _merchant_id: string; _start: string }\n        Returns: {\n          bookings: number\n          subtotal: number\n          tax: number\n          total: number\n        }[]\n      }\n      process_scheduled_dispatch_jobs: { Args: never; Returns: number }\n      reserve_driver_payout: {\n        Args: {\n          _amount: number\n          _bank_account_id?: string\n          _method: string\n          _upi_id?: string\n        }\n        Returns: {\n          amount: number\n          bank_account_id: string | null\n          created_at: string\n          driver_id: string\n          error: string | null\n          id: string\n          method: string\n          provider: string\n          provider_payout_id: string | null\n          status: string\n          updated_at: string\n          upi_id: string | null\n        }\n        SetofOptions: {\n          from: \"*\"\n          to: \"driver_payouts\"\n          isOneToOne: true\n          isSetofReturn: false\n        }\n      }\n      schedule_booking_dispatch: {\n        Args: { _booking_id: string; _scheduled_for: string }\n        Returns: {\n          booking_id: string\n          created_at: string\n          dispatch_at: string\n          id: string\n          last_error: string | null\n          status: string\n          updated_at: string\n        }\n        SetofOptions: {\n          from: \"*\"\n          to: \"scheduled_dispatch_jobs\"\n          isOneToOne: true\n          isSetofReturn: false\n        }\n      }\n      set_my_active_mode: {\n        Args: { _mode: string }\n        Returns: {\n          active_mode: string\n          created_at: string\n          id: string\n          is_online: boolean\n          kyc_status: Database[\"public\"][\"Enums\"][\"kyc_status\"]\n          name: string\n          phone: string\n          referral_code: string | null\n        }\n        SetofOptions: {\n          from: \"*\"\n          to: \"profiles\"\n          isOneToOne: true\n          isSetofReturn: false\n        }\n      }\n      set_my_online: {\n        Args: { _is_online: boolean }\n        Returns: {\n          active_mode: string\n          created_at: string\n          id: string\n          is_online: boolean\n          kyc_status: Database[\"public\"][\"Enums\"][\"kyc_status\"]\n          name: string\n          phone: string\n          referral_code: string | null\n        }\n        SetofOptions: {\n          from: \"*\"\n          to: \"profiles\"\n          isOneToOne: true\n          isSetofReturn: false\n        }\n      }\n      settle_daily_incentives: {\n        Args: { _day?: string }\n        Returns: {\n          bonus: number\n          driver_id: string\n          rides: number\n        }[]\n      }\n      settle_driver_payout: {\n        Args: {\n          _error?: string\n          _payout_id: string\n          _provider_payout_id?: string\n          _status: string\n        }\n        Returns: {\n          amount: number\n          bank_account_id: string | null\n          created_at: string\n          driver_id: string\n          error: string | null\n          id: string\n          method: string\n          provider: string\n          provider_payout_id: string | null\n          status: string\n          updated_at: string\n          upi_id: string | null\n        }\n        SetofOptions: {\n          from: \"*\"\n          to: \"driver_payouts\"\n          isOneToOne: true\n          isSetofReturn: false\n        }\n      }\n      validate_coupon: {\n        Args: { _code: string; _fare: number }\n        Returns: {\n          code: string\n          discount: number\n          message: string\n        }[]\n      }\n    }\n    Enums: {\n      address_kind: \"home\" | \"shop\" | \"other\"\n      app_role: \"customer\" | \"driver\" | \"admin\"\n      booking_status:\n        | \"pending\"\n        | \"accepted\"\n        | \"in_progress\"\n        | \"completed\"\n        | \"cancelled\"\n      coupon_kind: \"flat\" | \"percent\"\n      kyc_status: \"not_submitted\" | \"pending\" | \"approved\" | \"rejected\"\n      payment_method: \"cod\" | \"wallet\" | \"upi\" | \"card\" | \"netbanking\"\n      payment_state: \"created\" | \"paid\" | \"failed\" | \"refunded\"\n      payment_status: \"pending\" | \"paid\" | \"failed\" | \"refunded\"\n      sms_event: \"accepted\" | \"started\" | \"completed\"\n      sms_recipient: \"customer\" | \"driver\"\n      sms_status: \"queued\" | \"sent\" | \"failed\"\n      vehicle_type: \"tata_ace\" | \"pickup_8ft\" | \"tata_407\"\n      withdrawal_status: \"requested\" | \"paid\" | \"rejected\"\n    }\n    CompositeTypes: {\n      [_ in never]: never\n    }\n  }\n}\n\ntype DatabaseWithoutInternals = Omit<Database, \"__InternalSupabase\">\n\ntype DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, \"public\">]\n\nexport type Tables<\n  DefaultSchemaTableNameOrOptions extends\n    | keyof (DefaultSchema[\"Tables\"] & DefaultSchema[\"Views\"])\n    | { schema: keyof DatabaseWithoutInternals },\n  TableName extends (DefaultSchemaTableNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals\n  }\n    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"] &\n        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Views\"])\n    : never) = never,\n> = DefaultSchemaTableNameOrOptions extends {\n  schema: keyof DatabaseWithoutInternals\n}\n  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"] &\n      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Views\"])[TableName] extends {\n      Row: infer R\n    }\n    ? R\n    : never\n  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema[\"Tables\"] &\n        DefaultSchema[\"Views\"])\n    ? (DefaultSchema[\"Tables\"] &\n        DefaultSchema[\"Views\"])[DefaultSchemaTableNameOrOptions] extends {\n        Row: infer R\n      }\n      ? R\n      : never\n    : never\n\nexport type TablesInsert<\n  DefaultSchemaTableNameOrOptions extends\n    | keyof DefaultSchema[\"Tables\"]\n    | { schema: keyof DatabaseWithoutInternals },\n  TableName extends (DefaultSchemaTableNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals\n  }\n    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"]\n    : never) = never,\n> = DefaultSchemaTableNameOrOptions extends {\n  schema: keyof DatabaseWithoutInternals\n}\n  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"][TableName] extends {\n      Insert: infer I\n    }\n    ? I\n    : never\n  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema[\"Tables\"]\n    ? DefaultSchema[\"Tables\"][DefaultSchemaTableNameOrOptions] extends {\n        Insert: infer I\n      }\n      ? I\n      : never\n    : never\n\nexport type TablesUpdate<\n  DefaultSchemaTableNameOrOptions extends\n    | keyof DefaultSchema[\"Tables\"]\n    | { schema: keyof DatabaseWithoutInternals },\n  TableName extends (DefaultSchemaTableNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals\n  }\n    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"]\n    : never) = never,\n> = DefaultSchemaTableNameOrOptions extends {\n  schema: keyof DatabaseWithoutInternals\n}\n  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"][TableName] extends {\n      Update: infer U\n    }\n    ? U\n    : never\n  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema[\"Tables\"]\n    ? DefaultSchema[\"Tables\"][DefaultSchemaTableNameOrOptions] extends {\n        Update: infer U\n      }\n      ? U\n      : never\n    : never\n\nexport type Enums<\n  DefaultSchemaEnumNameOrOptions extends\n    | keyof DefaultSchema[\"Enums\"]\n    | { schema: keyof DatabaseWithoutInternals },\n  EnumName extends (DefaultSchemaEnumNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals\n  }\n    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions[\"schema\"]][\"Enums\"]\n    : never) = never,\n> = DefaultSchemaEnumNameOrOptions extends {\n  schema: keyof DatabaseWithoutInternals\n}\n  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions[\"schema\"]][\"Enums\"][EnumName]\n  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema[\"Enums\"]\n    ? DefaultSchema[\"Enums\"][DefaultSchemaEnumNameOrOptions]\n    : never\n\nexport type CompositeTypes<\n  PublicCompositeTypeNameOrOptions extends\n    | keyof DefaultSchema[\"CompositeTypes\"]\n    | { schema: keyof DatabaseWithoutInternals },\n  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals\n  }\n    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions[\"schema\"]][\"CompositeTypes\"]\n    : never) = never,\n> = PublicCompositeTypeNameOrOptions extends {\n  schema: keyof DatabaseWithoutInternals\n}\n  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions[\"schema\"]][\"CompositeTypes\"][CompositeTypeName]\n  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema[\"CompositeTypes\"]\n    ? DefaultSchema[\"CompositeTypes\"][PublicCompositeTypeNameOrOptions]\n    : never\n\nexport const Constants = {\n  public: {\n    Enums: {\n      address_kind: [\"home\", \"shop\", \"other\"],\n      app_role: [\"customer\", \"driver\", \"admin\"],\n      booking_status: [\n        \"pending\",\n        \"accepted\",\n        \"in_progress\",\n        \"completed\",\n        \"cancelled\",\n      ],\n      coupon_kind: [\"flat\", \"percent\"],\n      kyc_status: [\"not_submitted\", \"pending\", \"approved\", \"rejected\"],\n      payment_method: [\"cod\", \"wallet\", \"upi\", \"card\", \"netbanking\"],\n      payment_state: [\"created\", \"paid\", \"failed\", \"refunded\"],\n      payment_status: [\"pending\", \"paid\", \"failed\", \"refunded\"],\n      sms_event: [\"accepted\", \"started\", \"completed\"],\n      sms_recipient: [\"customer\", \"driver\"],\n      sms_status: [\"queued\", \"sent\", \"failed\"],\n      vehicle_type: [\"tata_ace\", \"pickup_8ft\", \"tata_407\"],\n      withdrawal_status: [\"requested\", \"paid\", \"rejected\"],\n    },\n  },\n} as const\n"}
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
+  public: {
+    Tables: {
+      booking_documents: {
+        Row: {
+          booking_id: string
+          created_at: string
+          created_by: string | null
+          document_type: string
+          id: string
+          storage_path: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          created_by?: string | null
+          document_type: string
+          id?: string
+          storage_path: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          created_by?: string | null
+          document_type?: string
+          id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_documents_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_stops: {
+        Row: {
+          address: string
+          booking_id: string
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          kind: string
+          latitude: number | null
+          longitude: number | null
+          place_id: string | null
+          sequence: number
+        }
+        Insert: {
+          address: string
+          booking_id: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          latitude?: number | null
+          longitude?: number | null
+          place_id?: string | null
+          sequence: number
+        }
+        Update: {
+          address?: string
+          booking_id?: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          latitude?: number | null
+          longitude?: number | null
+          place_id?: string | null
+          sequence?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_stops_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          business_account_id: string | null
+          cancellation_reason: string | null
+          cargo_value: number
+          coins_redeemed: number
+          commission_amount: number
+          commission_rate: number
+          coupon_code: string | null
+          coupon_discount: number
+          created_at: string
+          customer_id: string
+          distance_km: number
+          driver_id: string | null
+          driver_net_earning: number
+          drop_address: string
+          drop_lat: number | null
+          drop_lng: number | null
+          drop_otp: string | null
+          drop_verified_at: string | null
+          eway_bill_number: string | null
+          fare: number
+          gstin_id: string | null
+          helper_count: number
+          helper_fee: number
+          id: string
+          insurance_fee: number
+          insurance_limit: number
+          insurance_opted: boolean
+          loading_started_at: string | null
+          loading_stopped_at: string | null
+          notes: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_otp: string | null
+          pickup_verified_at: string | null
+          pod_photo_url: string | null
+          pod_receipt_url: string | null
+          pod_signature_url: string | null
+          rating: number | null
+          review: string | null
+          scheduled_for: string | null
+          status: Database["public"]["Enums"]["booking_status"]
+          unloading_started_at: string | null
+          unloading_stopped_at: string | null
+          updated_at: string
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Insert: {
+          business_account_id?: string | null
+          cancellation_reason?: string | null
+          cargo_value?: number
+          coins_redeemed?: number
+          commission_amount?: number
+          commission_rate?: number
+          coupon_code?: string | null
+          coupon_discount?: number
+          created_at?: string
+          customer_id: string
+          distance_km: number
+          driver_id?: string | null
+          driver_net_earning?: number
+          drop_address: string
+          drop_lat?: number | null
+          drop_lng?: number | null
+          drop_otp?: string | null
+          drop_verified_at?: string | null
+          eway_bill_number?: string | null
+          fare: number
+          gstin_id?: string | null
+          helper_count?: number
+          helper_fee?: number
+          id?: string
+          insurance_fee?: number
+          insurance_limit?: number
+          insurance_opted?: boolean
+          loading_started_at?: string | null
+          loading_stopped_at?: string | null
+          notes?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          pickup_address: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          pickup_otp?: string | null
+          pickup_verified_at?: string | null
+          pod_photo_url?: string | null
+          pod_receipt_url?: string | null
+          pod_signature_url?: string | null
+          rating?: number | null
+          review?: string | null
+          scheduled_for?: string | null
+          status?: Database["public"]["Enums"]["booking_status"]
+          unloading_started_at?: string | null
+          unloading_stopped_at?: string | null
+          updated_at?: string
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Update: {
+          business_account_id?: string | null
+          cancellation_reason?: string | null
+          cargo_value?: number
+          coins_redeemed?: number
+          commission_amount?: number
+          commission_rate?: number
+          coupon_code?: string | null
+          coupon_discount?: number
+          created_at?: string
+          customer_id?: string
+          distance_km?: number
+          driver_id?: string | null
+          driver_net_earning?: number
+          drop_address?: string
+          drop_lat?: number | null
+          drop_lng?: number | null
+          drop_otp?: string | null
+          drop_verified_at?: string | null
+          eway_bill_number?: string | null
+          fare?: number
+          gstin_id?: string | null
+          helper_count?: number
+          helper_fee?: number
+          id?: string
+          insurance_fee?: number
+          insurance_limit?: number
+          insurance_opted?: boolean
+          loading_started_at?: string | null
+          loading_stopped_at?: string | null
+          notes?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          pickup_address?: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          pickup_otp?: string | null
+          pickup_verified_at?: string | null
+          pod_photo_url?: string | null
+          pod_receipt_url?: string | null
+          pod_signature_url?: string | null
+          rating?: number | null
+          review?: string | null
+          scheduled_for?: string | null
+          status?: Database["public"]["Enums"]["booking_status"]
+          unloading_started_at?: string | null
+          unloading_stopped_at?: string | null
+          updated_at?: string
+          vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Relationships: []
+      }
+      broadcasts: {
+        Row: {
+          audience: string
+          body: string
+          channel: string
+          created_at: string
+          created_by: string | null
+          id: string
+          idempotency_key: string | null
+          recipient_count: number
+          sms_status: string
+          title: string
+        }
+        Insert: {
+          audience: string
+          body: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string | null
+          recipient_count?: number
+          sms_status?: string
+          title: string
+        }
+        Update: {
+          audience?: string
+          body?: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string | null
+          recipient_count?: number
+          sms_status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      coupons: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          kind: Database["public"]["Enums"]["coupon_kind"]
+          max_discount: number | null
+          max_uses: number | null
+          min_fare: number
+          uses: number
+          value: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["coupon_kind"]
+          max_discount?: number | null
+          max_uses?: number | null
+          min_fare?: number
+          uses?: number
+          value: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["coupon_kind"]
+          max_discount?: number | null
+          max_uses?: number | null
+          min_fare?: number
+          uses?: number
+          value?: number
+        }
+        Relationships: []
+      }
+      customer_gstins: {
+        Row: {
+          business_address: string | null
+          business_name: string
+          created_at: string
+          gstin: string
+          id: string
+          is_default: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_address?: string | null
+          business_name: string
+          created_at?: string
+          gstin: string
+          id?: string
+          is_default?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_address?: string | null
+          business_name?: string
+          created_at?: string
+          gstin?: string
+          id?: string
+          is_default?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      device_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          last_seen_at: string
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          platform?: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      driver_bank_accounts: {
+        Row: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at: string
+          driver_id: string
+          id: string
+          ifsc: string
+          is_default: boolean
+          updated_at: string
+          upi_id: string | null
+        }
+        Insert: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          ifsc: string
+          is_default?: boolean
+          updated_at?: string
+          upi_id?: string | null
+        }
+        Update: {
+          account_holder?: string
+          account_number?: string
+          bank_name?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          ifsc?: string
+          is_default?: boolean
+          updated_at?: string
+          upi_id?: string | null
+        }
+        Relationships: []
+      }
+      driver_daily_passes: {
+        Row: {
+          amount: number
+          created_at: string
+          driver_id: string
+          ends_at: string
+          id: string
+          provider_payment_id: string | null
+          starts_at: string
+          status: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          driver_id: string
+          ends_at: string
+          id?: string
+          provider_payment_id?: string | null
+          starts_at?: string
+          status?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          driver_id?: string
+          ends_at?: string
+          id?: string
+          provider_payment_id?: string | null
+          starts_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_daily_passes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_incentive_config: {
+        Row: {
+          active: boolean
+          bonus_amount: number
+          created_at: string
+          id: string
+          label: string
+          rides_required: number
+        }
+        Insert: {
+          active?: boolean
+          bonus_amount: number
+          created_at?: string
+          id?: string
+          label: string
+          rides_required: number
+        }
+        Update: {
+          active?: boolean
+          bonus_amount?: number
+          created_at?: string
+          id?: string
+          label?: string
+          rides_required?: number
+        }
+        Relationships: []
+      }
+      driver_incentive_earnings: {
+        Row: {
+          bonus_amount: number
+          created_at: string
+          credited_at: string | null
+          driver_id: string
+          earned_on: string
+          id: string
+          rides_completed: number
+        }
+        Insert: {
+          bonus_amount: number
+          created_at?: string
+          credited_at?: string | null
+          driver_id: string
+          earned_on: string
+          id?: string
+          rides_completed: number
+        }
+        Update: {
+          bonus_amount?: number
+          created_at?: string
+          credited_at?: string | null
+          driver_id?: string
+          earned_on?: string
+          id?: string
+          rides_completed?: number
+        }
+        Relationships: []
+      }
+      driver_kyc: {
+        Row: {
+          city: string
+          dl_back_url: string | null
+          dl_front_url: string | null
+          driver_id: string
+          full_name: string
+          id_proof_url: string | null
+          insurance_url: string | null
+          number_plate_url: string | null
+          puc_url: string | null
+          rc_url: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["kyc_status"]
+          submitted_at: string
+          updated_at: string
+          vehicle_id: string
+          vehicle_number: string | null
+          vehicle_photo_url: string | null
+        }
+        Insert: {
+          city?: string
+          dl_back_url?: string | null
+          dl_front_url?: string | null
+          driver_id: string
+          full_name: string
+          id_proof_url?: string | null
+          insurance_url?: string | null
+          number_plate_url?: string | null
+          puc_url?: string | null
+          rc_url?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          submitted_at?: string
+          updated_at?: string
+          vehicle_id: string
+          vehicle_number?: string | null
+          vehicle_photo_url?: string | null
+        }
+        Update: {
+          city?: string
+          dl_back_url?: string | null
+          dl_front_url?: string | null
+          driver_id?: string
+          full_name?: string
+          id_proof_url?: string | null
+          insurance_url?: string | null
+          number_plate_url?: string | null
+          puc_url?: string | null
+          rc_url?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          submitted_at?: string
+          updated_at?: string
+          vehicle_id?: string
+          vehicle_number?: string | null
+          vehicle_photo_url?: string | null
+        }
+        Relationships: []
+      }
+      driver_locations: {
+        Row: {
+          accuracy_m: number | null
+          driver_id: string
+          heading_deg: number | null
+          latitude: number
+          longitude: number
+          speed_mps: number | null
+          updated_at: string
+        }
+        Insert: {
+          accuracy_m?: number | null
+          driver_id: string
+          heading_deg?: number | null
+          latitude: number
+          longitude: number
+          speed_mps?: number | null
+          updated_at?: string
+        }
+        Update: {
+          accuracy_m?: number | null
+          driver_id?: string
+          heading_deg?: number | null
+          latitude?: number
+          longitude?: number
+          speed_mps?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_locations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_payouts: {
+        Row: {
+          amount: number
+          bank_account_id: string | null
+          created_at: string
+          driver_id: string
+          error: string | null
+          id: string
+          method: string
+          provider: string
+          provider_payout_id: string | null
+          status: string
+          updated_at: string
+          upi_id: string | null
+        }
+        Insert: {
+          amount: number
+          bank_account_id?: string | null
+          created_at?: string
+          driver_id: string
+          error?: string | null
+          id?: string
+          method?: string
+          provider?: string
+          provider_payout_id?: string | null
+          status?: string
+          updated_at?: string
+          upi_id?: string | null
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string | null
+          created_at?: string
+          driver_id?: string
+          error?: string | null
+          id?: string
+          method?: string
+          provider?: string
+          provider_payout_id?: string | null
+          status?: string
+          updated_at?: string
+          upi_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_payouts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_accounts: {
+        Row: {
+          billing_cycle: string
+          billing_email: string | null
+          business_address: string | null
+          business_name: string
+          created_at: string
+          credit_limit: number
+          gstin: string | null
+          id: string
+          postpaid_enabled: boolean
+          updated_at: string
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          billing_cycle?: string
+          billing_email?: string | null
+          business_address?: string | null
+          business_name: string
+          created_at?: string
+          credit_limit?: number
+          gstin?: string | null
+          id?: string
+          postpaid_enabled?: boolean
+          updated_at?: string
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          billing_cycle?: string
+          billing_email?: string | null
+          business_address?: string | null
+          business_name?: string
+          created_at?: string
+          credit_limit?: number
+          gstin?: string | null
+          id?: string
+          postpaid_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_billing_cycles: {
+        Row: {
+          created_at: string
+          id: string
+          invoice_url: string | null
+          merchant_id: string
+          period_end: string
+          period_start: string
+          status: string
+          subtotal: number
+          tax: number
+          total: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invoice_url?: string | null
+          merchant_id: string
+          period_end: string
+          period_start: string
+          status?: string
+          subtotal?: number
+          tax?: number
+          total?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invoice_url?: string | null
+          merchant_id?: string
+          period_end?: string
+          period_start?: string
+          status?: string
+          subtotal?: number
+          tax?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_billing_cycles_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string
+          broadcast_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          broadcast_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          broadcast_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "broadcasts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          booking_id: string | null
+          created_at: string
+          currency: string
+          customer_id: string
+          error: string | null
+          id: string
+          method: string | null
+          provider: string
+          provider_order_id: string
+          provider_payment_id: string | null
+          provider_signature: string | null
+          state: Database["public"]["Enums"]["payment_state"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          booking_id?: string | null
+          created_at?: string
+          currency?: string
+          customer_id: string
+          error?: string | null
+          id?: string
+          method?: string | null
+          provider?: string
+          provider_order_id: string
+          provider_payment_id?: string | null
+          provider_signature?: string | null
+          state?: Database["public"]["Enums"]["payment_state"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          booking_id?: string | null
+          created_at?: string
+          currency?: string
+          customer_id?: string
+          error?: string | null
+          id?: string
+          method?: string | null
+          provider?: string
+          provider_order_id?: string
+          provider_payment_id?: string | null
+          provider_signature?: string | null
+          state?: Database["public"]["Enums"]["payment_state"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code: string | null
+        }
+        Insert: {
+          active_mode?: string
+          created_at?: string
+          id: string
+          is_online?: boolean
+          kyc_status?: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code?: string | null
+        }
+        Update: {
+          active_mode?: string
+          created_at?: string
+          id?: string
+          is_online?: boolean
+          kyc_status?: Database["public"]["Enums"]["kyc_status"]
+          name?: string
+          phone?: string
+          referral_code?: string | null
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          qualifying_booking_id: string | null
+          referral_code: string
+          referred_type: string
+          referred_user_id: string
+          referrer_id: string
+          reward_amount: number
+          rewarded_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          qualifying_booking_id?: string | null
+          referral_code: string
+          referred_type: string
+          referred_user_id: string
+          referrer_id: string
+          reward_amount?: number
+          rewarded_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          qualifying_booking_id?: string | null
+          referral_code?: string
+          referred_type?: string
+          referred_user_id?: string
+          referrer_id?: string
+          reward_amount?: number
+          rewarded_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_qualifying_booking_id_fkey"
+            columns: ["qualifying_booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referred_user_id_fkey"
+            columns: ["referred_user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_addresses: {
+        Row: {
+          address: string
+          alias: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["address_kind"]
+          latitude: number | null
+          longitude: number | null
+          place_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          alias?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["address_kind"]
+          latitude?: number | null
+          longitude?: number | null
+          place_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          alias?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["address_kind"]
+          latitude?: number | null
+          longitude?: number | null
+          place_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scheduled_dispatch_jobs: {
+        Row: {
+          booking_id: string
+          created_at: string
+          dispatch_at: string
+          id: string
+          last_error: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          dispatch_at: string
+          id?: string
+          last_error?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          dispatch_at?: string
+          id?: string
+          last_error?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_dispatch_jobs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_logs: {
+        Row: {
+          body: string
+          booking_id: string
+          created_at: string
+          error: string | null
+          event: Database["public"]["Enums"]["sms_event"]
+          id: string
+          phone: string
+          provider_sid: string | null
+          recipient: Database["public"]["Enums"]["sms_recipient"]
+          recipient_user_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["sms_status"]
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          booking_id: string
+          created_at?: string
+          error?: string | null
+          event: Database["public"]["Enums"]["sms_event"]
+          id?: string
+          phone: string
+          provider_sid?: string | null
+          recipient: Database["public"]["Enums"]["sms_recipient"]
+          recipient_user_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["sms_status"]
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          booking_id?: string
+          created_at?: string
+          error?: string | null
+          event?: Database["public"]["Enums"]["sms_event"]
+          id?: string
+          phone?: string
+          provider_sid?: string | null
+          recipient?: Database["public"]["Enums"]["sms_recipient"]
+          recipient_user_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["sms_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_logs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      voice_booking_drafts: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          media_url: string | null
+          parsed_data: Json
+          public_token: string
+          requester_phone: string | null
+          source: string
+          status: string
+          transcript: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          media_url?: string | null
+          parsed_data?: Json
+          public_token?: string
+          requester_phone?: string | null
+          source?: string
+          status?: string
+          transcript?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          media_url?: string | null
+          parsed_data?: Json
+          public_token?: string
+          requester_phone?: string | null
+          source?: string
+          status?: string
+          transcript?: string | null
+        }
+        Relationships: []
+      }
+      wallet_accounts: {
+        Row: {
+          cash_balance: number
+          coins_balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cash_balance?: number
+          coins_balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cash_balance?: number
+          coins_balance?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          delta: number
+          id: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          delta: number
+          id?: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          delta?: number
+          id?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      withdrawal_requests: {
+        Row: {
+          amount: number
+          created_at: string
+          driver_id: string
+          id: string
+          method: string
+          note: string | null
+          status: Database["public"]["Enums"]["withdrawal_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          driver_id: string
+          id?: string
+          method?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["withdrawal_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          driver_id?: string
+          id?: string
+          method?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["withdrawal_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      activate_driver_daily_pass: {
+        Args: never
+        Returns: {
+          amount: number
+          created_at: string
+          driver_id: string
+          ends_at: string
+          id: string
+          provider_payment_id: string | null
+          starts_at: string
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "driver_daily_passes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_send_broadcast: {
+        Args: {
+          _audience: string
+          _body: string
+          _idempotency_key?: string
+          _title: string
+        }
+        Returns: {
+          audience: string
+          body: string
+          channel: string
+          created_at: string
+          created_by: string | null
+          id: string
+          idempotency_key: string | null
+          recipient_count: number
+          sms_status: string
+          title: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "broadcasts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_set_driver_online: {
+        Args: { _driver_id: string; _is_online: boolean }
+        Returns: {
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      attach_delivery_signature: {
+        Args: { _booking_id: string; _signature_path: string }
+        Returns: boolean
+      }
+      attach_referral_to_new_user: {
+        Args: {
+          _referral_code: string
+          _referred_type: string
+          _referred_user_id: string
+        }
+        Returns: boolean
+      }
+      award_referral_reward: {
+        Args: {
+          _booking_id: string
+          _referred_type: string
+          _referred_user_id: string
+        }
+        Returns: boolean
+      }
+      credit_driver_wallet_topup: {
+        Args: {
+          _amount: number
+          _driver_id: string
+          _payment_id: string
+          _provider_payment_id: string
+        }
+        Returns: Json
+      }
+      driver_daily_pass_active: {
+        Args: { _driver_id: string }
+        Returns: boolean
+      }
+      generate_unique_referral_code: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_kyc_approved: { Args: { _user_id: string }; Returns: boolean }
+      merchant_monthly_statement: {
+        Args: { _end: string; _merchant_id: string; _start: string }
+        Returns: {
+          bookings: number
+          subtotal: number
+          tax: number
+          total: number
+        }[]
+      }
+      process_scheduled_dispatch_jobs: { Args: never; Returns: number }
+      reserve_driver_payout: {
+        Args: {
+          _amount: number
+          _bank_account_id?: string
+          _method: string
+          _upi_id?: string
+        }
+        Returns: {
+          amount: number
+          bank_account_id: string | null
+          created_at: string
+          driver_id: string
+          error: string | null
+          id: string
+          method: string
+          provider: string
+          provider_payout_id: string | null
+          status: string
+          updated_at: string
+          upi_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "driver_payouts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      schedule_booking_dispatch: {
+        Args: { _booking_id: string; _scheduled_for: string }
+        Returns: {
+          booking_id: string
+          created_at: string
+          dispatch_at: string
+          id: string
+          last_error: string | null
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "scheduled_dispatch_jobs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_my_active_mode: {
+        Args: { _mode: string }
+        Returns: {
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_my_online: {
+        Args: { _is_online: boolean }
+        Returns: {
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      settle_daily_incentives: {
+        Args: { _day?: string }
+        Returns: {
+          bonus: number
+          driver_id: string
+          rides: number
+        }[]
+      }
+      settle_driver_payout: {
+        Args: {
+          _error?: string
+          _payout_id: string
+          _provider_payout_id?: string
+          _status: string
+        }
+        Returns: {
+          amount: number
+          bank_account_id: string | null
+          created_at: string
+          driver_id: string
+          error: string | null
+          id: string
+          method: string
+          provider: string
+          provider_payout_id: string | null
+          status: string
+          updated_at: string
+          upi_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "driver_payouts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      validate_coupon: {
+        Args: { _code: string; _fare: number }
+        Returns: {
+          code: string
+          discount: number
+          message: string
+        }[]
+      }
+    }
+    Enums: {
+      address_kind: "home" | "shop" | "other"
+      app_role: "customer" | "driver" | "admin"
+      booking_status:
+        | "pending"
+        | "accepted"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+      coupon_kind: "flat" | "percent"
+      kyc_status: "not_submitted" | "pending" | "approved" | "rejected"
+      payment_method: "cod" | "wallet" | "upi" | "card" | "netbanking"
+      payment_state: "created" | "paid" | "failed" | "refunded"
+      payment_status: "pending" | "paid" | "failed" | "refunded"
+      sms_event: "accepted" | "started" | "completed"
+      sms_recipient: "customer" | "driver"
+      sms_status: "queued" | "sent" | "failed"
+      vehicle_type: "tata_ace" | "pickup_8ft" | "tata_407"
+      withdrawal_status: "requested" | "paid" | "rejected"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      address_kind: ["home", "shop", "other"],
+      app_role: ["customer", "driver", "admin"],
+      booking_status: [
+        "pending",
+        "accepted",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ],
+      coupon_kind: ["flat", "percent"],
+      kyc_status: ["not_submitted", "pending", "approved", "rejected"],
+      payment_method: ["cod", "wallet", "upi", "card", "netbanking"],
+      payment_state: ["created", "paid", "failed", "refunded"],
+      payment_status: ["pending", "paid", "failed", "refunded"],
+      sms_event: ["accepted", "started", "completed"],
+      sms_recipient: ["customer", "driver"],
+      sms_status: ["queued", "sent", "failed"],
+      vehicle_type: ["tata_ace", "pickup_8ft", "tata_407"],
+      withdrawal_status: ["requested", "paid", "rejected"],
+    },
+  },
+} as const
