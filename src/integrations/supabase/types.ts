@@ -905,6 +905,7 @@ export type Database = {
           is_online: boolean
           kyc_status: Database["public"]["Enums"]["kyc_status"]
           name: string
+          onboarding_completed: boolean
           phone: string
           referral_code: string | null
         }
@@ -915,6 +916,7 @@ export type Database = {
           is_online?: boolean
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           name: string
+          onboarding_completed?: boolean
           phone: string
           referral_code?: string | null
         }
@@ -925,6 +927,7 @@ export type Database = {
           is_online?: boolean
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           name?: string
+          onboarding_completed?: boolean
           phone?: string
           referral_code?: string | null
         }
@@ -1335,6 +1338,7 @@ export type Database = {
           is_online: boolean
           kyc_status: Database["public"]["Enums"]["kyc_status"]
           name: string
+          onboarding_completed: boolean
           phone: string
           referral_code: string | null
         }
@@ -1452,6 +1456,7 @@ export type Database = {
           is_online: boolean
           kyc_status: Database["public"]["Enums"]["kyc_status"]
           name: string
+          onboarding_completed: boolean
           phone: string
           referral_code: string | null
         }
@@ -1471,6 +1476,7 @@ export type Database = {
           is_online: boolean
           kyc_status: Database["public"]["Enums"]["kyc_status"]
           name: string
+          onboarding_completed: boolean
           phone: string
           referral_code: string | null
         }
