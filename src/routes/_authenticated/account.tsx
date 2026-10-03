@@ -68,6 +68,7 @@ export const Route = createFileRoute("/_authenticated/account")({
 
 function AccountPage() {
   const { user, profile, roles: cachedRoles, activeMode, loading: authLoading } = useAuth();
+  const qc = useQueryClient();
   const [name, setName] = useState("");
   // Authoritative role check straight from the database on every visit, so a
   // stale cached role can never show customer-only sections to a driver.
