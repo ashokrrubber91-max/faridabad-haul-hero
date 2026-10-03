@@ -31,7 +31,7 @@ jobs:
         run: bun run typecheck
 
       - name: Lint
-        run: bunx eslint . --max-warnings=20
+        run: bunx eslint . --max-warnings=0
 
       - name: Unit tests
         run: bun run test:unit
