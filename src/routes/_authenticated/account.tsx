@@ -68,6 +68,7 @@ export const Route = createFileRoute("/_authenticated/account")({
 
 function AccountPage() {
   const { user, profile, roles: cachedRoles, activeMode, loading: authLoading } = useAuth();
+  const [name, setName] = useState("");
   // Authoritative role check straight from the database on every visit, so a
   // stale cached role can never show customer-only sections to a driver.
   const freshRoles = useQuery({
@@ -267,14 +268,13 @@ function AccountPage() {
     console.log("[MiniPort account]", {
       active_mode: activeMode,
       user_roles: roles,
-      kyc_status: driverKycStatus.data ?? profile?.kyc_status ?? null,
+      kyc_status: profile?.kyc_status ?? null,
       view: isAdmin ? "admin" : isDriverProfile ? "driver" : "customer",
     });
   }, [
     driverStateKnown,
     activeMode,
     roles.join(","),
-    driverKycStatus.data,
     isDriverProfile,
     isAdmin,
   ]);
