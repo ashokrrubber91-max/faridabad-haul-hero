@@ -1176,6 +1176,7 @@ export type Database = {
         }
         Update: {
           active_mode?: string
+          onboarding_completed?: boolean
           created_at?: string
           id?: string
           is_online?: boolean
