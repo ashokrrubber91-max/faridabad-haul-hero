@@ -48,9 +48,14 @@ export const Route = createFileRoute("/_authenticated/driver")({
 type IncentiveTier = { rides_required: number; bonus_amount: number; label: string };
 
 function DriverPage() {
-  const { user, role, roles, activeMode, profile, loading } = useAuth();
+  const { user, role, roles, activeMode, profile, loading, setActiveMode } = useAuth();
   const qc = useQueryClient();
   const [dismissed, setDismissed] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!user || role !== "driver" || activeMode === "driver") return;
+    void setActiveMode("driver").catch(() => undefined);
+  }, [user, role, activeMode, setActiveMode]);
 
   const setOnline = useMutation({
     mutationFn: async (next: boolean) => {
