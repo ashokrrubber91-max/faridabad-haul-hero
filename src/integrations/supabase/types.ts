@@ -2468,6 +2468,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      ensure_my_referral_code: { Args: never; Returns: string }
       expire_stale_bookings: { Args: never; Returns: number }
       generate_unique_referral_code: { Args: never; Returns: string }
       get_booking_otps: {
