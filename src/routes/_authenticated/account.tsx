@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { ReferralCard } from "@/components/referrals/ReferralCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -42,6 +42,9 @@ import { AdminAccountProfile } from "@/components/admin/AdminAccountProfile";
 import { signOutEverywhere } from "@/lib/session";
 import { BecomeDriverCard } from "@/components/driver/BecomeDriverCard";
 import { DeleteAccountCard } from "@/components/account/DeleteAccountCard";
+import { CustomerProfileView } from "@/components/account/CustomerProfileView";
+import { DriverProfileView } from "@/components/account/DriverProfileView";
+import { DailyPassCard } from "@/components/driver/DailyPassCard";
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -82,73 +85,34 @@ function AccountPage() {
     },
   });
   const roles: string[] = [...cachedRoles, ...(freshRoles.data ?? [])];
-  const qc = useQueryClient();
-  const [name, setName] = useState("");
   const isAdmin = roles.includes("admin");
-  const isDriverAccount = roles.includes("driver");
-  const driverKycStatus = useQuery({
-    queryKey: ["account-driver-kyc-status", user?.id],
-    enabled: !!user && !isAdmin,
+
+  // Account rendering is governed by the authoritative profiles.active_mode
+  // value fetched directly from Supabase on every visit. Cached auth state or
+  // stale driver/application rows must never change the profile view.
+  const activeModeQuery = useQuery({
+    queryKey: ["account-active-mode", user?.id],
+    enabled: !!user,
+    staleTime: 0,
+    refetchOnMount: "always",
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("driver_kyc")
-        .select("status")
-        .eq("driver_id", user!.id)
-        .limit(1)
-        .maybeSingle();
+        .from("profiles")
+        .select("active_mode")
+        .eq("id", user!.id)
+        .single();
       if (error) throw error;
-      return data?.status ?? null;
+      return data.active_mode as "customer" | "driver";
     },
   });
 
-  const driverProfile = useQuery({
-    queryKey: ["account-driver-profile", user?.id],
-    enabled: !!user && !isAdmin,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("driver_profiles")
-        .select("user_id")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const driverApplication = useQuery({
-    queryKey: ["account-driver-application-status", user?.id],
-    enabled: !!user && !isAdmin,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("driver_applications")
-        .select("status")
-        .eq("user_id", user!.id)
-        .order("applied_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data?.status ?? null;
-    },
-  });
-  // Once a user has entered driver verification, their Account page is the
-  // driver profile. Customer-only GST/address/invoice sections must never
-  // appear in that view, even before the driver role is refreshed locally.
-  const isDriverProfile =
-    isDriverAccount ||
-    !!driverProfile.data ||
-    activeMode === "driver" ||
-    ["pending", "approved", "rejected"].includes(driverKycStatus.data ?? "") ||
-    ["submitted", "approved", "rejected", "pending"].includes(driverApplication.data ?? "");
-  const isDriverMode = isDriverProfile && activeMode === "driver";
-  // GSTIN, saved-address and customer invoice records belong only to customer
-  // accounts. Never render them in driver mode, even if role state is stale.
-  // Only show customer sections once every driver signal has loaded cleanly.
+  const authoritativeActiveMode = activeModeQuery.data ?? null;
+  const isDriverProfile = !isAdmin && authoritativeActiveMode === "driver";
+  const isCustomerProfile = !isAdmin && authoritativeActiveMode === "customer";
+  const isDriverMode = isDriverProfile;
   const driverStateKnown =
-    !authLoading &&
-    freshRoles.isSuccess &&
-    (isAdmin ||
-      (driverKycStatus.isSuccess && driverProfile.isSuccess && driverApplication.isSuccess));
-  const showCustomerSections = driverStateKnown && !isDriverProfile && !isAdmin;
+    !authLoading && freshRoles.isSuccess && activeModeQuery.isSuccess;
+  const showCustomerSections = driverStateKnown && isCustomerProfile;
 
   const monthlyDriverEarnings = useQuery({
     queryKey: ["driver-monthly-earnings", user?.id],
@@ -315,6 +279,14 @@ function AccountPage() {
     isAdmin,
   ]);
 
+  if (activeModeQuery.isError) {
+    return (
+      <div className="surface-card p-5 text-sm text-destructive">
+        Could not determine the account mode. Please refresh and try again.
+      </div>
+    );
+  }
+
   // Never fall back to the customer view while roles/driver state are loading.
   if (!driverStateKnown) {
     return (
@@ -327,8 +299,11 @@ function AccountPage() {
     );
   }
 
+  const ProfileView = isDriverProfile ? DriverProfileView : CustomerProfileView;
+
   return (
-    <div className="space-y-5">
+    <ProfileView>
+      <div className="space-y-5">
       <header>
         <h1 className="font-display text-3xl tracking-wide text-secondary">Account</h1>
         <p className="text-sm text-muted-foreground">
@@ -381,6 +356,7 @@ function AccountPage() {
 
       {isAdmin && <AdminAccountProfile />}
       {isDriverProfile && !isAdmin && <DriverAccountProfile />}
+      {isDriverProfile && !isAdmin && <DailyPassCard />}
       <NotificationsCard />
       {!isAdmin && <ReferralCard />}
 
@@ -617,6 +593,7 @@ function AccountPage() {
       )}
 
       <SupportChat role={isDriverMode ? "driver" : "customer"} />
-    </div>
+      </div>
+    </ProfileView>
   );
 }
