@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Bell, Camera, CheckCircle2, MapPin, Mic, XCircle } from "lucide-react";
 import {
   Dialog,
@@ -42,6 +43,19 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
     queryFn: () => hasCurrentConsent(userId),
     staleTime: Infinity,
   });
+  const onboardingProfile = useQuery({
+    queryKey: ["onboarding-profile", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("onboarding_completed")
+        .eq("id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.onboarding_completed === true;
+    },
+    staleTime: Infinity,
+  });
   const [agree, setAgree] = useState(false);
   const [saving, setSaving] = useState(false);
   const [permsDone, setPermsDone] = useState(true);
@@ -53,8 +67,12 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
     setRecord(loadPermissionRecord(userId));
   }, [userId]);
 
-  const needsConsent = consent.data === false;
-  const open = needsConsent || (consent.data === true && !permsDone);
+  const localOnboardingDone = permissionFlowDone(userId);
+  const accountOnboardingDone = onboardingProfile.data === true;
+  const onboardingDone = localOnboardingDone || accountOnboardingDone;
+  const dataReady = consent.isSuccess && onboardingProfile.isSuccess;
+  const needsConsent = dataReady && consent.data === false;
+  const open = dataReady && !onboardingDone && (needsConsent || consent.data === true);
 
   const accept = async () => {
     setSaving(true);
@@ -79,17 +97,35 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
       toast.info("This device or browser can't grant this permission.");
   };
 
-  const finish = () => {
+  const finish = async () => {
     markPermissionFlowDone(userId);
     setPermsDone(true);
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ onboarding_completed: true })
+      .eq("id", userId);
+
+    if (error) {
+      toast.error("Onboarding saved on this device, but account sync failed. Please try again.");
+      return;
+    }
+
+    onboardingProfile.refetch();
+    qc.setQueryData(["onboarding-profile", userId], true);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && !needsConsent && finish()}>
+    <Dialog
+      open={open}
+      onOpenChange={() => {
+        // Permission onboarding is one-time and can only be completed with Done.
+      }}
+    >
       <DialogContent
         className="max-h-[90vh] overflow-y-auto"
-        onInteractOutside={(e) => needsConsent && e.preventDefault()}
-        onEscapeKeyDown={(e) => needsConsent && e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
       >
         {needsConsent ? (
           <>
@@ -178,7 +214,7 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
               Browsers share location only while MiniPort is open. “Always allow” background
               location is available only in the installed Android app's settings, where supported.
             </p>
-            <Button onClick={finish}>Done</Button>
+            <Button onClick={() => void finish()}>Done</Button>
           </>
         )}
       </DialogContent>
