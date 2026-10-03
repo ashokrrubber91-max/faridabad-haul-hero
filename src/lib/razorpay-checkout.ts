@@ -50,7 +50,7 @@ export interface CheckoutRequest {
   customerPhone?: string;
   description: string;
   method?: string;
-  /** Compatibility flag; payment methods are controlled by Razorpay configuration. */
+  /** Kept for compatibility; Razorpay account settings control available methods. */
   testMode?: boolean;
 }
 
@@ -85,10 +85,9 @@ export async function openRazorpayCheckout(req: CheckoutRequest): Promise<Checko
       handler: (response: CheckoutSuccess) => finish(response),
     };
 
-    // Do not force card/UPI/netbanking restrictions here. Razorpay's merchant
-    // Checkout Configuration controls which methods are available. This is
-    // important in Test Mode too: sandbox credentials and dashboard configuration
-    // determine the methods shown to the user.
+    // Do not force a payment-method restriction here. Razorpay decides which
+    // methods are available for the merchant account; this lets enabled UPI,
+    // cards and other supported methods appear in Test Mode as configured.
     const rzp = new Razorpay(checkoutOptions);
 
     rzp.on("payment.failed", (response: unknown) => {

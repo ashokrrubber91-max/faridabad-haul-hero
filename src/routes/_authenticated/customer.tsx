@@ -1,5 +1,5 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -26,7 +26,7 @@ import { GstinSelect, type CustomerGstin } from "@/components/booking/GstinSelec
 import { ReviewBooking } from "@/components/booking/ReviewBooking";
 import { LocationSearchOverlay, type PlacePick } from "@/components/booking/LocationSearchOverlay";
 import { MapPinConfirm } from "@/components/booking/MapPinConfirm";
-import { LazyLiveTripMap } from "@/components/booking/LazyLiveTripMap";
+import { LiveTripMap } from "@/components/booking/LiveTripMap";
 import { DriverApproachCard } from "@/components/booking/DriverApproachCard";
 
 import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
@@ -51,7 +51,6 @@ import { createTripOrder, confirmTripPayment } from "@/lib/payments.functions";
 import { notifyDriversOfNewBooking } from "@/lib/push.functions";
 import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
 import { computeRoadRoute, createBooking } from "@/lib/routing.functions";
-import { logError, logPaymentError, logSupabaseError } from "@/lib/error-logger";
 
 const ONLINE_METHODS: PaymentMethod[] = ["upi", "card", "netbanking"];
 
@@ -93,11 +92,6 @@ function CustomerPage() {
   const [step, setStep] = useState<"form" | "review">("form");
   const [gstinEnabled, setGstinEnabled] = useState(false);
   const [gstinId, setGstinId] = useState<string | null>(null);
-  const [helperCount, setHelperCount] = useState(0);
-  const [insuranceOpted, setInsuranceOpted] = useState(false);
-  const [cargoValue, setCargoValue] = useState(0);
-  const [ewayBillNumber, setEwayBillNumber] = useState("");
-  const [scheduledFor, setScheduledFor] = useState("");
 
   // Distance always comes from the Routes API on the server — never a
   // straight-line estimate — because the fare is derived from it.
@@ -128,21 +122,8 @@ function CustomerPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalogue.data]);
-  const helperFee = helperCount === 1 ? 250 : helperCount === 2 ? 500 : 0;
-  const insuranceFee = insuranceOpted ? 10 : 0;
-  const preDiscountFare = baseFare + helperFee + insuranceFee;
   const discount = Math.min(baseFare, (promo?.discount ?? 0) + coins);
-  const fare = Math.max(0, preDiscountFare - discount);
-
-  const merchantAccount = useQuery({
-    queryKey: ["merchant-account", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("merchant_accounts").select("id,verified").eq("user_id", user!.id).maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
+  const fare = Math.max(0, baseFare - discount);
 
   const gstins = useQuery({
     queryKey: ["customer-gstins", user?.id],
@@ -198,7 +179,6 @@ function CustomerPage() {
       if (!pickup) throw new Error("Choose pickup location");
       if (!drop) throw new Error("Choose drop location");
       if (distanceKm <= 0) throw new Error("Road distance is still being calculated");
-      if (cargoValue > 50000 && !ewayBillNumber.trim()) throw new Error("E-Way Bill number is required for cargo above ₹50,000");
       const booking = await createBooking({
         data: {
           pickup: {
@@ -230,19 +210,9 @@ function CustomerPage() {
           couponCode: promo?.code ?? null,
           coins,
           paymentMethod: method,
-          helperCount,
-          insuranceOpted,
-          scheduledFor: scheduledFor ? new Date(scheduledFor).toISOString() : null,
-          cargoValue,
-          ewayBillNumber: ewayBillNumber.trim() || null,
-          gstinId: selectedGstin?.id ?? null,
-          businessAccountId: merchantAccount.data?.verified ? merchantAccount.data.id : null,
           notes:
             [
               notes.trim(),
-              helperCount > 0 && `Loading helper: ${helperCount}`,
-              insuranceOpted && "Cargo insurance: ₹10 up to ₹50,000",
-              cargoValue > 0 && `Cargo value: ₹${cargoValue}`,
               stops.length > 0 && `Stops: ${stops.map((s) => s.address).join(" → ")}`,
               pickup.contactName && `Sender: ${pickup.contactName} (${pickup.contactPhone ?? ""})`,
               drop.contactName && `Receiver: ${drop.contactName} (${drop.contactPhone ?? ""})`,
@@ -282,7 +252,6 @@ function CustomerPage() {
             },
           });
         } catch (paymentError) {
-          logPaymentError(paymentError, { action: "trip_payment", bookingId: booking.id });
           await supabase.rpc("cancel_booking", {
             _booking_id: booking.id,
             _reason:
@@ -294,11 +263,7 @@ function CustomerPage() {
 
       // Ring every online, verified driver. Never let a push failure break booking.
       try {
-        const scheduledTs = scheduledFor ? new Date(scheduledFor).getTime() : null;
-        const dispatchCutoff = Date.now() + 30 * 60 * 1000;
-        if (!scheduledTs || scheduledTs <= dispatchCutoff) {
-          await notifyDriversOfNewBooking({ data: { bookingId: booking.id } });
-        }
+        await notifyDriversOfNewBooking({ data: { bookingId: booking.id } });
       } catch {
         /* alerts are best-effort */
       }
@@ -317,17 +282,11 @@ function CustomerPage() {
       setCoins(0);
       setGstinEnabled(false);
       setGstinId(null);
-      setHelperCount(0);
-      setInsuranceOpted(false);
-      setCargoValue(0);
-      setEwayBillNumber("");
-      setScheduledFor("");
       setStep("form");
       qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
       qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
     },
     onError: (e: Error) => {
-      logError(e, { source: "booking", action: "create_booking" });
       toast.error(e.message);
       qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
     },
@@ -447,13 +406,7 @@ function CustomerPage() {
 
             <WaypointManager
               stops={stops}
-              onAdd={() => {
-                if (stops.length >= 4) {
-                  toast.info("Up to 4 drop-off stops are supported");
-                  return;
-                }
-                setStopStage({ type: "search" });
-              }}
+              onAdd={() => setStopStage({ type: "search" })}
               onRemove={(i) => setStops((prev) => prev.filter((_, idx) => idx !== i))}
               onMoveUp={(i) =>
                 setStops((prev) => {
@@ -552,16 +505,6 @@ function CustomerPage() {
               setCoins={setCoins}
               method={method}
               setMethod={setMethod}
-              helperCount={helperCount}
-              setHelperCount={setHelperCount}
-              insuranceOpted={insuranceOpted}
-              setInsuranceOpted={setInsuranceOpted}
-              cargoValue={cargoValue}
-              setCargoValue={setCargoValue}
-              ewayBillNumber={ewayBillNumber}
-              setEwayBillNumber={setEwayBillNumber}
-              scheduledFor={scheduledFor}
-              setScheduledFor={setScheduledFor}
             />
 
             <div className="rounded-md bg-secondary/95 px-4 py-3 text-secondary-foreground">
@@ -581,8 +524,6 @@ function CustomerPage() {
                     <p className="text-xs opacity-80">
                       ₹{selectedVehicle.base_fare} base + ₹{selectedVehicle.per_km_fare}/km ×{" "}
                       {distanceKm} km = ₹{baseFare}
-                      {helperFee > 0 ? ` + ₹${helperFee} helper` : ""}
-                      {insuranceFee > 0 ? " + ₹10 insurance" : ""}
                       {discount > 0 ? ` − ₹${discount} off` : ""}
                     </p>
                   )}
@@ -629,11 +570,6 @@ function CustomerPage() {
             fare={fare}
             notes={notes}
             gstin={selectedGstin}
-            helperCount={helperCount}
-            helperFee={helperFee}
-            insuranceOpted={insuranceOpted}
-            insuranceFee={insuranceFee}
-            scheduledFor={scheduledFor}
             onBack={() => setStep("form")}
             onEditPickup={() => {
               setPending(pickup);
@@ -714,7 +650,18 @@ function CustomerPage() {
                     />
                   )}
                   {(b.status === "accepted" || b.status === "in_progress") && (
-                    <Suspense fallback={<div className="surface-card h-64 animate-pulse" />}><LazyLiveTripMap bookingId={b.id} driverId={b.driver_id} pickupAddress={b.pickup_address} dropAddress={b.drop_address} pickupLat={b.pickup_lat} pickupLng={b.pickup_lng} dropLat={b.drop_lat} dropLng={b.drop_lng} phase={b.status === "in_progress" ? "in_progress" : "accepted"} distanceKm={Number(b.distance_km ?? 0)} /></Suspense>
+                    <LiveTripMap
+                      bookingId={b.id}
+                      driverId={b.driver_id}
+                      pickupAddress={b.pickup_address}
+                      dropAddress={b.drop_address}
+                      pickupLat={b.pickup_lat}
+                      pickupLng={b.pickup_lng}
+                      dropLat={b.drop_lat}
+                      dropLng={b.drop_lng}
+                      phase={b.status === "accepted" ? "accepted" : "in_progress"}
+                      distanceKm={Number(b.distance_km) || 0}
+                    />
                   )}
                   <WaitingChargesCard booking={b} vehicle={vehicleFor(b.vehicle_type)} />
 

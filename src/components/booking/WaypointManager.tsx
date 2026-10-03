@@ -69,8 +69,8 @@ export function WaypointManager({
           ))}
         </ul>
       )}
-      <Button type="button" variant="outline" size="sm" onClick={onAdd} disabled={stops.length >= 4} className="w-full">
-        <Plus className="h-3.5 w-3.5" /> {stops.length >= 4 ? "Maximum 4 stops" : "Add a drop-off stop"}
+      <Button type="button" variant="outline" size="sm" onClick={onAdd} className="w-full">
+        <Plus className="h-3.5 w-3.5" /> Add a stop
       </Button>
     </div>
   );

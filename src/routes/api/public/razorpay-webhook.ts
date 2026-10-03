@@ -44,11 +44,11 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
 
         const signature = request.headers.get("x-razorpay-signature");
         const rawBody = await request.text();
-        if (!signature) return json({ ok: false, error: "missing_signature" }, 400);
+        if (!signature) return json({ ok: false, error: "missing_signature" }, 401);
 
         const { verifyWebhookSignature } = await import("@/lib/razorpay.server");
         if (!(await verifyWebhookSignature(secret, rawBody, signature))) {
-          return json({ ok: false, error: "invalid_signature" }, 400);
+          return json({ ok: false, error: "invalid_signature" }, 401);
         }
 
         type Entity = {

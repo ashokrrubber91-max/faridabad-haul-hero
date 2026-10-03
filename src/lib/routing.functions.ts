@@ -1,8 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { withErrorLogging } from "@/lib/error-logger";
-import { cargoInsuranceCharge, helperCharge } from "@/lib/booking-pricing";
 
 const point = z.object({
   lat: z.number().min(-90).max(90),
@@ -47,24 +45,16 @@ export const createBooking = createServerFn({ method: "POST" })
       .object({
         pickup: place,
         drop: place,
-        stops: z.array(place).max(4).default([]),
+        stops: z.array(place).max(3).default([]),
         vehicle: vehicleId,
         couponCode: z.string().trim().max(40).nullable().default(null),
         coins: z.number().int().min(0).max(100000).default(0),
         paymentMethod: z.enum(["cod", "upi", "card", "netbanking", "wallet"]),
         notes: z.string().trim().max(2000).nullable().default(null),
-        helperCount: z.number().int().min(0).max(2).default(0),
-        insuranceOpted: z.boolean().default(false),
-        scheduledFor: z.string().datetime().nullable().default(null),
-        cargoValue: z.number().min(0).max(100000000).default(0),
-        ewayBillNumber: z.string().trim().max(40).nullable().default(null),
-        gstinId: z.string().uuid().nullable().default(null),
-        businessAccountId: z.string().uuid().nullable().default(null),
       })
       .parse(input),
   )
-  .handler(({ data, context }) => withErrorLogging(async () => {
-    if (data.cargoValue > 50000 && !data.ewayBillNumber) throw new Error("E-Way Bill number is required for cargo above ₹50,000");
+  .handler(async ({ data, context }) => {
     const { computeRoadRouteServer } = await import("@/lib/routing.server");
     const route = await computeRoadRouteServer([
       { lat: data.pickup.lat, lng: data.pickup.lng },
@@ -96,26 +86,11 @@ export const createBooking = createServerFn({ method: "POST" })
         service_zone: "Faridabad",
         vehicle_type: data.vehicle,
         distance_km: route.distanceKm,
-        fare:
-          Math.round(
-            Number(vt.base_fare) +
-              Number(vt.per_km_fare) * route.distanceKm +
-              helperCharge(data.helperCount) + cargoInsuranceCharge(data.insuranceOpted),
-          ),
+        fare: Math.round(Number(vt.base_fare) + Number(vt.per_km_fare) * route.distanceKm),
         coupon_code: data.couponCode,
         coins_redeemed: data.coins,
         payment_method: data.paymentMethod,
         notes: data.notes,
-        helper_count: data.helperCount,
-        helper_fee: helperCharge(data.helperCount),
-        insurance_opted: data.insuranceOpted,
-        insurance_fee: cargoInsuranceCharge(data.insuranceOpted),
-        insurance_limit: data.insuranceOpted ? 50000 : 0,
-        scheduled_for: data.scheduledFor,
-        cargo_value: data.cargoValue,
-        eway_bill_number: data.ewayBillNumber,
-        gstin_id: data.gstinId,
-        business_account_id: data.businessAccountId,
       })
       .select("id, fare, distance_km")
       .single();
@@ -123,12 +98,9 @@ export const createBooking = createServerFn({ method: "POST" })
 
     // Structured itinerary: sequence 0 = pickup, 1..3 = extra stops, 10 = drop.
     // Persisting stops properly replaces the old "Stops: ..." note text.
-    const orderedStops = route.optimizedIntermediateWaypointIndex?.length
-      ? route.optimizedIntermediateWaypointIndex.map((i) => data.stops[i]).filter(Boolean)
-      : data.stops;
     const itinerary = [
       { seq: 0, kind: "pickup" as const, place: data.pickup },
-      ...orderedStops.map((s, i) => ({ seq: i + 1, kind: "stop" as const, place: s })),
+      ...data.stops.map((s, i) => ({ seq: i + 1, kind: "stop" as const, place: s })),
       { seq: 10, kind: "drop" as const, place: data.drop },
     ];
     const { error: stopsError } = await context.supabase.from("booking_stops").insert(
@@ -145,13 +117,6 @@ export const createBooking = createServerFn({ method: "POST" })
       })),
     );
     if (stopsError) throw new Error(stopsError.message);
-    if (data.scheduledFor) {
-      const { error: scheduleError } = await context.supabase.rpc("schedule_booking_dispatch", {
-        _booking_id: booking.id,
-        _scheduled_for: data.scheduledFor,
-      });
-      if (scheduleError) throw new Error(scheduleError.message);
-    }
 
     return {
       id: booking.id,
@@ -159,4 +124,4 @@ export const createBooking = createServerFn({ method: "POST" })
       distanceKm: Number(booking.distance_km),
       durationMin: route.durationMin,
     };
-  }, { source: "booking", action: "createBooking" }));
+  });

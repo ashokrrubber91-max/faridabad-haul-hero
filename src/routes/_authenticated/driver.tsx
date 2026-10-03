@@ -1,7 +1,7 @@
 import type { AnyRow } from "@/lib/rows";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   IndianRupee,
   ShieldCheck,
+  Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PushAlertToggle } from "@/components/driver/PushAlertToggle";
@@ -33,11 +34,6 @@ import { vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
 import { addressLines } from "@/lib/address";
 
 import { SupportChat } from "@/components/support/SupportChat";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-const PODUploadModal = lazy(() => import("@/components/driver/PODUploadModal").then((m) => ({ default: m.PODUploadModal })));
-import { enqueueOffline } from "@/lib/offline-queue";
-import { downloadDeliveryReceipt } from "@/lib/delivery-receipt";
-import { DriverDailyPassCard } from "@/components/driver/DriverDailyPassCard";
 import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
 import { useVehicleTypes, type VehicleType } from "@/lib/vehicles";
@@ -45,7 +41,7 @@ import { sweepStaleBookings } from "@/lib/notifications.functions";
 
 export const Route = createFileRoute("/_authenticated/driver")({
   head: () => ({ meta: [{ title: "Driver — MiniPort" }] }),
-  component: () => <ErrorBoundary label="driver dashboard"><DriverPage /></ErrorBoundary>,
+  component: DriverPage,
 });
 
 type IncentiveTier = { rides_required: number; bonus_amount: number; label: string };
@@ -60,7 +56,10 @@ function DriverPage() {
       if (next && profile?.kyc_status !== "approved" && role !== "admin") {
         throw new Error("Driver must complete verification before going online.");
       }
-      const { error } = await supabase.rpc("set_my_online", { _is_online: next });
+      const { error } = await supabase
+        .from("profiles")
+        .update({ is_online: next })
+        .eq("id", user!.id);
       if (error) throw error;
       return next;
     },
@@ -97,11 +96,7 @@ function DriverPage() {
       ]);
       if (error) throw error;
       const skipped = new Set((passed.data ?? []).map((p) => p.booking_id));
-      const dispatchCutoff = Date.now() + 30 * 60 * 1000;
-      return (data ?? []).filter((b) =>
-        (b.driver_id === user!.id || !skipped.has(b.id)) &&
-        (!b.scheduled_for || new Date(b.scheduled_for).getTime() <= dispatchCutoff)
-      );
+      return (data ?? []).filter((b) => b.driver_id === user!.id || !skipped.has(b.id));
     },
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
@@ -277,13 +272,11 @@ function DriverPage() {
       otp,
       next,
       podPath,
-      signaturePath,
     }: {
       id: string;
       otp: string;
       next: "in_progress" | "completed";
       podPath?: string | null;
-      signaturePath?: string | null;
     }) => {
       const code = otp.replace(/\D/g, "");
       if (code.length !== 4) throw new Error("Enter the 4-digit code from the customer");
@@ -294,13 +287,6 @@ function DriverPage() {
           _pod_path: podPath,
         });
         if (podError) throw podError;
-      }
-      if (signaturePath) {
-        const { error: signatureError } = await supabase.rpc("attach_delivery_signature", {
-          _booking_id: id,
-          _signature_path: signaturePath,
-        });
-        if (signatureError) throw signatureError;
       }
       const { data, error } = await supabase.rpc("verify_booking_otp", {
         _booking_id: id,
@@ -317,26 +303,6 @@ function DriverPage() {
           ? "Pickup verified — trip started"
           : "Delivery confirmed — trip completed 🎉",
       );
-      if (v.next === "completed" && activeJob?.id) {
-        const job = activeJob;
-        downloadDeliveryReceipt({
-          id: job.id,
-          pickup_address: job.pickup_address,
-          drop_address: job.drop_address,
-          vehicle_type: job.vehicle_type,
-          fare: Number(job.fare ?? 0),
-          driver_net_earning: Number(job.driver_net_earning ?? 0),
-          helper_count: Number(job.helper_count ?? 0),
-          helper_fee: Number(job.helper_fee ?? 0),
-          insurance_fee: Number(job.insurance_fee ?? 0),
-          cargo_value: Number(job.cargo_value ?? 0),
-          gstin_id: job.gstin_id ?? null,
-          eway_bill_number: job.eway_bill_number ?? null,
-          pod_photo_url: v.podPath ?? job.pod_photo_url ?? null,
-          pod_signature_url: v.signaturePath ?? job.pod_signature_url ?? null,
-          updated_at: job.updated_at,
-        });
-      }
       void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -492,8 +458,6 @@ function DriverPage() {
         </Link>
       </section>
 
-      <DriverDailyPassCard />
-
       {/* Incentive card */}
       <section className="surface-card p-5">
         <div className="mb-3 flex items-center justify-between">
@@ -555,13 +519,12 @@ function DriverPage() {
       {activeJob && (
         <ActiveJobCard
           job={activeJob}
-          onVerify={(otp, next, podPath, signaturePath) =>
+          onVerify={(otp, next, podPath) =>
             verifyOtp.mutate({
               id: activeJob.id,
               otp,
               next,
               podPath,
-              signaturePath,
             })
           }
           onStage={(action) => setStage.mutate({ id: activeJob.id, action })}
@@ -831,7 +794,7 @@ function ActiveJobCard({
   pending,
 }: {
   job: AnyRow;
-  onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null, signaturePath?: string | null) => void;
+  onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null) => void;
   onStage: (
     action: "start_loading" | "stop_loading" | "start_unloading" | "stop_unloading",
   ) => void;
@@ -841,88 +804,73 @@ function ActiveJobCard({
 }) {
   const [otp, setOtp] = useState("");
   const [podPath, setPodPath] = useState<string | null>(null);
-  const [photoUploaded, setPhotoUploaded] = useState(false);
-  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
-  const [signatureBlob, setSignatureBlob] = useState<Blob | null>(null);
-  const [signaturePath, setSignaturePath] = useState<string | null>(null);
-  const [podOpen, setPodOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   const uploadProof = async (file: File) => {
     setUploading(true);
-    try {
-      const { data: auth } = await supabase.auth.getUser();
-      const uid = auth.user?.id;
-      if (!uid) throw new Error("Session expired — please sign in again");
-      const path = uid + "/" + job.id + "-" + Date.now() + ".jpg";
-      setPodPath(path);
-      setPendingPhoto(file);
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
-        await enqueueOffline({
-          kind: "pod_upload",
-          payload: { bucket: "pod-files", path },
-          blob: file,
-        });
-        setPhotoUploaded(false);
-        toast.info("Offline — delivery photo queued. Reconnect before Drop OTP.");
-        return;
-      }
-      const { error } = await supabase.storage
-        .from("pod-files")
-        .upload(path, file, { upsert: false, contentType: file.type || "image/jpeg" });
-      if (error) throw error;
-      setPhotoUploaded(true);
-      toast.success("Proof photo uploaded");
-    } catch (e) {
-      setPhotoUploaded(false);
-      toast.error(e instanceof Error ? e.message : "Could not upload proof photo");
-    } finally {
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth.user?.id;
+    if (!uid) {
       setUploading(false);
+      toast.error("Session expired — please sign in again");
+      return;
     }
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${uid}/${job.id}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from("delivery-proof")
+      .upload(path, file, { upsert: true });
+    setUploading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setPodPath(path);
+    toast.success("Proof photo attached");
   };
-
-  useEffect(() => {
-    if (!pendingPhoto) return;
-    const retry = () => {
-      if (!navigator.onLine || photoUploaded) return;
-      void uploadProof(pendingPhoto);
-    };
-    window.addEventListener("online", retry);
-    return () => window.removeEventListener("online", retry);
-  }, [pendingPhoto, photoUploaded]);
-
   const next = job.status === "accepted" ? "in_progress" : "completed";
   const label = next === "in_progress" ? "Verify Pickup OTP" : "Verify Drop OTP";
   const contact = extractContact(job.notes, next === "in_progress" ? "Sender" : "Receiver");
   const commission = Math.round(Number(job.fare) * (Number(job.commission_rate) || 0.1));
   const net = Number(job.fare) - commission;
   const isCash = job.payment_method === "cod";
+  // Navigate to the exact pin the customer dropped whenever we have it.
   const targetLat = next === "in_progress" ? job.pickup_lat : job.drop_lat;
   const targetLng = next === "in_progress" ? job.pickup_lng : job.drop_lng;
   const navUrl =
     typeof targetLat === "number" && typeof targetLng === "number"
-      ? "https://www.google.com/maps/dir/?api=1&destination=" + targetLat + "," + targetLng + "&travelmode=driving"
-      : "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(
+      ? `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}&travelmode=driving`
+      : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
           next === "in_progress" ? job.pickup_address : job.drop_address,
-        ) + "&travelmode=driving";
-
+        )}&travelmode=driving`;
   return (
     <section className="surface-card border-l-4 border-l-primary p-4">
       <p className="text-xs font-semibold uppercase tracking-wider text-primary">Active job</p>
-      <JobAddress label="Pickup" address={job.pickup_address} lat={job.pickup_lat} lng={job.pickup_lng} />
+      <JobAddress
+        label="Pickup"
+        address={job.pickup_address}
+        lat={job.pickup_lat}
+        lng={job.pickup_lng}
+      />
       <JobAddress label="Drop" address={job.drop_address} lat={job.drop_lat} lng={job.drop_lng} />
 
-      <div className={`mt-3 rounded-md px-3 py-2 text-sm ${isCash ? "bg-warning/15 text-warning-foreground" : "bg-success/15 text-success-foreground"}`}>
+      <div
+        className={`mt-3 rounded-md px-3 py-2 text-sm ${isCash ? "bg-warning/15 text-warning-foreground" : "bg-success/15 text-success-foreground"}`}
+      >
         <IndianRupee className="mr-1 inline h-3.5 w-3.5" />
         {isCash
-          ? "Payment Mode: Cash — Collect ₹" + Number(job.fare).toFixed(0) + " from customer"
-          : "Payment Mode: Online — ₹" + net.toFixed(0) + " will be added to your wallet"}
+          ? `Payment Mode: Cash — Collect ₹${Number(job.fare).toFixed(0)} from customer`
+          : `Payment Mode: Online — ₹${net.toFixed(0)} will be added to your wallet`}
       </div>
 
       <WaitingChargesCard booking={job} vehicle={vehicle} />
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+        <Button
+          asChild
+          size="sm"
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
+        >
           <a href={navUrl} target="_blank" rel="noopener noreferrer">
             <MapPin className="h-3.5 w-3.5" /> Open Google Maps Navigation
           </a>
@@ -930,56 +878,59 @@ function ActiveJobCard({
         {contact.phone && (
           <Button asChild size="sm" variant="outline">
             <a href={`tel:${contact.phone}`}>
-              <Phone className="h-3.5 w-3.5" /> Call {contact.name || (next === "in_progress" ? "sender" : "receiver")}
+              <Phone className="h-3.5 w-3.5" /> Call{" "}
+              {contact.name || (next === "in_progress" ? "sender" : "receiver")}
             </a>
           </Button>
         )}
         {job.status === "accepted" && !job.loading_started_at && (
-          <Button size="sm" variant="outline" disabled={stageBusy} onClick={() => onStage("start_loading")}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={stageBusy}
+            onClick={() => onStage("start_loading")}
+          >
             <Timer className="h-3.5 w-3.5" /> Arrived — start loading
           </Button>
         )}
         {job.status === "accepted" && job.loading_started_at && !job.loading_stopped_at && (
-          <Button size="sm" variant="outline" disabled={stageBusy} onClick={() => onStage("stop_loading")}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={stageBusy}
+            onClick={() => onStage("stop_loading")}
+          >
             <Timer className="h-3.5 w-3.5" /> Stop loading
           </Button>
         )}
         {job.status === "in_progress" && !job.unloading_started_at && (
-          <Button size="sm" variant="outline" disabled={stageBusy} onClick={() => onStage("start_unloading")}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={stageBusy}
+            onClick={() => onStage("start_unloading")}
+          >
             <Timer className="h-3.5 w-3.5" /> Reached drop — start unloading
           </Button>
         )}
         {job.status === "in_progress" && job.unloading_started_at && !job.unloading_stopped_at && (
-          <Button size="sm" variant="outline" disabled={stageBusy} onClick={() => onStage("stop_unloading")}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={stageBusy}
+            onClick={() => onStage("stop_unloading")}
+          >
             <Timer className="h-3.5 w-3.5" /> Stop unloading
           </Button>
         )}
       </div>
-
-      {next === "completed" && (
-        <div className="mt-4 rounded-md border border-primary/40 bg-primary/5 p-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-primary">Proof of delivery</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Photo + receiver signature are mandatory before the Drop OTP is unlocked.
-          </p>
-          <Button className="mt-2" size="sm" onClick={() => setPodOpen(true)}>
-            {photoUploaded && signatureBlob ? "Edit POD" : "Capture POD"}
-          </Button>
-          {photoUploaded && signatureBlob && (
-            <p className="mt-2 text-xs text-success">POD ready — Drop OTP is unlocked.</p>
-          )}
-          {podPath && !photoUploaded && (
-            <p className="mt-2 text-xs text-warning-foreground">Photo is queued for upload. Reconnect to unlock Drop OTP.</p>
-          )}
-        </div>
-      )}
 
       <div className="mt-4 rounded-md border border-primary/40 bg-primary/5 p-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-primary">{label}</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
           {next === "in_progress"
             ? "Ask the sender for the 4-digit pickup OTP to start the trip."
-            : "Ask the receiver for the 4-digit drop OTP after POD is complete."}
+            : "Ask the receiver for the 4-digit drop OTP to complete the trip. A delivery photo is extra proof, not a substitute."}
         </p>
         <div className="mt-2 flex gap-2">
           <Input
@@ -992,44 +943,48 @@ function ActiveJobCard({
           />
           <Button
             size="sm"
-            disabled={
-              pending ||
-              otp.length !== 4 ||
-              (next === "completed" &&
-                (!photoUploaded || !signatureBlob || (typeof navigator !== "undefined" && !navigator.onLine)))
-            }
-            onClick={async () => {
-              let sigPath = signaturePath;
-              if (next === "completed" && signatureBlob && !sigPath) {
-                const { data: auth } = await supabase.auth.getUser();
-                const uid = auth.user?.id;
-                if (!uid) { toast.error("Session expired — please sign in again"); return; }
-                const path = uid + "/" + job.id + "-signature-" + Date.now() + ".png";
-                const { error } = await supabase.storage.from("pod-files").upload(path, signatureBlob, { contentType: "image/png", upsert: false });
-                if (error) { toast.error(error.message); return; }
-                sigPath = path;
-                setSignaturePath(path);
-              }
-              onVerify(otp, next, podPath, sigPath);
+            // Proof of delivery is mandatory, so the photo must be added first.
+            disabled={pending || otp.length !== 4 || (next === "completed" && !podPath)}
+            onClick={() => {
+              onVerify(otp, next, podPath);
               setOtp("");
             }}
           >
             {pending ? "Verifying…" : next === "in_progress" ? "Start trip" : "Complete trip"}
           </Button>
         </div>
-      </div>
 
-      <Suspense fallback={null}><PODUploadModal
-        open={podOpen}
-        uploading={uploading}
-        photoReady={photoUploaded}
-        signatureReady={!!signatureBlob}
-        photoPath={podPath}
-        onClose={() => setPodOpen(false)}
-        onPhoto={uploadProof}
-        onSignature={(blob) => { setSignatureBlob(blob); setSignaturePath(null); }}
-        onContinue={async () => setPodOpen(false)}
-      /></Suspense>
+        {next === "completed" && (
+          <div className="mt-3 border-t border-primary/20 pt-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+              Proof of delivery {!podPath && <span className="text-destructive">· required</span>}
+            </p>
+            <label className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-secondary">
+              <Camera className="h-4 w-4 text-primary" />
+              {uploading
+                ? "Uploading…"
+                : podPath
+                  ? "Photo attached — retake"
+                  : "Take / upload delivery photo"}
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void uploadProof(f);
+                }}
+              />
+            </label>
+            {podPath && (
+              <p className="mt-1 text-xs text-success">
+                Photo attached — it will be saved with the trip. The drop OTP is still required.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
     </section>
   );
 }

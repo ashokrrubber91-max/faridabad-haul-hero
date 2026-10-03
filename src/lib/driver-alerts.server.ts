@@ -9,7 +9,7 @@ export async function alertDriversAboutBooking(
   const { data: booking } = await supabaseAdmin
     .from("bookings")
     .select(
-      "id, pickup_address, drop_address, fare, vehicle_type, distance_km, status, service_zone, driver_id, cancelled_at, pickup_lat, pickup_lng",
+      "id, pickup_address, drop_address, fare, vehicle_type, distance_km, status, service_zone, driver_id, cancelled_at",
     )
     .eq("id", bookingId)
     .maybeSingle();
@@ -34,45 +34,10 @@ export async function alertDriversAboutBooking(
   const eligible = (roleRows ?? []).map((r) => r.user_id);
   if (eligible.length === 0) return { sent: 0, failed: 0 };
 
-  // Prefer the nearest recently-active drivers when pickup coordinates are available.
-  // This is notification fan-out, not assignment: the existing server-authoritative
-  // booking acceptance flow still decides who gets the trip.
-  let notifyDriverIds = eligible;
-  if (booking.pickup_lat != null && booking.pickup_lng != null) {
-    const { data: locations } = await supabaseAdmin
-      .from("driver_locations")
-      .select("driver_id, latitude, longitude, updated_at")
-      .in("driver_id", eligible)
-      .gte("updated_at", new Date(Date.now() - 2 * 60 * 1000).toISOString());
-
-    const toRad = (value: number) => (value * Math.PI) / 180;
-    const distanceKm = (lat: number, lng: number) => {
-      const dLat = toRad(lat - Number(booking.pickup_lat));
-      const dLng = toRad(lng - Number(booking.pickup_lng));
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(Number(booking.pickup_lat))) *
-          Math.cos(toRad(lat)) *
-          Math.sin(dLng / 2) ** 2;
-      return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    };
-
-    notifyDriverIds = [...(locations ?? [])]
-      .filter((loc) => Number.isFinite(Number(loc.latitude)) && Number.isFinite(Number(loc.longitude)))
-      .sort((a, b) =>
-        distanceKm(Number(a.latitude), Number(a.longitude)) -
-        distanceKm(Number(b.latitude), Number(b.longitude))
-      )
-      .slice(0, 10)
-      .map((loc) => loc.driver_id);
-
-    if (notifyDriverIds.length === 0) notifyDriverIds = eligible;
-  }
-
   const { data: tokenRows } = await supabaseAdmin
     .from("device_tokens")
     .select("token")
-    .in("user_id", notifyDriverIds);
+    .in("user_id", eligible);
   const tokens = (tokenRows ?? []).map((t) => t.token);
   if (tokens.length === 0) return { sent: 0, failed: 0 };
 

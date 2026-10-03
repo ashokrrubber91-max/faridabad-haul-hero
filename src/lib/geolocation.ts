@@ -1,4 +1,3 @@
-import { getNativeCurrentPosition, nativeGeolocationPermission, isNativeCapacitor } from "@/lib/native-bridge";
 /**
  * Real device geolocation with honest, actionable errors.
  *
@@ -33,8 +32,6 @@ export function isGeolocationSupported(): boolean {
 
 /** "granted" | "prompt" | "denied" | "unknown" — never throws. */
 export async function readPermissionState(): Promise<"granted" | "prompt" | "denied" | "unknown"> {
-  const nativeState = await nativeGeolocationPermission();
-  if (nativeState !== "unknown") return nativeState;
   try {
     const perms = (navigator as Navigator & { permissions?: Permissions }).permissions;
     if (!perms?.query) return "unknown";
@@ -52,10 +49,8 @@ export async function readPermissionState(): Promise<"granted" | "prompt" | "den
 export async function getCurrentFix(
   options: PositionOptions = { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
 ): Promise<GeoFix> {
-  const nativeRuntime = isNativeCapacitor();
-  if (!nativeRuntime && !isGeolocationSupported()) throw failure("unsupported");
+  if (!isGeolocationSupported()) throw failure("unsupported");
   if (
-    !nativeRuntime &&
     typeof window !== "undefined" &&
     !window.isSecureContext &&
     window.location.hostname !== "localhost"
@@ -63,24 +58,6 @@ export async function getCurrentFix(
     throw failure("insecure");
   }
   if ((await readPermissionState()) === "denied") throw failure("denied");
-
-  try {
-    const nativePosition = await getNativeCurrentPosition(options);
-    if (nativePosition) {
-      return {
-        lat: nativePosition.coords.latitude,
-        lng: nativePosition.coords.longitude,
-        accuracyM: nativePosition.coords.accuracy ?? null,
-        at: nativePosition.timestamp ?? Date.now(),
-      };
-    }
-  } catch (error) {
-    if (error instanceof Error && error.message === "NATIVE_LOCATION_DENIED") throw failure("denied");
-    // If a native plugin is unavailable or cannot produce a fix, continue with
-    // the browser API so the same code works in a PWA/WebView.
-  }
-
-  if (!isGeolocationSupported()) throw failure("unsupported");
 
   return new Promise<GeoFix>((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(

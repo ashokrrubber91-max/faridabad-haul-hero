@@ -1,5 +1,3 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
-
 /**
  * Server-only Razorpay helpers. Never import this from a component or from the
  * module scope of a *.functions.ts file.
@@ -10,18 +8,13 @@ const RAZORPAY_API = "https://api.razorpay.com/v1";
 export interface RazorpayCredentials {
   keyId: string;
   keySecret: string;
-  checkoutConfigId?: string;
 }
 
 export function getRazorpayCredentials(): RazorpayCredentials | null {
   const keyId = process.env["RAZORPAY_KEY_ID"];
   const keySecret = process.env["RAZORPAY_KEY_SECRET"];
   if (!keyId || !keySecret) return null;
-  const checkoutConfigId =
-    (keyId.startsWith("rzp_test_")
-      ? process.env["RAZORPAY_TEST_CONFIG_ID"]
-      : process.env["RAZORPAY_CHECKOUT_CONFIG_ID"]) || undefined;
-  return { keyId, keySecret, checkoutConfigId };
+  return { keyId, keySecret };
 }
 
 function authHeader({ keyId, keySecret }: RazorpayCredentials): string {
@@ -38,7 +31,7 @@ export interface RazorpayOrder {
 /** Amount is in rupees; Razorpay works in paise. */
 export async function createRazorpayOrder(
   creds: RazorpayCredentials,
-  input: { amountRupees: number; receipt: string; notes?: Record<string, string>; configId?: string },
+  input: { amountRupees: number; receipt: string; notes?: Record<string, string> },
 ): Promise<RazorpayOrder> {
   const res = await fetch(`${RAZORPAY_API}/orders`, {
     method: "POST",
@@ -48,7 +41,6 @@ export async function createRazorpayOrder(
       currency: "INR",
       receipt: input.receipt,
       payment_capture: 1,
-      ...(input.configId ? { config_id: input.configId } : {}),
       notes: input.notes ?? {},
     }),
   });
@@ -80,18 +72,23 @@ export async function fetchRazorpayPayment(
   return body;
 }
 
-function hmacSha256Hex(secret: string, message: string): string {
-  return createHmac("sha256", secret).update(message, "utf8").digest("hex");
+async function hmacSha256Hex(secret: string, message: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message));
+  return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 function timingSafeEqualHex(a: string, b: string): boolean {
-  try {
-    const left = Buffer.from(a, "hex");
-    const right = Buffer.from(b, "hex");
-    return left.length === right.length && timingSafeEqual(left, right);
-  } catch {
-    return false;
-  }
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
 }
 
 /** Checkout callback signature: HMAC_SHA256(order_id + "|" + payment_id, key_secret). */

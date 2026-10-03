@@ -10,7 +10,6 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { createWalletTopupOrder, confirmWalletTopupPayment, getPaymentConfig } from "@/lib/payments.functions";
 import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
-import { logPaymentError } from "@/lib/error-logger";
 
 export function DriverTopupDialog() {
   const { user } = useAuth();
@@ -56,7 +55,6 @@ export function DriverTopupDialog() {
       setOpen(false);
       setAmount("");
     } catch (e) {
-      logPaymentError(e, { action: "wallet_topup", driverId: user?.id, amount: value });
       toast.error(e instanceof Error ? e.message : "Payment failed. Please try again.");
     }
   };

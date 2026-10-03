@@ -1,1 +1,0 @@
-revoke all on table public.wallet_transactions from anon;

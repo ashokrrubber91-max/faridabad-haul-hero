@@ -129,33 +129,6 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
         let reply = "";
         let intent = "error";
         try {
-          const mediaType = (params["MediaContentType0"] ?? "").toLowerCase();
-          const mediaUrl = params["MediaUrl0"];
-          if (Number(params["NumMedia"] ?? 0) > 0 && mediaUrl && mediaType.startsWith("audio/")) {
-            const { createVoiceBookingDraft } = await import("@/lib/voice-booking-draft.server");
-            const baseUrl = process.env.PUBLIC_APP_URL?.trim() || new URL(request.url).origin;
-            const draft = await createVoiceBookingDraft(supabaseAdmin, {
-              requesterPhone: bareE164(from),
-              mediaUrl,
-              baseUrl,
-            });
-            reply = `Voice booking draft ready: ${draft.url}. Open it to review pickup, drop, vehicle and schedule before confirming.`;
-            intent = "voice_booking_draft";
-            await supabaseAdmin
-              .from("whatsapp_messages")
-              .update({ processed_at: new Date().toISOString(), intent })
-              .eq("id", stored.id);
-          }
-          if (reply) {
-            await supabaseAdmin.from("whatsapp_outbound").insert({
-              to_phone: bareE164(from),
-              body: reply,
-              status: "sent",
-              in_reply_to: stored.id,
-              user_id: profile?.id ?? null,
-            });
-            return twiml(reply);
-          }
           const { handleInboundWhatsApp } = await import("@/lib/whatsapp-handler.server");
           const result = await handleInboundWhatsApp(supabaseAdmin, {
             id: stored.id,

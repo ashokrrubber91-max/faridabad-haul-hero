@@ -13,12 +13,10 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { OfflineBanner } from "@/components/OfflineBanner";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LogOut, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { installGlobalErrorLogger } from "@/lib/error-logger";
 
 function NotFoundComponent() {
   return (
@@ -84,7 +82,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "MiniPort — Mini truck booking in Faridabad" },
       {
         name: "description",
@@ -98,7 +96,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "theme-color", content: "#1E293B" },
+      { name: "theme-color", content: "#1B2A8A" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: "MiniPort" },
     ],
@@ -127,7 +125,10 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>{children}<Scripts /></body>
+      <body>
+        {children}
+        <Scripts />
+      </body>
     </html>
   );
 }
@@ -141,43 +142,20 @@ function RootComponent() {
 
   useEffect(() => {
     let mounted = true;
-    const removeErrorLogger = installGlobalErrorLogger();
-    const refreshAppData = () => {
-      if (!mounted || typeof document === "undefined" || document.visibilityState !== "visible") return;
-      router.invalidate();
-      void queryClient.invalidateQueries();
-    };
-
-    const onOnline = () => refreshAppData();
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") refreshAppData();
-    };
-
-    window.addEventListener("online", onOnline);
-    document.addEventListener("visibilitychange", onVisibility);
-
-    if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
-      void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => undefined);
-    }
-
     import("@/integrations/supabase/client").then(({ supabase: client }) => {
       if (!mounted) return;
       const { data: sub } = client.auth.onAuthStateChange((event) => {
         if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
         router.invalidate();
-        if (event !== "SIGNED_OUT") void queryClient.invalidateQueries();
+        if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
       });
       (window as unknown as { __sbSub?: { unsubscribe: () => void } }).__sbSub = sub.subscription;
     });
-
     return () => {
       mounted = false;
-      removeErrorLogger();
-      window.removeEventListener("online", onOnline);
-      document.removeEventListener("visibilitychange", onVisibility);
       (window as unknown as { __sbSub?: { unsubscribe: () => void } }).__sbSub?.unsubscribe();
     };
-  }, [queryClient, router, role, profile?.active_mode, location.pathname]);
+  }, [queryClient, router]);
 
   const adminSignOut = async () => {
     await queryClient.cancelQueries();
@@ -205,7 +183,7 @@ function RootComponent() {
           </Button>
         </div>
       )}
-      <ErrorBoundary label="application"><Outlet /></ErrorBoundary>
+      <Outlet />
       <Toaster richColors position="top-center" />
       <OfflineBanner />
     </QueryClientProvider>

@@ -37,7 +37,16 @@ export function ReferralCard() {
       if (profileResult.error) throw profileResult.error;
       if (referralsResult.error) throw referralsResult.error;
 
-      setCode(profileResult.data?.referral_code ?? "");
+      let next = profileResult.data?.referral_code ?? "";
+      if (!next.trim()) {
+        const { data: made, error: makeError } = await supabase.rpc(
+          "ensure_my_referral_code" as never,
+        );
+        if (makeError) throw makeError;
+        next = (made as unknown as string) ?? "";
+      }
+      console.log("[MiniPort referral] referral_code:", next || null);
+      setCode(next);
       setRows((referralsResult.data ?? []) as ReferralRow[]);
     } catch {
       toast.error("Could not load referral details.");
@@ -67,11 +76,15 @@ export function ReferralCard() {
     setTimeout(() => setCopied(false), 1800);
   };
 
+  const copyCode = async () => {
+    if (!code) return;
+    await navigator.clipboard.writeText(code);
+    toast.success("Referral code copied");
+  };
+
   const share = async () => {
     if (!link) return;
-    const text =
-      "Join me on MiniPort. Use my referral link and sign up: " +
-      link;
+    const text = "Join me on MiniPort. Use my referral link and sign up: " + link;
     try {
       if (navigator.share) {
         await navigator.share({ title: "Join MiniPort", text, url: link });
@@ -95,8 +108,8 @@ export function ReferralCard() {
             <Gift className="h-5 w-5 text-primary" /> Refer & Earn
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Earn <span className="font-semibold text-secondary">₹100</span> for every successful referral.
-            No invite limit.
+            Earn <span className="font-semibold text-secondary">₹100</span> for every successful
+            referral. No invite limit.
           </p>
         </div>
         <Users className="h-5 w-5 text-primary" />
@@ -105,7 +118,7 @@ export function ReferralCard() {
       <div className="mt-4 rounded-md border border-border bg-muted/30 p-3">
         <p className="text-xs uppercase tracking-wider text-muted-foreground">Your referral code</p>
         <p className="mt-1 font-mono text-xl font-bold tracking-[0.18em] text-secondary">
-          {loading ? "Loading…" : code || "—"}
+          {loading ? "Loading…" : code || "Not available — tap retry"}
         </p>
       </div>
 
@@ -130,6 +143,9 @@ export function ReferralCard() {
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
+        <Button onClick={copyCode} disabled={!code} variant="outline" className="gap-2">
+          <Copy className="h-4 w-4" /> Copy code
+        </Button>
         <Button onClick={share} disabled={!code} className="gap-2">
           <Share2 className="h-4 w-4" /> Share referral
         </Button>
@@ -151,13 +167,19 @@ export function ReferralCard() {
               )
             }
           >
-            <MessageCircle className="h-4 w-4" /> WhatsApp
+            <MessageCircle className="h-4 w-4" /> Share via WhatsApp
           </Button>
         )}
       </div>
 
+      {!loading && !code && (
+        <Button size="sm" variant="ghost" className="mt-2" onClick={() => void load()}>
+          Retry
+        </Button>
+      )}
       <p className="mt-3 text-xs font-medium text-secondary">
-        Total referral earnings: ₹{earned.toFixed(0)}
+        Total referral earnings: ₹{earned.toFixed(0)} · {rewarded.length} successful referral
+        {rewarded.length === 1 ? "" : "s"}
       </p>
     </section>
   );

@@ -14,31 +14,7 @@ export const getSharedTrip = createServerFn({ method: "GET" })
       _token: data.token,
     });
     if (error) throw new Error(error.message);
-    const shared = (view ?? { ok: false, reason: "not_found" }) as SharedTrip;
-    if (!shared.ok || !shared.driver_location) return shared;
-
-    const target =
-      shared.status === "accepted" ? shared.pickup : shared.drop;
-    if (
-      typeof target.lat !== "number" ||
-      typeof target.lng !== "number" ||
-      !Number.isFinite(target.lat) ||
-      !Number.isFinite(target.lng)
-    ) {
-      return shared;
-    }
-
-    try {
-      const { computeRoadRouteServer } = await import("@/lib/routing.server");
-      const route = await computeRoadRouteServer([
-        { lat: shared.driver_location.lat, lng: shared.driver_location.lng },
-        { lat: target.lat, lng: target.lng },
-      ]);
-      return { ...shared, live_route: route };
-    } catch {
-      // The public share link must still work when routing is temporarily unavailable.
-      return shared;
-    }
+    return (view ?? { ok: false, reason: "not_found" }) as SharedTrip;
   });
 
 export type SharedTrip =
@@ -55,7 +31,6 @@ export type SharedTrip =
       driver_first_name: string | null;
       vehicle_number: string | null;
       driver_location: { lat: number; lng: number; updated_at: string } | null;
-      live_route?: { distanceKm: number; durationMin: number; polyline: string } | null;
       created_at: string;
       expires_at: string;
     };
