@@ -10,7 +10,7 @@ begin
   foreach t in array ARRAY[
     'profiles','user_roles','bookings','driver_locations','booking_documents',
     'wallet_accounts','merchant_accounts','merchant_billing_cycles',
-    'driver_daily_passes','notifications','device_tokens'
+    'driver_daily_passes','notifications','device_tokens','referrals'
   ] loop
     select c.relrowsecurity into enabled
     from pg_class c
@@ -28,7 +28,7 @@ begin
     and table_name in (
       'profiles','user_roles','bookings','driver_locations','booking_documents',
       'wallet_accounts','merchant_accounts','merchant_billing_cycles',
-      'driver_daily_passes','notifications','device_tokens'
+      'driver_daily_passes','notifications','device_tokens','referrals'
     );
   if anon_count <> 0 then
     raise exception 'Unexpected anon grants remain on MiniPort protected tables: %', anon_count;
@@ -61,5 +61,18 @@ begin
       and with_check like '%auth.uid%'
   ) then
     raise exception 'driver_locations owner update policy is missing';
+  end if;
+
+  if not exists (
+    select 1 from pg_policies
+    where schemaname='public' and tablename='profiles'
+      and policyname='Profiles: read own or admin'
+      and qual like '%auth.uid%'
+  ) then
+    raise exception 'profiles privacy policy is missing';
+  end if;
+
+  if has_function_privilege('authenticated','public.is_kyc_approved(uuid)','EXECUTE') then
+    raise exception 'is_kyc_approved should not be directly callable by authenticated clients';
   end if;
 end $$;
