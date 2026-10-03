@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { PushAlertToggle } from "@/components/driver/PushAlertToggle";
 import { LiveLocationStatus } from "@/components/driver/LiveLocationStatus";
+import { DailyPassCard } from "@/components/driver/DailyPassCard";
 
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -441,6 +442,8 @@ function DriverPage() {
       <LiveLocationStatus />
 
       <PushAlertToggle />
+
+      <DailyPassCard />
 
       {/* Stats */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
