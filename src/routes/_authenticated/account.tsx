@@ -299,7 +299,7 @@ function AccountPage() {
     );
   }
 
-  const ProfileView = isDriverProfile ? DriverProfileView : CustomerProfileView;
+  const ProfileView = isAdmin ? Fragment : isDriverProfile ? DriverProfileView : CustomerProfileView;
 
   return (
     <ProfileView>
@@ -499,6 +499,20 @@ function AccountPage() {
                 ))}
               </ul>
             )}
+          </section>
+
+          <section className="surface-card p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="font-display text-xl tracking-wide text-secondary">Order history</h2>
+                <p className="text-xs text-muted-foreground">
+                  View your customer bookings, payments and completed orders.
+                </p>
+              </div>
+              <Button size="sm" variant="outline" asChild>
+                <Link to="/orders">Open orders</Link>
+              </Button>
+            </div>
           </section>
 
           <section className="surface-card p-5">
