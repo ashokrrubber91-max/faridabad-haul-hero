@@ -36,7 +36,7 @@ export const PERMISSIONS: Array<{
 ];
 
 const recordKey = (u: string) => `miniport-permissions:${u}`;
-const doneKey = (u: string) => `miniport-permissions-done:${u}`;
+const doneKey = (u: string) => `miniport_onboarding_done_${u}`;
 
 export function loadPermissionRecord(userId: string): PermissionRecord {
   try {
@@ -49,10 +49,10 @@ export function savePermissionRecord(userId: string, r: PermissionRecord) {
   window.localStorage.setItem(recordKey(userId), JSON.stringify(r));
 }
 export function permissionFlowDone(userId: string): boolean {
-  return window.localStorage.getItem(doneKey(userId)) === "1";
+  return window.localStorage.getItem(doneKey(userId)) === "true";
 }
 export function markPermissionFlowDone(userId: string) {
-  window.localStorage.setItem(doneKey(userId), "1");
+  window.localStorage.setItem(doneKey(userId), "true");
 }
 
 export async function requestPermission(key: PermissionKey): Promise<PermissionOutcome> {
