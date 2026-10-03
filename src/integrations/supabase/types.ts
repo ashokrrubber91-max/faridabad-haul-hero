@@ -1166,7 +1166,6 @@ export type Database = {
         Insert: {
           active_mode?: string
           onboarding_completed?: boolean
-          onboarding_completed?: boolean
           created_at?: string
           id: string
           is_online?: boolean
