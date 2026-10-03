@@ -25,10 +25,9 @@ export function ReferralCard() {
     if (!user) return;
     setLoading(true);
     try {
-      const db = supabase as any;
       const [profileResult, referralsResult] = await Promise.all([
-        db.from("profiles").select("referral_code").eq("id", user.id).maybeSingle(),
-        db
+        supabase.from("profiles").select("referral_code").eq("id", user.id).maybeSingle(),
+        supabase
           .from("referrals")
           .select("id,status,referred_type,reward_amount,created_at,rewarded_at")
           .eq("referrer_id", user.id)
@@ -38,7 +37,13 @@ export function ReferralCard() {
       if (profileResult.error) throw profileResult.error;
       if (referralsResult.error) throw referralsResult.error;
 
-      setCode(profileResult.data?.referral_code ?? "");
+      let next = profileResult.data?.referral_code ?? "";
+      if (!next.trim()) {
+        const { data: made, error: makeError } = await supabase.rpc("ensure_my_referral_code" as never);
+        if (makeError) throw makeError;
+        next = (made as unknown as string) ?? "";
+      }
+      setCode(next);
       setRows((referralsResult.data ?? []) as ReferralRow[]);
     } catch {
       toast.error("Could not load referral details.");
@@ -66,6 +71,12 @@ export function ReferralCard() {
     setCopied(true);
     toast.success("Referral link copied");
     setTimeout(() => setCopied(false), 1800);
+  };
+
+  const copyCode = async () => {
+    if (!code) return;
+    await navigator.clipboard.writeText(code);
+    toast.success("Referral code copied");
   };
 
   const share = async () => {
@@ -106,7 +117,7 @@ export function ReferralCard() {
       <div className="mt-4 rounded-md border border-border bg-muted/30 p-3">
         <p className="text-xs uppercase tracking-wider text-muted-foreground">Your referral code</p>
         <p className="mt-1 font-mono text-xl font-bold tracking-[0.18em] text-secondary">
-          {loading ? "Loading…" : code || "—"}
+          {loading ? "Loading…" : code || "Not available — tap retry"}
         </p>
       </div>
 
@@ -131,6 +142,9 @@ export function ReferralCard() {
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
+        <Button onClick={copyCode} disabled={!code} variant="outline" className="gap-2">
+          <Copy className="h-4 w-4" /> Copy code
+        </Button>
         <Button onClick={share} disabled={!code} className="gap-2">
           <Share2 className="h-4 w-4" /> Share referral
         </Button>
@@ -152,13 +166,18 @@ export function ReferralCard() {
               )
             }
           >
-            <MessageCircle className="h-4 w-4" /> WhatsApp
+            <MessageCircle className="h-4 w-4" /> Share via WhatsApp
           </Button>
         )}
       </div>
 
+      {!loading && !code && (
+        <Button size="sm" variant="ghost" className="mt-2" onClick={() => void load()}>
+          Retry
+        </Button>
+      )}
       <p className="mt-3 text-xs font-medium text-secondary">
-        Total referral earnings: ₹{earned.toFixed(0)}
+        Total referral earnings: ₹{earned.toFixed(0)} · {rewarded.length} successful referral{rewarded.length === 1 ? "" : "s"}
       </p>
     </section>
   );
