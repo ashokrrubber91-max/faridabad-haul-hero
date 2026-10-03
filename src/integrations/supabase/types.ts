@@ -2136,6 +2136,26 @@ export type Database = {
         }
       }
       admin_set_commission_rate: { Args: { _rate: number }; Returns: number }
+      admin_set_driver_online: {
+        Args: { _driver_id: string; _is_online: boolean }
+        Returns: {
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code: string | null
+          service_zone: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_set_vehicle_active: {
         Args: { _active: boolean; _id: string }
         Returns: {
@@ -2608,6 +2628,46 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_my_active_mode: {
+        Args: { _mode: string }
+        Returns: {
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code: string | null
+          service_zone: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_my_online: {
+        Args: { _is_online: boolean }
+        Returns: {
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          phone: string
+          referral_code: string | null
+          service_zone: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
           isOneToOne: true
           isSetofReturn: false
         }
