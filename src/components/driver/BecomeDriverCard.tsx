@@ -5,6 +5,7 @@ import { Loader2, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 /**
  * Intentional customer → driver onboarding. Applying only records the person's
@@ -13,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export function BecomeDriverCard({ userId }: { userId: string }) {
   const qc = useQueryClient();
+  const { setActiveMode } = useAuth();
 
   const application = useQuery({
     queryKey: ["driver-application", userId],
@@ -98,10 +100,19 @@ export function BecomeDriverCard({ userId }: { userId: string }) {
             </Button>
           )}
           {kycStatus === "approved" && (
-            <Button variant="outline" className="w-full justify-start" asChild>
-              <Link to="/driver">
-                <Truck className="h-4 w-4" /> Open driver mode
-              </Link>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={async () => {
+                try {
+                  await setActiveMode("driver");
+                  window.location.assign("/driver");
+                } catch (e) {
+                  toast.error((e as Error).message || "Could not open driver mode");
+                }
+              }}
+            >
+              <Truck className="h-4 w-4" /> Open driver mode
             </Button>
           )}
         </div>
