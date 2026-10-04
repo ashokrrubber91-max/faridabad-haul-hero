@@ -81,7 +81,7 @@ function AccountPage() {
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user!.id);
+        .eq("user_id", user.id);
       if (error) throw error;
       return (data ?? []).map((r) => r.role as string);
     },
@@ -118,8 +118,9 @@ function AccountPage() {
 
   const monthlyDriverEarnings = useQuery({
     queryKey: ["driver-monthly-earnings", user?.id],
-    enabled: !!user && isDriverProfile && !isAdmin,
+    enabled: Boolean(user?.id) && isDriverProfile && !isAdmin,
     queryFn: async () => {
+      if (!user?.id) return [];
       const start = new Date();
       start.setMonth(start.getMonth() - 5, 1);
       start.setHours(0, 0, 0, 0);
@@ -155,8 +156,9 @@ function AccountPage() {
 
   const addresses = useQuery({
     queryKey: ["saved-addresses", user?.id],
-    enabled: !!user && showCustomerSections,
+    enabled: Boolean(user?.id) && showCustomerSections,
     queryFn: async () => {
+      if (!user?.id) return [];
       const { data, error } = await supabase
         .from("saved_addresses")
         .select("*")
@@ -169,8 +171,9 @@ function AccountPage() {
 
   const gstins = useQuery({
     queryKey: ["gstins", user?.id],
-    enabled: !!user && showCustomerSections,
+    enabled: Boolean(user?.id) && showCustomerSections,
     queryFn: async () => {
+      if (!user?.id) return [];
       const { data, error } = await supabase
         .from("customer_gstins")
         .select("*")
@@ -188,7 +191,8 @@ function AccountPage() {
 
   const saveName = useMutation({
     mutationFn: async (next: string) => {
-      const { error } = await supabase.from("profiles").update({ name: next }).eq("id", user!.id);
+      if (!user?.id) throw new Error("Please sign in again.");
+      const { error } = await supabase.from("profiles").update({ name: next }).eq("id", user.id);
       if (error) throw error;
     },
     onSuccess: () => toast.success("Profile updated"),
@@ -197,12 +201,13 @@ function AccountPage() {
 
   const addGstin = useMutation({
     mutationFn: async () => {
+      if (!user?.id) throw new Error("Please sign in again.");
       const code = gstin.trim().toUpperCase();
       if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]{3}$/.test(code))
         throw new Error("Enter a valid 15-character GSTIN");
       if (bizName.trim().length < 2) throw new Error("Enter the business name");
       const { error } = await supabase.from("customer_gstins").insert({
-        user_id: user!.id,
+        user_id: user.id,
         gstin: code,
         business_name: bizName.trim(),
         business_address: bizAddr.trim() || null,
@@ -223,6 +228,7 @@ function AccountPage() {
 
   const setDefaultGstin = useMutation({
     mutationFn: async (id: string) => {
+      if (!user?.id) throw new Error("Please sign in again.");
       const { error: clearError } = await supabase
         .from("customer_gstins")
         .update({ is_default: false })
@@ -240,6 +246,7 @@ function AccountPage() {
 
   const removeGstin = useMutation({
     mutationFn: async (id: string) => {
+      if (!user?.id) throw new Error("Please sign in again.");
       const { error } = await supabase.from("customer_gstins").delete().eq("id", id);
       if (error) throw error;
     },
@@ -252,6 +259,7 @@ function AccountPage() {
 
   const removeAddress = useMutation({
     mutationFn: async (id: string) => {
+      if (!user?.id) throw new Error("Please sign in again.");
       const { error } = await supabase.from("saved_addresses").delete().eq("id", id);
       if (error) throw error;
     },
@@ -280,10 +288,10 @@ function AccountPage() {
     isAdmin,
   ]);
 
-  if (activeModeQuery.isError) {
+  if (freshRoles.isError || activeModeQuery.isError) {
     return (
       <div className="surface-card p-5 text-sm text-destructive">
-        Could not determine the account mode. Please refresh and try again.
+        This screen could not load your account safely. Please refresh and try again.
       </div>
     );
   }
