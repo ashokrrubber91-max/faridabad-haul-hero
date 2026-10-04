@@ -50,6 +50,7 @@ export const createBooking = createServerFn({ method: "POST" })
         couponCode: z.string().trim().max(40).nullable().default(null),
         coins: z.number().int().min(0).max(100000).default(0),
         paymentMethod: z.enum(["cod", "upi", "card", "netbanking", "wallet"]),
+        helperCount: z.number().int().min(0).max(2).default(0),
         notes: z.string().trim().max(2000).nullable().default(null),
       })
       .parse(input),
@@ -67,11 +68,13 @@ export const createBooking = createServerFn({ method: "POST" })
     // never be used to underpay or overcharge.
     const { data: vt, error: vtError } = await context.supabase
       .from("vehicle_types")
-      .select("base_fare, per_km_fare, active")
+      .select("base_fare, per_km_fare, active, weight_limit_kg")
       .eq("id", data.vehicle)
       .maybeSingle();
     if (vtError) throw new Error(vtError.message);
     if (!vt || !vt.active) throw new Error("That vehicle is not available for booking right now.");
+    const helperCount = Number(vt.weight_limit_kg ?? 0) > 20 ? data.helperCount : 0;
+    const helperFee = helperCount * 250;
 
     const { data: booking, error } = await context.supabase
       .from("bookings")
@@ -86,7 +89,11 @@ export const createBooking = createServerFn({ method: "POST" })
         service_zone: "Faridabad",
         vehicle_type: data.vehicle,
         distance_km: route.distanceKm,
-        fare: Math.round(Number(vt.base_fare) + Number(vt.per_km_fare) * route.distanceKm),
+        fare: Math.round(
+          Number(vt.base_fare) + Number(vt.per_km_fare) * route.distanceKm + helperFee,
+        ),
+        helper_count: helperCount,
+        helper_fee: helperFee,
         coupon_code: data.couponCode,
         coins_redeemed: data.coins,
         payment_method: data.paymentMethod,
