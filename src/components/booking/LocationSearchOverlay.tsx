@@ -71,6 +71,7 @@ export function LocationSearchOverlay({
       const { data, error } = await supabase
         .from("saved_addresses")
         .select("*")
+        .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -264,6 +265,24 @@ export function LocationSearchOverlay({
                   {geoError && <p className="mt-2 text-xs text-destructive">{geoError}</p>}
                 </div>
 
+                <SavedList
+                  addresses={saved.data ?? []}
+                  loading={saved.isLoading}
+                  error={saved.isError}
+                  onPick={(a) =>
+                    onPick({
+                      address: a.address,
+                      lat: a.latitude ?? FARIDABAD_CENTER.lat,
+                      lng: a.longitude ?? FARIDABAD_CENTER.lng,
+                      placeId: a.place_id ?? undefined,
+                      alias: a.alias ?? undefined,
+                      contactName: a.contact_name ?? undefined,
+                      contactPhone: a.contact_phone ?? undefined,
+                      kind: a.kind,
+                    })
+                  }
+                />
+
                 {(recent.data ?? []).length > 0 && (
                   <div className="border-b p-3">
                     <p className="px-1 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -284,23 +303,6 @@ export function LocationSearchOverlay({
                     </ul>
                   </div>
                 )}
-
-                <SavedList
-                  addresses={saved.data ?? []}
-                  loading={saved.isLoading}
-                  onPick={(a) =>
-                    onPick({
-                      address: a.address,
-                      lat: a.latitude ?? FARIDABAD_CENTER.lat,
-                      lng: a.longitude ?? FARIDABAD_CENTER.lng,
-                      placeId: a.place_id ?? undefined,
-                      alias: a.alias ?? undefined,
-                      contactName: a.contact_name ?? undefined,
-                      contactPhone: a.contact_phone ?? undefined,
-                      kind: a.kind,
-                    })
-                  }
-                />
               </>
             ) : (
               <ul className="divide-y">
@@ -338,6 +340,7 @@ export function LocationSearchOverlay({
 function SavedList({
   addresses,
   loading,
+  error,
   onPick,
 }: {
   addresses: Array<{
@@ -352,6 +355,7 @@ function SavedList({
     contact_phone: string | null;
   }>;
   loading: boolean;
+  error: boolean;
   onPick: (a: (typeof addresses)[number]) => void;
 }) {
   const grouped = useMemo(() => {
@@ -369,11 +373,22 @@ function SavedList({
     );
   }
 
+  if (error) {
+    return (
+      <div className="mx-3 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-xs text-destructive">
+        Saved addresses could not be loaded right now. You can still search or use the map.
+      </div>
+    );
+  }
+
   if (addresses.length === 0) {
     return (
-      <div className="px-6 py-12 text-center text-sm text-muted-foreground">
-        <Bookmark className="mx-auto mb-2 h-5 w-5" />
-        Saved addresses appear here. Start typing to search.
+      <div className="px-4 py-5 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 font-semibold text-secondary">
+          <Bookmark className="h-4 w-4 text-primary" />
+          Saved Addresses
+        </div>
+        <p className="mt-1 text-xs">No saved addresses yet.</p>
       </div>
     );
   }
@@ -381,7 +396,7 @@ function SavedList({
   return (
     <div className="p-3">
       <p className="px-1 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        Saved addresses
+        Saved Addresses
       </p>
       <ul className="space-y-1">
         {grouped.home.map((a) => (
