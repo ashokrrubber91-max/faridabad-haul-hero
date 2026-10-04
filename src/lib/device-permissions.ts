@@ -38,21 +38,46 @@ export const PERMISSIONS: Array<{
 const recordKey = (u: string) => `miniport-permissions:${u}`;
 const doneKey = (u: string) => `miniport_onboarding_done_${u}`;
 
+function storage(): Storage | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
 export function loadPermissionRecord(userId: string): PermissionRecord {
   try {
-    return JSON.parse(window.localStorage.getItem(recordKey(userId)) ?? "{}");
+    const raw = storage()?.getItem(recordKey(userId));
+    return raw ? (JSON.parse(raw) as PermissionRecord) : {};
   } catch {
     return {};
   }
 }
+
 export function savePermissionRecord(userId: string, r: PermissionRecord) {
-  window.localStorage.setItem(recordKey(userId), JSON.stringify(r));
+  try {
+    storage()?.setItem(recordKey(userId), JSON.stringify(r));
+  } catch {
+    // Permission persistence is best-effort; the account flag is authoritative.
+  }
 }
+
 export function permissionFlowDone(userId: string): boolean {
-  return window.localStorage.getItem(doneKey(userId)) === "true";
+  try {
+    return storage()?.getItem(doneKey(userId)) === "true";
+  } catch {
+    return false;
+  }
 }
+
 export function markPermissionFlowDone(userId: string) {
-  window.localStorage.setItem(doneKey(userId), "true");
+  try {
+    storage()?.setItem(doneKey(userId), "true");
+  } catch {
+    // The database onboarding_completed flag remains the permanent fallback.
+  }
 }
 
 export async function requestPermission(key: PermissionKey): Promise<PermissionOutcome> {
