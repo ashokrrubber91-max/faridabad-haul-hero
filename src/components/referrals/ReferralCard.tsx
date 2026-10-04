@@ -26,8 +26,8 @@ export function ReferralCard() {
     setLoading(true);
     try {
       const [profileResult, referralsResult] = await Promise.all([
-        supabase.from("profiles").select("referral_code").eq("id", user.id).maybeSingle(),
-        supabase
+        (supabase as any).from("profiles").select("referral_code").eq("id", user.id).maybeSingle(),
+        (supabase as any)
           .from("referrals")
           .select("id,status,referred_type,reward_amount,created_at,rewarded_at")
           .eq("referrer_id", user.id)

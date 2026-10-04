@@ -19,7 +19,7 @@ export function DailyPassCard() {
   const pass = useQuery({
     queryKey: ["driver-daily-pass"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("driver_daily_passes")
         .select("id,starts_at,ends_at,amount,status")
         .eq("status", "active")
@@ -46,7 +46,7 @@ export function DailyPassCard() {
 
   const activate = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.rpc("activate_driver_daily_pass");
+      const { data, error } = await (supabase as any).rpc("activate_driver_daily_pass");
       if (error) throw error;
       return data as PassRow;
     },
