@@ -78,6 +78,7 @@ function AccountPage() {
     staleTime: 0,
     refetchOnMount: "always",
     queryFn: async () => {
+      if (!user?.id) return [];
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
@@ -98,10 +99,11 @@ function AccountPage() {
     staleTime: 0,
     refetchOnMount: "always",
     queryFn: async () => {
+      if (!user?.id) throw new Error("Not signed in");
       const { data, error } = await supabase
         .from("profiles")
         .select("active_mode")
-        .eq("id", user!.id)
+        .eq("id", user.id)
         .single();
       if (error) throw error;
       return data.active_mode as "customer" | "driver";
@@ -127,7 +129,7 @@ function AccountPage() {
       const { data, error } = await supabase
         .from("bookings")
         .select("id, fare, driver_net_earning, updated_at, created_at, status")
-        .eq("driver_id", user!.id)
+        .eq("driver_id", user.id)
         .eq("status", "completed")
         .gte("updated_at", start.toISOString())
         .limit(1000)
@@ -162,7 +164,7 @@ function AccountPage() {
       const { data, error } = await supabase
         .from("saved_addresses")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -177,7 +179,7 @@ function AccountPage() {
       const { data, error } = await supabase
         .from("customer_gstins")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .order("is_default", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -232,7 +234,7 @@ function AccountPage() {
       const { error: clearError } = await supabase
         .from("customer_gstins")
         .update({ is_default: false })
-        .eq("user_id", user!.id);
+        .eq("user_id", user.id);
       if (clearError) throw clearError;
       const { error } = await supabase
         .from("customer_gstins")
