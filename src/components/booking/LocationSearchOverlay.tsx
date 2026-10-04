@@ -240,6 +240,24 @@ export function LocationSearchOverlay({
           <div className="flex-1 overflow-y-auto">
             {query.trim().length === 0 ? (
               <>
+                <SavedList
+                  addresses={saved.data ?? []}
+                  loading={saved.isLoading}
+                  error={saved.isError}
+                  onPick={(a) =>
+                    onPick({
+                      address: a.address,
+                      lat: a.latitude ?? FARIDABAD_CENTER.lat,
+                      lng: a.longitude ?? FARIDABAD_CENTER.lng,
+                      placeId: a.place_id ?? undefined,
+                      alias: a.alias ?? undefined,
+                      contactName: a.contact_name ?? undefined,
+                      contactPhone: a.contact_phone ?? undefined,
+                      kind: a.kind,
+                    })
+                  }
+                />
+
                 <div className="border-b p-3">
                   <Button
                     variant="outline"
@@ -264,24 +282,6 @@ export function LocationSearchOverlay({
                   </Button>
                   {geoError && <p className="mt-2 text-xs text-destructive">{geoError}</p>}
                 </div>
-
-                <SavedList
-                  addresses={saved.data ?? []}
-                  loading={saved.isLoading}
-                  error={saved.isError}
-                  onPick={(a) =>
-                    onPick({
-                      address: a.address,
-                      lat: a.latitude ?? FARIDABAD_CENTER.lat,
-                      lng: a.longitude ?? FARIDABAD_CENTER.lng,
-                      placeId: a.place_id ?? undefined,
-                      alias: a.alias ?? undefined,
-                      contactName: a.contact_name ?? undefined,
-                      contactPhone: a.contact_phone ?? undefined,
-                      kind: a.kind,
-                    })
-                  }
-                />
 
                 {(recent.data ?? []).length > 0 && (
                   <div className="border-b p-3">
