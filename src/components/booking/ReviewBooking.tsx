@@ -15,6 +15,8 @@ export function ReviewBooking({
   vehicle,
   distanceKm,
   baseFare,
+  helperCount,
+  helperFee,
   discount,
   fare,
   notes,
@@ -31,6 +33,8 @@ export function ReviewBooking({
   vehicle: VehicleId;
   distanceKm: number;
   baseFare: number;
+  helperCount: number;
+  helperFee: number;
   discount: number;
   fare: number;
   notes: string;
@@ -115,6 +119,14 @@ export function ReviewBooking({
             <span className="text-muted-foreground">Base fare</span>
             <span>₹{baseFare}</span>
           </div>
+          {helperCount > 0 && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">
+                Helper{helperCount > 1 ? "s" : ""} ({helperCount})
+              </span>
+              <span>+ ₹{helperFee}</span>
+            </div>
+          )}
           {discount > 0 && (
             <div className="flex justify-between text-success">
               <span>Discount / coins</span>
