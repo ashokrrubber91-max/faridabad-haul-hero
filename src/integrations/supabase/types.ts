@@ -244,6 +244,8 @@ export type Database = {
           fare: number
           final_fare: number | null
           id: string
+          helper_count: number
+          helper_fee: number
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -291,6 +293,8 @@ export type Database = {
           fare: number
           final_fare?: number | null
           id?: string
+          helper_count?: number
+          helper_fee?: number
           loading_overtime_minutes?: number
           loading_started_at?: string | null
           loading_stopped_at?: string | null
@@ -338,6 +342,8 @@ export type Database = {
           fare?: number
           final_fare?: number | null
           id?: string
+          helper_count?: number
+          helper_fee?: number
           loading_overtime_minutes?: number
           loading_started_at?: string | null
           loading_stopped_at?: string | null
