@@ -290,6 +290,14 @@ function AccountPage() {
     isAdmin,
   ]);
 
+  if (!authLoading && !user) {
+    return (
+      <div className="surface-card p-5 text-sm text-muted-foreground">
+        Your session is not available. Please sign in again to open Account.
+      </div>
+    );
+  }
+
   if (freshRoles.isError || activeModeQuery.isError) {
     return (
       <div className="surface-card p-5 text-sm text-destructive">
