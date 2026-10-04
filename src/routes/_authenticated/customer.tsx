@@ -92,6 +92,7 @@ function CustomerPage() {
   const [step, setStep] = useState<"form" | "review">("form");
   const [gstinEnabled, setGstinEnabled] = useState(false);
   const [gstinId, setGstinId] = useState<string | null>(null);
+  const [helperCount, setHelperCount] = useState(0);
 
   // Distance always comes from the Routes API on the server — never a
   // straight-line estimate — because the fare is derived from it.
@@ -113,6 +114,11 @@ function CustomerPage() {
   const vehicleFor = (id: string): VehicleType | undefined => allVehicles.find((v) => v.id === id);
   const selectedVehicle = vehicles.find((v) => v.id === vehicle);
   const baseFare = selectedVehicle ? fareFor(selectedVehicle, distanceKm) : 0;
+  const helperEligible =
+    !!selectedVehicle &&
+    Number(selectedVehicle.payload_kg ?? selectedVehicle.weight_limit_kg ?? 0) > 20;
+  const helperFee = helperEligible ? helperCount * 250 : 0;
+  const grossFare = baseFare + helperFee;
 
   // If the currently picked vehicle is switched off by the team, move to the
   // first one that is actually bookable instead of quoting an unavailable truck.
@@ -122,8 +128,8 @@ function CustomerPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalogue.data]);
-  const discount = Math.min(baseFare, (promo?.discount ?? 0) + coins);
-  const fare = Math.max(0, baseFare - discount);
+  const discount = Math.min(grossFare, (promo?.discount ?? 0) + coins);
+  const fare = Math.max(0, grossFare - discount);
 
   const gstins = useQuery({
     queryKey: ["customer-gstins", user?.id],
@@ -207,6 +213,7 @@ function CustomerPage() {
           })),
 
           vehicle,
+          helperCount,
           couponCode: promo?.code ?? null,
           coins,
           paymentMethod: method,
@@ -282,6 +289,7 @@ function CustomerPage() {
       setCoins(0);
       setGstinEnabled(false);
       setGstinId(null);
+      setHelperCount(0);
       setStep("form");
       qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
       qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
@@ -471,12 +479,47 @@ function CustomerPage() {
                       key={v.id}
                       vehicle={v}
                       selected={vehicle === v.id}
-                      onSelect={() => setVehicle(v.id)}
+                      onSelect={() => {
+                        setVehicle(v.id);
+                        if (Number(v.payload_kg ?? v.weight_limit_kg ?? 0) <= 20) setHelperCount(0);
+                      }}
                     />
                   ))}
                 </div>
               )}
             </div>
+
+            {helperEligible && (
+              <div className="rounded-lg border bg-muted/20 p-4">
+                <Label>Helper selection</Label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Add loading/unloading help to this cargo vehicle.
+                </p>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {[
+                    { count: 0, label: "No helper", fee: 0 },
+                    { count: 1, label: "1 helper", fee: 250 },
+                    { count: 2, label: "2 helpers", fee: 500 },
+                  ].map((option) => (
+                    <button
+                      key={option.count}
+                      type="button"
+                      onClick={() => setHelperCount(option.count)}
+                      className={`rounded-md border px-2 py-3 text-center transition-colors ${
+                        helperCount === option.count
+                          ? "border-primary bg-accent ring-1 ring-primary"
+                          : "border-border hover:bg-muted"
+                      }`}
+                    >
+                      <p className="text-sm font-semibold text-secondary">{option.label}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {option.fee === 0 ? "Free" : `+ ₹${option.fee}`}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div>
               <Label htmlFor="notes">Notes for driver (optional)</Label>
@@ -498,7 +541,7 @@ function CustomerPage() {
             />
 
             <CheckoutExtras
-              fare={baseFare}
+              fare={grossFare}
               promo={promo}
               setPromo={setPromo}
               coins={coins}
@@ -524,6 +567,7 @@ function CustomerPage() {
                     <p className="text-xs opacity-80">
                       ₹{selectedVehicle.base_fare} base + ₹{selectedVehicle.per_km_fare}/km ×{" "}
                       {distanceKm} km = ₹{baseFare}
+                      {helperFee > 0 ? ` + ₹${helperFee} helper` : ""}
                       {discount > 0 ? ` − ₹${discount} off` : ""}
                     </p>
                   )}
@@ -566,6 +610,8 @@ function CustomerPage() {
             vehicle={vehicle}
             distanceKm={distanceKm}
             baseFare={baseFare}
+            helperCount={helperCount}
+            helperFee={helperFee}
             discount={discount}
             fare={fare}
             notes={notes}
