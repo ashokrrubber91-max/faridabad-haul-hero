@@ -111,8 +111,11 @@ function AccountPage() {
   });
 
   const authoritativeActiveMode = activeModeQuery.data ?? null;
-  const isDriverProfile = !isAdmin && authoritativeActiveMode === "driver";
-  const isCustomerProfile = !isAdmin && authoritativeActiveMode === "customer";
+  const hasDriverRole = roles.includes("driver");
+  // Approved/driver-role accounts must never fall back to the customer profile
+  // merely because active_mode is still "customer" before the first driver session.
+  const isDriverProfile = !isAdmin && hasDriverRole;
+  const isCustomerProfile = !isAdmin && !hasDriverRole && authoritativeActiveMode === "customer";
   const isDriverMode = isDriverProfile;
   const driverStateKnown =
     !authLoading && freshRoles.isSuccess && activeModeQuery.isSuccess;
