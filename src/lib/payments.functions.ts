@@ -281,7 +281,7 @@ export const confirmWalletTopupPayment = createServerFn({ method: "POST" })
       throw new Error("Payment was not completed");
     }
 
-    const { data: credit, error: creditError } = await supabaseAdmin.rpc(
+    const { data: credit, error: creditError } = await (supabaseAdmin as any).rpc(
       "credit_driver_wallet_topup",
       {
         _payment_id: record.id,
