@@ -32,9 +32,10 @@ const ICONS: Record<PermissionKey, typeof MapPin> = {
 };
 
 /**
- * One-time onboarding after sign-in: accept the current Terms/Privacy version
- * (stored server-side per account + version), then one permissions step whose
- * outcome is remembered on this device so it never nags.
+ * Permanent one-time onboarding after sign-in.
+ * The flow is suppressed forever for the account once either:
+ * 1) localStorage miniport_onboarding_done_<userId> is true, or
+ * 2) profiles.onboarding_completed is true.
  */
 export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver: boolean }) {
   const qc = useQueryClient();
@@ -58,7 +59,7 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
   });
   const [agree, setAgree] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [permsDone, setPermsDone] = useState(true);
+  const [permsDone, setPermsDone] = useState(false);
   const [record, setRecord] = useState<PermissionRecord>({});
   const [busy, setBusy] = useState<PermissionKey | null>(null);
 
@@ -67,11 +68,14 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
     setRecord(loadPermissionRecord(userId));
   }, [userId]);
 
-  const localOnboardingDone = permissionFlowDone(userId);
+  const localOnboardingDone = permsDone;
   const accountOnboardingDone = onboardingProfile.data === true;
   const onboardingDone = localOnboardingDone || accountOnboardingDone;
   const dataReady = consent.isSuccess && onboardingProfile.isSuccess;
   const needsConsent = dataReady && consent.data === false;
+
+  // Never open until the account flag/local flag has been checked. Once either
+  // one is true, the modal is suppressed even if the legal-version query changes.
   const open = dataReady && !onboardingDone && (needsConsent || consent.data === true);
 
   const accept = async () => {
@@ -98,6 +102,7 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
   };
 
   const finish = async () => {
+    // Mark local state immediately so the modal cannot reopen during this session.
     markPermissionFlowDone(userId);
     setPermsDone(true);
 
@@ -111,7 +116,6 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
       return;
     }
 
-    onboardingProfile.refetch();
     qc.setQueryData(["onboarding-profile", userId], true);
   };
 
