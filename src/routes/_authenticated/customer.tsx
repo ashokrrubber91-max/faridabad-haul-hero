@@ -114,9 +114,9 @@ function CustomerPage() {
   const vehicleFor = (id: string): VehicleType | undefined => allVehicles.find((v) => v.id === id);
   const selectedVehicle = vehicles.find((v) => v.id === vehicle);
   const baseFare = selectedVehicle ? fareFor(selectedVehicle, distanceKm) : 0;
-  const helperEligible =
-    !!selectedVehicle &&
-    Number(selectedVehicle.payload_kg ?? selectedVehicle.weight_limit_kg ?? 0) > 20;
+  // Every vehicle in the customer catalogue is a cargo/goods vehicle, so helper
+  // selection must stay visible for every selectable vehicle.
+  const helperEligible = !!selectedVehicle;
   const helperFee = helperEligible ? helperCount * 250 : 0;
   const grossFare = baseFare + helperFee;
 
@@ -843,6 +843,13 @@ function CustomerPage() {
         onOpenChange={(v) => !v && setStage(null)}
         mode={stage?.mode ?? "pickup"}
         onUseDeviceLocation={() => void locateFor(stage?.mode ?? "pickup")}
+        onSavedPick={(p) => {
+          const mode = stage?.mode ?? "pickup";
+          if (mode === "pickup") setPickup(p);
+          else setDrop(p);
+          setPending(null);
+          setStage(null);
+        }}
         onPick={(p) => {
           setPending(p);
           setStage({ type: "confirm", mode: stage?.mode ?? "pickup" });
@@ -865,6 +872,11 @@ function CustomerPage() {
         open={stopStage?.type === "search"}
         onOpenChange={(v) => !v && setStopStage(null)}
         mode="drop"
+        onSavedPick={(p) => {
+          setStops((prev) => [...prev, p]);
+          setPendingStop(null);
+          setStopStage(null);
+        }}
         onPick={(p) => {
           setPendingStop(p);
           setStopStage({ type: "confirm" });
