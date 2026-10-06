@@ -4,7 +4,7 @@ import { CheckCircle2, MessageCircle, PhoneCall, ShieldCheck, Star, Truck, User 
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { QuickChatModal } from "@/components/chat/QuickChatModal";
+import { QuickChatModal as QuickChatDrawer } from "@/components/chat/QuickChatModal";
 import { supabase } from "@/integrations/supabase/client";
 import { vehicleLabel } from "@/lib/booking";
 
@@ -15,11 +15,13 @@ export function ActiveTripCard({
   driverId,
   vehicleType,
   status,
+  pickupEtaMins,
 }: {
   bookingId: string;
   driverId: string | null;
   vehicleType: string;
   status: "accepted" | "in_progress";
+  pickupEtaMins?: number | null;
 }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [issue, setIssue] = useState<string | null>(null);
@@ -61,6 +63,7 @@ export function ActiveTripCard({
 
   const driverName = contact.data?.name ?? (contact.isLoading ? "Captain" : "Assigned driver");
   const pin = (codes.data ?? "").padStart(4, "0").slice(0, 4);
+  const model = vehicleLabel(vehicleType);
 
   const reportIssue = (tag: string) => {
     setIssue(tag);
@@ -70,49 +73,16 @@ export function ActiveTripCard({
   return (
     <>
       <div className="mt-3 rounded-xl border bg-background p-4 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-            <User className="h-6 w-6" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              {status === "accepted" ? "Captain assigned" : "Trip in progress"}
-            </p>
-            <p className="mt-0.5 truncate text-base font-bold text-secondary">{driverName}</p>
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              <Badge variant="secondary"><ShieldCheck className="mr-1 h-3 w-3" />Verified driver</Badge>
-              <Badge variant="outline"><Star className="mr-1 h-3 w-3 fill-current" />4.8</Badge>
-              <Badge variant="outline">Speaks Hindi, English</Badge>
-            </div>
-          </div>
-          <div className="flex gap-1.5">
-            {contact.data?.phone && (
-              <Button size="icon" variant="outline" asChild>
-                <a href={"tel:" + contact.data.phone} aria-label="Call driver"><PhoneCall className="h-4 w-4" /></a>
-              </Button>
-            )}
-            <Button size="icon" onClick={() => setChatOpen(true)} aria-label="Message driver">
-              <MessageCircle className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="rounded-lg bg-muted/40 p-3">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Vehicle</p>
-            <p className="mt-1 flex items-center gap-1 text-sm font-semibold text-secondary">
-              <Truck className="h-4 w-4 text-primary" />{vehicleLabel(vehicleType)}
-            </p>
-          </div>
-          <div className="rounded-lg bg-muted/40 p-3">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Vehicle plate</p>
-            <p className="mt-1 text-sm font-bold text-secondary">{vehicle.data ?? "Verifying…"}</p>
-          </div>
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pickup ETA</p>
+          <p className="mt-0.5 text-lg font-bold text-secondary">
+            {pickupEtaMins != null ? pickupEtaMins + " min" : "Driver is on the way"}
+          </p>
         </div>
 
         {pin && (
           <div className="mt-3 rounded-xl border-2 border-primary/30 bg-primary/5 p-3">
-            <p className="text-center text-xs font-semibold text-secondary">Start your order with PIN:</p>
+            <p className="text-center text-xs font-semibold text-secondary">4-digit pickup PIN</p>
             <div className="mt-2 flex justify-center gap-2">
               {pin.split("").map((digit, i) => (
                 <span key={i} className="grid h-11 w-11 place-items-center rounded-lg border bg-background font-display text-2xl tracking-wider text-primary shadow-sm">
@@ -123,31 +93,64 @@ export function ActiveTripCard({
           </div>
         )}
 
+        <div className="mt-3 rounded-xl border p-3">
+          <div className="flex items-start gap-3">
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+              <User className="h-6 w-6" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                {status === "accepted" ? "Captain assigned" : "Trip in progress"}
+              </p>
+              <p className="mt-0.5 truncate text-base font-bold text-secondary">{driverName}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                <Badge variant="secondary"><ShieldCheck className="mr-1 h-3 w-3" />Verified driver</Badge>
+                <Badge variant="outline"><Star className="mr-1 h-3 w-3 fill-current" />4.8</Badge>
+              </div>
+            </div>
+            {contact.data?.phone && (
+              <Button size="icon" variant="outline" asChild>
+                <a href={"tel:" + contact.data.phone} aria-label="Call driver"><PhoneCall className="h-4 w-4" /></a>
+              </Button>
+            )}
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Vehicle model</p>
+              <p className="mt-1 flex items-center gap-1 text-sm font-semibold text-secondary">
+                <Truck className="h-4 w-4 text-primary" />{model}
+              </p>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-3">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Vehicle number</p>
+              <p className="mt-1 text-sm font-bold text-secondary">{vehicle.data ?? "Verifying…"}</p>
+            </div>
+          </div>
+
+          <Button className="mt-3 w-full" onClick={() => setChatOpen(true)}>
+            <MessageCircle className="mr-2 h-4 w-4" /> Message {driverName}
+          </Button>
+        </div>
+
         <div className="mt-3">
-          <p className="mb-2 text-xs font-semibold text-secondary">Report an issue</p>
+          <p className="mb-2 text-xs font-semibold text-secondary">Any issues with your ride?</p>
           <div className="flex flex-wrap gap-2">
             {ISSUE_TAGS.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => reportIssue(tag)}
-                className={"rounded-full border px-3 py-1.5 text-xs transition-colors " + (issue === tag ? "border-primary bg-primary/10 text-primary" : "hover:bg-muted")}
-              >
+              <button key={tag} type="button" onClick={() => reportIssue(tag)}
+                className={"rounded-full border px-3 py-1.5 text-xs transition-colors " + (issue === tag ? "border-primary bg-primary/10 text-primary" : "hover:bg-muted")}>
                 {tag}
               </button>
             ))}
           </div>
         </div>
 
-        <Button className="mt-3 w-full" variant="outline" onClick={() => setChatOpen(true)}>
-          <MessageCircle className="mr-2 h-4 w-4" /> Message {driverName}
-        </Button>
         <div className="mt-2 flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
           <CheckCircle2 className="h-3 w-3 text-success" /> Chat stays inside MiniPort
         </div>
       </div>
 
-      <QuickChatModal open={chatOpen} onOpenChange={setChatOpen} bookingId={bookingId} counterpartName={driverName} />
+      <QuickChatDrawer open={chatOpen} onOpenChange={setChatOpen} bookingId={bookingId} counterpartName={driverName} />
     </>
   );
 }
