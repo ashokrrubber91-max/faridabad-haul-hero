@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { CheckCircle2, MessageCircle, PhoneCall, ShieldCheck, Star, Truck, User } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,7 @@ export function ActiveTripCard({
   status: "accepted" | "in_progress";
   pickupEtaMins?: number | null;
 }) {
+  const { user } = useAuth();
   const [chatOpen, setChatOpen] = useState(false);
   const [issue, setIssue] = useState<string | null>(null);
 
@@ -65,9 +67,27 @@ export function ActiveTripCard({
   const pin = (codes.data ?? "").padStart(4, "0").slice(0, 4);
   const model = vehicleLabel(vehicleType);
 
-  const reportIssue = (tag: string) => {
+  const reportIssue = async (tag: string) => {
     setIssue(tag);
-    toast.success(tag === "No issues" ? "No issue recorded" : "Issue noted for this trip");
+    if (tag === "No issues") {
+      toast.success("No issue recorded");
+      return;
+    }
+    if (!user) {
+      toast.error("Please sign in again to report an issue");
+      return;
+    }
+    const { error } = await supabase.from("trip_issues").insert({
+      booking_id: bookingId,
+      reporter_id: user.id,
+      issue_type: tag,
+    });
+    if (error) {
+      setIssue(null);
+      toast.error("Could not log the issue. Please try again.");
+      return;
+    }
+    toast.success("Issue logged. Our safety team has been notified.");
   };
 
   return (
