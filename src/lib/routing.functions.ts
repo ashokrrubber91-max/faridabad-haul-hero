@@ -73,7 +73,9 @@ export const createBooking = createServerFn({ method: "POST" })
       .maybeSingle();
     if (vtError) throw new Error(vtError.message);
     if (!vt || !vt.active) throw new Error("That vehicle is not available for booking right now.");
-    const helperCount = Number(vt.weight_limit_kg ?? 0) > 20 ? data.helperCount : 0;
+    // All selectable MiniPort vehicle types are cargo/goods vehicles, so helper
+    // selection applies to every vehicle option in the booking flow.
+    const helperCount = data.helperCount;
     const helperFee = helperCount * 250;
 
     const { data: booking, error } = await context.supabase
