@@ -10,8 +10,8 @@ import { useAuth } from "@/hooks/useAuth";
 type PassRow = {
   id: string;
   driver_id: string;
-  purchased_at: string;
-  expires_at: string;
+  starts_at: string;
+  ends_at: string;
   amount: number;
   status: string;
 };
@@ -39,11 +39,12 @@ export function DailyPassCard() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("driver_daily_passes")
-        .select("id,driver_id,purchased_at,expires_at,amount,status")
+        .select("id,driver_id,starts_at,ends_at,amount,status")
         .eq("driver_id", user!.id)
         .eq("status", "active")
-        .gt("expires_at", new Date().toISOString())
-        .order("expires_at", { ascending: false })
+        .lte("starts_at", new Date().toISOString())
+        .gt("ends_at", new Date().toISOString())
+        .order("ends_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (error) throw error;
@@ -85,7 +86,7 @@ export function DailyPassCard() {
   const active = pass.data;
   const balance = wallet.data ?? 0;
   const remaining = useMemo(
-    () => (active ? new Date(active.expires_at).getTime() - now : 0),
+    () => (active ? new Date(active.ends_at).getTime() - now : 0),
     [active, now],
   );
 
@@ -118,7 +119,7 @@ export function DailyPassCard() {
           </div>
           <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
             <Clock3 className="h-3.5 w-3.5" />
-            Expires {new Date(active.expires_at).toLocaleString("en-IN")}
+            Expires {new Date(active.ends_at).toLocaleString("en-IN")}
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
             Completed rides during the active pass receive 100% of the fare with no MiniPort commission.
