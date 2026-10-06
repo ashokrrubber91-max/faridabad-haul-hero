@@ -1,7 +1,7 @@
 import type { AnyRow } from "@/lib/rows";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Camera, Loader2, Package } from "lucide-react";
+import { ArrowRight, Camera, Loader2, MessageCircle, Package } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { STATUS_META, vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
 import { cancellationSummary } from "@/lib/cancellation";
+import { QuickChatModal } from "@/components/chat/QuickChatModal";
 
 export const Route = createFileRoute("/_authenticated/driver-rides")({
   head: () => ({ meta: [{ title: "My Rides — MiniPort Driver" }] }),
@@ -83,6 +84,17 @@ function DriverRidesPage() {
 function RideCard({ ride }: { ride: AnyRow }) {
   const [proofUrl, setProofUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const contact = useQuery({
+    queryKey: ["driver-ride-contact", ride.id],
+    enabled: ride.status === "accepted" || ride.status === "in_progress",
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("booking_contacts", { _booking_ids: [ride.id] });
+      if (error) throw error;
+      const row = (data ?? [])[0];
+      return row?.name ?? "Customer";
+    },
+  });
   const meta = STATUS_META[ride.status] ?? { label: ride.status };
   const commission = Number(ride.commission_amount || 0);
   const net = Number(ride.driver_net_earning || 0);
@@ -136,6 +148,18 @@ function RideCard({ ride }: { ride: AnyRow }) {
         </div>
       )}
 
+      {(ride.status === "accepted" || ride.status === "in_progress") && (
+        <div className="mt-3 flex items-center justify-between gap-2 rounded-lg border bg-muted/30 p-3">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Active trip chat</p>
+            <p className="truncate text-sm font-semibold text-secondary">{contact.data ?? "Customer"}</p>
+          </div>
+          <Button size="sm" onClick={() => setChatOpen(true)}>
+            <MessageCircle className="mr-1.5 h-4 w-4" /> Message customer
+          </Button>
+        </div>
+      )}
+
       {ride.status === "completed" && (
         <div className="mt-3 rounded-md bg-muted/40 px-3 py-2 text-xs">
           <div className="flex justify-between">
@@ -169,6 +193,7 @@ function RideCard({ ride }: { ride: AnyRow }) {
           )}
         </div>
       )}
+      <QuickChatModal open={chatOpen} onOpenChange={setChatOpen} bookingId={ride.id} driverName={contact.data ?? "Customer"} />
     </article>
   );
 }
