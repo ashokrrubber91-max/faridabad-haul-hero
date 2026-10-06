@@ -102,9 +102,8 @@ function VehicleOption({ vehicle, selected, onSelect }: {
             <div className="min-w-0">
               <div className="flex items-center gap-1 font-bold text-lg text-gray-900">
                 <span className="truncate">{vehicle.label}</span><Info className="h-4 w-4 shrink-0 text-gray-400" />
-                {vehicle.is_new && <span className="rounded bg-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-white">NEW</span>}
               </div>
-              <p className="text-xs font-medium text-gray-500">{payload ? String(payload) + " kg" : vehicle.capacity_label || "Capacity on request"}{vehicle.eta_mins ? " · " + vehicle.eta_mins + " mins" : ""}</p>
+              <p className="text-xs font-medium text-gray-500">{payload ? String(payload) + " kg" : vehicle.capacity_label || "Capacity on request"}</p>
             </div>
             <div className="shrink-0 text-right"><p className="text-xl font-extrabold text-gray-900">₹{vehicle.base_fare}</p><p className="text-[11px] text-muted-foreground">base fare</p></div>
           </div>
@@ -119,8 +118,8 @@ function VehicleOption({ vehicle, selected, onSelect }: {
       <div className="flex min-w-0 items-center gap-3">
         {img ? <img src={img} alt={vehicle.label + " goods vehicle"} className="h-10 w-14 shrink-0 object-contain" /> : <span className="grid h-10 w-14 shrink-0 place-items-center rounded-md bg-muted text-[10px]">Vehicle</span>}
         <div className="min-w-0">
-          <div className="flex items-center gap-2"><span className="truncate font-bold text-gray-800">{vehicle.label}</span>{vehicle.is_new && <span className="rounded bg-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-white">NEW</span>}</div>
-          <p className="text-xs text-gray-500">{payload ? String(payload) + " kg" : vehicle.capacity_label || "Capacity on request"}{vehicle.eta_mins ? " · " + vehicle.eta_mins + " mins" : ""}</p>
+          <div className="flex items-center gap-2"><span className="truncate font-bold text-gray-800">{vehicle.label}</span></div>
+          <p className="text-xs text-gray-500">{payload ? String(payload) + " kg" : vehicle.capacity_label || "Capacity on request"}</p>
         </div>
       </div>
       <span className="shrink-0 text-lg font-extrabold text-gray-900">₹{vehicle.base_fare}</span>
