@@ -17,10 +17,12 @@ type PassRow = {
 };
 
 function formatRemaining(ms: number) {
-  const totalMinutes = Math.max(0, Math.ceil(ms / 60000));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
+  const remainingMs = Math.max(0, ms);
+  const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+  const minutes = Math.floor(
+    (remainingMs % (1000 * 60 * 60)) / (1000 * 60),
+  );
+  return hours + "h " + minutes.toString().padStart(2, "0") + "m";
 }
 
 export function DailyPassCard() {
@@ -114,7 +116,7 @@ export function DailyPassCard() {
               Active Pass (0% Commission)
             </div>
             <span className="rounded-full bg-success/10 px-2 py-1 text-xs font-semibold text-success">
-              {formatRemaining(remaining)} left
+              Expires in: {formatRemaining(remaining)}
             </span>
           </div>
           <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
