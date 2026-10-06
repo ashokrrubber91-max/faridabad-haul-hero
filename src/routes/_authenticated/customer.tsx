@@ -586,6 +586,8 @@ function CustomerPage() {
               setPending(drop);
               setStage({ type: "confirm", mode: "drop" });
             }}
+            paymentMode={method === "cod" ? "cash" : method === "upi" ? "upi" : "wallet"}
+            onPaymentModeChange={(next) => setMethod(next === "cash" ? "cod" : next)}
             onConfirm={() => create.mutate()}
             submitting={create.isPending}
           />
@@ -647,12 +649,15 @@ function CustomerPage() {
                   </div>
                   {b.status === "pending" && (
                     <DriverMatchingCard
+                      bookingId={b.id}
                       vehicleType={vehicleLabel(b.vehicle_type)}
-                      attempted={0}
-                      total={5}
+                      currentFare={Number(b.fare) || 0}
+                      paymentStatus={b.payment_status}
                       elapsedSeconds={Math.max(0, Math.floor((Date.now() - new Date(b.created_at).getTime()) / 1000))}
-                      onBoost={(amount) => toast.success("₹" + amount + " fare boost selected")}
-                      onAlternative={(alternative) => toast.success(alternative + " added to the search")}
+                      onBoost={(_amount, _newFare) => {
+                        void qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
+                      }}
+                      onAlternative={(alternative) => toast.info(alternative + " selected — a new vehicle search can be started from this booking.")}
                     />
                   )}
                   {(b.status === "accepted" || b.status === "in_progress") && (
