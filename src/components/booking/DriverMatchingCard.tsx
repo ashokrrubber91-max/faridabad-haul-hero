@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CarFront, ChevronRight, Loader2, Plus, TrendingUp } from "lucide-react";
+import { Loader2, Plus, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
