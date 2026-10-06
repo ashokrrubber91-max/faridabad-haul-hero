@@ -184,6 +184,19 @@ function DriverPage() {
       .on(
         "postgres_changes",
         {
+          event: "UPDATE",
+          schema: "public",
+          table: "bookings",
+          filter: "status=eq.pending",
+        },
+        () => {
+          // Pending fare boosts and other booking changes are delivered in realtime.
+          qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
           event: "*",
           schema: "public",
           table: "bookings",
