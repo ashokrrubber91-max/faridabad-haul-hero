@@ -193,7 +193,7 @@ function RideCard({ ride }: { ride: AnyRow }) {
           )}
         </div>
       )}
-      <QuickChatModal open={chatOpen} onOpenChange={setChatOpen} bookingId={ride.id} driverName={contact.data ?? "Customer"} />
+      <QuickChatModal open={chatOpen} onOpenChange={setChatOpen} bookingId={ride.id} counterpartName={contact.data ?? "Customer"} />
     </article>
   );
 }
