@@ -27,20 +27,20 @@ export function QuickChatModal({
   open,
   onOpenChange,
   bookingId,
-  driverName,
+  counterpartName,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   bookingId: string;
-  driverName: string;
+  counterpartName: string;
 }) {
   const { user } = useAuth();
   const [text, setText] = useState("");
   const [quickOpen, setQuickOpen] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const initials = useMemo(
-    () => driverName.split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase() || "DR",
-    [driverName],
+    () => counterpartName.split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase() || "DR",
+    [counterpartName],
   );
 
   useEffect(() => {
@@ -121,7 +121,7 @@ export function QuickChatModal({
           <div className="flex items-center gap-3">
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">{initials}</div>
             <div className="min-w-0 flex-1">
-              <SheetTitle className="truncate">Message {driverName}</SheetTitle>
+              <SheetTitle className="truncate">Message {counterpartName}</SheetTitle>
               <SheetDescription>Booking #{bookingId.slice(0, 8).toUpperCase()}</SheetDescription>
             </div>
           </div>
