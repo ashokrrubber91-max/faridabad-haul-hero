@@ -11,7 +11,7 @@ import { useVehicleMap, vehicleSpecs } from "@/lib/vehicles";
 
 export function ReviewBooking({
   pickup, drop, stops, vehicle, distanceKm, baseFare, helperCount, helperFee, discount, fare,
-  notes, gstin, onBack, onEditPickup, onEditDrop, onConfirm, submitting,
+  notes, gstin, paymentMode, onPaymentModeChange, onBack, onEditPickup, onEditDrop, onConfirm, submitting,
 }: {
   pickup: PlacePick;
   drop: PlacePick;
@@ -25,6 +25,8 @@ export function ReviewBooking({
   fare: number;
   notes: string;
   gstin: CustomerGstin | null;
+  paymentMode: "cash" | "wallet" | "upi";
+  onPaymentModeChange: (mode: "cash" | "wallet" | "upi") => void;
   onBack: () => void;
   onEditPickup?: () => void;
   onEditDrop?: () => void;
@@ -33,7 +35,6 @@ export function ReviewBooking({
 }) {
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [coinsEnabled, setCoinsEnabled] = useState(discount > 0);
-  const [paymentMode, setPaymentMode] = useState<"cash" | "wallet" | "upi">("cash");
   const [breakupOpen, setBreakupOpen] = useState(false);
   const { map } = useVehicleMap();
   const specs = map.has(vehicle) ? vehicleSpecs(map.get(vehicle)!) : [];
@@ -129,7 +130,7 @@ export function ReviewBooking({
           </div>
           <select
             value={paymentMode}
-            onChange={(e) => setPaymentMode(e.target.value as "cash" | "wallet" | "upi")}
+            onChange={(e) => onPaymentModeChange(e.target.value as "cash" | "wallet" | "upi")}
             className="mt-3 h-11 w-full rounded-lg border bg-background px-3 text-sm font-medium text-secondary outline-none focus:ring-2 focus:ring-primary"
             aria-label="Payment method"
           >
