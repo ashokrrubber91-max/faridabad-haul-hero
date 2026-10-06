@@ -147,7 +147,7 @@ export function ActiveTripCard({
         </div>
       </div>
 
-      <QuickChatModal open={chatOpen} onOpenChange={setChatOpen} bookingId={bookingId} driverName={driverName} />
+      <QuickChatModal open={chatOpen} onOpenChange={setChatOpen} bookingId={bookingId} counterpartName={driverName} />
     </>
   );
 }
