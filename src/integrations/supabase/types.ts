@@ -1768,7 +1768,6 @@ export type Database = {
         }
         Relationships: []
       }
-    }
       trip_issues: {
         Row: {
           id: string
@@ -1808,6 +1807,7 @@ export type Database = {
           },
         ]
       }
+    }
     Views: {
       [_ in never]: never
     }
@@ -2651,7 +2651,6 @@ export type Database = {
         Args: { _booking_id: string; _otp: string; _stage: string }
         Returns: Json
       }
-    }
       get_booking_driver_search_stats: {
         Args: { _booking_id: string }
         Returns: {
@@ -2663,6 +2662,7 @@ export type Database = {
         Args: { _booking_id: string; _boost: number }
         Returns: Database["public"]["Tables"]["bookings"]["Row"]
       }
+    }
     Enums: {
       address_kind: "home" | "shop" | "other"
       app_role: "customer" | "driver" | "admin" | "staff"
