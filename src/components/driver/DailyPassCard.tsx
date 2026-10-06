@@ -1,39 +1,60 @@
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Clock3, IndianRupee, ShieldCheck, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
+import { useAuth } from "@/hooks/useAuth";
 
 type PassRow = {
   id: string;
-  starts_at: string;
-  ends_at: string;
+  driver_id: string;
+  purchased_at: string;
+  expires_at: string;
   amount: number;
   status: string;
 };
 
+function formatRemaining(ms: number) {
+  const totalMinutes = Math.max(0, Math.ceil(ms / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
+}
+
 export function DailyPassCard() {
+  const { user } = useAuth();
   const qc = useQueryClient();
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const pass = useQuery({
-    queryKey: ["driver-daily-pass"],
+    queryKey: ["driver-daily-pass", user?.id],
+    enabled: !!user?.id,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("driver_daily_passes")
-        .select("id,starts_at,ends_at,amount,status")
+        .select("id,driver_id,purchased_at,expires_at,amount,status")
+        .eq("driver_id", user!.id)
         .eq("status", "active")
-        .gt("ends_at", new Date().toISOString())
-        .order("ends_at", { ascending: false })
+        .gt("expires_at", new Date().toISOString())
+        .order("expires_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data as PassRow | null;
     },
+    refetchInterval: 30_000,
   });
 
   const wallet = useQuery({
-    queryKey: ["driver-daily-pass-wallet"],
+    queryKey: ["driver-daily-pass-wallet", user?.id],
+    enabled: !!user?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("wallet_accounts")
@@ -42,6 +63,7 @@ export function DailyPassCard() {
       if (error) throw error;
       return Number(data?.cash_balance ?? 0);
     },
+    refetchInterval: 30_000,
   });
 
   const activate = useMutation({
@@ -62,6 +84,10 @@ export function DailyPassCard() {
 
   const active = pass.data;
   const balance = wallet.data ?? 0;
+  const remaining = useMemo(
+    () => (active ? new Date(active.expires_at).getTime() - now : 0),
+    [active, now],
+  );
 
   return (
     <section className="surface-card border-primary/30 bg-primary/5 p-5">
@@ -79,17 +105,23 @@ export function DailyPassCard() {
         </div>
       </div>
 
-      {active ? (
+      {active && remaining > 0 ? (
         <div className="mt-4 rounded-md border border-success/30 bg-success/5 p-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-success">
-            <ShieldCheck className="h-4 w-4" /> Pass active
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-success">
+              <ShieldCheck className="h-4 w-4" />
+              Active Pass (0% Commission)
+            </div>
+            <span className="rounded-full bg-success/10 px-2 py-1 text-xs font-semibold text-success">
+              {formatRemaining(remaining)} left
+            </span>
           </div>
-          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+          <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
             <Clock3 className="h-3.5 w-3.5" />
-            Valid until {new Date(active.ends_at).toLocaleString("en-IN")}
+            Expires {new Date(active.expires_at).toLocaleString("en-IN")}
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            All eligible completed rides during this window use 0% commission.
+            Completed rides during the active pass receive 100% of the fare with no MiniPort commission.
           </p>
         </div>
       ) : (
