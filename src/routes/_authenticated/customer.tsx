@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META, type VehicleId, BOOKING_FIELDS } from "@/lib/booking";
 import { useVehicleTypes, fareFor, type VehicleType } from "@/lib/vehicles";
-import { VehicleCard } from "@/components/booking/VehicleCard";
+
 import { WaypointManager } from "@/components/booking/WaypointManager";
 import { GstinSelect, type CustomerGstin } from "@/components/booking/GstinSelect";
 import { ReviewBooking } from "@/components/booking/ReviewBooking";
