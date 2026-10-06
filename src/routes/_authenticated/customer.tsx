@@ -27,7 +27,9 @@ import { ReviewBooking } from "@/components/booking/ReviewBooking";
 import { LocationSearchOverlay, type PlacePick } from "@/components/booking/LocationSearchOverlay";
 import { MapPinConfirm } from "@/components/booking/MapPinConfirm";
 import { LiveTripMap } from "@/components/booking/LiveTripMap";
-import { DriverApproachCard } from "@/components/booking/DriverApproachCard";
+import { ActiveTripCard } from "@/components/booking/ActiveTripCard";
+import { DriverMatchingCard } from "@/components/booking/DriverMatchingCard";
+import { VehicleSelector } from "@/components/booking/VehicleSelector";
 
 import { CheckoutExtras, type PaymentMethod } from "@/components/booking/CheckoutExtras";
 import { SupportChat } from "@/components/support/SupportChat";
@@ -448,77 +450,36 @@ function CustomerPage() {
               locating={locatingMode === "drop"}
             />
 
-            <div>
-              <Label>Vehicle</Label>
-              {catalogue.isLoading ? (
-                <div className="mt-2 space-y-2">
-                  {[0, 1, 2].map((i) => (
-                    <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
-                  ))}
-                </div>
-              ) : catalogue.isError ? (
-                <div className="mt-2 rounded-lg border p-4 text-center text-sm">
-                  <p className="text-muted-foreground">We couldn&apos;t load the vehicle list.</p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="mt-2"
-                    onClick={() => catalogue.refetch()}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              ) : vehicles.length === 0 ? (
-                <p className="mt-2 rounded-lg border p-4 text-center text-sm text-muted-foreground">
-                  No vehicles are available for booking right now. Please try again shortly.
-                </p>
-              ) : (
-                <div className="mt-2 flex flex-col gap-2">
-                  {vehicles.map((v) => (
-                    <VehicleCard
-                      key={v.id}
-                      vehicle={v}
-                      selected={vehicle === v.id}
-                      onSelect={() => {
-                        setVehicle(v.id);
-                        if (Number(v.payload_kg ?? v.weight_limit_kg ?? 0) <= 20) setHelperCount(0);
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {helperEligible && (
-              <div className="rounded-lg border bg-muted/20 p-4">
-                <Label>Helper selection</Label>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Add loading/unloading help to this cargo vehicle.
-                </p>
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  {[
-                    { count: 0, label: "No helper", fee: 0 },
-                    { count: 1, label: "1 helper", fee: 250 },
-                    { count: 2, label: "2 helpers", fee: 500 },
-                  ].map((option) => (
-                    <button
-                      key={option.count}
-                      type="button"
-                      onClick={() => setHelperCount(option.count)}
-                      className={`rounded-md border px-2 py-3 text-center transition-colors ${
-                        helperCount === option.count
-                          ? "border-primary bg-accent ring-1 ring-primary"
-                          : "border-border hover:bg-muted"
-                      }`}
-                    >
-                      <p className="text-sm font-semibold text-secondary">{option.label}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {option.fee === 0 ? "Free" : `+ ₹${option.fee}`}
-                      </p>
-                    </button>
-                  ))}
-                </div>
+            {catalogue.isLoading ? (
+              <div className="mt-2 space-y-2">
+                {[0, 1, 2].map((i) => <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />)}
               </div>
+            ) : catalogue.isError ? (
+              <div className="mt-2 rounded-lg border p-4 text-center text-sm">
+                <p className="text-muted-foreground">We couldn&apos;t load the vehicle list.</p>
+                <Button size="sm" variant="outline" className="mt-2" onClick={() => catalogue.refetch()}>Retry</Button>
+              </div>
+            ) : vehicles.length === 0 ? (
+              <p className="mt-2 rounded-lg border p-4 text-center text-sm text-muted-foreground">No vehicles are available for booking right now.</p>
+            ) : (
+              <VehicleSelector
+                vehicles={vehicles}
+                selectedId={vehicle}
+                onSelect={(id) => {
+                  setVehicle(id);
+                  const v = vehicles.find((row) => row.id === id);
+                  if (Number(v?.payload_kg ?? v?.weight_limit_kg ?? 0) <= 20) setHelperCount(0);
+                }}
+                helperCount={helperCount}
+                onHelperCountChange={setHelperCount}
+                coins={coins}
+                maxCoins={coins}
+                coinValue={coins}
+                useCoins={coins > 0}
+                onUseCoinsChange={(enabled) => {
+                  if (!enabled) setCoins(0);
+                }}
+              />
             )}
 
             <div>
@@ -684,15 +645,22 @@ function CustomerPage() {
                       </Badge>
                     </div>
                   </div>
+                  {b.status === "pending" && (
+                    <DriverMatchingCard
+                      vehicleType={vehicleLabel(b.vehicle_type)}
+                      attempted={0}
+                      total={5}
+                      elapsedSeconds={Math.max(0, Math.floor((Date.now() - new Date(b.created_at).getTime()) / 1000))}
+                      onBoost={(amount) => toast.success("₹" + amount + " fare boost selected")}
+                      onAlternative={(alternative) => toast.success(alternative + " added to the search")}
+                    />
+                  )}
                   {(b.status === "accepted" || b.status === "in_progress") && (
-                    <DriverApproachCard
+                    <ActiveTripCard
                       bookingId={b.id}
                       driverId={b.driver_id}
                       vehicleType={b.vehicle_type}
-                      phase={b.status === "accepted" ? "accepted" : "in_progress"}
-                      pickupAddress={b.pickup_address}
-                      pickupLat={b.pickup_lat}
-                      pickupLng={b.pickup_lng}
+                      status={b.status === "accepted" ? "accepted" : "in_progress"}
                     />
                   )}
                   {(b.status === "accepted" || b.status === "in_progress") && (
