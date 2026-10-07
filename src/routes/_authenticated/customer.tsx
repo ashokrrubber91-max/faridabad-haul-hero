@@ -763,6 +763,7 @@ function CustomerPage() {
                       bookingId={b.id}
                       vehicleType={vehicleLabel(b.vehicle_type)}
                       currentFare={Number(b.fare) || 0}
+                      currentBoost={Number(b.fare_boost) || 0}
                       paymentStatus={b.payment_status}
                       elapsedSeconds={Math.max(
                         0,
