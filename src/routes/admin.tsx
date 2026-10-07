@@ -933,9 +933,7 @@ function LiveTripsTab({
   drivers: Profile[];
   onChanged: () => void;
 }) {
-  const live = bookings.filter(
-    (b) => b.status === "pending" || b.status === "accepted" || b.status === "in_progress",
-  );
+  const [statusFilter, setStatusFilter] = useState<"all" | "searching" | "accepted" | "in_transit" | "completed" | "cancelled">("all");
   const [assignFor, setAssignFor] = useState<Booking | null>(null);
   const [driverId, setDriverId] = useState<string>("");
   const [cancelFor, setCancelFor] = useState<Booking | null>(null);
@@ -974,20 +972,46 @@ function LiveTripsTab({
     onChanged();
   };
 
-  const availableDrivers = drivers.filter((d) => d.is_online);
+  const availableDrivers = drivers.filter(
+    (d) =>
+      d.is_online &&
+      !bookings.some(
+        (b) => b.driver_id === d.id && (b.status === "accepted" || b.status === "in_progress"),
+      ),
+  );
+  const filteredTrips = bookings.filter((b) => {
+    if (statusFilter === "all") return true;
+    if (statusFilter === "searching") return b.status === "pending";
+    if (statusFilter === "in_transit") return b.status === "in_progress";
+    return b.status === statusFilter;
+  });
 
   return (
     <section className="surface-card">
-      <div className="border-b border-border px-4 py-3">
-        <h3 className="font-display text-xl tracking-wide text-secondary">
-          Live trips ({live.length})
-        </h3>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <div>
+          <h3 className="font-display text-xl tracking-wide text-secondary">
+            Trip monitor ({filteredTrips.length})
+          </h3>
+          <p className="text-xs text-muted-foreground">Live booking status and manual driver assignment.</p>
+        </div>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+          <SelectTrigger className="h-9 w-36 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="searching">Searching</SelectItem>
+            <SelectItem value="accepted">Accepted</SelectItem>
+            <SelectItem value="in_transit">In transit</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="divide-y divide-border">
-        {live.length === 0 && (
+        {filteredTrips.length === 0 && (
           <p className="px-4 py-8 text-center text-sm text-muted-foreground">No live trips.</p>
         )}
-        {live.map((b) => {
+        {filteredTrips.map((b) => {
           const meta = STATUS_META[b.status] ?? STATUS_META.pending;
           const customer = profileMap.get(b.customer_id);
           const driver = b.driver_id ? profileMap.get(b.driver_id) : null;
@@ -1025,9 +1049,9 @@ function LiveTripsTab({
                 </p>
               </div>
               <div className="flex flex-col gap-1.5">
-                {!driver && b.status === "pending" && (
+                {b.status === "pending" && (
                   <Button size="sm" variant="outline" onClick={() => setAssignFor(b)}>
-                    Assign driver
+                    {driver ? "Reassign driver" : "Assign driver"}
                   </Button>
                 )}
                 <Button size="sm" variant="ghost" onClick={() => setCancelFor(b)}>
