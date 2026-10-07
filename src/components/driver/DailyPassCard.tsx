@@ -70,7 +70,9 @@ export function DailyPassCard() {
 
   const activate = useMutation({
     mutationFn: async () => {
-      const { data, error } = await (supabase as unknown as UntypedClient).rpc("activate_driver_daily_pass");
+      const { data, error } = await (supabase as unknown as UntypedClient).rpc(
+        "activate_driver_daily_pass",
+      );
       if (error) throw error;
       return data as PassRow;
     },

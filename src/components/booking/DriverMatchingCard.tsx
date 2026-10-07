@@ -54,9 +54,12 @@ export function DriverMatchingCard({
     queryKey: ["driver-search-stats", bookingId],
     enabled: !!bookingId,
     queryFn: async () => {
-      const { data, error } = await (supabase as unknown as UntypedClient).rpc("get_booking_driver_search_stats", {
-        _booking_id: bookingId,
-      });
+      const { data, error } = await (supabase as unknown as UntypedClient).rpc(
+        "get_booking_driver_search_stats",
+        {
+          _booking_id: bookingId,
+        },
+      );
       if (error) throw error;
       const row = Array.isArray(data) ? data[0] : data;
       return {
@@ -79,10 +82,13 @@ export function DriverMatchingCard({
       return;
     }
     try {
-      const { data, error } = await (supabase as unknown as UntypedClient).rpc("set_booking_fare_boost", {
-        _booking_id: bookingId,
-        _boost: amount,
-      });
+      const { data, error } = await (supabase as unknown as UntypedClient).rpc(
+        "set_booking_fare_boost",
+        {
+          _booking_id: bookingId,
+          _boost: amount,
+        },
+      );
       if (error) throw error;
       const updated = Array.isArray(data) ? data[0] : data;
       const newFare = Number(updated?.fare ?? fare);

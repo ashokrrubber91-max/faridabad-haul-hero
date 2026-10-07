@@ -1,4 +1,3 @@
-import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
 /* eslint-disable */
 
 // @ts-nocheck

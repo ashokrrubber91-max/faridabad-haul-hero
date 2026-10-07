@@ -282,15 +282,14 @@ export const confirmWalletTopupPayment = createServerFn({ method: "POST" })
       throw new Error("Payment was not completed");
     }
 
-    const { data: credit, error: creditError } = await (supabaseAdmin as unknown as UntypedClient).rpc(
-      "credit_driver_wallet_topup",
-      {
-        _payment_id: record.id,
-        _driver_id: context.userId,
-        _amount: Number(record.amount),
-        _provider_payment_id: data.paymentId,
-      },
-    );
+    const { data: credit, error: creditError } = await (
+      supabaseAdmin as unknown as UntypedClient
+    ).rpc("credit_driver_wallet_topup", {
+      _payment_id: record.id,
+      _driver_id: context.userId,
+      _amount: Number(record.amount),
+      _provider_payment_id: data.paymentId,
+    });
     if (creditError) throw new Error(creditError.message);
     const result = credit as { ok?: boolean; balance?: number } | null;
     if (!result?.ok) throw new Error("Wallet top-up could not be completed");
