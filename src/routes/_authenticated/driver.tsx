@@ -891,7 +891,7 @@ function ActiveJobCard({
           ["Start Trip", job.status === "in_progress"],
           ["Complete Trip", false],
         ].map(([label, done], index) => (
-          <div key={String(label)} className={`rounded-md border px-1 py-2 ${done ? "border-success bg-success/10 text-success" : index === 1 && job.status === "accepted" ? "border-primary bg-primary/10 text-primary" : index === 2 && job.status === "in_progress" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
+          <div key={String(label)} className={`rounded-md border px-1 py-2 ${done ? "border-success bg-success/10 text-success" : ((index === 1 && job.status === "accepted" && !job.loading_started_at) || (index === 2 && job.status === "accepted" && !!job.loading_stopped_at) || (index === 3 && job.status === "in_progress")) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
             {done ? "✓ " : ""}{String(label)}
           </div>
         ))}
