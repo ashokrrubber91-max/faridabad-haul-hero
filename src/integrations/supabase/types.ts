@@ -277,6 +277,7 @@ export type Database = {
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
+          fare_boost: number
           final_fare: number | null
           helper_count: number
           helper_fee: number
@@ -326,6 +327,7 @@ export type Database = {
           drop_verified_at?: string | null
           expires_at?: string | null
           fare: number
+          fare_boost?: number
           final_fare?: number | null
           helper_count?: number
           helper_fee?: number
@@ -375,6 +377,7 @@ export type Database = {
           drop_verified_at?: string | null
           expires_at?: string | null
           fare?: number
+          fare_boost?: number
           final_fare?: number | null
           helper_count?: number
           helper_fee?: number
