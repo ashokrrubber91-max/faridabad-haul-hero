@@ -1,2975 +1,3103 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5";
-  };
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
       account_admin_audit: {
         Row: {
-          action: string;
-          actor_id: string;
-          created_at: string;
-          id: string;
-          metadata: Json;
-          role: string | null;
-          target_user_id: string;
-        };
+          action: string
+          actor_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          role: string | null
+          target_user_id: string
+        }
         Insert: {
-          action: string;
-          actor_id: string;
-          created_at?: string;
-          id?: string;
-          metadata?: Json;
-          role?: string | null;
-          target_user_id: string;
-        };
+          action: string
+          actor_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          role?: string | null
+          target_user_id: string
+        }
         Update: {
-          action?: string;
-          actor_id?: string;
-          created_at?: string;
-          id?: string;
-          metadata?: Json;
-          role?: string | null;
-          target_user_id?: string;
-        };
-        Relationships: [];
-      };
+          action?: string
+          actor_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          role?: string | null
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       account_deletions: {
         Row: {
-          deleted_at: string;
-          had_bookings: boolean;
-          id: string;
-          user_id: string;
-        };
+          deleted_at: string
+          had_bookings: boolean
+          id: string
+          user_id: string
+        }
         Insert: {
-          deleted_at?: string;
-          had_bookings?: boolean;
-          id?: string;
-          user_id: string;
-        };
+          deleted_at?: string
+          had_bookings?: boolean
+          id?: string
+          user_id: string
+        }
         Update: {
-          deleted_at?: string;
-          had_bookings?: boolean;
-          id?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
+          deleted_at?: string
+          had_bookings?: boolean
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
-          action: string;
-          actor_id: string | null;
-          created_at: string;
-          id: string;
-          new_data: Json | null;
-          old_data: Json | null;
-          row_id: string | null;
-          table_name: string;
-        };
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          row_id: string | null
+          table_name: string
+        }
         Insert: {
-          action: string;
-          actor_id?: string | null;
-          created_at?: string;
-          id?: string;
-          new_data?: Json | null;
-          old_data?: Json | null;
-          row_id?: string | null;
-          table_name: string;
-        };
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          row_id?: string | null
+          table_name: string
+        }
         Update: {
-          action?: string;
-          actor_id?: string | null;
-          created_at?: string;
-          id?: string;
-          new_data?: Json | null;
-          old_data?: Json | null;
-          row_id?: string | null;
-          table_name?: string;
-        };
-        Relationships: [];
-      };
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          row_id?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
+      booking_messages: {
+        Row: {
+          body: string
+          booking_id: string
+          created_at: string
+          id: string
+          message_type: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          booking_id: string
+          created_at?: string
+          id?: string
+          message_type?: string
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          booking_id?: string
+          created_at?: string
+          id?: string
+          message_type?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_messages_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_otp_attempts: {
         Row: {
-          attempts: number;
-          booking_id: string;
-          locked_until: string | null;
-          stage: string;
-          updated_at: string;
-        };
+          attempts: number
+          booking_id: string
+          locked_until: string | null
+          stage: string
+          updated_at: string
+        }
         Insert: {
-          attempts?: number;
-          booking_id: string;
-          locked_until?: string | null;
-          stage: string;
-          updated_at?: string;
-        };
+          attempts?: number
+          booking_id: string
+          locked_until?: string | null
+          stage: string
+          updated_at?: string
+        }
         Update: {
-          attempts?: number;
-          booking_id?: string;
-          locked_until?: string | null;
-          stage?: string;
-          updated_at?: string;
-        };
+          attempts?: number
+          booking_id?: string
+          locked_until?: string | null
+          stage?: string
+          updated_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "booking_otp_attempts_booking_id_fkey";
-            columns: ["booking_id"];
-            isOneToOne: false;
-            referencedRelation: "bookings";
-            referencedColumns: ["id"];
+            foreignKeyName: "booking_otp_attempts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       booking_share_links: {
         Row: {
-          booking_id: string;
-          created_at: string;
-          created_by: string;
-          expires_at: string;
-          id: string;
-          revoked_at: string | null;
-          token: string;
-        };
+          booking_id: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          revoked_at: string | null
+          token: string
+        }
         Insert: {
-          booking_id: string;
-          created_at?: string;
-          created_by: string;
-          expires_at?: string;
-          id?: string;
-          revoked_at?: string | null;
-          token: string;
-        };
+          booking_id: string
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          token: string
+        }
         Update: {
-          booking_id?: string;
-          created_at?: string;
-          created_by?: string;
-          expires_at?: string;
-          id?: string;
-          revoked_at?: string | null;
-          token?: string;
-        };
+          booking_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          token?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "booking_share_links_booking_id_fkey";
-            columns: ["booking_id"];
-            isOneToOne: false;
-            referencedRelation: "bookings";
-            referencedColumns: ["id"];
+            foreignKeyName: "booking_share_links_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       booking_stops: {
         Row: {
-          address: string;
-          booking_id: string;
-          contact_name: string | null;
-          contact_phone: string | null;
-          created_at: string;
-          id: string;
-          kind: Database["public"]["Enums"]["booking_stop_kind"];
-          latitude: number | null;
-          longitude: number | null;
-          place_id: string | null;
-          sequence: number;
-        };
+          address: string
+          booking_id: string
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["booking_stop_kind"]
+          latitude: number | null
+          longitude: number | null
+          place_id: string | null
+          sequence: number
+        }
         Insert: {
-          address: string;
-          booking_id: string;
-          contact_name?: string | null;
-          contact_phone?: string | null;
-          created_at?: string;
-          id?: string;
-          kind: Database["public"]["Enums"]["booking_stop_kind"];
-          latitude?: number | null;
-          longitude?: number | null;
-          place_id?: string | null;
-          sequence: number;
-        };
+          address: string
+          booking_id: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["booking_stop_kind"]
+          latitude?: number | null
+          longitude?: number | null
+          place_id?: string | null
+          sequence: number
+        }
         Update: {
-          address?: string;
-          booking_id?: string;
-          contact_name?: string | null;
-          contact_phone?: string | null;
-          created_at?: string;
-          id?: string;
-          kind?: Database["public"]["Enums"]["booking_stop_kind"];
-          latitude?: number | null;
-          longitude?: number | null;
-          place_id?: string | null;
-          sequence?: number;
-        };
+          address?: string
+          booking_id?: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["booking_stop_kind"]
+          latitude?: number | null
+          longitude?: number | null
+          place_id?: string | null
+          sequence?: number
+        }
         Relationships: [
           {
-            foreignKeyName: "booking_stops_booking_id_fkey";
-            columns: ["booking_id"];
-            isOneToOne: false;
-            referencedRelation: "bookings";
-            referencedColumns: ["id"];
+            foreignKeyName: "booking_stops_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       bookings: {
         Row: {
-          cancellation_category: Database["public"]["Enums"]["cancellation_category"] | null;
-          cancellation_reason: string | null;
-          cancelled_at: string | null;
-          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null;
-          coins_redeemed: number;
-          commission_amount: number;
-          commission_rate: number;
-          coupon_code: string | null;
-          coupon_discount: number;
-          created_at: string;
-          customer_id: string;
-          distance_km: number;
-          driver_id: string | null;
-          driver_net_earning: number;
-          drop_address: string;
-          drop_lat: number | null;
-          drop_lng: number | null;
-          drop_verified_at: string | null;
-          expires_at: string | null;
-          fare: number;
-          final_fare: number | null;
-          id: string;
-          loading_overtime_minutes: number;
-          loading_started_at: string | null;
-          loading_stopped_at: string | null;
-          notes: string | null;
-          overtime_charge: number;
-          payment_method: Database["public"]["Enums"]["payment_method"];
-          payment_status: Database["public"]["Enums"]["payment_status"];
-          pickup_address: string;
-          pickup_lat: number | null;
-          pickup_lng: number | null;
-          pickup_verified_at: string | null;
-          pod_photo_url: string | null;
-          rating: number | null;
-          review: string | null;
-          service_zone: string;
-          status: Database["public"]["Enums"]["booking_status"];
-          unloading_overtime_minutes: number;
-          unloading_started_at: string | null;
-          unloading_stopped_at: string | null;
-          updated_at: string;
-          vehicle_type: string;
-        };
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          coins_redeemed: number
+          commission_amount: number
+          commission_rate: number
+          coupon_code: string | null
+          coupon_discount: number
+          created_at: string
+          customer_id: string
+          distance_km: number
+          driver_id: string | null
+          driver_net_earning: number
+          drop_address: string
+          drop_lat: number | null
+          drop_lng: number | null
+          drop_verified_at: string | null
+          expires_at: string | null
+          fare: number
+          final_fare: number | null
+          helper_count: number
+          helper_fee: number
+          id: string
+          loading_overtime_minutes: number
+          loading_started_at: string | null
+          loading_stopped_at: string | null
+          notes: string | null
+          overtime_charge: number
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_verified_at: string | null
+          pod_photo_url: string | null
+          rating: number | null
+          review: string | null
+          service_zone: string
+          status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
+          unloading_started_at: string | null
+          unloading_stopped_at: string | null
+          updated_at: string
+          vehicle_type: string
+        }
         Insert: {
-          cancellation_category?: Database["public"]["Enums"]["cancellation_category"] | null;
-          cancellation_reason?: string | null;
-          cancelled_at?: string | null;
-          cancelled_by?: Database["public"]["Enums"]["cancel_actor"] | null;
-          coins_redeemed?: number;
-          commission_amount?: number;
-          commission_rate?: number;
-          coupon_code?: string | null;
-          coupon_discount?: number;
-          created_at?: string;
-          customer_id: string;
-          distance_km: number;
-          driver_id?: string | null;
-          driver_net_earning?: number;
-          drop_address: string;
-          drop_lat?: number | null;
-          drop_lng?: number | null;
-          drop_verified_at?: string | null;
-          expires_at?: string | null;
-          fare: number;
-          final_fare?: number | null;
-          id?: string;
-          loading_overtime_minutes?: number;
-          loading_started_at?: string | null;
-          loading_stopped_at?: string | null;
-          notes?: string | null;
-          overtime_charge?: number;
-          payment_method?: Database["public"]["Enums"]["payment_method"];
-          payment_status?: Database["public"]["Enums"]["payment_status"];
-          pickup_address: string;
-          pickup_lat?: number | null;
-          pickup_lng?: number | null;
-          pickup_verified_at?: string | null;
-          pod_photo_url?: string | null;
-          rating?: number | null;
-          review?: string | null;
-          service_zone?: string;
-          status?: Database["public"]["Enums"]["booking_status"];
-          unloading_overtime_minutes?: number;
-          unloading_started_at?: string | null;
-          unloading_stopped_at?: string | null;
-          updated_at?: string;
-          vehicle_type: string;
-        };
+          cancellation_category?:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: Database["public"]["Enums"]["cancel_actor"] | null
+          coins_redeemed?: number
+          commission_amount?: number
+          commission_rate?: number
+          coupon_code?: string | null
+          coupon_discount?: number
+          created_at?: string
+          customer_id: string
+          distance_km: number
+          driver_id?: string | null
+          driver_net_earning?: number
+          drop_address: string
+          drop_lat?: number | null
+          drop_lng?: number | null
+          drop_verified_at?: string | null
+          expires_at?: string | null
+          fare: number
+          final_fare?: number | null
+          helper_count?: number
+          helper_fee?: number
+          id?: string
+          loading_overtime_minutes?: number
+          loading_started_at?: string | null
+          loading_stopped_at?: string | null
+          notes?: string | null
+          overtime_charge?: number
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          pickup_address: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          pickup_verified_at?: string | null
+          pod_photo_url?: string | null
+          rating?: number | null
+          review?: string | null
+          service_zone?: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes?: number
+          unloading_started_at?: string | null
+          unloading_stopped_at?: string | null
+          updated_at?: string
+          vehicle_type: string
+        }
         Update: {
-          cancellation_category?: Database["public"]["Enums"]["cancellation_category"] | null;
-          cancellation_reason?: string | null;
-          cancelled_at?: string | null;
-          cancelled_by?: Database["public"]["Enums"]["cancel_actor"] | null;
-          coins_redeemed?: number;
-          commission_amount?: number;
-          commission_rate?: number;
-          coupon_code?: string | null;
-          coupon_discount?: number;
-          created_at?: string;
-          customer_id?: string;
-          distance_km?: number;
-          driver_id?: string | null;
-          driver_net_earning?: number;
-          drop_address?: string;
-          drop_lat?: number | null;
-          drop_lng?: number | null;
-          drop_verified_at?: string | null;
-          expires_at?: string | null;
-          fare?: number;
-          final_fare?: number | null;
-          id?: string;
-          loading_overtime_minutes?: number;
-          loading_started_at?: string | null;
-          loading_stopped_at?: string | null;
-          notes?: string | null;
-          overtime_charge?: number;
-          payment_method?: Database["public"]["Enums"]["payment_method"];
-          payment_status?: Database["public"]["Enums"]["payment_status"];
-          pickup_address?: string;
-          pickup_lat?: number | null;
-          pickup_lng?: number | null;
-          pickup_verified_at?: string | null;
-          pod_photo_url?: string | null;
-          rating?: number | null;
-          review?: string | null;
-          service_zone?: string;
-          status?: Database["public"]["Enums"]["booking_status"];
-          unloading_overtime_minutes?: number;
-          unloading_started_at?: string | null;
-          unloading_stopped_at?: string | null;
-          updated_at?: string;
-          vehicle_type?: string;
-        };
+          cancellation_category?:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: Database["public"]["Enums"]["cancel_actor"] | null
+          coins_redeemed?: number
+          commission_amount?: number
+          commission_rate?: number
+          coupon_code?: string | null
+          coupon_discount?: number
+          created_at?: string
+          customer_id?: string
+          distance_km?: number
+          driver_id?: string | null
+          driver_net_earning?: number
+          drop_address?: string
+          drop_lat?: number | null
+          drop_lng?: number | null
+          drop_verified_at?: string | null
+          expires_at?: string | null
+          fare?: number
+          final_fare?: number | null
+          helper_count?: number
+          helper_fee?: number
+          id?: string
+          loading_overtime_minutes?: number
+          loading_started_at?: string | null
+          loading_stopped_at?: string | null
+          notes?: string | null
+          overtime_charge?: number
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          pickup_address?: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          pickup_verified_at?: string | null
+          pod_photo_url?: string | null
+          rating?: number | null
+          review?: string | null
+          service_zone?: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes?: number
+          unloading_started_at?: string | null
+          unloading_stopped_at?: string | null
+          updated_at?: string
+          vehicle_type?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "bookings_vehicle_type_fkey";
-            columns: ["vehicle_type"];
-            isOneToOne: false;
-            referencedRelation: "vehicle_types";
-            referencedColumns: ["id"];
+            foreignKeyName: "bookings_vehicle_type_fkey"
+            columns: ["vehicle_type"]
+            isOneToOne: false
+            referencedRelation: "vehicle_types"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       broadcasts: {
         Row: {
-          audience: string;
-          body: string;
-          channel: string;
-          created_at: string;
-          created_by: string | null;
-          id: string;
-          idempotency_key: string | null;
-          recipient_count: number;
-          sms_status: string;
-          title: string;
-        };
+          audience: string
+          body: string
+          channel: string
+          created_at: string
+          created_by: string | null
+          id: string
+          idempotency_key: string | null
+          recipient_count: number
+          sms_status: string
+          title: string
+        }
         Insert: {
-          audience: string;
-          body: string;
-          channel?: string;
-          created_at?: string;
-          created_by?: string | null;
-          id?: string;
-          idempotency_key?: string | null;
-          recipient_count?: number;
-          sms_status?: string;
-          title: string;
-        };
+          audience: string
+          body: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string | null
+          recipient_count?: number
+          sms_status?: string
+          title: string
+        }
         Update: {
-          audience?: string;
-          body?: string;
-          channel?: string;
-          created_at?: string;
-          created_by?: string | null;
-          id?: string;
-          idempotency_key?: string | null;
-          recipient_count?: number;
-          sms_status?: string;
-          title?: string;
-        };
-        Relationships: [];
-      };
+          audience?: string
+          body?: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string | null
+          recipient_count?: number
+          sms_status?: string
+          title?: string
+        }
+        Relationships: []
+      }
       coupon_redemptions: {
         Row: {
-          booking_id: string;
-          coupon_code: string;
-          created_at: string;
-          discount: number;
-          id: string;
-          user_id: string;
-        };
+          booking_id: string
+          coupon_code: string
+          created_at: string
+          discount: number
+          id: string
+          user_id: string
+        }
         Insert: {
-          booking_id: string;
-          coupon_code: string;
-          created_at?: string;
-          discount?: number;
-          id?: string;
-          user_id: string;
-        };
+          booking_id: string
+          coupon_code: string
+          created_at?: string
+          discount?: number
+          id?: string
+          user_id: string
+        }
         Update: {
-          booking_id?: string;
-          coupon_code?: string;
-          created_at?: string;
-          discount?: number;
-          id?: string;
-          user_id?: string;
-        };
+          booking_id?: string
+          coupon_code?: string
+          created_at?: string
+          discount?: number
+          id?: string
+          user_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "coupon_redemptions_booking_id_fkey";
-            columns: ["booking_id"];
-            isOneToOne: true;
-            referencedRelation: "bookings";
-            referencedColumns: ["id"];
+            foreignKeyName: "coupon_redemptions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       coupons: {
         Row: {
-          active: boolean;
-          code: string;
-          created_at: string;
-          expires_at: string | null;
-          id: string;
-          kind: Database["public"]["Enums"]["coupon_kind"];
-          max_discount: number | null;
-          max_uses: number | null;
-          max_uses_per_user: number;
-          min_fare: number;
-          uses: number;
-          value: number;
-        };
+          active: boolean
+          code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          kind: Database["public"]["Enums"]["coupon_kind"]
+          max_discount: number | null
+          max_uses: number | null
+          max_uses_per_user: number
+          min_fare: number
+          uses: number
+          value: number
+        }
         Insert: {
-          active?: boolean;
-          code: string;
-          created_at?: string;
-          expires_at?: string | null;
-          id?: string;
-          kind: Database["public"]["Enums"]["coupon_kind"];
-          max_discount?: number | null;
-          max_uses?: number | null;
-          max_uses_per_user?: number;
-          min_fare?: number;
-          uses?: number;
-          value: number;
-        };
+          active?: boolean
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["coupon_kind"]
+          max_discount?: number | null
+          max_uses?: number | null
+          max_uses_per_user?: number
+          min_fare?: number
+          uses?: number
+          value: number
+        }
         Update: {
-          active?: boolean;
-          code?: string;
-          created_at?: string;
-          expires_at?: string | null;
-          id?: string;
-          kind?: Database["public"]["Enums"]["coupon_kind"];
-          max_discount?: number | null;
-          max_uses?: number | null;
-          max_uses_per_user?: number;
-          min_fare?: number;
-          uses?: number;
-          value?: number;
-        };
-        Relationships: [];
-      };
+          active?: boolean
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["coupon_kind"]
+          max_discount?: number | null
+          max_uses?: number | null
+          max_uses_per_user?: number
+          min_fare?: number
+          uses?: number
+          value?: number
+        }
+        Relationships: []
+      }
       customer_gstins: {
         Row: {
-          business_address: string | null;
-          business_name: string;
-          created_at: string;
-          gstin: string;
-          id: string;
-          is_default: boolean;
-          updated_at: string;
-          user_id: string;
-        };
+          business_address: string | null
+          business_name: string
+          created_at: string
+          gstin: string
+          id: string
+          is_default: boolean
+          updated_at: string
+          user_id: string
+        }
         Insert: {
-          business_address?: string | null;
-          business_name: string;
-          created_at?: string;
-          gstin: string;
-          id?: string;
-          is_default?: boolean;
-          updated_at?: string;
-          user_id: string;
-        };
+          business_address?: string | null
+          business_name: string
+          created_at?: string
+          gstin: string
+          id?: string
+          is_default?: boolean
+          updated_at?: string
+          user_id: string
+        }
         Update: {
-          business_address?: string | null;
-          business_name?: string;
-          created_at?: string;
-          gstin?: string;
-          id?: string;
-          is_default?: boolean;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
+          business_address?: string | null
+          business_name?: string
+          created_at?: string
+          gstin?: string
+          id?: string
+          is_default?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       customer_profiles: {
         Row: {
-          created_at: string;
-          default_gstin_id: string | null;
-          marketing_opt_in: boolean;
-          updated_at: string;
-          user_id: string;
-        };
+          created_at: string
+          default_gstin_id: string | null
+          marketing_opt_in: boolean
+          updated_at: string
+          user_id: string
+        }
         Insert: {
-          created_at?: string;
-          default_gstin_id?: string | null;
-          marketing_opt_in?: boolean;
-          updated_at?: string;
-          user_id: string;
-        };
+          created_at?: string
+          default_gstin_id?: string | null
+          marketing_opt_in?: boolean
+          updated_at?: string
+          user_id: string
+        }
         Update: {
-          created_at?: string;
-          default_gstin_id?: string | null;
-          marketing_opt_in?: boolean;
-          updated_at?: string;
-          user_id?: string;
-        };
+          created_at?: string
+          default_gstin_id?: string | null
+          marketing_opt_in?: boolean
+          updated_at?: string
+          user_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "customer_profiles_default_gstin_id_fkey";
-            columns: ["default_gstin_id"];
-            isOneToOne: false;
-            referencedRelation: "customer_gstins";
-            referencedColumns: ["id"];
+            foreignKeyName: "customer_profiles_default_gstin_id_fkey"
+            columns: ["default_gstin_id"]
+            isOneToOne: false
+            referencedRelation: "customer_gstins"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "customer_profiles_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: true;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
+            foreignKeyName: "customer_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       device_tokens: {
         Row: {
-          created_at: string;
-          id: string;
-          last_seen_at: string;
-          platform: string;
-          token: string;
-          updated_at: string;
-          user_id: string;
-        };
+          created_at: string
+          id: string
+          last_seen_at: string
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
         Insert: {
-          created_at?: string;
-          id?: string;
-          last_seen_at?: string;
-          platform?: string;
-          token: string;
-          updated_at?: string;
-          user_id: string;
-        };
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          platform?: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
         Update: {
-          created_at?: string;
-          id?: string;
-          last_seen_at?: string;
-          platform?: string;
-          token?: string;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       driver_applications: {
         Row: {
-          applied_at: string;
-          created_at: string;
-          decision_note: string | null;
-          id: string;
-          reviewed_at: string | null;
-          reviewed_by: string | null;
-          status: Database["public"]["Enums"]["driver_application_status"];
-          updated_at: string;
-          user_id: string;
-        };
+          applied_at: string
+          created_at: string
+          decision_note: string | null
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["driver_application_status"]
+          updated_at: string
+          user_id: string
+        }
         Insert: {
-          applied_at?: string;
-          created_at?: string;
-          decision_note?: string | null;
-          id?: string;
-          reviewed_at?: string | null;
-          reviewed_by?: string | null;
-          status?: Database["public"]["Enums"]["driver_application_status"];
-          updated_at?: string;
-          user_id: string;
-        };
+          applied_at?: string
+          created_at?: string
+          decision_note?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["driver_application_status"]
+          updated_at?: string
+          user_id: string
+        }
         Update: {
-          applied_at?: string;
-          created_at?: string;
-          decision_note?: string | null;
-          id?: string;
-          reviewed_at?: string | null;
-          reviewed_by?: string | null;
-          status?: Database["public"]["Enums"]["driver_application_status"];
-          updated_at?: string;
-          user_id?: string;
-        };
+          applied_at?: string
+          created_at?: string
+          decision_note?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["driver_application_status"]
+          updated_at?: string
+          user_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "driver_applications_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: true;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
+            foreignKeyName: "driver_applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       driver_bank_accounts: {
         Row: {
-          account_holder: string;
-          account_number: string;
-          bank_name: string;
-          created_at: string;
-          driver_id: string;
-          id: string;
-          ifsc: string;
-          is_default: boolean;
-          updated_at: string;
-          upi_id: string | null;
-        };
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at: string
+          driver_id: string
+          id: string
+          ifsc: string
+          is_default: boolean
+          updated_at: string
+          upi_id: string | null
+        }
         Insert: {
-          account_holder: string;
-          account_number: string;
-          bank_name: string;
-          created_at?: string;
-          driver_id: string;
-          id?: string;
-          ifsc: string;
-          is_default?: boolean;
-          updated_at?: string;
-          upi_id?: string | null;
-        };
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          ifsc: string
+          is_default?: boolean
+          updated_at?: string
+          upi_id?: string | null
+        }
         Update: {
-          account_holder?: string;
-          account_number?: string;
-          bank_name?: string;
-          created_at?: string;
-          driver_id?: string;
-          id?: string;
-          ifsc?: string;
-          is_default?: boolean;
-          updated_at?: string;
-          upi_id?: string | null;
-        };
-        Relationships: [];
-      };
+          account_holder?: string
+          account_number?: string
+          bank_name?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          ifsc?: string
+          is_default?: boolean
+          updated_at?: string
+          upi_id?: string | null
+        }
+        Relationships: []
+      }
       driver_booking_passes: {
         Row: {
-          booking_id: string;
-          created_at: string;
-          driver_id: string;
-          id: string;
-        };
+          booking_id: string
+          created_at: string
+          driver_id: string
+          id: string
+        }
         Insert: {
-          booking_id: string;
-          created_at?: string;
-          driver_id: string;
-          id?: string;
-        };
+          booking_id: string
+          created_at?: string
+          driver_id: string
+          id?: string
+        }
         Update: {
-          booking_id?: string;
-          created_at?: string;
-          driver_id?: string;
-          id?: string;
-        };
+          booking_id?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "driver_booking_passes_booking_id_fkey";
-            columns: ["booking_id"];
-            isOneToOne: false;
-            referencedRelation: "bookings";
-            referencedColumns: ["id"];
+            foreignKeyName: "driver_booking_passes_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       driver_daily_passes: {
         Row: {
-          amount: number | null;
-          driver_id: string | null;
-          expires_at: string | null;
-          id: string;
-          purchased_at: string | null;
-          status: string | null;
-        };
+          amount: number | null
+          driver_id: string | null
+          expires_at: string | null
+          id: string
+          purchased_at: string | null
+          status: string | null
+        }
         Insert: {
-          amount?: number | null;
-          driver_id?: string | null;
-          expires_at?: string | null;
-          id?: string;
-          purchased_at?: string | null;
-          status?: string | null;
-        };
+          amount?: number | null
+          driver_id?: string | null
+          expires_at?: string | null
+          id?: string
+          purchased_at?: string | null
+          status?: string | null
+        }
         Update: {
-          amount?: number | null;
-          driver_id?: string | null;
-          expires_at?: string | null;
-          id?: string;
-          purchased_at?: string | null;
-          status?: string | null;
-        };
+          amount?: number | null
+          driver_id?: string | null
+          expires_at?: string | null
+          id?: string
+          purchased_at?: string | null
+          status?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: "driver_daily_passes_driver_id_fkey";
-            columns: ["driver_id"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
+            foreignKeyName: "driver_daily_passes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       driver_incentive_config: {
         Row: {
-          active: boolean;
-          bonus_amount: number;
-          created_at: string;
-          id: string;
-          label: string;
-          rides_required: number;
-        };
+          active: boolean
+          bonus_amount: number
+          created_at: string
+          id: string
+          label: string
+          rides_required: number
+        }
         Insert: {
-          active?: boolean;
-          bonus_amount: number;
-          created_at?: string;
-          id?: string;
-          label: string;
-          rides_required: number;
-        };
+          active?: boolean
+          bonus_amount: number
+          created_at?: string
+          id?: string
+          label: string
+          rides_required: number
+        }
         Update: {
-          active?: boolean;
-          bonus_amount?: number;
-          created_at?: string;
-          id?: string;
-          label?: string;
-          rides_required?: number;
-        };
-        Relationships: [];
-      };
+          active?: boolean
+          bonus_amount?: number
+          created_at?: string
+          id?: string
+          label?: string
+          rides_required?: number
+        }
+        Relationships: []
+      }
       driver_incentive_earnings: {
         Row: {
-          bonus_amount: number;
-          created_at: string;
-          credited_at: string | null;
-          driver_id: string;
-          earned_on: string;
-          id: string;
-          rides_completed: number;
-        };
+          bonus_amount: number
+          created_at: string
+          credited_at: string | null
+          driver_id: string
+          earned_on: string
+          id: string
+          rides_completed: number
+        }
         Insert: {
-          bonus_amount: number;
-          created_at?: string;
-          credited_at?: string | null;
-          driver_id: string;
-          earned_on: string;
-          id?: string;
-          rides_completed: number;
-        };
+          bonus_amount: number
+          created_at?: string
+          credited_at?: string | null
+          driver_id: string
+          earned_on: string
+          id?: string
+          rides_completed: number
+        }
         Update: {
-          bonus_amount?: number;
-          created_at?: string;
-          credited_at?: string | null;
-          driver_id?: string;
-          earned_on?: string;
-          id?: string;
-          rides_completed?: number;
-        };
-        Relationships: [];
-      };
+          bonus_amount?: number
+          created_at?: string
+          credited_at?: string | null
+          driver_id?: string
+          earned_on?: string
+          id?: string
+          rides_completed?: number
+        }
+        Relationships: []
+      }
       driver_kyc: {
         Row: {
-          city: string;
-          dl_back_url: string | null;
-          dl_front_url: string | null;
-          driver_id: string;
-          driver_photo_url: string | null;
-          full_name: string;
-          id_proof_url: string | null;
-          insurance_url: string | null;
-          number_plate_url: string | null;
-          poc_name: string | null;
-          poc_phone: string | null;
-          poc_photo_url: string | null;
-          puc_url: string | null;
-          rc_url: string | null;
-          rejection_reason: string | null;
-          reviewed_at: string | null;
-          reviewed_by: string | null;
-          status: Database["public"]["Enums"]["kyc_status"];
-          submitted_at: string;
-          updated_at: string;
-          vehicle_id: string;
-          vehicle_number: string | null;
-          vehicle_photo_url: string | null;
-        };
+          city: string
+          dl_back_url: string | null
+          dl_front_url: string | null
+          driver_id: string
+          driver_photo_url: string | null
+          full_name: string
+          id_proof_url: string | null
+          insurance_url: string | null
+          number_plate_url: string | null
+          poc_name: string | null
+          poc_phone: string | null
+          poc_photo_url: string | null
+          puc_url: string | null
+          rc_url: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["kyc_status"]
+          submitted_at: string
+          updated_at: string
+          vehicle_id: string
+          vehicle_number: string | null
+          vehicle_photo_url: string | null
+        }
         Insert: {
-          city?: string;
-          dl_back_url?: string | null;
-          dl_front_url?: string | null;
-          driver_id: string;
-          driver_photo_url?: string | null;
-          full_name: string;
-          id_proof_url?: string | null;
-          insurance_url?: string | null;
-          number_plate_url?: string | null;
-          poc_name?: string | null;
-          poc_phone?: string | null;
-          poc_photo_url?: string | null;
-          puc_url?: string | null;
-          rc_url?: string | null;
-          rejection_reason?: string | null;
-          reviewed_at?: string | null;
-          reviewed_by?: string | null;
-          status?: Database["public"]["Enums"]["kyc_status"];
-          submitted_at?: string;
-          updated_at?: string;
-          vehicle_id: string;
-          vehicle_number?: string | null;
-          vehicle_photo_url?: string | null;
-        };
+          city?: string
+          dl_back_url?: string | null
+          dl_front_url?: string | null
+          driver_id: string
+          driver_photo_url?: string | null
+          full_name: string
+          id_proof_url?: string | null
+          insurance_url?: string | null
+          number_plate_url?: string | null
+          poc_name?: string | null
+          poc_phone?: string | null
+          poc_photo_url?: string | null
+          puc_url?: string | null
+          rc_url?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          submitted_at?: string
+          updated_at?: string
+          vehicle_id: string
+          vehicle_number?: string | null
+          vehicle_photo_url?: string | null
+        }
         Update: {
-          city?: string;
-          dl_back_url?: string | null;
-          dl_front_url?: string | null;
-          driver_id?: string;
-          driver_photo_url?: string | null;
-          full_name?: string;
-          id_proof_url?: string | null;
-          insurance_url?: string | null;
-          number_plate_url?: string | null;
-          poc_name?: string | null;
-          poc_phone?: string | null;
-          poc_photo_url?: string | null;
-          puc_url?: string | null;
-          rc_url?: string | null;
-          rejection_reason?: string | null;
-          reviewed_at?: string | null;
-          reviewed_by?: string | null;
-          status?: Database["public"]["Enums"]["kyc_status"];
-          submitted_at?: string;
-          updated_at?: string;
-          vehicle_id?: string;
-          vehicle_number?: string | null;
-          vehicle_photo_url?: string | null;
-        };
-        Relationships: [];
-      };
+          city?: string
+          dl_back_url?: string | null
+          dl_front_url?: string | null
+          driver_id?: string
+          driver_photo_url?: string | null
+          full_name?: string
+          id_proof_url?: string | null
+          insurance_url?: string | null
+          number_plate_url?: string | null
+          poc_name?: string | null
+          poc_phone?: string | null
+          poc_photo_url?: string | null
+          puc_url?: string | null
+          rc_url?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          submitted_at?: string
+          updated_at?: string
+          vehicle_id?: string
+          vehicle_number?: string | null
+          vehicle_photo_url?: string | null
+        }
+        Relationships: []
+      }
       driver_locations: {
         Row: {
-          accuracy_m: number | null;
-          driver_id: string;
-          heading_deg: number | null;
-          latitude: number;
-          longitude: number;
-          speed_mps: number | null;
-          updated_at: string;
-        };
+          accuracy_m: number | null
+          driver_id: string
+          heading_deg: number | null
+          latitude: number
+          longitude: number
+          speed_mps: number | null
+          updated_at: string
+        }
         Insert: {
-          accuracy_m?: number | null;
-          driver_id: string;
-          heading_deg?: number | null;
-          latitude: number;
-          longitude: number;
-          speed_mps?: number | null;
-          updated_at?: string;
-        };
+          accuracy_m?: number | null
+          driver_id: string
+          heading_deg?: number | null
+          latitude: number
+          longitude: number
+          speed_mps?: number | null
+          updated_at?: string
+        }
         Update: {
-          accuracy_m?: number | null;
-          driver_id?: string;
-          heading_deg?: number | null;
-          latitude?: number;
-          longitude?: number;
-          speed_mps?: number | null;
-          updated_at?: string;
-        };
+          accuracy_m?: number | null
+          driver_id?: string
+          heading_deg?: number | null
+          latitude?: number
+          longitude?: number
+          speed_mps?: number | null
+          updated_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "driver_locations_driver_id_fkey";
-            columns: ["driver_id"];
-            isOneToOne: true;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
+            foreignKeyName: "driver_locations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       driver_profiles: {
         Row: {
-          created_at: string;
-          payout_hold: boolean;
-          updated_at: string;
-          user_id: string;
-          vehicle_number: string | null;
-          vehicle_type: string | null;
-        };
+          created_at: string
+          payout_hold: boolean
+          updated_at: string
+          user_id: string
+          vehicle_number: string | null
+          vehicle_type: string | null
+        }
         Insert: {
-          created_at?: string;
-          payout_hold?: boolean;
-          updated_at?: string;
-          user_id: string;
-          vehicle_number?: string | null;
-          vehicle_type?: string | null;
-        };
+          created_at?: string
+          payout_hold?: boolean
+          updated_at?: string
+          user_id: string
+          vehicle_number?: string | null
+          vehicle_type?: string | null
+        }
         Update: {
-          created_at?: string;
-          payout_hold?: boolean;
-          updated_at?: string;
-          user_id?: string;
-          vehicle_number?: string | null;
-          vehicle_type?: string | null;
-        };
+          created_at?: string
+          payout_hold?: boolean
+          updated_at?: string
+          user_id?: string
+          vehicle_number?: string | null
+          vehicle_type?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: "driver_profiles_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: true;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
+            foreignKeyName: "driver_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       notifications: {
         Row: {
-          body: string;
-          broadcast_id: string | null;
-          created_at: string;
-          id: string;
-          kind: string;
-          read_at: string | null;
-          title: string;
-          user_id: string;
-        };
+          body: string
+          broadcast_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
         Insert: {
-          body: string;
-          broadcast_id?: string | null;
-          created_at?: string;
-          id?: string;
-          kind?: string;
-          read_at?: string | null;
-          title: string;
-          user_id: string;
-        };
+          body: string
+          broadcast_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
         Update: {
-          body?: string;
-          broadcast_id?: string | null;
-          created_at?: string;
-          id?: string;
-          kind?: string;
-          read_at?: string | null;
-          title?: string;
-          user_id?: string;
-        };
+          body?: string
+          broadcast_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "notifications_broadcast_id_fkey";
-            columns: ["broadcast_id"];
-            isOneToOne: false;
-            referencedRelation: "broadcasts";
-            referencedColumns: ["id"];
+            foreignKeyName: "notifications_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "broadcasts"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       ops_tasks: {
         Row: {
-          assigned_to: string | null;
-          booking_id: string | null;
-          completed_at: string | null;
-          created_at: string;
-          created_by: string | null;
-          details: string | null;
-          due_at: string | null;
-          id: string;
-          priority: string;
-          scope: string;
-          source: string;
-          source_message_id: string | null;
-          status: string;
-          title: string;
-          updated_at: string;
-        };
+          assigned_to: string | null
+          booking_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          details: string | null
+          due_at: string | null
+          id: string
+          priority: string
+          scope: string
+          source: string
+          source_message_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
         Insert: {
-          assigned_to?: string | null;
-          booking_id?: string | null;
-          completed_at?: string | null;
-          created_at?: string;
-          created_by?: string | null;
-          details?: string | null;
-          due_at?: string | null;
-          id?: string;
-          priority?: string;
-          scope: string;
-          source?: string;
-          source_message_id?: string | null;
-          status?: string;
-          title: string;
-          updated_at?: string;
-        };
+          assigned_to?: string | null
+          booking_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          details?: string | null
+          due_at?: string | null
+          id?: string
+          priority?: string
+          scope: string
+          source?: string
+          source_message_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
         Update: {
-          assigned_to?: string | null;
-          booking_id?: string | null;
-          completed_at?: string | null;
-          created_at?: string;
-          created_by?: string | null;
-          details?: string | null;
-          due_at?: string | null;
-          id?: string;
-          priority?: string;
-          scope?: string;
-          source?: string;
-          source_message_id?: string | null;
-          status?: string;
-          title?: string;
-          updated_at?: string;
-        };
+          assigned_to?: string | null
+          booking_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          details?: string | null
+          due_at?: string | null
+          id?: string
+          priority?: string
+          scope?: string
+          source?: string
+          source_message_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "ops_tasks_assigned_to_fkey";
-            columns: ["assigned_to"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
+            foreignKeyName: "ops_tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ops_tasks_booking_id_fkey";
-            columns: ["booking_id"];
-            isOneToOne: false;
-            referencedRelation: "bookings";
-            referencedColumns: ["id"];
+            foreignKeyName: "ops_tasks_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ops_tasks_created_by_fkey";
-            columns: ["created_by"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
+            foreignKeyName: "ops_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ops_tasks_source_message_id_fkey";
-            columns: ["source_message_id"];
-            isOneToOne: false;
-            referencedRelation: "whatsapp_messages";
-            referencedColumns: ["id"];
+            foreignKeyName: "ops_tasks_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_messages"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       payments: {
         Row: {
-          amount: number;
-          booking_id: string | null;
-          created_at: string;
-          currency: string;
-          customer_id: string;
-          error: string | null;
-          id: string;
-          method: string | null;
-          provider: string;
-          provider_order_id: string;
-          provider_payment_id: string | null;
-          provider_signature: string | null;
-          state: Database["public"]["Enums"]["payment_state"];
-          updated_at: string;
-        };
+          amount: number
+          booking_id: string | null
+          created_at: string
+          currency: string
+          customer_id: string
+          error: string | null
+          id: string
+          method: string | null
+          provider: string
+          provider_order_id: string
+          provider_payment_id: string | null
+          provider_signature: string | null
+          state: Database["public"]["Enums"]["payment_state"]
+          updated_at: string
+        }
         Insert: {
-          amount: number;
-          booking_id?: string | null;
-          created_at?: string;
-          currency?: string;
-          customer_id: string;
-          error?: string | null;
-          id?: string;
-          method?: string | null;
-          provider?: string;
-          provider_order_id: string;
-          provider_payment_id?: string | null;
-          provider_signature?: string | null;
-          state?: Database["public"]["Enums"]["payment_state"];
-          updated_at?: string;
-        };
+          amount: number
+          booking_id?: string | null
+          created_at?: string
+          currency?: string
+          customer_id: string
+          error?: string | null
+          id?: string
+          method?: string | null
+          provider?: string
+          provider_order_id: string
+          provider_payment_id?: string | null
+          provider_signature?: string | null
+          state?: Database["public"]["Enums"]["payment_state"]
+          updated_at?: string
+        }
         Update: {
-          amount?: number;
-          booking_id?: string | null;
-          created_at?: string;
-          currency?: string;
-          customer_id?: string;
-          error?: string | null;
-          id?: string;
-          method?: string | null;
-          provider?: string;
-          provider_order_id?: string;
-          provider_payment_id?: string | null;
-          provider_signature?: string | null;
-          state?: Database["public"]["Enums"]["payment_state"];
-          updated_at?: string;
-        };
+          amount?: number
+          booking_id?: string | null
+          created_at?: string
+          currency?: string
+          customer_id?: string
+          error?: string | null
+          id?: string
+          method?: string | null
+          provider?: string
+          provider_order_id?: string
+          provider_payment_id?: string | null
+          provider_signature?: string | null
+          state?: Database["public"]["Enums"]["payment_state"]
+          updated_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "payments_booking_id_fkey";
-            columns: ["booking_id"];
-            isOneToOne: false;
-            referencedRelation: "bookings";
-            referencedColumns: ["id"];
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       phone_verification_attempts: {
         Row: {
-          checks: number;
-          created_at: string;
-          last_sent_at: string | null;
-          locked_until: string | null;
-          phone: string;
-          sends: number;
-          updated_at: string;
-          window_started_at: string;
-        };
+          checks: number
+          created_at: string
+          last_sent_at: string | null
+          locked_until: string | null
+          phone: string
+          sends: number
+          updated_at: string
+          window_started_at: string
+        }
         Insert: {
-          checks?: number;
-          created_at?: string;
-          last_sent_at?: string | null;
-          locked_until?: string | null;
-          phone: string;
-          sends?: number;
-          updated_at?: string;
-          window_started_at?: string;
-        };
+          checks?: number
+          created_at?: string
+          last_sent_at?: string | null
+          locked_until?: string | null
+          phone: string
+          sends?: number
+          updated_at?: string
+          window_started_at?: string
+        }
         Update: {
-          checks?: number;
-          created_at?: string;
-          last_sent_at?: string | null;
-          locked_until?: string | null;
-          phone?: string;
-          sends?: number;
-          updated_at?: string;
-          window_started_at?: string;
-        };
-        Relationships: [];
-      };
+          checks?: number
+          created_at?: string
+          last_sent_at?: string | null
+          locked_until?: string | null
+          phone?: string
+          sends?: number
+          updated_at?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
-          commission_rate: number;
-          created_at: string;
-          id: boolean;
-          updated_at: string;
-          updated_by: string | null;
-        };
+          commission_rate: number
+          created_at: string
+          id: boolean
+          updated_at: string
+          updated_by: string | null
+        }
         Insert: {
-          commission_rate?: number;
-          created_at?: string;
-          id?: boolean;
-          updated_at?: string;
-          updated_by?: string | null;
-        };
+          commission_rate?: number
+          created_at?: string
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
         Update: {
-          commission_rate?: number;
-          created_at?: string;
-          id?: boolean;
-          updated_at?: string;
-          updated_by?: string | null;
-        };
-        Relationships: [];
-      };
+          commission_rate?: number
+          created_at?: string
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
-          active_mode: string;
-          created_at: string;
-          id: string;
-          is_online: boolean;
-          kyc_status: Database["public"]["Enums"]["kyc_status"];
-          name: string;
-          onboarding_completed: boolean | null;
-          phone: string;
-          referral_code: string | null;
-          service_zone: string;
-        };
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          onboarding_completed: boolean | null
+          phone: string
+          referral_code: string | null
+          service_zone: string
+        }
         Insert: {
-          active_mode?: string;
-          created_at?: string;
-          id: string;
-          is_online?: boolean;
-          kyc_status?: Database["public"]["Enums"]["kyc_status"];
-          name: string;
-          onboarding_completed?: boolean | null;
-          phone: string;
-          referral_code?: string | null;
-          service_zone?: string;
-        };
+          active_mode?: string
+          created_at?: string
+          id: string
+          is_online?: boolean
+          kyc_status?: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          onboarding_completed?: boolean | null
+          phone: string
+          referral_code?: string | null
+          service_zone?: string
+        }
         Update: {
-          active_mode?: string;
-          created_at?: string;
-          id?: string;
-          is_online?: boolean;
-          kyc_status?: Database["public"]["Enums"]["kyc_status"];
-          name?: string;
-          onboarding_completed?: boolean | null;
-          phone?: string;
-          referral_code?: string | null;
-          service_zone?: string;
-        };
-        Relationships: [];
-      };
+          active_mode?: string
+          created_at?: string
+          id?: string
+          is_online?: boolean
+          kyc_status?: Database["public"]["Enums"]["kyc_status"]
+          name?: string
+          onboarding_completed?: boolean | null
+          phone?: string
+          referral_code?: string | null
+          service_zone?: string
+        }
+        Relationships: []
+      }
       referrals: {
         Row: {
-          created_at: string;
-          id: string;
-          qualifying_booking_id: string | null;
-          referral_code: string;
-          referred_type: string;
-          referred_user_id: string;
-          referrer_id: string;
-          reward_amount: number;
-          rewarded_at: string | null;
-          status: string;
-        };
+          created_at: string
+          id: string
+          qualifying_booking_id: string | null
+          referral_code: string
+          referred_type: string
+          referred_user_id: string
+          referrer_id: string
+          reward_amount: number
+          rewarded_at: string | null
+          status: string
+        }
         Insert: {
-          created_at?: string;
-          id?: string;
-          qualifying_booking_id?: string | null;
-          referral_code: string;
-          referred_type: string;
-          referred_user_id: string;
-          referrer_id: string;
-          reward_amount?: number;
-          rewarded_at?: string | null;
-          status?: string;
-        };
+          created_at?: string
+          id?: string
+          qualifying_booking_id?: string | null
+          referral_code: string
+          referred_type: string
+          referred_user_id: string
+          referrer_id: string
+          reward_amount?: number
+          rewarded_at?: string | null
+          status?: string
+        }
         Update: {
-          created_at?: string;
-          id?: string;
-          qualifying_booking_id?: string | null;
-          referral_code?: string;
-          referred_type?: string;
-          referred_user_id?: string;
-          referrer_id?: string;
-          reward_amount?: number;
-          rewarded_at?: string | null;
-          status?: string;
-        };
+          created_at?: string
+          id?: string
+          qualifying_booking_id?: string | null
+          referral_code?: string
+          referred_type?: string
+          referred_user_id?: string
+          referrer_id?: string
+          reward_amount?: number
+          rewarded_at?: string | null
+          status?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "referrals_qualifying_booking_id_fkey";
-            columns: ["qualifying_booking_id"];
-            isOneToOne: false;
-            referencedRelation: "bookings";
-            referencedColumns: ["id"];
+            foreignKeyName: "referrals_qualifying_booking_id_fkey"
+            columns: ["qualifying_booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "referrals_referred_user_id_fkey";
-            columns: ["referred_user_id"];
-            isOneToOne: true;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
+            foreignKeyName: "referrals_referred_user_id_fkey"
+            columns: ["referred_user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "referrals_referrer_id_fkey";
-            columns: ["referrer_id"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       saved_addresses: {
         Row: {
-          address: string;
-          alias: string | null;
-          contact_name: string | null;
-          contact_phone: string | null;
-          created_at: string;
-          id: string;
-          kind: Database["public"]["Enums"]["address_kind"];
-          latitude: number | null;
-          longitude: number | null;
-          place_id: string | null;
-          updated_at: string;
-          user_id: string;
-        };
+          address: string
+          alias: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["address_kind"]
+          latitude: number | null
+          longitude: number | null
+          place_id: string | null
+          updated_at: string
+          user_id: string
+        }
         Insert: {
-          address: string;
-          alias?: string | null;
-          contact_name?: string | null;
-          contact_phone?: string | null;
-          created_at?: string;
-          id?: string;
-          kind?: Database["public"]["Enums"]["address_kind"];
-          latitude?: number | null;
-          longitude?: number | null;
-          place_id?: string | null;
-          updated_at?: string;
-          user_id: string;
-        };
+          address: string
+          alias?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["address_kind"]
+          latitude?: number | null
+          longitude?: number | null
+          place_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
         Update: {
-          address?: string;
-          alias?: string | null;
-          contact_name?: string | null;
-          contact_phone?: string | null;
-          created_at?: string;
-          id?: string;
-          kind?: Database["public"]["Enums"]["address_kind"];
-          latitude?: number | null;
-          longitude?: number | null;
-          place_id?: string | null;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
+          address?: string
+          alias?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["address_kind"]
+          latitude?: number | null
+          longitude?: number | null
+          place_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sms_logs: {
         Row: {
-          attempts: number;
-          body: string;
-          booking_id: string;
-          created_at: string;
-          error: string | null;
-          event: Database["public"]["Enums"]["sms_event"];
-          id: string;
-          last_attempt_at: string | null;
-          max_attempts: number;
-          next_attempt_at: string;
-          phone: string;
-          provider_sid: string | null;
-          recipient: Database["public"]["Enums"]["sms_recipient"];
-          recipient_user_id: string | null;
-          sent_at: string | null;
-          status: Database["public"]["Enums"]["sms_status"];
-          updated_at: string;
-        };
+          attempts: number
+          body: string
+          booking_id: string
+          created_at: string
+          error: string | null
+          event: Database["public"]["Enums"]["sms_event"]
+          id: string
+          last_attempt_at: string | null
+          max_attempts: number
+          next_attempt_at: string
+          phone: string
+          provider_sid: string | null
+          recipient: Database["public"]["Enums"]["sms_recipient"]
+          recipient_user_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["sms_status"]
+          updated_at: string
+        }
         Insert: {
-          attempts?: number;
-          body: string;
-          booking_id: string;
-          created_at?: string;
-          error?: string | null;
-          event: Database["public"]["Enums"]["sms_event"];
-          id?: string;
-          last_attempt_at?: string | null;
-          max_attempts?: number;
-          next_attempt_at?: string;
-          phone: string;
-          provider_sid?: string | null;
-          recipient: Database["public"]["Enums"]["sms_recipient"];
-          recipient_user_id?: string | null;
-          sent_at?: string | null;
-          status?: Database["public"]["Enums"]["sms_status"];
-          updated_at?: string;
-        };
+          attempts?: number
+          body: string
+          booking_id: string
+          created_at?: string
+          error?: string | null
+          event: Database["public"]["Enums"]["sms_event"]
+          id?: string
+          last_attempt_at?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          phone: string
+          provider_sid?: string | null
+          recipient: Database["public"]["Enums"]["sms_recipient"]
+          recipient_user_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["sms_status"]
+          updated_at?: string
+        }
         Update: {
-          attempts?: number;
-          body?: string;
-          booking_id?: string;
-          created_at?: string;
-          error?: string | null;
-          event?: Database["public"]["Enums"]["sms_event"];
-          id?: string;
-          last_attempt_at?: string | null;
-          max_attempts?: number;
-          next_attempt_at?: string;
-          phone?: string;
-          provider_sid?: string | null;
-          recipient?: Database["public"]["Enums"]["sms_recipient"];
-          recipient_user_id?: string | null;
-          sent_at?: string | null;
-          status?: Database["public"]["Enums"]["sms_status"];
-          updated_at?: string;
-        };
+          attempts?: number
+          body?: string
+          booking_id?: string
+          created_at?: string
+          error?: string | null
+          event?: Database["public"]["Enums"]["sms_event"]
+          id?: string
+          last_attempt_at?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          phone?: string
+          provider_sid?: string | null
+          recipient?: Database["public"]["Enums"]["sms_recipient"]
+          recipient_user_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["sms_status"]
+          updated_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "sms_logs_booking_id_fkey";
-            columns: ["booking_id"];
-            isOneToOne: false;
-            referencedRelation: "bookings";
-            referencedColumns: ["id"];
+            foreignKeyName: "sms_logs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       user_consents: {
         Row: {
-          accepted_at: string;
-          created_at: string;
-          id: string;
-          privacy_version: string;
-          source: string;
-          terms_version: string;
-          user_id: string;
-        };
+          accepted_at: string
+          created_at: string
+          id: string
+          privacy_version: string
+          source: string
+          terms_version: string
+          user_id: string
+        }
         Insert: {
-          accepted_at?: string;
-          created_at?: string;
-          id?: string;
-          privacy_version: string;
-          source?: string;
-          terms_version: string;
-          user_id: string;
-        };
+          accepted_at?: string
+          created_at?: string
+          id?: string
+          privacy_version: string
+          source?: string
+          terms_version: string
+          user_id: string
+        }
         Update: {
-          accepted_at?: string;
-          created_at?: string;
-          id?: string;
-          privacy_version?: string;
-          source?: string;
-          terms_version?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
+          accepted_at?: string
+          created_at?: string
+          id?: string
+          privacy_version?: string
+          source?: string
+          terms_version?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
-          id: string;
-          role: Database["public"]["Enums"]["app_role"];
-          user_id: string;
-        };
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
         Insert: {
-          id?: string;
-          role: Database["public"]["Enums"]["app_role"];
-          user_id: string;
-        };
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
         Update: {
-          id?: string;
-          role?: Database["public"]["Enums"]["app_role"];
-          user_id?: string;
-        };
-        Relationships: [];
-      };
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       vehicle_types: {
         Row: {
-          active: boolean;
-          base_fare: number;
-          capacity_label: string;
-          created_at: string;
-          free_loading_minutes: number;
-          free_unloading_minutes: number;
-          good_for: string[];
-          height_ft: number | null;
-          id: string;
-          image_url: string | null;
-          label: string;
-          length_ft: number | null;
-          load_area: string;
-          overtime_rate_per_min: number;
-          payload_kg: number | null;
-          per_km_fare: number;
-          sort_order: number;
-          spec_notes: string | null;
-          updated_at: string;
-          weight_limit_kg: number | null;
-          width_ft: number | null;
-        };
+          active: boolean
+          base_fare: number
+          capacity_label: string
+          created_at: string
+          free_loading_minutes: number
+          free_unloading_minutes: number
+          good_for: string[]
+          height_ft: number | null
+          id: string
+          image_url: string | null
+          label: string
+          length_ft: number | null
+          load_area: string
+          overtime_rate_per_min: number
+          payload_kg: number | null
+          per_km_fare: number
+          sort_order: number
+          spec_notes: string | null
+          updated_at: string
+          weight_limit_kg: number | null
+          width_ft: number | null
+        }
         Insert: {
-          active?: boolean;
-          base_fare?: number;
-          capacity_label?: string;
-          created_at?: string;
-          free_loading_minutes?: number;
-          free_unloading_minutes?: number;
-          good_for?: string[];
-          height_ft?: number | null;
-          id: string;
-          image_url?: string | null;
-          label: string;
-          length_ft?: number | null;
-          load_area?: string;
-          overtime_rate_per_min?: number;
-          payload_kg?: number | null;
-          per_km_fare?: number;
-          sort_order?: number;
-          spec_notes?: string | null;
-          updated_at?: string;
-          weight_limit_kg?: number | null;
-          width_ft?: number | null;
-        };
+          active?: boolean
+          base_fare?: number
+          capacity_label?: string
+          created_at?: string
+          free_loading_minutes?: number
+          free_unloading_minutes?: number
+          good_for?: string[]
+          height_ft?: number | null
+          id: string
+          image_url?: string | null
+          label: string
+          length_ft?: number | null
+          load_area?: string
+          overtime_rate_per_min?: number
+          payload_kg?: number | null
+          per_km_fare?: number
+          sort_order?: number
+          spec_notes?: string | null
+          updated_at?: string
+          weight_limit_kg?: number | null
+          width_ft?: number | null
+        }
         Update: {
-          active?: boolean;
-          base_fare?: number;
-          capacity_label?: string;
-          created_at?: string;
-          free_loading_minutes?: number;
-          free_unloading_minutes?: number;
-          good_for?: string[];
-          height_ft?: number | null;
-          id?: string;
-          image_url?: string | null;
-          label?: string;
-          length_ft?: number | null;
-          load_area?: string;
-          overtime_rate_per_min?: number;
-          payload_kg?: number | null;
-          per_km_fare?: number;
-          sort_order?: number;
-          spec_notes?: string | null;
-          updated_at?: string;
-          weight_limit_kg?: number | null;
-          width_ft?: number | null;
-        };
-        Relationships: [];
-      };
+          active?: boolean
+          base_fare?: number
+          capacity_label?: string
+          created_at?: string
+          free_loading_minutes?: number
+          free_unloading_minutes?: number
+          good_for?: string[]
+          height_ft?: number | null
+          id?: string
+          image_url?: string | null
+          label?: string
+          length_ft?: number | null
+          load_area?: string
+          overtime_rate_per_min?: number
+          payload_kg?: number | null
+          per_km_fare?: number
+          sort_order?: number
+          spec_notes?: string | null
+          updated_at?: string
+          weight_limit_kg?: number | null
+          width_ft?: number | null
+        }
+        Relationships: []
+      }
       wallet_accounts: {
         Row: {
-          cash_balance: number;
-          coins_balance: number;
-          updated_at: string;
-          user_id: string;
-        };
+          cash_balance: number
+          coins_balance: number
+          updated_at: string
+          user_id: string
+        }
         Insert: {
-          cash_balance?: number;
-          coins_balance?: number;
-          updated_at?: string;
-          user_id: string;
-        };
+          cash_balance?: number
+          coins_balance?: number
+          updated_at?: string
+          user_id: string
+        }
         Update: {
-          cash_balance?: number;
-          coins_balance?: number;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
+          cash_balance?: number
+          coins_balance?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallet_topup_requests: {
         Row: {
-          amount: number;
-          created_at: string;
-          currency: string;
-          driver_id: string;
-          id: string;
-          method: string;
-          note: string | null;
-          provider_order_id: string | null;
-          provider_payment_id: string | null;
-          provider_signature: string | null;
-          reference: string | null;
-          reviewed_at: string | null;
-          reviewed_by: string | null;
-          status: string;
-        };
+          amount: number
+          created_at: string
+          currency: string
+          driver_id: string
+          id: string
+          method: string
+          note: string | null
+          provider_order_id: string | null
+          provider_payment_id: string | null
+          provider_signature: string | null
+          reference: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
         Insert: {
-          amount: number;
-          created_at?: string;
-          currency?: string;
-          driver_id: string;
-          id?: string;
-          method: string;
-          note?: string | null;
-          provider_order_id?: string | null;
-          provider_payment_id?: string | null;
-          provider_signature?: string | null;
-          reference?: string | null;
-          reviewed_at?: string | null;
-          reviewed_by?: string | null;
-          status?: string;
-        };
+          amount: number
+          created_at?: string
+          currency?: string
+          driver_id: string
+          id?: string
+          method: string
+          note?: string | null
+          provider_order_id?: string | null
+          provider_payment_id?: string | null
+          provider_signature?: string | null
+          reference?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
         Update: {
-          amount?: number;
-          created_at?: string;
-          currency?: string;
-          driver_id?: string;
-          id?: string;
-          method?: string;
-          note?: string | null;
-          provider_order_id?: string | null;
-          provider_payment_id?: string | null;
-          provider_signature?: string | null;
-          reference?: string | null;
-          reviewed_at?: string | null;
-          reviewed_by?: string | null;
-          status?: string;
-        };
-        Relationships: [];
-      };
+          amount?: number
+          created_at?: string
+          currency?: string
+          driver_id?: string
+          id?: string
+          method?: string
+          note?: string | null
+          provider_order_id?: string | null
+          provider_payment_id?: string | null
+          provider_signature?: string | null
+          reference?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       wallet_transactions: {
         Row: {
-          booking_id: string | null;
-          created_at: string;
-          delta: number;
-          id: string;
-          reason: string;
-          user_id: string;
-        };
+          booking_id: string | null
+          created_at: string
+          delta: number
+          id: string
+          reason: string
+          user_id: string
+        }
         Insert: {
-          booking_id?: string | null;
-          created_at?: string;
-          delta: number;
-          id?: string;
-          reason: string;
-          user_id: string;
-        };
+          booking_id?: string | null
+          created_at?: string
+          delta: number
+          id?: string
+          reason: string
+          user_id: string
+        }
         Update: {
-          booking_id?: string | null;
-          created_at?: string;
-          delta?: number;
-          id?: string;
-          reason?: string;
-          user_id?: string;
-        };
+          booking_id?: string | null
+          created_at?: string
+          delta?: number
+          id?: string
+          reason?: string
+          user_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "wallet_transactions_booking_id_fkey";
-            columns: ["booking_id"];
-            isOneToOne: false;
-            referencedRelation: "bookings";
-            referencedColumns: ["id"];
+            foreignKeyName: "wallet_transactions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       webhook_events: {
         Row: {
-          event_id: string;
-          event_type: string | null;
-          id: string;
-          processed_at: string;
-          provider: string;
-        };
+          event_id: string
+          event_type: string | null
+          id: string
+          processed_at: string
+          provider: string
+        }
         Insert: {
-          event_id: string;
-          event_type?: string | null;
-          id?: string;
-          processed_at?: string;
-          provider: string;
-        };
+          event_id: string
+          event_type?: string | null
+          id?: string
+          processed_at?: string
+          provider: string
+        }
         Update: {
-          event_id?: string;
-          event_type?: string | null;
-          id?: string;
-          processed_at?: string;
-          provider?: string;
-        };
-        Relationships: [];
-      };
+          event_id?: string
+          event_type?: string | null
+          id?: string
+          processed_at?: string
+          provider?: string
+        }
+        Relationships: []
+      }
       whatsapp_booking_drafts: {
         Row: {
-          booking_id: string | null;
-          cancelled_at: string | null;
-          confirmed_at: string | null;
-          created_at: string;
-          customer_id: string;
-          dimensions: string | null;
-          distance_km: number | null;
-          drop_address: string | null;
-          drop_lat: number | null;
-          drop_lng: number | null;
-          id: string;
-          instructions: string | null;
-          material: string | null;
-          missing_fields: string[];
-          pickup_address: string | null;
-          pickup_lat: number | null;
-          pickup_lng: number | null;
-          quantity: string | null;
-          quoted_fare: number | null;
-          schedule_text: string | null;
-          scheduled_at: string | null;
-          source_message_id: string | null;
-          status: string;
-          updated_at: string;
-          vehicle_type: string | null;
-          weight_kg: number | null;
-        };
+          booking_id: string | null
+          cancelled_at: string | null
+          confirmed_at: string | null
+          created_at: string
+          customer_id: string
+          dimensions: string | null
+          distance_km: number | null
+          drop_address: string | null
+          drop_lat: number | null
+          drop_lng: number | null
+          id: string
+          instructions: string | null
+          material: string | null
+          missing_fields: string[]
+          pickup_address: string | null
+          pickup_lat: number | null
+          pickup_lng: number | null
+          quantity: string | null
+          quoted_fare: number | null
+          schedule_text: string | null
+          scheduled_at: string | null
+          source_message_id: string | null
+          status: string
+          updated_at: string
+          vehicle_type: string | null
+          weight_kg: number | null
+        }
         Insert: {
-          booking_id?: string | null;
-          cancelled_at?: string | null;
-          confirmed_at?: string | null;
-          created_at?: string;
-          customer_id: string;
-          dimensions?: string | null;
-          distance_km?: number | null;
-          drop_address?: string | null;
-          drop_lat?: number | null;
-          drop_lng?: number | null;
-          id?: string;
-          instructions?: string | null;
-          material?: string | null;
-          missing_fields?: string[];
-          pickup_address?: string | null;
-          pickup_lat?: number | null;
-          pickup_lng?: number | null;
-          quantity?: string | null;
-          quoted_fare?: number | null;
-          schedule_text?: string | null;
-          scheduled_at?: string | null;
-          source_message_id?: string | null;
-          status?: string;
-          updated_at?: string;
-          vehicle_type?: string | null;
-          weight_kg?: number | null;
-        };
+          booking_id?: string | null
+          cancelled_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          customer_id: string
+          dimensions?: string | null
+          distance_km?: number | null
+          drop_address?: string | null
+          drop_lat?: number | null
+          drop_lng?: number | null
+          id?: string
+          instructions?: string | null
+          material?: string | null
+          missing_fields?: string[]
+          pickup_address?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          quantity?: string | null
+          quoted_fare?: number | null
+          schedule_text?: string | null
+          scheduled_at?: string | null
+          source_message_id?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_type?: string | null
+          weight_kg?: number | null
+        }
         Update: {
-          booking_id?: string | null;
-          cancelled_at?: string | null;
-          confirmed_at?: string | null;
-          created_at?: string;
-          customer_id?: string;
-          dimensions?: string | null;
-          distance_km?: number | null;
-          drop_address?: string | null;
-          drop_lat?: number | null;
-          drop_lng?: number | null;
-          id?: string;
-          instructions?: string | null;
-          material?: string | null;
-          missing_fields?: string[];
-          pickup_address?: string | null;
-          pickup_lat?: number | null;
-          pickup_lng?: number | null;
-          quantity?: string | null;
-          quoted_fare?: number | null;
-          schedule_text?: string | null;
-          scheduled_at?: string | null;
-          source_message_id?: string | null;
-          status?: string;
-          updated_at?: string;
-          vehicle_type?: string | null;
-          weight_kg?: number | null;
-        };
+          booking_id?: string | null
+          cancelled_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          customer_id?: string
+          dimensions?: string | null
+          distance_km?: number | null
+          drop_address?: string | null
+          drop_lat?: number | null
+          drop_lng?: number | null
+          id?: string
+          instructions?: string | null
+          material?: string | null
+          missing_fields?: string[]
+          pickup_address?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          quantity?: string | null
+          quoted_fare?: number | null
+          schedule_text?: string | null
+          scheduled_at?: string | null
+          source_message_id?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_type?: string | null
+          weight_kg?: number | null
+        }
         Relationships: [
           {
-            foreignKeyName: "whatsapp_booking_drafts_booking_id_fkey";
-            columns: ["booking_id"];
-            isOneToOne: false;
-            referencedRelation: "bookings";
-            referencedColumns: ["id"];
+            foreignKeyName: "whatsapp_booking_drafts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "whatsapp_booking_drafts_customer_id_fkey";
-            columns: ["customer_id"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
+            foreignKeyName: "whatsapp_booking_drafts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "whatsapp_booking_drafts_source_message_id_fkey";
-            columns: ["source_message_id"];
-            isOneToOne: false;
-            referencedRelation: "whatsapp_messages";
-            referencedColumns: ["id"];
+            foreignKeyName: "whatsapp_booking_drafts_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_messages"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "whatsapp_booking_drafts_vehicle_type_fkey";
-            columns: ["vehicle_type"];
-            isOneToOne: false;
-            referencedRelation: "vehicle_types";
-            referencedColumns: ["id"];
+            foreignKeyName: "whatsapp_booking_drafts_vehicle_type_fkey"
+            columns: ["vehicle_type"]
+            isOneToOne: false
+            referencedRelation: "vehicle_types"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       whatsapp_messages: {
         Row: {
-          body: string;
-          created_at: string;
-          direction: string;
-          from_phone: string;
-          id: string;
-          intent: string | null;
-          latitude: number | null;
-          longitude: number | null;
-          num_media: number;
-          payload: Json;
-          processed_at: string | null;
-          processing_error: string | null;
-          provider_sid: string;
-          received_at: string;
-          sender_role: Database["public"]["Enums"]["app_role"] | null;
-          to_phone: string;
-          updated_at: string;
-          user_id: string | null;
-        };
+          body: string
+          created_at: string
+          direction: string
+          from_phone: string
+          id: string
+          intent: string | null
+          latitude: number | null
+          longitude: number | null
+          num_media: number
+          payload: Json
+          processed_at: string | null
+          processing_error: string | null
+          provider_sid: string
+          received_at: string
+          sender_role: Database["public"]["Enums"]["app_role"] | null
+          to_phone: string
+          updated_at: string
+          user_id: string | null
+        }
         Insert: {
-          body?: string;
-          created_at?: string;
-          direction?: string;
-          from_phone: string;
-          id?: string;
-          intent?: string | null;
-          latitude?: number | null;
-          longitude?: number | null;
-          num_media?: number;
-          payload?: Json;
-          processed_at?: string | null;
-          processing_error?: string | null;
-          provider_sid: string;
-          received_at?: string;
-          sender_role?: Database["public"]["Enums"]["app_role"] | null;
-          to_phone: string;
-          updated_at?: string;
-          user_id?: string | null;
-        };
+          body?: string
+          created_at?: string
+          direction?: string
+          from_phone: string
+          id?: string
+          intent?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          num_media?: number
+          payload?: Json
+          processed_at?: string | null
+          processing_error?: string | null
+          provider_sid: string
+          received_at?: string
+          sender_role?: Database["public"]["Enums"]["app_role"] | null
+          to_phone: string
+          updated_at?: string
+          user_id?: string | null
+        }
         Update: {
-          body?: string;
-          created_at?: string;
-          direction?: string;
-          from_phone?: string;
-          id?: string;
-          intent?: string | null;
-          latitude?: number | null;
-          longitude?: number | null;
-          num_media?: number;
-          payload?: Json;
-          processed_at?: string | null;
-          processing_error?: string | null;
-          provider_sid?: string;
-          received_at?: string;
-          sender_role?: Database["public"]["Enums"]["app_role"] | null;
-          to_phone?: string;
-          updated_at?: string;
-          user_id?: string | null;
-        };
-        Relationships: [];
-      };
+          body?: string
+          created_at?: string
+          direction?: string
+          from_phone?: string
+          id?: string
+          intent?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          num_media?: number
+          payload?: Json
+          processed_at?: string | null
+          processing_error?: string | null
+          provider_sid?: string
+          received_at?: string
+          sender_role?: Database["public"]["Enums"]["app_role"] | null
+          to_phone?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       whatsapp_outbound: {
         Row: {
-          body: string;
-          created_at: string;
-          error: string | null;
-          id: string;
-          in_reply_to: string | null;
-          provider_sid: string | null;
-          status: string;
-          to_phone: string;
-          updated_at: string;
-          user_id: string | null;
-        };
+          body: string
+          created_at: string
+          error: string | null
+          id: string
+          in_reply_to: string | null
+          provider_sid: string | null
+          status: string
+          to_phone: string
+          updated_at: string
+          user_id: string | null
+        }
         Insert: {
-          body: string;
-          created_at?: string;
-          error?: string | null;
-          id?: string;
-          in_reply_to?: string | null;
-          provider_sid?: string | null;
-          status?: string;
-          to_phone: string;
-          updated_at?: string;
-          user_id?: string | null;
-        };
+          body: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          in_reply_to?: string | null
+          provider_sid?: string | null
+          status?: string
+          to_phone: string
+          updated_at?: string
+          user_id?: string | null
+        }
         Update: {
-          body?: string;
-          created_at?: string;
-          error?: string | null;
-          id?: string;
-          in_reply_to?: string | null;
-          provider_sid?: string | null;
-          status?: string;
-          to_phone?: string;
-          updated_at?: string;
-          user_id?: string | null;
-        };
+          body?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          in_reply_to?: string | null
+          provider_sid?: string | null
+          status?: string
+          to_phone?: string
+          updated_at?: string
+          user_id?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: "whatsapp_outbound_in_reply_to_fkey";
-            columns: ["in_reply_to"];
-            isOneToOne: false;
-            referencedRelation: "whatsapp_messages";
-            referencedColumns: ["id"];
+            foreignKeyName: "whatsapp_outbound_in_reply_to_fkey"
+            columns: ["in_reply_to"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_messages"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       withdrawal_requests: {
         Row: {
-          amount: number;
-          created_at: string;
-          driver_id: string;
-          id: string;
-          method: string;
-          note: string | null;
-          status: Database["public"]["Enums"]["withdrawal_status"];
-          updated_at: string;
-        };
+          amount: number
+          created_at: string
+          driver_id: string
+          id: string
+          method: string
+          note: string | null
+          status: Database["public"]["Enums"]["withdrawal_status"]
+          updated_at: string
+        }
         Insert: {
-          amount: number;
-          created_at?: string;
-          driver_id: string;
-          id?: string;
-          method?: string;
-          note?: string | null;
-          status?: Database["public"]["Enums"]["withdrawal_status"];
-          updated_at?: string;
-        };
+          amount: number
+          created_at?: string
+          driver_id: string
+          id?: string
+          method?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["withdrawal_status"]
+          updated_at?: string
+        }
         Update: {
-          amount?: number;
-          created_at?: string;
-          driver_id?: string;
-          id?: string;
-          method?: string;
-          note?: string | null;
-          status?: Database["public"]["Enums"]["withdrawal_status"];
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
-    };
+          amount?: number
+          created_at?: string
+          driver_id?: string
+          id?: string
+          method?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["withdrawal_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+    }
     Views: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     Functions: {
       accept_booking: {
-        Args: { _booking_id: string };
+        Args: { _booking_id: string }
         Returns: {
-          cancellation_category: Database["public"]["Enums"]["cancellation_category"] | null;
-          cancellation_reason: string | null;
-          cancelled_at: string | null;
-          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null;
-          coins_redeemed: number;
-          commission_amount: number;
-          commission_rate: number;
-          coupon_code: string | null;
-          coupon_discount: number;
-          created_at: string;
-          customer_id: string;
-          distance_km: number;
-          driver_id: string | null;
-          driver_net_earning: number;
-          drop_address: string;
-          drop_lat: number | null;
-          drop_lng: number | null;
-          drop_verified_at: string | null;
-          expires_at: string | null;
-          fare: number;
-          final_fare: number | null;
-          id: string;
-          loading_overtime_minutes: number;
-          loading_started_at: string | null;
-          loading_stopped_at: string | null;
-          notes: string | null;
-          overtime_charge: number;
-          payment_method: Database["public"]["Enums"]["payment_method"];
-          payment_status: Database["public"]["Enums"]["payment_status"];
-          pickup_address: string;
-          pickup_lat: number | null;
-          pickup_lng: number | null;
-          pickup_verified_at: string | null;
-          pod_photo_url: string | null;
-          rating: number | null;
-          review: string | null;
-          service_zone: string;
-          status: Database["public"]["Enums"]["booking_status"];
-          unloading_overtime_minutes: number;
-          unloading_started_at: string | null;
-          unloading_stopped_at: string | null;
-          updated_at: string;
-          vehicle_type: string;
-        };
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          coins_redeemed: number
+          commission_amount: number
+          commission_rate: number
+          coupon_code: string | null
+          coupon_discount: number
+          created_at: string
+          customer_id: string
+          distance_km: number
+          driver_id: string | null
+          driver_net_earning: number
+          drop_address: string
+          drop_lat: number | null
+          drop_lng: number | null
+          drop_verified_at: string | null
+          expires_at: string | null
+          fare: number
+          final_fare: number | null
+          helper_count: number
+          helper_fee: number
+          id: string
+          loading_overtime_minutes: number
+          loading_started_at: string | null
+          loading_stopped_at: string | null
+          notes: string | null
+          overtime_charge: number
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_verified_at: string | null
+          pod_photo_url: string | null
+          rating: number | null
+          review: string | null
+          service_zone: string
+          status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
+          unloading_started_at: string | null
+          unloading_stopped_at: string | null
+          updated_at: string
+          vehicle_type: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "bookings";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      activate_driver_daily_pass: {
+        Args: never
+        Returns: {
+          amount: number | null
+          driver_id: string | null
+          expires_at: string | null
+          id: string
+          purchased_at: string | null
+          status: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "driver_daily_passes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_adjust_wallet: {
-        Args: { _delta: number; _reason: string; _user_id: string };
-        Returns: number;
-      };
+        Args: { _delta: number; _reason: string; _user_id: string }
+        Returns: number
+      }
       admin_assign_driver: {
-        Args: { _booking_id: string; _driver_id: string };
+        Args: { _booking_id: string; _driver_id: string }
         Returns: {
-          cancellation_category: Database["public"]["Enums"]["cancellation_category"] | null;
-          cancellation_reason: string | null;
-          cancelled_at: string | null;
-          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null;
-          coins_redeemed: number;
-          commission_amount: number;
-          commission_rate: number;
-          coupon_code: string | null;
-          coupon_discount: number;
-          created_at: string;
-          customer_id: string;
-          distance_km: number;
-          driver_id: string | null;
-          driver_net_earning: number;
-          drop_address: string;
-          drop_lat: number | null;
-          drop_lng: number | null;
-          drop_verified_at: string | null;
-          expires_at: string | null;
-          fare: number;
-          final_fare: number | null;
-          id: string;
-          loading_overtime_minutes: number;
-          loading_started_at: string | null;
-          loading_stopped_at: string | null;
-          notes: string | null;
-          overtime_charge: number;
-          payment_method: Database["public"]["Enums"]["payment_method"];
-          payment_status: Database["public"]["Enums"]["payment_status"];
-          pickup_address: string;
-          pickup_lat: number | null;
-          pickup_lng: number | null;
-          pickup_verified_at: string | null;
-          pod_photo_url: string | null;
-          rating: number | null;
-          review: string | null;
-          service_zone: string;
-          status: Database["public"]["Enums"]["booking_status"];
-          unloading_overtime_minutes: number;
-          unloading_started_at: string | null;
-          unloading_stopped_at: string | null;
-          updated_at: string;
-          vehicle_type: string;
-        };
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          coins_redeemed: number
+          commission_amount: number
+          commission_rate: number
+          coupon_code: string | null
+          coupon_discount: number
+          created_at: string
+          customer_id: string
+          distance_km: number
+          driver_id: string | null
+          driver_net_earning: number
+          drop_address: string
+          drop_lat: number | null
+          drop_lng: number | null
+          drop_verified_at: string | null
+          expires_at: string | null
+          fare: number
+          final_fare: number | null
+          helper_count: number
+          helper_fee: number
+          id: string
+          loading_overtime_minutes: number
+          loading_started_at: string | null
+          loading_stopped_at: string | null
+          notes: string | null
+          overtime_charge: number
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_verified_at: string | null
+          pod_photo_url: string | null
+          rating: number | null
+          review: string | null
+          service_zone: string
+          status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
+          unloading_started_at: string | null
+          unloading_stopped_at: string | null
+          updated_at: string
+          vehicle_type: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "bookings";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_cancel_booking: {
-        Args: { _booking_id: string; _reason: string };
+        Args: { _booking_id: string; _reason: string }
         Returns: {
-          cancellation_category: Database["public"]["Enums"]["cancellation_category"] | null;
-          cancellation_reason: string | null;
-          cancelled_at: string | null;
-          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null;
-          coins_redeemed: number;
-          commission_amount: number;
-          commission_rate: number;
-          coupon_code: string | null;
-          coupon_discount: number;
-          created_at: string;
-          customer_id: string;
-          distance_km: number;
-          driver_id: string | null;
-          driver_net_earning: number;
-          drop_address: string;
-          drop_lat: number | null;
-          drop_lng: number | null;
-          drop_verified_at: string | null;
-          expires_at: string | null;
-          fare: number;
-          final_fare: number | null;
-          id: string;
-          loading_overtime_minutes: number;
-          loading_started_at: string | null;
-          loading_stopped_at: string | null;
-          notes: string | null;
-          overtime_charge: number;
-          payment_method: Database["public"]["Enums"]["payment_method"];
-          payment_status: Database["public"]["Enums"]["payment_status"];
-          pickup_address: string;
-          pickup_lat: number | null;
-          pickup_lng: number | null;
-          pickup_verified_at: string | null;
-          pod_photo_url: string | null;
-          rating: number | null;
-          review: string | null;
-          service_zone: string;
-          status: Database["public"]["Enums"]["booking_status"];
-          unloading_overtime_minutes: number;
-          unloading_started_at: string | null;
-          unloading_stopped_at: string | null;
-          updated_at: string;
-          vehicle_type: string;
-        };
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          coins_redeemed: number
+          commission_amount: number
+          commission_rate: number
+          coupon_code: string | null
+          coupon_discount: number
+          created_at: string
+          customer_id: string
+          distance_km: number
+          driver_id: string | null
+          driver_net_earning: number
+          drop_address: string
+          drop_lat: number | null
+          drop_lng: number | null
+          drop_verified_at: string | null
+          expires_at: string | null
+          fare: number
+          final_fare: number | null
+          helper_count: number
+          helper_fee: number
+          id: string
+          loading_overtime_minutes: number
+          loading_started_at: string | null
+          loading_stopped_at: string | null
+          notes: string | null
+          overtime_charge: number
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_verified_at: string | null
+          pod_photo_url: string | null
+          rating: number | null
+          review: string | null
+          service_zone: string
+          status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
+          unloading_started_at: string | null
+          unloading_stopped_at: string | null
+          updated_at: string
+          vehicle_type: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "bookings";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
-      admin_exists: { Args: never; Returns: boolean };
+          from: "*"
+          to: "bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_exists: { Args: never; Returns: boolean }
       admin_mark_refunded: {
-        Args: { _booking_id: string };
+        Args: { _booking_id: string }
         Returns: {
-          cancellation_category: Database["public"]["Enums"]["cancellation_category"] | null;
-          cancellation_reason: string | null;
-          cancelled_at: string | null;
-          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null;
-          coins_redeemed: number;
-          commission_amount: number;
-          commission_rate: number;
-          coupon_code: string | null;
-          coupon_discount: number;
-          created_at: string;
-          customer_id: string;
-          distance_km: number;
-          driver_id: string | null;
-          driver_net_earning: number;
-          drop_address: string;
-          drop_lat: number | null;
-          drop_lng: number | null;
-          drop_verified_at: string | null;
-          expires_at: string | null;
-          fare: number;
-          final_fare: number | null;
-          id: string;
-          loading_overtime_minutes: number;
-          loading_started_at: string | null;
-          loading_stopped_at: string | null;
-          notes: string | null;
-          overtime_charge: number;
-          payment_method: Database["public"]["Enums"]["payment_method"];
-          payment_status: Database["public"]["Enums"]["payment_status"];
-          pickup_address: string;
-          pickup_lat: number | null;
-          pickup_lng: number | null;
-          pickup_verified_at: string | null;
-          pod_photo_url: string | null;
-          rating: number | null;
-          review: string | null;
-          service_zone: string;
-          status: Database["public"]["Enums"]["booking_status"];
-          unloading_overtime_minutes: number;
-          unloading_started_at: string | null;
-          unloading_stopped_at: string | null;
-          updated_at: string;
-          vehicle_type: string;
-        };
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          coins_redeemed: number
+          commission_amount: number
+          commission_rate: number
+          coupon_code: string | null
+          coupon_discount: number
+          created_at: string
+          customer_id: string
+          distance_km: number
+          driver_id: string | null
+          driver_net_earning: number
+          drop_address: string
+          drop_lat: number | null
+          drop_lng: number | null
+          drop_verified_at: string | null
+          expires_at: string | null
+          fare: number
+          final_fare: number | null
+          helper_count: number
+          helper_fee: number
+          id: string
+          loading_overtime_minutes: number
+          loading_started_at: string | null
+          loading_stopped_at: string | null
+          notes: string | null
+          overtime_charge: number
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_verified_at: string | null
+          pod_photo_url: string | null
+          rating: number | null
+          review: string | null
+          service_zone: string
+          status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
+          unloading_started_at: string | null
+          unloading_stopped_at: string | null
+          updated_at: string
+          vehicle_type: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "bookings";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_review_wallet_topup: {
-        Args: { _decision: string; _note?: string; _request_id: string };
-        Returns: Json;
-      };
+        Args: { _decision: string; _note?: string; _request_id: string }
+        Returns: Json
+      }
       admin_send_broadcast: {
         Args: {
-          _audience: string;
-          _body: string;
-          _idempotency_key?: string;
-          _title: string;
-        };
+          _audience: string
+          _body: string
+          _idempotency_key?: string
+          _title: string
+        }
         Returns: {
-          audience: string;
-          body: string;
-          channel: string;
-          created_at: string;
-          created_by: string | null;
-          id: string;
-          idempotency_key: string | null;
-          recipient_count: number;
-          sms_status: string;
-          title: string;
-        };
+          audience: string
+          body: string
+          channel: string
+          created_at: string
+          created_by: string | null
+          id: string
+          idempotency_key: string | null
+          recipient_count: number
+          sms_status: string
+          title: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "broadcasts";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
-      admin_set_commission_rate: { Args: { _rate: number }; Returns: number };
+          from: "*"
+          to: "broadcasts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_set_commission_rate: { Args: { _rate: number }; Returns: number }
       admin_set_driver_online: {
-        Args: { _driver_id: string; _is_online: boolean };
+        Args: { _driver_id: string; _is_online: boolean }
         Returns: {
-          active_mode: string;
-          created_at: string;
-          id: string;
-          is_online: boolean;
-          kyc_status: Database["public"]["Enums"]["kyc_status"];
-          name: string;
-          onboarding_completed: boolean | null;
-          phone: string;
-          referral_code: string | null;
-          service_zone: string;
-        };
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          onboarding_completed: boolean | null
+          phone: string
+          referral_code: string | null
+          service_zone: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "profiles";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_set_vehicle_active: {
-        Args: { _active: boolean; _id: string };
+        Args: { _active: boolean; _id: string }
         Returns: {
-          active: boolean;
-          base_fare: number;
-          capacity_label: string;
-          created_at: string;
-          free_loading_minutes: number;
-          free_unloading_minutes: number;
-          good_for: string[];
-          height_ft: number | null;
-          id: string;
-          image_url: string | null;
-          label: string;
-          length_ft: number | null;
-          load_area: string;
-          overtime_rate_per_min: number;
-          payload_kg: number | null;
-          per_km_fare: number;
-          sort_order: number;
-          spec_notes: string | null;
-          updated_at: string;
-          weight_limit_kg: number | null;
-          width_ft: number | null;
-        };
+          active: boolean
+          base_fare: number
+          capacity_label: string
+          created_at: string
+          free_loading_minutes: number
+          free_unloading_minutes: number
+          good_for: string[]
+          height_ft: number | null
+          id: string
+          image_url: string | null
+          label: string
+          length_ft: number | null
+          load_area: string
+          overtime_rate_per_min: number
+          payload_kg: number | null
+          per_km_fare: number
+          sort_order: number
+          spec_notes: string | null
+          updated_at: string
+          weight_limit_kg: number | null
+          width_ft: number | null
+        }
         SetofOptions: {
-          from: "*";
-          to: "vehicle_types";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "vehicle_types"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_upsert_vehicle_type: {
         Args: {
-          _active: boolean;
-          _base_fare: number;
-          _capacity_label: string;
-          _free_loading_minutes: number;
-          _free_unloading_minutes: number;
-          _good_for: string[];
-          _height_ft?: number;
-          _id: string;
-          _image_url: string;
-          _label: string;
-          _length_ft?: number;
-          _load_area: string;
-          _overtime_rate_per_min: number;
-          _payload_kg?: number;
-          _per_km_fare: number;
-          _sort_order: number;
-          _spec_notes?: string;
-          _weight_limit_kg: number;
-          _width_ft?: number;
-        };
+          _active: boolean
+          _base_fare: number
+          _capacity_label: string
+          _free_loading_minutes: number
+          _free_unloading_minutes: number
+          _good_for: string[]
+          _height_ft?: number
+          _id: string
+          _image_url: string
+          _label: string
+          _length_ft?: number
+          _load_area: string
+          _overtime_rate_per_min: number
+          _payload_kg?: number
+          _per_km_fare: number
+          _sort_order: number
+          _spec_notes?: string
+          _weight_limit_kg: number
+          _width_ft?: number
+        }
         Returns: {
-          active: boolean;
-          base_fare: number;
-          capacity_label: string;
-          created_at: string;
-          free_loading_minutes: number;
-          free_unloading_minutes: number;
-          good_for: string[];
-          height_ft: number | null;
-          id: string;
-          image_url: string | null;
-          label: string;
-          length_ft: number | null;
-          load_area: string;
-          overtime_rate_per_min: number;
-          payload_kg: number | null;
-          per_km_fare: number;
-          sort_order: number;
-          spec_notes: string | null;
-          updated_at: string;
-          weight_limit_kg: number | null;
-          width_ft: number | null;
-        };
+          active: boolean
+          base_fare: number
+          capacity_label: string
+          created_at: string
+          free_loading_minutes: number
+          free_unloading_minutes: number
+          good_for: string[]
+          height_ft: number | null
+          id: string
+          image_url: string | null
+          label: string
+          length_ft: number | null
+          load_area: string
+          overtime_rate_per_min: number
+          payload_kg: number | null
+          per_km_fare: number
+          sort_order: number
+          spec_notes: string | null
+          updated_at: string
+          weight_limit_kg: number | null
+          width_ft: number | null
+        }
         SetofOptions: {
-          from: "*";
-          to: "vehicle_types";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "vehicle_types"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       attach_delivery_photo: {
-        Args: { _booking_id: string; _pod_path: string };
-        Returns: boolean;
-      };
+        Args: { _booking_id: string; _pod_path: string }
+        Returns: boolean
+      }
       attach_referral_to_new_user: {
         Args: {
-          _referral_code: string;
-          _referred_type: string;
-          _referred_user_id: string;
-        };
-        Returns: boolean;
-      };
+          _referral_code: string
+          _referred_type: string
+          _referred_user_id: string
+        }
+        Returns: boolean
+      }
       award_referral_reward: {
         Args: {
-          _booking_id: string;
-          _referred_type: string;
-          _referred_user_id: string;
-        };
-        Returns: boolean;
-      };
+          _booking_id: string
+          _referred_type: string
+          _referred_user_id: string
+        }
+        Returns: boolean
+      }
       booking_contacts: {
-        Args: { _booking_ids: string[] };
+        Args: { _booking_ids: string[] }
         Returns: {
-          booking_id: string;
-          counterpart_id: string;
-          name: string;
-          phone: string;
-        }[];
-      };
+          booking_id: string
+          counterpart_id: string
+          name: string
+          phone: string
+        }[]
+      }
       booking_overtime: {
-        Args: { _booking: Database["public"]["Tables"]["bookings"]["Row"] };
-        Returns: Json;
-      };
+        Args: { _booking: Database["public"]["Tables"]["bookings"]["Row"] }
+        Returns: Json
+      }
       cancel_booking: {
-        Args: { _booking_id: string; _note?: string; _reason: string };
+        Args: { _booking_id: string; _note?: string; _reason: string }
         Returns: {
-          cancellation_category: Database["public"]["Enums"]["cancellation_category"] | null;
-          cancellation_reason: string | null;
-          cancelled_at: string | null;
-          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null;
-          coins_redeemed: number;
-          commission_amount: number;
-          commission_rate: number;
-          coupon_code: string | null;
-          coupon_discount: number;
-          created_at: string;
-          customer_id: string;
-          distance_km: number;
-          driver_id: string | null;
-          driver_net_earning: number;
-          drop_address: string;
-          drop_lat: number | null;
-          drop_lng: number | null;
-          drop_verified_at: string | null;
-          expires_at: string | null;
-          fare: number;
-          final_fare: number | null;
-          id: string;
-          loading_overtime_minutes: number;
-          loading_started_at: string | null;
-          loading_stopped_at: string | null;
-          notes: string | null;
-          overtime_charge: number;
-          payment_method: Database["public"]["Enums"]["payment_method"];
-          payment_status: Database["public"]["Enums"]["payment_status"];
-          pickup_address: string;
-          pickup_lat: number | null;
-          pickup_lng: number | null;
-          pickup_verified_at: string | null;
-          pod_photo_url: string | null;
-          rating: number | null;
-          review: string | null;
-          service_zone: string;
-          status: Database["public"]["Enums"]["booking_status"];
-          unloading_overtime_minutes: number;
-          unloading_started_at: string | null;
-          unloading_stopped_at: string | null;
-          updated_at: string;
-          vehicle_type: string;
-        };
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          coins_redeemed: number
+          commission_amount: number
+          commission_rate: number
+          coupon_code: string | null
+          coupon_discount: number
+          created_at: string
+          customer_id: string
+          distance_km: number
+          driver_id: string | null
+          driver_net_earning: number
+          drop_address: string
+          drop_lat: number | null
+          drop_lng: number | null
+          drop_verified_at: string | null
+          expires_at: string | null
+          fare: number
+          final_fare: number | null
+          helper_count: number
+          helper_fee: number
+          id: string
+          loading_overtime_minutes: number
+          loading_started_at: string | null
+          loading_stopped_at: string | null
+          notes: string | null
+          overtime_charge: number
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_verified_at: string | null
+          pod_photo_url: string | null
+          rating: number | null
+          review: string | null
+          service_zone: string
+          status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
+          unloading_started_at: string | null
+          unloading_stopped_at: string | null
+          updated_at: string
+          vehicle_type: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "bookings";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
-      claim_first_admin: { Args: { _user_id: string }; Returns: boolean };
+          from: "*"
+          to: "bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      claim_first_admin: { Args: { _user_id: string }; Returns: boolean }
       claim_sms_jobs: {
-        Args: { _limit?: number };
+        Args: { _limit?: number }
         Returns: {
-          attempts: number;
-          body: string;
-          booking_id: string;
-          created_at: string;
-          error: string | null;
-          event: Database["public"]["Enums"]["sms_event"];
-          id: string;
-          last_attempt_at: string | null;
-          max_attempts: number;
-          next_attempt_at: string;
-          phone: string;
-          provider_sid: string | null;
-          recipient: Database["public"]["Enums"]["sms_recipient"];
-          recipient_user_id: string | null;
-          sent_at: string | null;
-          status: Database["public"]["Enums"]["sms_status"];
-          updated_at: string;
-        }[];
+          attempts: number
+          body: string
+          booking_id: string
+          created_at: string
+          error: string | null
+          event: Database["public"]["Enums"]["sms_event"]
+          id: string
+          last_attempt_at: string | null
+          max_attempts: number
+          next_attempt_at: string
+          phone: string
+          provider_sid: string | null
+          recipient: Database["public"]["Enums"]["sms_recipient"]
+          recipient_user_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["sms_status"]
+          updated_at: string
+        }[]
         SetofOptions: {
-          from: "*";
-          to: "sms_logs";
-          isOneToOne: false;
-          isSetofReturn: true;
-        };
-      };
+          from: "*"
+          to: "sms_logs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       complete_sms_job: {
         Args: {
-          _error?: string;
-          _id: string;
-          _outcome: string;
-          _provider_sid?: string;
-        };
+          _error?: string
+          _id: string
+          _outcome: string
+          _provider_sid?: string
+        }
         Returns: {
-          attempts: number;
-          body: string;
-          booking_id: string;
-          created_at: string;
-          error: string | null;
-          event: Database["public"]["Enums"]["sms_event"];
-          id: string;
-          last_attempt_at: string | null;
-          max_attempts: number;
-          next_attempt_at: string;
-          phone: string;
-          provider_sid: string | null;
-          recipient: Database["public"]["Enums"]["sms_recipient"];
-          recipient_user_id: string | null;
-          sent_at: string | null;
-          status: Database["public"]["Enums"]["sms_status"];
-          updated_at: string;
-        };
+          attempts: number
+          body: string
+          booking_id: string
+          created_at: string
+          error: string | null
+          event: Database["public"]["Enums"]["sms_event"]
+          id: string
+          last_attempt_at: string | null
+          max_attempts: number
+          next_attempt_at: string
+          phone: string
+          provider_sid: string | null
+          recipient: Database["public"]["Enums"]["sms_recipient"]
+          recipient_user_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["sms_status"]
+          updated_at: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "sms_logs";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "sms_logs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       confirm_driver_wallet_topup: {
-        Args: { _payment_id: string; _request_id: string; _signature: string };
-        Returns: Json;
-      };
+        Args: { _payment_id: string; _request_id: string; _signature: string }
+        Returns: Json
+      }
       create_booking_share_link: {
-        Args: { _booking_id: string };
+        Args: { _booking_id: string }
         Returns: {
-          booking_id: string;
-          created_at: string;
-          created_by: string;
-          expires_at: string;
-          id: string;
-          revoked_at: string | null;
-          token: string;
-        };
+          booking_id: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          revoked_at: string | null
+          token: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "booking_share_links";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "booking_share_links"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       credit_driver_wallet_topup: {
         Args: {
-          _amount: number;
-          _driver_id: string;
-          _payment_id: string;
-          _provider_payment_id: string;
-        };
-        Returns: Json;
-      };
-      decline_booking: { Args: { _booking_id: string }; Returns: boolean };
-      delete_my_account: { Args: never; Returns: Json };
+          _amount: number
+          _driver_id: string
+          _payment_id: string
+          _provider_payment_id: string
+        }
+        Returns: Json
+      }
+      decline_booking: { Args: { _booking_id: string }; Returns: boolean }
+      delete_my_account: { Args: never; Returns: Json }
       driver_update_account_profile: {
         Args: {
-          _driver_photo_url?: string;
-          _insurance_url?: string;
-          _number_plate_url?: string;
-          _poc_name?: string;
-          _poc_phone?: string;
-          _poc_photo_url?: string;
-          _puc_url?: string;
-          _vehicle_number?: string;
-          _vehicle_photo_url?: string;
-        };
+          _driver_photo_url?: string
+          _insurance_url?: string
+          _number_plate_url?: string
+          _poc_name?: string
+          _poc_phone?: string
+          _poc_photo_url?: string
+          _puc_url?: string
+          _vehicle_number?: string
+          _vehicle_photo_url?: string
+        }
         Returns: {
-          city: string;
-          dl_back_url: string | null;
-          dl_front_url: string | null;
-          driver_id: string;
-          driver_photo_url: string | null;
-          full_name: string;
-          id_proof_url: string | null;
-          insurance_url: string | null;
-          number_plate_url: string | null;
-          poc_name: string | null;
-          poc_phone: string | null;
-          poc_photo_url: string | null;
-          puc_url: string | null;
-          rc_url: string | null;
-          rejection_reason: string | null;
-          reviewed_at: string | null;
-          reviewed_by: string | null;
-          status: Database["public"]["Enums"]["kyc_status"];
-          submitted_at: string;
-          updated_at: string;
-          vehicle_id: string;
-          vehicle_number: string | null;
-          vehicle_photo_url: string | null;
-        };
+          city: string
+          dl_back_url: string | null
+          dl_front_url: string | null
+          driver_id: string
+          driver_photo_url: string | null
+          full_name: string
+          id_proof_url: string | null
+          insurance_url: string | null
+          number_plate_url: string | null
+          poc_name: string | null
+          poc_phone: string | null
+          poc_photo_url: string | null
+          puc_url: string | null
+          rc_url: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["kyc_status"]
+          submitted_at: string
+          updated_at: string
+          vehicle_id: string
+          vehicle_number: string | null
+          vehicle_photo_url: string | null
+        }
         SetofOptions: {
-          from: "*";
-          to: "driver_kyc";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
-      ensure_my_referral_code: { Args: never; Returns: string };
-      expire_stale_bookings: { Args: never; Returns: number };
-      generate_unique_referral_code: { Args: never; Returns: string };
+          from: "*"
+          to: "driver_kyc"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      ensure_my_referral_code: { Args: never; Returns: string }
+      expire_stale_bookings: { Args: never; Returns: number }
+      generate_unique_referral_code: { Args: never; Returns: string }
       get_booking_otps: {
-        Args: { _booking_id: string };
+        Args: { _booking_id: string }
         Returns: {
-          drop_otp: string;
-          pickup_otp: string;
-        }[];
-      };
+          drop_otp: string
+          pickup_otp: string
+        }[]
+      }
       has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"];
-          _user_id: string;
-        };
-        Returns: boolean;
-      };
-      is_kyc_approved: { Args: { _user_id: string }; Returns: boolean };
-      is_trusted_booking_write: { Args: never; Returns: boolean };
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_kyc_approved: { Args: { _user_id: string }; Returns: boolean }
+      is_trusted_booking_write: { Args: never; Returns: boolean }
       ops_task_set_status: {
-        Args: { _id: string; _status: string };
+        Args: { _id: string; _status: string }
         Returns: {
-          assigned_to: string | null;
-          booking_id: string | null;
-          completed_at: string | null;
-          created_at: string;
-          created_by: string | null;
-          details: string | null;
-          due_at: string | null;
-          id: string;
-          priority: string;
-          scope: string;
-          source: string;
-          source_message_id: string | null;
-          status: string;
-          title: string;
-          updated_at: string;
-        };
+          assigned_to: string | null
+          booking_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          details: string | null
+          due_at: string | null
+          id: string
+          priority: string
+          scope: string
+          source: string
+          source_message_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "ops_tasks";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "ops_tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       record_consent: {
         Args: {
-          _privacy_version: string;
-          _source?: string;
-          _terms_version: string;
-        };
+          _privacy_version: string
+          _source?: string
+          _terms_version: string
+        }
         Returns: {
-          accepted_at: string;
-          created_at: string;
-          id: string;
-          privacy_version: string;
-          source: string;
-          terms_version: string;
-          user_id: string;
-        };
+          accepted_at: string
+          created_at: string
+          id: string
+          privacy_version: string
+          source: string
+          terms_version: string
+          user_id: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "user_consents";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "user_consents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       review_driver_kyc: {
         Args: {
-          _decision: Database["public"]["Enums"]["kyc_status"];
-          _driver_id: string;
-          _reason?: string;
-        };
+          _decision: Database["public"]["Enums"]["kyc_status"]
+          _driver_id: string
+          _reason?: string
+        }
         Returns: {
-          city: string;
-          dl_back_url: string | null;
-          dl_front_url: string | null;
-          driver_id: string;
-          driver_photo_url: string | null;
-          full_name: string;
-          id_proof_url: string | null;
-          insurance_url: string | null;
-          number_plate_url: string | null;
-          poc_name: string | null;
-          poc_phone: string | null;
-          poc_photo_url: string | null;
-          puc_url: string | null;
-          rc_url: string | null;
-          rejection_reason: string | null;
-          reviewed_at: string | null;
-          reviewed_by: string | null;
-          status: Database["public"]["Enums"]["kyc_status"];
-          submitted_at: string;
-          updated_at: string;
-          vehicle_id: string;
-          vehicle_number: string | null;
-          vehicle_photo_url: string | null;
-        };
+          city: string
+          dl_back_url: string | null
+          dl_front_url: string | null
+          driver_id: string
+          driver_photo_url: string | null
+          full_name: string
+          id_proof_url: string | null
+          insurance_url: string | null
+          number_plate_url: string | null
+          poc_name: string | null
+          poc_phone: string | null
+          poc_photo_url: string | null
+          puc_url: string | null
+          rc_url: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["kyc_status"]
+          submitted_at: string
+          updated_at: string
+          vehicle_id: string
+          vehicle_number: string | null
+          vehicle_photo_url: string | null
+        }
         SetofOptions: {
-          from: "*";
-          to: "driver_kyc";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "driver_kyc"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       revoke_booking_share_links: {
-        Args: { _booking_id: string };
-        Returns: number;
-      };
+        Args: { _booking_id: string }
+        Returns: number
+      }
       set_booking_stage: {
-        Args: { _action: string; _booking_id: string };
+        Args: { _action: string; _booking_id: string }
         Returns: {
-          cancellation_category: Database["public"]["Enums"]["cancellation_category"] | null;
-          cancellation_reason: string | null;
-          cancelled_at: string | null;
-          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null;
-          coins_redeemed: number;
-          commission_amount: number;
-          commission_rate: number;
-          coupon_code: string | null;
-          coupon_discount: number;
-          created_at: string;
-          customer_id: string;
-          distance_km: number;
-          driver_id: string | null;
-          driver_net_earning: number;
-          drop_address: string;
-          drop_lat: number | null;
-          drop_lng: number | null;
-          drop_verified_at: string | null;
-          expires_at: string | null;
-          fare: number;
-          final_fare: number | null;
-          id: string;
-          loading_overtime_minutes: number;
-          loading_started_at: string | null;
-          loading_stopped_at: string | null;
-          notes: string | null;
-          overtime_charge: number;
-          payment_method: Database["public"]["Enums"]["payment_method"];
-          payment_status: Database["public"]["Enums"]["payment_status"];
-          pickup_address: string;
-          pickup_lat: number | null;
-          pickup_lng: number | null;
-          pickup_verified_at: string | null;
-          pod_photo_url: string | null;
-          rating: number | null;
-          review: string | null;
-          service_zone: string;
-          status: Database["public"]["Enums"]["booking_status"];
-          unloading_overtime_minutes: number;
-          unloading_started_at: string | null;
-          unloading_stopped_at: string | null;
-          updated_at: string;
-          vehicle_type: string;
-        };
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          coins_redeemed: number
+          commission_amount: number
+          commission_rate: number
+          coupon_code: string | null
+          coupon_discount: number
+          created_at: string
+          customer_id: string
+          distance_km: number
+          driver_id: string | null
+          driver_net_earning: number
+          drop_address: string
+          drop_lat: number | null
+          drop_lng: number | null
+          drop_verified_at: string | null
+          expires_at: string | null
+          fare: number
+          final_fare: number | null
+          helper_count: number
+          helper_fee: number
+          id: string
+          loading_overtime_minutes: number
+          loading_started_at: string | null
+          loading_stopped_at: string | null
+          notes: string | null
+          overtime_charge: number
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_verified_at: string | null
+          pod_photo_url: string | null
+          rating: number | null
+          review: string | null
+          service_zone: string
+          status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
+          unloading_started_at: string | null
+          unloading_stopped_at: string | null
+          updated_at: string
+          vehicle_type: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "bookings";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_my_active_mode: {
-        Args: { _mode: string };
+        Args: { _mode: string }
         Returns: {
-          active_mode: string;
-          created_at: string;
-          id: string;
-          is_online: boolean;
-          kyc_status: Database["public"]["Enums"]["kyc_status"];
-          name: string;
-          onboarding_completed: boolean | null;
-          phone: string;
-          referral_code: string | null;
-          service_zone: string;
-        };
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          onboarding_completed: boolean | null
+          phone: string
+          referral_code: string | null
+          service_zone: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "profiles";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_my_online: {
-        Args: { _is_online: boolean };
+        Args: { _is_online: boolean }
         Returns: {
-          active_mode: string;
-          created_at: string;
-          id: string;
-          is_online: boolean;
-          kyc_status: Database["public"]["Enums"]["kyc_status"];
-          name: string;
-          onboarding_completed: boolean | null;
-          phone: string;
-          referral_code: string | null;
-          service_zone: string;
-        };
+          active_mode: string
+          created_at: string
+          id: string
+          is_online: boolean
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          name: string
+          onboarding_completed: boolean | null
+          phone: string
+          referral_code: string | null
+          service_zone: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "profiles";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       settle_daily_incentives: {
-        Args: { _day?: string };
+        Args: { _day?: string }
         Returns: {
-          bonus: number;
-          driver_id: string;
-          rides: number;
-        }[];
-      };
-      shared_trip_view: { Args: { _token: string }; Returns: Json };
+          bonus: number
+          driver_id: string
+          rides: number
+        }[]
+      }
+      shared_trip_view: { Args: { _token: string }; Returns: Json }
       shares_booking_with: {
-        Args: { _a: string; _b: string };
-        Returns: boolean;
-      };
+        Args: { _a: string; _b: string }
+        Returns: boolean
+      }
       submit_driver_kyc: {
         Args: {
-          _city: string;
-          _dl_back_url: string;
-          _dl_front_url: string;
-          _full_name: string;
-          _id_proof_url: string;
-          _insurance_url?: string;
-          _number_plate_url?: string;
-          _puc_url?: string;
-          _rc_url: string;
-          _vehicle_id: string;
-          _vehicle_number?: string;
-          _vehicle_photo_url: string;
-        };
+          _city: string
+          _dl_back_url: string
+          _dl_front_url: string
+          _full_name: string
+          _id_proof_url: string
+          _insurance_url?: string
+          _number_plate_url?: string
+          _puc_url?: string
+          _rc_url: string
+          _vehicle_id: string
+          _vehicle_number?: string
+          _vehicle_photo_url: string
+        }
         Returns: {
-          city: string;
-          dl_back_url: string | null;
-          dl_front_url: string | null;
-          driver_id: string;
-          driver_photo_url: string | null;
-          full_name: string;
-          id_proof_url: string | null;
-          insurance_url: string | null;
-          number_plate_url: string | null;
-          poc_name: string | null;
-          poc_phone: string | null;
-          poc_photo_url: string | null;
-          puc_url: string | null;
-          rc_url: string | null;
-          rejection_reason: string | null;
-          reviewed_at: string | null;
-          reviewed_by: string | null;
-          status: Database["public"]["Enums"]["kyc_status"];
-          submitted_at: string;
-          updated_at: string;
-          vehicle_id: string;
-          vehicle_number: string | null;
-          vehicle_photo_url: string | null;
-        };
+          city: string
+          dl_back_url: string | null
+          dl_front_url: string | null
+          driver_id: string
+          driver_photo_url: string | null
+          full_name: string
+          id_proof_url: string | null
+          insurance_url: string | null
+          number_plate_url: string | null
+          poc_name: string | null
+          poc_phone: string | null
+          poc_photo_url: string | null
+          puc_url: string | null
+          rc_url: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["kyc_status"]
+          submitted_at: string
+          updated_at: string
+          vehicle_id: string
+          vehicle_number: string | null
+          vehicle_photo_url: string | null
+        }
         SetofOptions: {
-          from: "*";
-          to: "driver_kyc";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "driver_kyc"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       switch_failed_payment_to_cod: {
-        Args: { _booking_id: string };
+        Args: { _booking_id: string }
         Returns: {
-          cancellation_category: Database["public"]["Enums"]["cancellation_category"] | null;
-          cancellation_reason: string | null;
-          cancelled_at: string | null;
-          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null;
-          coins_redeemed: number;
-          commission_amount: number;
-          commission_rate: number;
-          coupon_code: string | null;
-          coupon_discount: number;
-          created_at: string;
-          customer_id: string;
-          distance_km: number;
-          driver_id: string | null;
-          driver_net_earning: number;
-          drop_address: string;
-          drop_lat: number | null;
-          drop_lng: number | null;
-          drop_verified_at: string | null;
-          expires_at: string | null;
-          fare: number;
-          final_fare: number | null;
-          id: string;
-          loading_overtime_minutes: number;
-          loading_started_at: string | null;
-          loading_stopped_at: string | null;
-          notes: string | null;
-          overtime_charge: number;
-          payment_method: Database["public"]["Enums"]["payment_method"];
-          payment_status: Database["public"]["Enums"]["payment_status"];
-          pickup_address: string;
-          pickup_lat: number | null;
-          pickup_lng: number | null;
-          pickup_verified_at: string | null;
-          pod_photo_url: string | null;
-          rating: number | null;
-          review: string | null;
-          service_zone: string;
-          status: Database["public"]["Enums"]["booking_status"];
-          unloading_overtime_minutes: number;
-          unloading_started_at: string | null;
-          unloading_stopped_at: string | null;
-          updated_at: string;
-          vehicle_type: string;
-        };
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          coins_redeemed: number
+          commission_amount: number
+          commission_rate: number
+          coupon_code: string | null
+          coupon_discount: number
+          created_at: string
+          customer_id: string
+          distance_km: number
+          driver_id: string | null
+          driver_net_earning: number
+          drop_address: string
+          drop_lat: number | null
+          drop_lng: number | null
+          drop_verified_at: string | null
+          expires_at: string | null
+          fare: number
+          final_fare: number | null
+          helper_count: number
+          helper_fee: number
+          id: string
+          loading_overtime_minutes: number
+          loading_started_at: string | null
+          loading_stopped_at: string | null
+          notes: string | null
+          overtime_charge: number
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_verified_at: string | null
+          pod_photo_url: string | null
+          rating: number | null
+          review: string | null
+          service_zone: string
+          status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
+          unloading_started_at: string | null
+          unloading_stopped_at: string | null
+          updated_at: string
+          vehicle_type: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "bookings";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       validate_coupon:
         | {
-            Args: { _code: string; _fare: number };
+            Args: { _code: string; _fare: number }
             Returns: {
-              code: string;
-              discount: number;
-              message: string;
-            }[];
+              code: string
+              discount: number
+              message: string
+            }[]
           }
         | {
-            Args: { _code: string; _fare: number; _user_id: string };
+            Args: { _code: string; _fare: number; _user_id: string }
             Returns: {
-              code: string;
-              discount: number;
-              message: string;
-            }[];
-          };
+              code: string
+              discount: number
+              message: string
+            }[]
+          }
       verify_booking_otp: {
-        Args: { _booking_id: string; _otp: string; _stage: string };
-        Returns: Json;
-      };
-    };
+        Args: { _booking_id: string; _otp: string; _stage: string }
+        Returns: Json
+      }
+    }
     Enums: {
-      address_kind: "home" | "shop" | "other";
-      app_role: "customer" | "driver" | "admin" | "staff";
+      address_kind: "home" | "shop" | "other"
+      app_role: "customer" | "driver" | "admin" | "staff"
       booking_status:
-        "pending" | "accepted" | "in_progress" | "completed" | "cancelled" | "expired";
-      booking_stop_kind: "pickup" | "stop" | "drop";
-      cancel_actor: "customer" | "driver" | "admin" | "system";
+        | "pending"
+        | "accepted"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+        | "expired"
+      booking_stop_kind: "pickup" | "stop" | "drop"
+      cancel_actor: "customer" | "driver" | "admin" | "system"
       cancellation_category:
-        "customer_cancelled" | "driver_cancelled" | "admin_cancelled" | "expired";
-      coupon_kind: "flat" | "percent";
-      driver_application_status: "submitted" | "approved" | "rejected" | "withdrawn";
-      kyc_status: "not_submitted" | "pending" | "approved" | "rejected";
-      payment_method: "cod" | "wallet" | "upi" | "card" | "netbanking";
-      payment_state: "created" | "paid" | "failed" | "refunded";
-      payment_status: "pending" | "paid" | "failed" | "refunded";
-      sms_event: "accepted" | "started" | "completed" | "cancelled" | "payment_received";
-      sms_recipient: "customer" | "driver";
-      sms_status: "queued" | "sent" | "failed" | "sending" | "not_configured";
-      vehicle_type: "tata_ace" | "pickup_8ft" | "tata_407";
-      withdrawal_status: "requested" | "paid" | "rejected";
-    };
+        | "customer_cancelled"
+        | "driver_cancelled"
+        | "admin_cancelled"
+        | "expired"
+      coupon_kind: "flat" | "percent"
+      driver_application_status:
+        | "submitted"
+        | "approved"
+        | "rejected"
+        | "withdrawn"
+      kyc_status: "not_submitted" | "pending" | "approved" | "rejected"
+      payment_method: "cod" | "wallet" | "upi" | "card" | "netbanking"
+      payment_state: "created" | "paid" | "failed" | "refunded"
+      payment_status: "pending" | "paid" | "failed" | "refunded"
+      sms_event:
+        | "accepted"
+        | "started"
+        | "completed"
+        | "cancelled"
+        | "payment_received"
+      sms_recipient: "customer" | "driver"
+      sms_status: "queued" | "sent" | "failed" | "sending" | "not_configured"
+      vehicle_type: "tata_ace" | "pickup_8ft" | "tata_407"
+      withdrawal_status: "requested" | "paid" | "rejected"
+    }
     CompositeTypes: {
-      [_ in never]: never;
-    };
-  };
-};
+      [_ in never]: never
+    }
+  }
+}
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R;
+      Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R;
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
       }
       ? R
       : never
-    : never;
+    : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I;
+      Insert: infer I
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I;
+        Insert: infer I
       }
       ? I
       : never
-    : never;
+    : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U;
+      Update: infer U
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U;
+        Update: infer U
       }
       ? U
       : never
-    : never;
+    : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never;
+    : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never;
+    : never
 
 export const Constants = {
   public: {
     Enums: {
       address_kind: ["home", "shop", "other"],
       app_role: ["customer", "driver", "admin", "staff"],
-      booking_status: ["pending", "accepted", "in_progress", "completed", "cancelled", "expired"],
+      booking_status: [
+        "pending",
+        "accepted",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "expired",
+      ],
       booking_stop_kind: ["pickup", "stop", "drop"],
       cancel_actor: ["customer", "driver", "admin", "system"],
       cancellation_category: [
@@ -2979,16 +3107,27 @@ export const Constants = {
         "expired",
       ],
       coupon_kind: ["flat", "percent"],
-      driver_application_status: ["submitted", "approved", "rejected", "withdrawn"],
+      driver_application_status: [
+        "submitted",
+        "approved",
+        "rejected",
+        "withdrawn",
+      ],
       kyc_status: ["not_submitted", "pending", "approved", "rejected"],
       payment_method: ["cod", "wallet", "upi", "card", "netbanking"],
       payment_state: ["created", "paid", "failed", "refunded"],
       payment_status: ["pending", "paid", "failed", "refunded"],
-      sms_event: ["accepted", "started", "completed", "cancelled", "payment_received"],
+      sms_event: [
+        "accepted",
+        "started",
+        "completed",
+        "cancelled",
+        "payment_received",
+      ],
       sms_recipient: ["customer", "driver"],
       sms_status: ["queued", "sent", "failed", "sending", "not_configured"],
       vehicle_type: ["tata_ace", "pickup_8ft", "tata_407"],
       withdrawal_status: ["requested", "paid", "rejected"],
     },
   },
-} as const;
+} as const

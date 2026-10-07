@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791386923496,
+      "tag": "0000_restore_daily_pass_purchase_atomic",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791386937699,
+      "tag": "0001_add_profile_onboarding_completed",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791386981316,
+      "tag": "0002_helper_selection_fare",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791387039563,
+      "tag": "0003_booking_messages_realtime",
+      "breakpoints": true
+    }
+  ]
+}
