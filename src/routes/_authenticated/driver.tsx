@@ -884,6 +884,18 @@ function ActiveJobCard({
   return (
     <section className="surface-card border-l-4 border-l-primary p-4">
       <p className="text-xs font-semibold uppercase tracking-wider text-primary">Active job</p>
+      <div className="mt-3 grid grid-cols-4 gap-1 text-center text-[10px]">
+        {[
+          ["Accept Booking", true],
+          ["Arrived at Pickup", job.status === "in_progress" || !!job.loading_started_at],
+          ["Start Trip", job.status === "in_progress"],
+          ["Complete Trip", false],
+        ].map(([label, done], index) => (
+          <div key={String(label)} className={`rounded-md border px-1 py-2 ${done ? "border-success bg-success/10 text-success" : index === 1 && job.status === "accepted" ? "border-primary bg-primary/10 text-primary" : index === 2 && job.status === "in_progress" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
+            {done ? "✓ " : ""}{String(label)}
+          </div>
+        ))}
+      </div>
       <JobAddress
         label="Pickup"
         address={job.pickup_address}
