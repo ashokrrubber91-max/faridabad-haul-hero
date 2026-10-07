@@ -158,7 +158,10 @@ function OtpSignInForm() {
 
   const sendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (MINIPORT_TEST_MODE ? phone.replace(/\D/g, "").length < 7 : !isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
+    if (!isValidIndianMobile(phone)) {
+      toast.error("Enter a valid 10-digit mobile number");
+      return;
+    }
     setBusy(true);
     try {
       const res = await start({ data: { phone: MINIPORT_TEST_MODE ? phone : normalisePhone(phone), intent: "signin" } });
@@ -206,21 +209,26 @@ function OtpSignInForm() {
       <form onSubmit={sendOtp} className="space-y-4">
         <div>
           <Label htmlFor="otp-phone">Phone number</Label>
-          <Input
-            id="otp-phone"
-            inputMode="tel"
-            autoComplete="tel"
-            placeholder="98xxxxxxxx"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            required
-          />
-          <p className="mt-1 text-xs text-muted-foreground">
-            {MINIPORT_TEST_MODE ? "Use any test phone number" : `We’ll text a one-time code to +91 ${normalisePhone(phone)}`}
-          </p>
+          <div className="flex items-stretch">
+            <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">+91</span>
+            <Input
+              id="otp-phone"
+              inputMode="numeric"
+              autoComplete="tel-national"
+              maxLength={10}
+              placeholder="9876543210"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+              className="rounded-l-none"
+              required
+            />
+          </div>
+          {phone.length > 0 && !isValidIndianMobile(phone) && (
+            <p className="mt-1 text-xs text-destructive">Enter a valid 10-digit mobile number</p>
+          )}
         </div>
-        <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
-          {busy ? "Sending\u2026" : "Send OTP"}
+        <Button type="submit" className="h-11 w-full text-base" disabled={busy || !isValidIndianMobile(phone)}>
+          {busy ? "Sending…" : "Send OTP"}
         </Button>
       </form>
     );
@@ -404,7 +412,10 @@ function SignUpForm({
   const sendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim().length < 2) return toast.error("Enter your name");
-    if (MINIPORT_TEST_MODE ? phone.replace(/\D/g, "").length < 7 : !isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
+    if (!isValidIndianMobile(phone)) {
+      toast.error("Enter a valid 10-digit mobile number");
+      return;
+    }
     if (!agreed)
       return toast.error("Please accept the Terms & Conditions and Privacy Policy to continue");
 
@@ -546,15 +557,23 @@ function SignUpForm({
       </div>
       <div>
         <Label htmlFor="su-phone">Phone number</Label>
-        <Input
-          id="su-phone"
-          inputMode="tel"
-          autoComplete="tel"
-          placeholder="98xxxxxxxx"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          required
-        />
+        <div className="flex items-stretch">
+          <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">+91</span>
+          <Input
+            id="su-phone"
+            inputMode="numeric"
+            autoComplete="tel-national"
+            maxLength={10}
+            placeholder="9876543210"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+            className="rounded-l-none"
+            required
+          />
+        </div>
+        {phone.length > 0 && !isValidIndianMobile(phone) && (
+          <p className="mt-1 text-xs text-destructive">Enter a valid 10-digit mobile number</p>
+        )}
       </div>
       <div>
         <Label htmlFor="su-referral">Referral code (optional)</Label>
@@ -606,7 +625,7 @@ function SignUpForm({
           .
         </span>
       </label>
-      <Button type="submit" className="h-11 w-full text-base" disabled={busy || !agreed}>
+      <Button type="submit" className="h-11 w-full text-base" disabled={busy || !agreed || !isValidIndianMobile(phone)}>
         {busy ? "Sending code\u2026" : "Send verification code"}
       </Button>
       <p className="text-center text-xs text-muted-foreground">
