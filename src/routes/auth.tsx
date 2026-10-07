@@ -80,9 +80,13 @@ function AuthPage() {
         <div className="surface-card p-6">
           <h1 className="font-display text-3xl tracking-wide text-secondary">Welcome</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Sign in with your phone number and password. SMS OTP will be available after Twilio is
-            connected.
+            Sign in with your phone number and password.
           </p>
+          {MINIPORT_TEST_MODE && (
+            <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+              <strong>TESTING MODE:</strong> SMS is bypassed. Any phone number can be tested and the universal OTP is <strong>{TEST_OTP}</strong>.
+            </div>
+          )}
 
           <Tabs
             value={tab}
@@ -97,7 +101,9 @@ function AuthPage() {
             <TabsContent value="otp" className="pt-5 space-y-5">
               \n{" "}
               <p className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-                SMS verification is not connected yet. Connect Twilio later to enable OTP.
+                {MINIPORT_TEST_MODE
+                  ? `Testing mode: enter ${TEST_OTP}. No SMS is sent.`
+                  : "SMS verification uses the configured phone provider."}
               </p>
               <OtpSignInForm />
               <OrDivider />
@@ -116,7 +122,9 @@ function AuthPage() {
           </Tabs>
         </div>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Password sign-in is available now. SMS OTP will be enabled after Twilio is connected.
+          {MINIPORT_TEST_MODE
+            ? `Testing mode is active — universal OTP ${TEST_OTP}`
+            : "Password sign-in is available now."}
         </p>
       </main>
     </div>
@@ -150,7 +158,7 @@ function OtpSignInForm() {
 
   const sendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
+    if (MINIPORT_TEST_MODE ? phone.replace(/\D/g, "").length < 7 : !isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
     setBusy(true);
     try {
       const res = await start({ data: { phone: normalisePhone(phone), intent: "signin" } });
@@ -229,7 +237,7 @@ function OtpSignInForm() {
           maxLength={6}
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-          placeholder="••••••"
+          placeholder={MINIPORT_TEST_MODE ? TEST_OTP : "••••••"}
           className="text-center text-lg tracking-[0.4em]"
           required
         />
@@ -396,7 +404,7 @@ function SignUpForm({
   const sendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim().length < 2) return toast.error("Enter your name");
-    if (!isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
+    if (MINIPORT_TEST_MODE ? phone.replace(/\D/g, "").length < 7 : !isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
     if (!agreed)
       return toast.error("Please accept the Terms & Conditions and Privacy Policy to continue");
 
@@ -602,7 +610,9 @@ function SignUpForm({
         {busy ? "Sending code\u2026" : "Send verification code"}
       </Button>
       <p className="text-center text-xs text-muted-foreground">
-        We text a one-time code to confirm your number before the account is created.
+        {MINIPORT_TEST_MODE
+          ? `Testing mode: enter ${TEST_OTP}; no SMS is sent.`
+          : "We text a one-time code to confirm your number before the account is created."}
       </p>
     </form>
   );
