@@ -490,6 +490,9 @@ function CustomerPage() {
 
   return (
     <div className="grid min-w-0 gap-6 lg:grid-cols-[1.1fr_1fr] [&>*]:min-w-0">
+      <div className="lg:col-span-2">
+        <ActiveOrdersCarousel bookings={(bookings.data ?? []) as Array<Record<string, unknown>>} />
+      </div>
       {step === "form" ? (
         <section className="surface-card p-5">
           <div className="flex items-start justify-between gap-3">
@@ -1032,6 +1035,63 @@ function CustomerPage() {
       />
       <SupportChat role="customer" />
     </div>
+  );
+}
+
+function ActiveOrdersCarousel({ bookings }: { bookings: Array<Record<string, unknown>> }) {
+  const active = bookings.filter((b) =>
+    ["pending", "accepted", "in_progress"].includes(String(b.status)),
+  );
+
+  if (active.length === 0) return null;
+
+  const statusLabel = (status: string) =>
+    status === "pending" ? "Searching" : status === "accepted" ? "Assigned" : "In transit";
+
+  return (
+    <section className="surface-card overflow-hidden p-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div>
+          <h2 className="font-display text-xl tracking-wide text-secondary">Active Orders</h2>
+          <p className="text-xs text-muted-foreground">
+            {active.length} ongoing {active.length === 1 ? "trip" : "trips"} · You can place another booking anytime.
+          </p>
+        </div>
+        <Badge variant="secondary">{active.length}</Badge>
+      </div>
+      <div className="flex snap-x gap-3 overflow-x-auto pb-1">
+        {active.map((b) => {
+          const status = String(b.status);
+          const stops = Array.isArray(b.stops) ? b.stops : [];
+          return (
+            <div
+              key={String(b.id)}
+              className="min-w-[250px] max-w-[300px] shrink-0 snap-start rounded-xl border bg-background p-3"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  {String(b.vehicle_type ?? "Vehicle")}
+                </span>
+                <Badge className="bg-primary text-primary-foreground hover:bg-primary">
+                  {statusLabel(status)}
+                </Badge>
+              </div>
+              <p className="mt-2 truncate text-sm font-semibold text-secondary">
+                {String(b.pickup_address ?? "")}
+              </p>
+              <p className="mt-1 truncate text-xs text-muted-foreground">
+                → {String(b.drop_address ?? "")}
+              </p>
+              {stops.length > 0 && (
+                <p className="mt-2 text-[11px] font-medium text-warning">
+                  {stops.length} extra {stops.length === 1 ? "stop" : "stops"} · +₹{stops.length * 50}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
