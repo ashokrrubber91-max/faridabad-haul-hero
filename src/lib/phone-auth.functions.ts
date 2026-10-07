@@ -23,7 +23,7 @@ function normalise(raw: string): string | null {
 
 function normaliseTestingPhone(raw: string): string | null {
   const digits = raw.replace(/\D/g, "");
-  return digits.length >= 7 && digits.length <= 15 ? digits : null;
+  return INDIAN_MOBILE.test(digits) ? digits : null;
 }
 
 function loginEmail(phone: string): string {
