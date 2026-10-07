@@ -14,6 +14,7 @@ export function DriverMatchingCard({
   bookingId,
   vehicleType,
   currentFare = 0,
+  currentBoost = 0,
   paymentStatus = "pending",
   attempted = 0,
   total = 5,
@@ -25,6 +26,7 @@ export function DriverMatchingCard({
   bookingId: string;
   vehicleType: string;
   currentFare?: number;
+  currentBoost?: number;
   paymentStatus?: string;
   attempted?: number;
   total?: number;
@@ -33,7 +35,8 @@ export function DriverMatchingCard({
   onBoost?: (amount: number, newFare: number) => void;
   onAlternative?: (vehicle: string) => void;
 }) {
-  const [boost, setBoost] = useState(0);
+  const [boost, setBoost] = useState(currentBoost);
+  useEffect(() => setBoost(currentBoost), [currentBoost]);
   const [fare, setFare] = useState(currentFare);
   const [elapsed, setElapsed] = useState(elapsedSeconds);
   const [alternativeOpen, setAlternativeOpen] = useState(false);
@@ -114,7 +117,7 @@ export function DriverMatchingCard({
               {declined} of {nearbyTotal} captains didn't accept your ride
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Current fare: ₹{fare.toFixed(0)}
+              Current fare: ₹{fare.toFixed(0)}{boost > 0 ? ` · +₹${boost} fare boost` : ""}
             </p>
           </div>
           <Badge variant="outline">{progress}% search</Badge>
