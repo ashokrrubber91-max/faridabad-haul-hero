@@ -163,11 +163,54 @@ function CustomerPage() {
         .eq("customer_id", user!.id)
         .order("created_at", { ascending: false })
         // This screen only shows recent trips; full history lives on My rides.
-        .limit(15);
+        .limit(15),
+    refetchInterval: MINIPORT_TEST_MODE ? 3000 : false,
       if (error) throw error;
       return data ?? [];
     },
   });
+
+  useEffect(() => {
+    if (!MINIPORT_TEST_MODE || !bookings.data) return;
+
+    const rank: Record<string, number> = { assigned: 1, arrived: 2, completed: 3 };
+    for (const booking of bookings.data as Array<Record<string, unknown>>) {
+      const id = String(booking.id ?? "");
+      if (!id) continue;
+      const status = String(booking.status ?? "");
+      const eventKey =
+        status === "completed"
+          ? "completed"
+          : Boolean(booking.loading_started_at)
+            ? "arrived"
+            : status === "accepted"
+              ? "assigned"
+              : "";
+
+      if (!eventKey) continue;
+      const previous = seenTripEvents.current.get(id);
+      if (!previous) {
+        seenTripEvents.current.set(id, eventKey);
+        continue;
+      }
+      if (rank[eventKey] <= (rank[previous] ?? 0)) continue;
+
+      seenTripEvents.current.set(id, eventKey);
+      if (eventKey === "assigned") {
+        toast.success("Driver Assigned", {
+          description: "A MiniPort driver has accepted your booking.",
+        });
+      } else if (eventKey === "arrived") {
+        toast.info("Driver Arrived", {
+          description: "The driver has reached the pickup and loading can begin.",
+        });
+      } else if (eventKey === "completed") {
+        toast.success("Trip Completed", {
+          description: "Your MiniPort trip has been completed successfully.",
+        });
+      }
+    }
+  }, [bookings.data]);
 
   useEffect(() => {
     if (!user) return;
@@ -176,41 +219,8 @@ function CustomerPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "bookings", filter: `customer_id=eq.${user.id}` },
-        (payload) => {
-          qc.invalidateQueries({ queryKey: ["my-bookings", user.id] });
-
-          if (!MINIPORT_TEST_MODE || payload.eventType === "DELETE") return;
-          const row = payload.new as Record<string, unknown>;
-          const id = String(row.id ?? "");
-          if (!id) return;
-
-          const status = String(row.status ?? "");
-          const arrived = Boolean(row.loading_started_at);
-          const eventKey = status === "completed"
-            ? "completed"
-            : arrived
-              ? "arrived"
-              : status === "accepted"
-                ? "assigned"
-                : "";
-          if (!eventKey || seenTripEvents.current.get(id) === eventKey) return;
-
-          // First realtime event for a booking can be the current state, so the
-          // toast is intentionally driven only by a new state transition.
-          seenTripEvents.current.set(id, eventKey);
-          if (eventKey === "assigned") {
-            toast.success("Driver Assigned", {
-              description: "A MiniPort driver has accepted your booking.",
-            });
-          } else if (eventKey === "arrived") {
-            toast.info("Driver Arrived", {
-              description: "The driver has reached the pickup and loading can begin.",
-            });
-          } else if (eventKey === "completed") {
-            toast.success("Trip Completed", {
-              description: "Your MiniPort trip has been completed successfully.",
-            });
-          }
+        () => {
+          void qc.invalidateQueries({ queryKey: ["my-bookings", user.id] });
         },
       )
       .subscribe();
