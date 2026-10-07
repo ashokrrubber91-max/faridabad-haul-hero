@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DriverTopupDialog } from "@/components/driver/DriverTopupDialog";
 import { ReferralCard } from "@/components/referrals/ReferralCard";
+import { DailyPassCard } from "@/components/driver/DailyPassCard";
 
 function formatMoney(n: number) {
   const abs = Math.abs(n).toFixed(2);
@@ -132,7 +133,7 @@ function WalletPage() {
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      {isDriver && <DailyPassCard />}\n\n      <div className="grid gap-3 sm:grid-cols-2">
         <section className="surface-card p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
             {isDriver ? "Available for withdrawal" : "Wallet balance"}
