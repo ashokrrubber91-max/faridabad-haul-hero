@@ -64,6 +64,7 @@ export function ReviewBooking({
   const [breakupOpen, setBreakupOpen] = useState(false);
   const { map } = useVehicleMap();
   const specs = map.has(vehicle) ? vehicleSpecs(map.get(vehicle)!) : [];
+  const extraStopFee = stops.length * 50;
 
   return (
     <div className="surface-card p-5">
@@ -219,6 +220,12 @@ export function ReviewBooking({
               <span>+ ₹{helperFee}</span>
             </div>
           )}
+          {extraStopFee > 0 && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Extra stops ({stops.length})</span>
+              <span>+ ₹{extraStopFee}</span>
+            </div>
+          )}
           {discount > 0 && (
             <div className="flex justify-between text-success">
               <span>Discount / coins</span>
@@ -258,6 +265,12 @@ export function ReviewBooking({
               <div className="flex justify-between">
                 <span>Loading-unloading / helper</span>
                 <span>+ ₹{helperFee}</span>
+              </div>
+            )}
+            {extraStopFee > 0 && (
+              <div className="flex justify-between">
+                <span>Extra stops ({stops.length})</span>
+                <span>+ ₹{extraStopFee}</span>
               </div>
             )}
             {discount > 0 && coinsEnabled && (
