@@ -94,6 +94,18 @@ export const createBooking = createServerFn({ method: "POST" })
         fare: Math.round(
           Number(vt.base_fare) + Number(vt.per_km_fare) * route.distanceKm + helperFee,
         ),
+        total_stops: data.stops.length + 1,
+        is_multi_stop: data.stops.length > 0,
+        stops: data.stops.map((s, i) => ({
+          sequence: i + 1,
+          address: s.address,
+          lat: s.lat,
+          lng: s.lng,
+          place_id: s.placeId ?? null,
+          contact_name: s.contactName ?? null,
+          contact_phone: s.contactPhone ?? null,
+          status: "pending",
+        })),
         coupon_code: data.couponCode,
         coins_redeemed: data.coins,
         payment_method: data.paymentMethod,
