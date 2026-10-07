@@ -20,6 +20,7 @@ import {
 } from "@/hooks/useAuth";
 import { recordConsent } from "@/lib/legal";
 import { startPhoneOtp, verifyPhoneOtp } from "@/lib/phone-auth.functions";
+import { MINIPORT_TEST_MODE, TEST_OTP } from "@/lib/testing";
 
 /** Kept in step with the server-side cooldown; only used for the countdown UI. */
 const RESEND_COOLDOWN_SECONDS = 45;
@@ -89,7 +90,7 @@ function AuthPage() {
             className="mt-5"
           >
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="otp">OTP (later)</TabsTrigger>
+              <TabsTrigger value="otp">{MINIPORT_TEST_MODE ? "Test OTP" : "OTP"}</TabsTrigger>
               <TabsTrigger value="signin">Password</TabsTrigger>
               <TabsTrigger value="signup">Sign up</TabsTrigger>
             </TabsList>
@@ -159,7 +160,7 @@ function OtpSignInForm() {
       }
       setSent(true);
       setCooldown(RESEND_COOLDOWN_SECONDS);
-      toast.success(`Code sent to +91 ${normalisePhone(phone)}`);
+      toast.success(MINIPORT_TEST_MODE ? `Test OTP ready: ${TEST_OTP}` : `Code sent to +91 ${normalisePhone(phone)}`);
     } catch {
       toast.error("Network problem — please check your connection and try again.");
     } finally {
@@ -468,7 +469,7 @@ function SignUpForm({
             maxLength={6}
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            placeholder="••••••"
+            placeholder={MINIPORT_TEST_MODE ? TEST_OTP : "••••••"}
             className="text-center text-lg tracking-[0.4em]"
             required
           />
