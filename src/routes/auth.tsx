@@ -161,13 +161,13 @@ function OtpSignInForm() {
     if (MINIPORT_TEST_MODE ? phone.replace(/\D/g, "").length < 7 : !isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
     setBusy(true);
     try {
-      const res = await start({ data: { phone: normalisePhone(phone), intent: "signin" } });
+      const res = await start({ data: { phone: MINIPORT_TEST_MODE ? phone : normalisePhone(phone), intent: "signin" } });
       if (!res.ok) {
         toast.error(res.message);
         return;
       }
       setSent(true);
-      setCooldown(RESEND_COOLDOWN_SECONDS);
+      setCooldown(MINIPORT_TEST_MODE ? 0 : RESEND_COOLDOWN_SECONDS);
       toast.success(MINIPORT_TEST_MODE ? `Test OTP ready: ${TEST_OTP}` : `Code sent to +91 ${normalisePhone(phone)}`);
     } catch {
       toast.error("Network problem — please check your connection and try again.");
@@ -182,7 +182,7 @@ function OtpSignInForm() {
     setBusy(true);
     try {
       const res = await verify({
-        data: { phone: normalisePhone(phone), code, intent: "signin" },
+        data: { phone: MINIPORT_TEST_MODE ? phone : normalisePhone(phone), code, intent: "signin" },
       });
       if (!res.ok || !("tokenHash" in res)) {
         toast.error(res.ok ? "Please try again." : res.message);
@@ -216,7 +216,7 @@ function OtpSignInForm() {
             required
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            We&rsquo;ll text a one-time code to +91 {normalisePhone(phone)}
+            {MINIPORT_TEST_MODE ? "Use any test phone number" : `We’ll text a one-time code to +91 ${normalisePhone(phone)}`}
           </p>
         </div>
         <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
@@ -410,7 +410,7 @@ function SignUpForm({
 
     setBusy(true);
     try {
-      const res = await start({ data: { phone: normalisePhone(phone), intent: "signup" } });
+      const res = await start({ data: { phone: MINIPORT_TEST_MODE ? phone : normalisePhone(phone), intent: "signup" } });
       if (!res.ok) {
         toast.error(res.message);
         return;
