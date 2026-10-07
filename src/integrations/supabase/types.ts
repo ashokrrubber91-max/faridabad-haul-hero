@@ -1970,6 +1970,23 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      activate_driver_daily_pass: {
+        Args: never
+        Returns: {
+          amount: number | null
+          driver_id: string | null
+          expires_at: string | null
+          id: string
+          purchased_at: string | null
+          status: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "driver_daily_passes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_adjust_wallet: {
         Args: { _delta: number; _reason: string; _user_id: string }
         Returns: number
