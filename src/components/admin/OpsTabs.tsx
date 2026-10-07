@@ -1,5 +1,5 @@
 import type { AnyRow } from "@/lib/rows";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -97,13 +97,16 @@ function Shell({
 export function WithdrawalsTab() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [action, setAction] = useState<{ id: string; status: "approved" | "rejected" } | null>(null);
+  const [utr, setUtr] = useState("");
+  const [reason, setReason] = useState("");
 
   const rows = useQuery({
     queryKey: ["admin-withdrawals"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("withdrawal_requests")
-        .select("id, driver_id, amount, method, status, note, created_at, updated_at")
+        .select("id, driver_id, amount, method, status, note, upi_id, utr_number, rejection_reason, created_at, processed_at")
         .order("created_at", { ascending: false })
         .limit(300);
       if (error) throw error;
@@ -120,41 +123,49 @@ export function WithdrawalsTab() {
     queryKey: ["admin-withdrawal-people", driverIds.join(",")],
     enabled: driverIds.length > 0,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("id, name, phone")
         .in("id", driverIds);
+      if (error) throw error;
       const map: Record<string, { name: string; phone: string }> = {};
       (data ?? []).forEach((p) => (map[p.id] = { name: p.name, phone: p.phone }));
       return map;
     },
   });
 
-  const banks = useQuery({
-    queryKey: ["admin-withdrawal-banks", driverIds.join(",")],
-    enabled: driverIds.length > 0,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("driver_bank_accounts")
-        .select("driver_id, account_holder, account_number, ifsc, bank_name, upi_id, is_default")
-        .in("driver_id", driverIds);
-      const map: Record<string, NonNullable<typeof data>[number]> = {};
-      (data ?? []).forEach((b) => {
-        if (!map[b.driver_id] || b.is_default) map[b.driver_id] = b;
-      });
-      return map;
-    },
-  });
+  useEffect(() => {
+    const ch = supabase
+      .channel("admin-withdrawals-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "withdrawal_requests" }, () =>
+        void qc.invalidateQueries({ queryKey: ["admin-withdrawals"] }),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [qc]);
 
   const settle = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: "paid" | "rejected" }) => {
-      const { error } = await supabase.from("withdrawal_requests").update({ status }).eq("id", id);
+    mutationFn: async ({ id, status, utrNumber, rejectionReason }: {
+      id: string;
+      status: "approved" | "rejected";
+      utrNumber?: string;
+      rejectionReason?: string;
+    }) => {
+      const { error } = await supabase.rpc("process_withdrawal_admin", {
+        p_request_id: id,
+        p_status: status,
+        p_utr_number: utrNumber ?? null,
+        p_reason: rejectionReason ?? null,
+      });
       if (error) throw error;
     },
     onSuccess: (_d, v) => {
-      toast.success(
-        v.status === "paid" ? "Marked as paid out" : "Rejected — amount returned to the driver",
-      );
+      toast.success(v.status === "approved" ? "Payout approved and UTR saved" : "Payout rejected — amount returned to driver");
+      setAction(null);
+      setUtr("");
+      setReason("");
       qc.invalidateQueries({ queryKey: ["admin-withdrawals"] });
       qc.invalidateQueries({ queryKey: ["admin-wallets"] });
     },
@@ -165,95 +176,88 @@ export function WithdrawalsTab() {
     if (!q.trim()) return true;
     const p = people.data?.[r.driver_id];
     const needle = q.toLowerCase();
-    return (
-      p?.name?.toLowerCase().includes(needle) ||
-      p?.phone?.includes(q.trim()) ||
-      r.status.includes(needle)
-    );
+    return p?.name?.toLowerCase().includes(needle) || p?.phone?.includes(q.trim()) || r.status.includes(needle) || (r.upi_id ?? "").toLowerCase().includes(needle);
   });
-  const pendingTotal = (rows.data ?? [])
-    .filter((r) => r.status === "requested")
-    .reduce((s, r) => s + Number(r.amount), 0);
+  const pendingTotal = (rows.data ?? []).filter((r) => r.status === "requested").reduce((s, r) => s + Number(r.amount), 0);
 
   return (
-    <Shell
-      title="Driver payouts"
-      subtitle={`${(rows.data ?? []).filter((r) => r.status === "requested").length} awaiting action · ${money(pendingTotal)} on hold`}
-      query={rows}
-      toolbar={
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Driver or status"
-            className="h-9 w-40 pl-7 text-xs sm:w-56"
-          />
-        </div>
-      }
-    >
-      {list.length === 0 ? (
-        <p className="p-6 text-center text-sm text-muted-foreground">No payout requests.</p>
-      ) : (
-        <ul className="divide-y divide-border">
-          {list.map((r) => {
-            const p = people.data?.[r.driver_id];
-            const bank = banks.data?.[r.driver_id];
-            return (
-              <li key={r.id} className="flex flex-wrap items-start justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-secondary">
-                    {p?.name ?? "Driver"}{" "}
-                    <span className="text-xs font-normal text-muted-foreground">
-                      {p?.phone ?? ""}
-                    </span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {when(r.created_at)} · {r.method}
-                    {r.note ? ` · ${r.note}` : ""}
-                  </p>
-                  {bank ? (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {bank.upi_id
-                        ? `UPI ${bank.upi_id}`
-                        : `${bank.bank_name} · ${bank.account_holder} · ****${String(bank.account_number).slice(-4)} · ${bank.ifsc}`}
-                    </p>
-                  ) : (
-                    <p className="mt-1 text-xs text-destructive">No payout method saved</p>
-                  )}
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <span className="font-display text-lg text-secondary">{money(r.amount)}</span>
-                  {r.status === "requested" ? (
-                    <>
-                      <Button
-                        size="sm"
-                        disabled={settle.isPending}
-                        onClick={() => settle.mutate({ id: r.id, status: "paid" })}
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Paid
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={settle.isPending}
-                        onClick={() => settle.mutate({ id: r.id, status: "rejected" })}
-                      >
-                        <Ban className="h-3.5 w-3.5" /> Reject
-                      </Button>
-                    </>
-                  ) : (
-                    <Badge variant={r.status === "paid" ? "secondary" : "destructive"}>
-                      {r.status}
-                    </Badge>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </Shell>
+    <>
+      <Shell
+        title="Payouts Management"
+        subtitle={(rows.data ?? []).filter((r) => r.status === "requested").length + " pending · " + money(pendingTotal) + " currently on hold"}
+        query={rows}
+        toolbar={
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Driver, UPI or status" className="h-9 w-44 pl-7 text-xs sm:w-64" />
+          </div>
+        }
+      >
+        {list.length === 0 ? (
+          <p className="p-6 text-center text-sm text-muted-foreground">No payout requests.</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {list.map((r) => {
+              const p = people.data?.[r.driver_id];
+              return (
+                <li key={r.id} className="px-4 py-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-secondary">{p?.name ?? "Driver"} <span className="text-xs font-normal text-muted-foreground">{p?.phone ?? ""}</span></p>
+                      <p className="text-xs text-muted-foreground">{when(r.created_at)} · {r.method}</p>
+                      <p className="mt-1 text-sm font-medium text-secondary">UPI: {r.upi_id ?? r.note?.replace(/^UPI:\s*/, "") ?? "—"}</p>
+                      {r.utr_number && <p className="text-xs text-success">UTR: {r.utr_number}</p>}
+                      {r.rejection_reason && <p className="text-xs text-destructive">Rejection: {r.rejection_reason}</p>}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="font-display text-lg text-secondary">{money(r.amount)}</span>
+                      {r.status === "requested" ? (
+                        <>
+                          <Button size="sm" disabled={settle.isPending} onClick={() => { setAction({ id: r.id, status: "approved" }); setUtr(""); }}>
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Approve
+                          </Button>
+                          <Button size="sm" variant="outline" disabled={settle.isPending} onClick={() => { setAction({ id: r.id, status: "rejected" }); setReason(""); }}>
+                            <Ban className="h-3.5 w-3.5" /> Reject
+                          </Button>
+                        </>
+                      ) : (
+                        <Badge variant={r.status === "paid" ? "secondary" : "destructive"}>{r.status}</Badge>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Shell>
+
+      <Dialog open={!!action} onOpenChange={(open) => { if (!open) { setAction(null); setUtr(""); setReason(""); } }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{action?.status === "approved" ? "Approve payout" : "Reject payout"}</DialogTitle></DialogHeader>
+          {action?.status === "approved" ? (
+            <div>
+              <p className="mb-2 text-sm text-muted-foreground">Enter the UTR / transaction reference after making the UPI transfer.</p>
+              <Input value={utr} onChange={(e) => setUtr(e.target.value)} placeholder="UTR / transaction reference" autoComplete="off" />
+            </div>
+          ) : (
+            <div>
+              <p className="mb-2 text-sm text-muted-foreground">Enter a reason. The held amount will be automatically returned to the driver's wallet.</p>
+              <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Rejection reason" autoComplete="off" />
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAction(null)}>Cancel</Button>
+            <Button disabled={settle.isPending || (action?.status === "approved" ? utr.trim().length < 3 : reason.trim().length < 3)} onClick={() => {
+              if (!action) return;
+              settle.mutate({ id: action.id, status: action.status, utrNumber: action.status === "approved" ? utr.trim() : undefined, rejectionReason: action.status === "rejected" ? reason.trim() : undefined });
+            }}>
+              {settle.isPending ? "Processing…" : action?.status === "approved" ? "Approve payout" : "Reject & refund"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
