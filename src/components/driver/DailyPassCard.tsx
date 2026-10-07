@@ -19,9 +19,7 @@ type PassRow = {
 function formatRemaining(ms: number) {
   const remainingMs = Math.max(0, ms);
   const hours = Math.floor(remainingMs / (1000 * 60 * 60));
-  const minutes = Math.floor(
-    (remainingMs % (1000 * 60 * 60)) / (1000 * 60),
-  );
+  const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
   return hours + "h " + minutes.toString().padStart(2, "0") + "m";
 }
 
@@ -124,7 +122,8 @@ export function DailyPassCard() {
             Expires {new Date(active.ends_at).toLocaleString("en-IN")}
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            Completed rides during the active pass receive 100% of the fare with no MiniPort commission.
+            Completed rides during the active pass receive 100% of the fare with no MiniPort
+            commission.
           </p>
         </div>
       ) : (
@@ -133,9 +132,7 @@ export function DailyPassCard() {
             <p className="flex items-center gap-1 text-sm font-semibold text-secondary">
               <IndianRupee className="h-4 w-4 text-primary" /> ₹99 from wallet
             </p>
-            <p className="text-xs text-muted-foreground">
-              Wallet balance: ₹{balance.toFixed(0)}
-            </p>
+            <p className="text-xs text-muted-foreground">Wallet balance: ₹{balance.toFixed(0)}</p>
           </div>
           {balance >= 99 ? (
             <Button onClick={() => activate.mutate()} disabled={activate.isPending}>

@@ -452,15 +452,26 @@ function CustomerPage() {
 
             {catalogue.isLoading ? (
               <div className="mt-2 space-y-2">
-                {[0, 1, 2].map((i) => <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />)}
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
+                ))}
               </div>
             ) : catalogue.isError ? (
               <div className="mt-2 rounded-lg border p-4 text-center text-sm">
                 <p className="text-muted-foreground">We couldn&apos;t load the vehicle list.</p>
-                <Button size="sm" variant="outline" className="mt-2" onClick={() => catalogue.refetch()}>Retry</Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() => catalogue.refetch()}
+                >
+                  Retry
+                </Button>
               </div>
             ) : vehicles.length === 0 ? (
-              <p className="mt-2 rounded-lg border p-4 text-center text-sm text-muted-foreground">No vehicles are available for booking right now.</p>
+              <p className="mt-2 rounded-lg border p-4 text-center text-sm text-muted-foreground">
+                No vehicles are available for booking right now.
+              </p>
             ) : (
               <VehicleSelector
                 vehicles={vehicles}
@@ -653,11 +664,19 @@ function CustomerPage() {
                       vehicleType={vehicleLabel(b.vehicle_type)}
                       currentFare={Number(b.fare) || 0}
                       paymentStatus={b.payment_status}
-                      elapsedSeconds={Math.max(0, Math.floor((Date.now() - new Date(b.created_at).getTime()) / 1000))}
+                      elapsedSeconds={Math.max(
+                        0,
+                        Math.floor((Date.now() - new Date(b.created_at).getTime()) / 1000),
+                      )}
                       onBoost={(_amount, _newFare) => {
                         void qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
                       }}
-                      onAlternative={(alternative) => toast.info(alternative + " selected — a new vehicle search can be started from this booking.")}
+                      onAlternative={(alternative) =>
+                        toast.info(
+                          alternative +
+                            " selected — a new vehicle search can be started from this booking.",
+                        )
+                      }
                     />
                   )}
                   {(b.status === "accepted" || b.status === "in_progress") && (

@@ -3,7 +3,13 @@ import { MapPin, Mic, Send, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -39,7 +45,13 @@ export function QuickChatModal({
   const [quickOpen, setQuickOpen] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const initials = useMemo(
-    () => counterpartName.split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase() || "DR",
+    () =>
+      counterpartName
+        .split(/\s+/)
+        .map((p) => p[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase() || "DR",
     [counterpartName],
   );
 
@@ -61,10 +73,15 @@ export function QuickChatModal({
       .channel("booking-chat-" + bookingId)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "booking_messages", filter: "booking_id=eq." + bookingId },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "booking_messages",
+          filter: "booking_id=eq." + bookingId,
+        },
         (payload) => {
           const row = payload.new as ChatMessage;
-          setMessages((prev) => prev.some((m) => m.id === row.id) ? prev : [...prev, row]);
+          setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
         },
       )
       .subscribe();
@@ -94,7 +111,11 @@ export function QuickChatModal({
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => void send("Location: " + coords.latitude.toFixed(5) + ", " + coords.longitude.toFixed(5) + " 📍", "location"),
+      ({ coords }) =>
+        void send(
+          "Location: " + coords.latitude.toFixed(5) + ", " + coords.longitude.toFixed(5) + " 📍",
+          "location",
+        ),
       () => toast.error("Location permission is required to share your location"),
       { enableHighAccuracy: true, timeout: 10000 },
     );
@@ -119,7 +140,9 @@ export function QuickChatModal({
       <SheetContent side="bottom" className="flex h-[88vh] flex-col rounded-t-2xl p-0">
         <SheetHeader className="border-b px-4 py-4 text-left">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">{initials}</div>
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+              {initials}
+            </div>
             <div className="min-w-0 flex-1">
               <SheetTitle className="truncate">Message {counterpartName}</SheetTitle>
               <SheetDescription>Booking #{bookingId.slice(0, 8).toUpperCase()}</SheetDescription>
@@ -141,7 +164,13 @@ export function QuickChatModal({
             </CollapsibleTrigger>
             <CollapsibleContent className="grid gap-2 sm:grid-cols-2">
               {QUICK_REPLIES.map((reply) => (
-                <Button key={reply} type="button" variant="outline" className="justify-start text-left" onClick={() => void send(reply)}>
+                <Button
+                  key={reply}
+                  type="button"
+                  variant="outline"
+                  className="justify-start text-left"
+                  onClick={() => void send(reply)}
+                >
                   {reply}
                 </Button>
               ))}
@@ -150,12 +179,26 @@ export function QuickChatModal({
 
           <div className="mt-4 space-y-2">
             {messages.length === 0 ? (
-              <div className="rounded-xl bg-muted/50 p-4 text-center text-sm text-muted-foreground">Start a safe in-app conversation with your captain.</div>
+              <div className="rounded-xl bg-muted/50 p-4 text-center text-sm text-muted-foreground">
+                Start a safe in-app conversation with your captain.
+              </div>
             ) : (
               messages.map((m) => (
-                <div key={m.id} className={m.sender_id === user?.id ? "ml-auto max-w-[82%] rounded-2xl rounded-br-sm bg-primary px-3 py-2 text-sm text-primary-foreground" : "max-w-[82%] rounded-2xl rounded-bl-sm bg-muted px-3 py-2 text-sm"}>
+                <div
+                  key={m.id}
+                  className={
+                    m.sender_id === user?.id
+                      ? "ml-auto max-w-[82%] rounded-2xl rounded-br-sm bg-primary px-3 py-2 text-sm text-primary-foreground"
+                      : "max-w-[82%] rounded-2xl rounded-bl-sm bg-muted px-3 py-2 text-sm"
+                  }
+                >
                   <p>{m.body}</p>
-                  <p className="mt-1 text-[10px] opacity-70">{new Date(m.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</p>
+                  <p className="mt-1 text-[10px] opacity-70">
+                    {new Date(m.created_at).toLocaleTimeString("en-IN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
                 </div>
               ))
             )}
@@ -164,12 +207,38 @@ export function QuickChatModal({
 
         <div className="border-t bg-background p-3">
           <div className="mb-2 flex gap-2">
-            <Button type="button" variant="outline" size="icon" onClick={() => void startVoice()} aria-label="Voice message"><Mic className="h-4 w-4" /></Button>
-            <Button type="button" variant="outline" size="icon" onClick={shareLocation} aria-label="Share location"><MapPin className="h-4 w-4" /></Button>
-            <Input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void send()} placeholder="Type a message…" className="min-w-0" />
-            <Button type="button" size="icon" onClick={() => void send()} aria-label="Send message"><Send className="h-4 w-4" /></Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => void startVoice()}
+              aria-label="Voice message"
+            >
+              <Mic className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={shareLocation}
+              aria-label="Share location"
+            >
+              <MapPin className="h-4 w-4" />
+            </Button>
+            <Input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && void send()}
+              placeholder="Type a message…"
+              className="min-w-0"
+            />
+            <Button type="button" size="icon" onClick={() => void send()} aria-label="Send message">
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
-          <p className="text-center text-[10px] text-muted-foreground">Never share OTP, bank details, passwords or personal contact details.</p>
+          <p className="text-center text-[10px] text-muted-foreground">
+            Never share OTP, bank details, passwords or personal contact details.
+          </p>
         </div>
       </SheetContent>
     </Sheet>
