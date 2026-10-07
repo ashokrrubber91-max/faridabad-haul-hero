@@ -363,6 +363,20 @@ function DriverPage() {
   const ridesToday = todayCompleted.length;
   const activeJob = mine.find((b) => b.status === "accepted" || b.status === "in_progress");
 
+  const customerProfile = useQuery({
+    queryKey: ["driver-active-customer", activeJob?.customer_id],
+    enabled: !!activeJob?.customer_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("name, phone")
+        .eq("id", activeJob!.customer_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const cash = wallet.data ?? 0;
   const walletLow = cash < 100;
 
@@ -540,6 +554,7 @@ function DriverPage() {
       {activeJob && (
         <ActiveJobCard
           job={activeJob}
+          customerPhone={customerProfile.data?.phone ?? null}
           onVerify={(otp, next, podPath) =>
             verifyOtp.mutate({
               id: activeJob.id,
@@ -808,6 +823,7 @@ function playRideAlert() {
 
 function ActiveJobCard({
   job,
+  customerPhone,
   onVerify,
   onStage,
   stageBusy,
@@ -815,6 +831,7 @@ function ActiveJobCard({
   pending,
 }: {
   job: AnyRow;
+  customerPhone?: string | null;
   onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null) => void;
   onStage: (
     action: "start_loading" | "stop_loading" | "start_unloading" | "stop_unloading",
@@ -882,6 +899,25 @@ function ActiveJobCard({
         {isCash
           ? `Payment Mode: Cash — Collect ₹${Number(job.fare).toFixed(0)} from customer`
           : `Payment Mode: Online — ₹${net.toFixed(0)} will be added to your wallet`}
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2 rounded-md border border-border bg-muted/20 p-3 text-xs">
+        <div><span className="text-muted-foreground">Distance</span><p className="font-semibold text-secondary">{Number(job.distance_km || 0).toFixed(1)} km</p></div>
+        <div><span className="text-muted-foreground">Helpers</span><p className="font-semibold text-secondary">{Number(job.helper_count || 0)}</p></div>
+        <div><span className="text-muted-foreground">Base fare</span><p className="font-semibold text-secondary">₹{(Number(job.fare || 0) - Number(job.fare_boost || 0)).toFixed(0)}</p></div>
+        <div><span className="text-muted-foreground">Fare boost</span><p className="font-semibold text-secondary">₹{Number(job.fare_boost || 0).toFixed(0)}</p></div>
+        <div><span className="text-muted-foreground">Helper fee</span><p className="font-semibold text-secondary">₹{Number(job.helper_fee || job.helper_charge || 0).toFixed(0)}</p></div>
+        <div><span className="text-muted-foreground">Driver net</span><p className="font-semibold text-success">₹{net.toFixed(0)}</p></div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-primary/20 bg-primary/5 p-3 text-xs">
+        <span className="font-semibold text-secondary">Trip status:</span>
+        <Badge variant="outline">{job.status === "accepted" ? "Accepted / Pickup" : "In transit"}</Badge>
+        {customerPhone && (
+          <Button asChild size="sm" variant="outline" className="ml-auto">
+            <a href={"tel:" + customerPhone}><Phone className="h-3.5 w-3.5" /> Call customer</a>
+          </Button>
+        )}
       </div>
 
       <WaitingChargesCard booking={job} vehicle={vehicle} />
