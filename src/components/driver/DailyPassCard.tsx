@@ -1,5 +1,6 @@
 import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Clock3, IndianRupee, ShieldCheck, Zap, FlaskConical } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
