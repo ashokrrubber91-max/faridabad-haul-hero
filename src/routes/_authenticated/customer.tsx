@@ -821,6 +821,9 @@ function CustomerPage() {
                   {(b.status === "accepted" || b.status === "in_progress") && (
                     <TripCodes bookingId={b.id} status={b.status} />
                   )}
+                  {Boolean(b.is_multi_stop) && (b.status === "accepted" || b.status === "in_progress") && (
+                    <CustomerStopOtps bookingId={b.id} />
+                  )}
                   {canCancel(b.status) && (
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                       <p className="text-xs text-muted-foreground">
@@ -1034,6 +1037,43 @@ function CustomerPage() {
         }}
       />
       <SupportChat role="customer" />
+    </div>
+  );
+}
+
+function CustomerStopOtps({ bookingId }: { bookingId: string }) {
+  const query = useQuery({
+    queryKey: ["booking-stop-otps", bookingId],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_booking_stop_otps", {
+        _booking_id: bookingId,
+      });
+      if (error) throw error;
+      return (data ?? []) as Array<{ sequence: number; otp: string; verified_at: string | null }>;
+    },
+    refetchInterval: MINIPORT_TEST_MODE ? 3000 : 10000,
+  });
+
+  if (query.isLoading || query.isError || !query.data?.length) return null;
+
+  return (
+    <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
+      <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+        Extra stop verification codes
+      </p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        {query.data.map((stop) => (
+          <div key={stop.sequence} className="flex items-center justify-between rounded-md bg-background px-3 py-2">
+            <span className="text-xs text-muted-foreground">Stop {stop.sequence}</span>
+            <span className="font-mono text-lg font-bold tracking-[0.25em] text-secondary">
+              {stop.verified_at ? "Verified" : stop.otp}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-[11px] text-muted-foreground">
+        Give the code to the person receiving the goods at that stop.
+      </p>
     </div>
   );
 }
