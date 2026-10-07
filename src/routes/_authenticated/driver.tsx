@@ -39,6 +39,7 @@ import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
 import { useVehicleTypes, type VehicleType } from "@/lib/vehicles";
 import { sweepStaleBookings } from "@/lib/notifications.functions";
+import { MINIPORT_TEST_MODE } from "@/lib/testing";
 
 export const Route = createFileRoute("/_authenticated/driver")({
   head: () => ({ meta: [{ title: "Driver — MiniPort" }] }),
