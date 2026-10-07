@@ -1,3 +1,4 @@
+import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, Gift, MessageCircle, Share2, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -26,8 +27,8 @@ export function ReferralCard() {
     setLoading(true);
     try {
       const [profileResult, referralsResult] = await Promise.all([
-        (supabase as any).from("profiles").select("referral_code").eq("id", user.id).maybeSingle(),
-        (supabase as any)
+        (supabase as unknown as UntypedClient).from("profiles").select("referral_code").eq("id", user.id).maybeSingle(),
+        (supabase as unknown as UntypedClient)
           .from("referrals")
           .select("id,status,referred_type,reward_amount,created_at,rewarded_at")
           .eq("referrer_id", user.id)

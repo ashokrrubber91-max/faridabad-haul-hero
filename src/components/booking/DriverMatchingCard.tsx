@@ -1,3 +1,4 @@
+import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Plus, TrendingUp } from "lucide-react";
@@ -53,7 +54,7 @@ export function DriverMatchingCard({
     queryKey: ["driver-search-stats", bookingId],
     enabled: !!bookingId,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_booking_driver_search_stats", {
+      const { data, error } = await (supabase as unknown as UntypedClient).rpc("get_booking_driver_search_stats", {
         _booking_id: bookingId,
       });
       if (error) throw error;
@@ -78,7 +79,7 @@ export function DriverMatchingCard({
       return;
     }
     try {
-      const { data, error } = await supabase.rpc("set_booking_fare_boost", {
+      const { data, error } = await (supabase as unknown as UntypedClient).rpc("set_booking_fare_boost", {
         _booking_id: bookingId,
         _boost: amount,
       });

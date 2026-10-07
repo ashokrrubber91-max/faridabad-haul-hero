@@ -1,3 +1,4 @@
+import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -281,7 +282,7 @@ export const confirmWalletTopupPayment = createServerFn({ method: "POST" })
       throw new Error("Payment was not completed");
     }
 
-    const { data: credit, error: creditError } = await (supabaseAdmin as any).rpc(
+    const { data: credit, error: creditError } = await (supabaseAdmin as unknown as UntypedClient).rpc(
       "credit_driver_wallet_topup",
       {
         _payment_id: record.id,

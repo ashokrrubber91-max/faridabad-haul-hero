@@ -1,3 +1,4 @@
+import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Clock3, IndianRupee, ShieldCheck, Zap } from "lucide-react";
@@ -37,7 +38,7 @@ export function DailyPassCard() {
     queryKey: ["driver-daily-pass", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown as UntypedClient)
         .from("driver_daily_passes")
         .select("id,driver_id,starts_at,ends_at,amount,status")
         .eq("driver_id", user!.id)
@@ -69,7 +70,7 @@ export function DailyPassCard() {
 
   const activate = useMutation({
     mutationFn: async () => {
-      const { data, error } = await (supabase as any).rpc("activate_driver_daily_pass");
+      const { data, error } = await (supabase as unknown as UntypedClient).rpc("activate_driver_daily_pass");
       if (error) throw error;
       return data as PassRow;
     },

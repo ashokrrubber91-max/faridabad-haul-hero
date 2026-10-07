@@ -1,3 +1,4 @@
+import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
@@ -176,7 +177,7 @@ export const verifyPhoneOtp = createServerFn({ method: "POST" })
       // Store referral attribution server-side; referral rewards are awarded only
       // by the database after the invited user's qualifying ride action.
       if (data.referralCode) {
-        await (supabaseAdmin as any).rpc("attach_referral_to_new_user", {
+        await (supabaseAdmin as unknown as UntypedClient).rpc("attach_referral_to_new_user", {
           _referred_user_id: user.id,
           _referral_code: data.referralCode,
           _referred_type: data.requestedRole === "driver" ? "driver" : "customer",
