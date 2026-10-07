@@ -443,6 +443,219 @@ export function DisputesTab({
 }
 
 /* ------------------------------------------------------------------ */
+/* Trip issues                                                         */
+/* ------------------------------------------------------------------ */
+
+export function TripIssuesTab({
+  profileMap,
+}: {
+  profileMap: Map<string, { name: string; phone: string }>;
+}) {
+  const qc = useQueryClient();
+  const [q, setQ] = useState("");
+  const [filter, setFilter] = useState<"all" | "open" | "resolved">("open");
+  const [resolving, setResolving] = useState<AnyRow | null>(null);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const rows = useQuery({
+    queryKey: ["admin-trip-issues"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("trip_issues")
+        .select("id, booking_id, reporter_id, issue_type, created_at, resolved_at, resolved_by, resolution_note")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const resolve = async () => {
+    if (!resolving || note.trim().length < 2) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("admin_resolve_trip_issue", {
+      _issue_id: resolving.id,
+      _resolution_note: note.trim(),
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Trip issue marked resolved");
+    setResolving(null);
+    setNote("");
+    qc.invalidateQueries({ queryKey: ["admin-trip-issues"] });
+  };
+
+  const filtered = (rows.data ?? []).filter((issue) => {
+    const state = issue.resolved_at ? "resolved" : "open";
+    if (filter !== "all" && state !== filter) return false;
+    if (!q.trim()) return true;
+    const needle = q.toLowerCase();
+    const reporter = profileMap.get(issue.reporter_id);
+    return (
+      String(issue.issue_type).toLowerCase().includes(needle) ||
+      String(issue.booking_id).toLowerCase().includes(needle) ||
+      (reporter?.name ?? "").toLowerCase().includes(needle) ||
+      (reporter?.phone ?? "").includes(q.trim())
+    );
+  });
+
+  return (
+    <Shell
+      title="Trip issues"
+      subtitle="Customer/driver reports — filter and resolve them from one place."
+      query={rows}
+      toolbar={
+        <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+          <SelectTrigger className="h-9 w-28 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="open">Open</SelectItem>
+            <SelectItem value="resolved">Resolved</SelectItem>
+            <SelectItem value="all">All</SelectItem>
+          </SelectContent>
+        </Select>
+      }
+    >
+      <div className="border-b border-border px-4 py-3">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Issue, booking, person" className="h-9 pl-7 text-xs" />
+        </div>
+      </div>
+      {filtered.length === 0 ? (
+        <p className="p-6 text-center text-sm text-muted-foreground">No trip issues in this filter.</p>
+      ) : (
+        <ul className="divide-y divide-border">
+          {filtered.map((issue) => {
+            const reporter = profileMap.get(issue.reporter_id);
+            return (
+              <li key={issue.id} className="px-4 py-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-secondary">{issue.issue_type}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Booking {String(issue.booking_id).slice(0, 8).toUpperCase()} · {reporter?.name ?? "User"} {reporter?.phone ?? ""} · {when(issue.created_at)}
+                    </p>
+                    {issue.resolved_at && (
+                      <p className="mt-1 text-xs text-success">
+                        Resolved {when(issue.resolved_at)}{issue.resolution_note ? " · " + issue.resolution_note : ""}
+                      </p>
+                    )}
+                  </div>
+                  {issue.resolved_at ? (
+                    <Badge className="bg-success text-success-foreground hover:bg-success">
+                      Resolved
+                    </Badge>
+                  ) : (
+                    <Button size="sm" onClick={() => { setResolving(issue); setNote(""); }}>
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Resolve
+                    </Button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <Dialog open={!!resolving} onOpenChange={(open) => { if (!open) { setResolving(null); setNote(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Resolve trip issue</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm text-secondary">{resolving?.issue_type}</p>
+            <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Resolution note" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResolving(null)}>Cancel</Button>
+            <Button onClick={resolve} disabled={busy || note.trim().length < 2}>
+              {busy ? "Resolving..." : "Mark resolved"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Shell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Driver booking passes                                               */
+/* ------------------------------------------------------------------ */
+
+export function DriverPassesTab() {
+  const rows = useQuery({
+    queryKey: ["admin-driver-booking-passes"],
+    queryFn: async () => {
+      const { data: passes, error } = await supabase
+        .from("driver_booking_passes")
+        .select("id, booking_id, driver_id, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+
+      const bookingIds = Array.from(new Set((passes ?? []).map((p) => p.booking_id)));
+      const driverIds = Array.from(new Set((passes ?? []).map((p) => p.driver_id)));
+      const [bookingResult, driverResult] = await Promise.all([
+        bookingIds.length
+          ? supabase.from("bookings").select("id,status,expires_at,pickup_address,drop_address").in("id", bookingIds)
+          : Promise.resolve({ data: [], error: null }),
+        driverIds.length
+          ? supabase.from("profiles").select("id,name,phone").in("id", driverIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      if (bookingResult.error) throw bookingResult.error;
+      if (driverResult.error) throw driverResult.error;
+
+      const bookings = new Map((bookingResult.data ?? []).map((b) => [b.id, b]));
+      const drivers = new Map((driverResult.data ?? []).map((d) => [d.id, d]));
+      return (passes ?? []).map((p) => {
+        const b = bookings.get(p.booking_id);
+        const d = drivers.get(p.driver_id);
+        const expired = b?.status !== "pending" || (!!b?.expires_at && new Date(b.expires_at).getTime() <= Date.now());
+        return { ...p, booking: b, driver: d, state: expired ? "expired" : "active" };
+      });
+    },
+  });
+
+  const active = (rows.data ?? []).filter((p) => p.state === "active").length;
+  const expired = (rows.data ?? []).filter((p) => p.state === "expired").length;
+
+  return (
+    <Shell
+      title="Driver passes monitor"
+      subtitle={${active} active · {${expired} expired"
+      query={rows}
+    >
+      {(rows.data ?? []).length === 0 ? (
+        <p className="p-6 text-center text-sm text-muted-foreground">No driver passes recorded yet.</p>
+      ) : (
+        <ul className="divide-y divide-border">
+          {(rows.data ?? []).map((p) => (
+            <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-secondary">
+                  {p.driver?.name ?? "Driver"} <span className="font-normal text-muted-foreground">{p.driver?.phone ?? ""}</span>
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {p.booking?.pickup_address ?? "Pickup"} → {p.booking?.drop_address ?? "Drop"}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Passed {when(p.created_at)} · booking {String(p.booking_id).slice(0, 8).toUpperCase()}
+                </p>
+              </div>
+              <Badge className={p.state === "active" ? "bg-success text-success-foreground hover:bg-success" : "bg-muted text-muted-foreground hover:bg-muted"}>
+                {p.state}
+              </Badge>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Shell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Audit trail & security alerts                                       */
 /* ------------------------------------------------------------------ */
 
