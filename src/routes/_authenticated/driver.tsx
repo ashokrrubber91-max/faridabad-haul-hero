@@ -377,6 +377,66 @@ function DriverPage() {
     },
   });
 
+  const activeStops = useQuery({
+    queryKey: ["driver-active-stops", activeJob?.id],
+    enabled: !!activeJob?.id && Boolean(activeJob?.is_multi_stop),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("booking_stops")
+        .select("id, sequence, kind, address, latitude, longitude, contact_name, contact_phone, status, arrived_at, verified_at")
+        .eq("booking_id", activeJob!.id)
+        .eq("kind", "stop")
+        .order("sequence", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+    refetchInterval: MINIPORT_TEST_MODE ? 3000 : 10000,
+  });
+
+  const markStopArrived = useMutation({
+    mutationFn: async ({ bookingId, sequence }: { bookingId: string; sequence: number }) => {
+      const { data, error } = await supabase.rpc("mark_booking_stop_arrived", {
+        _booking_id: bookingId,
+        _sequence: sequence,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Arrival confirmed — enter the stop OTP");
+      void qc.invalidateQueries({ queryKey: ["driver-active-stops", activeJob?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const verifyStop = useMutation({
+    mutationFn: async ({
+      bookingId,
+      sequence,
+      otp,
+    }: {
+      bookingId: string;
+      sequence: number;
+      otp: string;
+    }) => {
+      const { data, error } = await supabase.rpc("verify_booking_stop", {
+        _booking_id: bookingId,
+        _sequence: sequence,
+        _otp: otp,
+      });
+      if (error) throw error;
+      const result = (data ?? {}) as { ok?: boolean; message?: string };
+      if (!result.ok) throw new Error(result.message || "Could not verify this stop");
+      return result;
+    },
+    onSuccess: () => {
+      toast.success("Stop verified — next navigation unlocked");
+      void qc.invalidateQueries({ queryKey: ["driver-active-stops", activeJob?.id] });
+      void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const cash = wallet.data ?? 0;
   const walletLow = cash < 100;
 
@@ -567,6 +627,10 @@ function DriverPage() {
           stageBusy={setStage.isPending}
           vehicle={vehicleFor(activeJob.vehicle_type)}
           pending={verifyOtp.isPending}
+          stops={activeStops.data ?? []}
+          onStopArrived={(sequence) => markStopArrived.mutate({ bookingId: activeJob.id, sequence })}
+          onStopVerify={(sequence, otp) => verifyStop.mutate({ bookingId: activeJob.id, sequence, otp })}
+          stopBusy={markStopArrived.isPending || verifyStop.isPending}
         />
       )}
 
@@ -829,6 +893,10 @@ function ActiveJobCard({
   stageBusy,
   vehicle,
   pending,
+  stops,
+  onStopArrived,
+  onStopVerify,
+  stopBusy,
 }: {
   job: AnyRow;
   customerPhone?: string | null;
@@ -839,6 +907,17 @@ function ActiveJobCard({
   stageBusy: boolean;
   vehicle?: VehicleType;
   pending: boolean;
+  stops: Array<{
+    id: string;
+    sequence: number;
+    address: string;
+    latitude: number | null;
+    longitude: number | null;
+    status: string;
+  }>;
+  onStopArrived: (sequence: number) => void;
+  onStopVerify: (sequence: number, otp: string) => void;
+  stopBusy: boolean;
 }) {
   const [otp, setOtp] = useState("");
   const [podPath, setPodPath] = useState<string | null>(null);
@@ -867,6 +946,9 @@ function ActiveJobCard({
     toast.success("Proof photo attached");
   };
   const next = job.status === "accepted" ? "in_progress" : "completed";
+  const nextStop = stops.find((s) => s.status !== "verified" && s.status !== "completed") ?? null;
+  const [stopOtp, setStopOtp] = useState("");
+
   const label = next === "in_progress" ? "Verify Pickup OTP" : "Verify Drop OTP";
   const contact = extractContact(job.notes, next === "in_progress" ? "Sender" : "Receiver");
   const commission = Math.round(Number(job.fare) * (Number(job.commission_rate) || 0.1));
@@ -903,6 +985,90 @@ function ActiveJobCard({
         lng={job.pickup_lng}
       />
       <JobAddress label="Drop" address={job.drop_address} lat={job.drop_lat} lng={job.drop_lng} />
+
+      {stops.length > 0 && (
+        <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+            Multi-stop itinerary
+          </p>
+          <div className="mt-2 space-y-2">
+            {stops.map((stop) => (
+              <div key={stop.id} className="flex items-center gap-2 rounded-md border bg-background p-2">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                  {stop.sequence}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-secondary">{stop.address}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {stop.status === "verified" ? "✓ Verified" : stop.status === "arrived" ? "Arrival confirmed · OTP required" : "Pending"}
+                  </p>
+                </div>
+                {stop.status === "verified" && <Badge className="bg-success text-success-foreground hover:bg-success">Done</Badge>}
+              </div>
+            ))}
+          </div>
+
+          {job.status === "in_progress" && nextStop && (
+            <div className="mt-3 border-t border-primary/20 pt-3">
+              <p className="text-xs font-semibold text-secondary">Next stop: Stop {nextStop.sequence}</p>
+              <p className="mt-1 text-sm text-secondary">{nextStop.address}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={stopBusy || nextStop.status === "arrived"}
+                  onClick={() => onStopArrived(nextStop.sequence)}
+                >
+                  {nextStop.status === "arrived" ? "Arrival confirmed" : "Confirm arrival"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={stopBusy || nextStop.status !== "arrived" || stopOtp.length !== 4}
+                  onClick={() => {
+                    onStopVerify(nextStop.sequence, stopOtp);
+                    setStopOtp("");
+                  }}
+                >
+                  Verify stop OTP
+                </Button>
+              </div>
+              {nextStop.status === "arrived" && (
+                <div className="mt-2 flex gap-2">
+                  <Input
+                    inputMode="numeric"
+                    maxLength={4}
+                    value={stopOtp}
+                    onChange={(e) => setStopOtp(e.target.value.replace(/\D/g, ""))}
+                    placeholder="4-digit OTP"
+                    className="max-w-[9rem] text-center tracking-widest"
+                  />
+                </div>
+              )}
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Navigation to the next stop unlocks only after arrival and OTP verification.
+              </p>
+              {nextStop.status === "verified" && (
+                <Button
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => {
+                    const lat = nextStop.latitude;
+                    const lng = nextStop.longitude;
+                    const url =
+                      typeof lat === "number" && typeof lng === "number"
+                        ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`
+                        : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(nextStop.address)}&travelmode=driving`;
+                    window.open(url, "_blank", "noopener,noreferrer");
+                  }}
+                >
+                  Navigate to next stop
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div
         className={`mt-3 rounded-md px-3 py-2 text-sm ${isCash ? "bg-warning/15 text-warning-foreground" : "bg-success/15 text-success-foreground"}`}
