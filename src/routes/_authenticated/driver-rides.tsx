@@ -151,8 +151,12 @@ function RideCard({ ride }: { ride: AnyRow }) {
       {(ride.status === "accepted" || ride.status === "in_progress") && (
         <div className="mt-3 flex items-center justify-between gap-2 rounded-lg border bg-muted/30 p-3">
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Active trip chat</p>
-            <p className="truncate text-sm font-semibold text-secondary">{contact.data ?? "Customer"}</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+              Active trip chat
+            </p>
+            <p className="truncate text-sm font-semibold text-secondary">
+              {contact.data ?? "Customer"}
+            </p>
           </div>
           <Button size="sm" onClick={() => setChatOpen(true)}>
             <MessageCircle className="mr-1.5 h-4 w-4" /> Message customer
@@ -193,7 +197,12 @@ function RideCard({ ride }: { ride: AnyRow }) {
           )}
         </div>
       )}
-      <QuickChatModal open={chatOpen} onOpenChange={setChatOpen} bookingId={ride.id} counterpartName={contact.data ?? "Customer"} />
+      <QuickChatModal
+        open={chatOpen}
+        onOpenChange={setChatOpen}
+        bookingId={ride.id}
+        counterpartName={contact.data ?? "Customer"}
+      />
     </article>
   );
 }

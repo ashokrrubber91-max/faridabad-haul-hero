@@ -5,10 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { createWalletTopupOrder, confirmWalletTopupPayment, getPaymentConfig } from "@/lib/payments.functions";
+import {
+  createWalletTopupOrder,
+  confirmWalletTopupPayment,
+  getPaymentConfig,
+} from "@/lib/payments.functions";
 import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
 
 export function DriverTopupDialog() {
@@ -29,7 +38,8 @@ export function DriverTopupDialog() {
 
     try {
       const config = await getPaymentConfig();
-      if (!config.configured || !config.keyId) throw new Error("Online payments are not configured yet.");
+      if (!config.configured || !config.keyId)
+        throw new Error("Online payments are not configured yet.");
 
       const order = await createWalletTopupOrder({ data: { amount: value } });
       const result = await openRazorpayCheckout({
@@ -87,10 +97,10 @@ export function DriverTopupDialog() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={payOnline}>
-              Pay ₹{amount || "0"} Online
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
             </Button>
+            <Button onClick={payOnline}>Pay ₹{amount || "0"} Online</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

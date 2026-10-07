@@ -257,7 +257,11 @@ export function LocationSearchOverlay({
                       contactPhone: a.contact_phone ?? undefined,
                       kind: a.kind,
                     };
-                    if (onSavedPick && typeof a.latitude === "number" && typeof a.longitude === "number") {
+                    if (
+                      onSavedPick &&
+                      typeof a.latitude === "number" &&
+                      typeof a.longitude === "number"
+                    ) {
                       onSavedPick(p);
                     } else {
                       onPick(p);

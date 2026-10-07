@@ -94,8 +94,6 @@ export const createBooking = createServerFn({ method: "POST" })
         fare: Math.round(
           Number(vt.base_fare) + Number(vt.per_km_fare) * route.distanceKm + helperFee,
         ),
-        helper_count: helperCount,
-        helper_fee: helperFee,
         coupon_code: data.couponCode,
         coins_redeemed: data.coins,
         payment_method: data.paymentMethod,
