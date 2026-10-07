@@ -216,6 +216,9 @@ export type Database = {
           longitude: number | null
           place_id: string | null
           sequence: number
+          status: string
+          arrived_at: string | null
+          verified_at: string | null
         }
         Insert: {
           address: string
@@ -229,6 +232,9 @@ export type Database = {
           longitude?: number | null
           place_id?: string | null
           sequence: number
+          status?: string
+          arrived_at?: string | null
+          verified_at?: string | null
         }
         Update: {
           address?: string
@@ -242,6 +248,9 @@ export type Database = {
           longitude?: number | null
           place_id?: string | null
           sequence?: number
+          status?: string
+          arrived_at?: string | null
+          verified_at?: string | null
         }
         Relationships: [
           {
@@ -259,6 +268,9 @@ export type Database = {
             | Database["public"]["Enums"]["cancellation_category"]
             | null
           cancellation_reason: string | null
+          is_multi_stop: boolean
+          stops: Json
+          total_stops: number
           cancelled_at: string | null
           cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
           coins_redeemed: number
@@ -282,6 +294,9 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
+          stops: Json
+          total_stops: number
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -332,6 +347,9 @@ export type Database = {
           helper_count?: number
           helper_fee?: number
           id?: string
+          is_multi_stop?: boolean
+          stops?: Json
+          total_stops?: number
           loading_overtime_minutes?: number
           loading_started_at?: string | null
           loading_stopped_at?: string | null
@@ -382,6 +400,9 @@ export type Database = {
           helper_count?: number
           helper_fee?: number
           id?: string
+          is_multi_stop?: boolean
+          stops?: Json
+          total_stops?: number
           loading_overtime_minutes?: number
           loading_started_at?: string | null
           loading_stopped_at?: string | null
@@ -2609,6 +2630,18 @@ export type Database = {
       ensure_my_referral_code: { Args: never; Returns: string }
       expire_stale_bookings: { Args: never; Returns: number }
       generate_unique_referral_code: { Args: never; Returns: string }
+      get_booking_stop_otps: {
+        Args: { _booking_id: string }
+        Returns: Json
+      }
+      mark_booking_stop_arrived: {
+        Args: { _booking_id: string; _sequence: number }
+        Returns: Json
+      }
+      verify_booking_stop: {
+        Args: { _booking_id: string; _sequence: number; _otp: string }
+        Returns: Json
+      }
       get_booking_otps: {
         Args: { _booking_id: string }
         Returns: {
