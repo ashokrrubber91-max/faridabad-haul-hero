@@ -171,7 +171,7 @@ function CustomerPage() {
   });
 
   useEffect(() => {
-    if (!MINIPORT_TEST_MODE || !bookings.data) return;
+    if (!bookings.data) return;
 
     const rank: Record<string, number> = { assigned: 1, arrived: 2, completed: 3 };
     for (const booking of bookings.data as Array<Record<string, unknown>>) {
