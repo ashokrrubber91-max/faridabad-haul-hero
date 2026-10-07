@@ -1,5 +1,5 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -53,6 +53,7 @@ import { createTripOrder, confirmTripPayment } from "@/lib/payments.functions";
 import { notifyDriversOfNewBooking } from "@/lib/push.functions";
 import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
 import { computeRoadRoute, createBooking } from "@/lib/routing.functions";
+import { MINIPORT_TEST_MODE } from "@/lib/testing";
 
 const ONLINE_METHODS: PaymentMethod[] = ["upi", "card", "netbanking"];
 
@@ -95,6 +96,9 @@ function CustomerPage() {
   const [gstinEnabled, setGstinEnabled] = useState(false);
   const [gstinId, setGstinId] = useState<string | null>(null);
   const [helperCount, setHelperCount] = useState(0);
+  const [mockWhatsAppOpen, setMockWhatsAppOpen] = useState(false);
+  const [mockWhatsAppBusy, setMockWhatsAppBusy] = useState(false);
+  const seenTripEvents = useRef(new Map<string, string>());
 
   // Distance always comes from the Routes API on the server — never a
   // straight-line estimate — because the fare is derived from it.
@@ -172,8 +176,41 @@ function CustomerPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "bookings", filter: `customer_id=eq.${user.id}` },
-        () => {
+        (payload) => {
           qc.invalidateQueries({ queryKey: ["my-bookings", user.id] });
+
+          if (!MINIPORT_TEST_MODE || payload.eventType === "DELETE") return;
+          const row = payload.new as Record<string, unknown>;
+          const id = String(row.id ?? "");
+          if (!id) return;
+
+          const status = String(row.status ?? "");
+          const arrived = Boolean(row.loading_started_at);
+          const eventKey = status === "completed"
+            ? "completed"
+            : arrived
+              ? "arrived"
+              : status === "accepted"
+                ? "assigned"
+                : "";
+          if (!eventKey || seenTripEvents.current.get(id) === eventKey) return;
+
+          // First realtime event for a booking can be the current state, so the
+          // toast is intentionally driven only by a new state transition.
+          seenTripEvents.current.set(id, eventKey);
+          if (eventKey === "assigned") {
+            toast.success("Driver Assigned", {
+              description: "A MiniPort driver has accepted your booking.",
+            });
+          } else if (eventKey === "arrived") {
+            toast.info("Driver Arrived", {
+              description: "The driver has reached the pickup and loading can begin.",
+            });
+          } else if (eventKey === "completed") {
+            toast.success("Trip Completed", {
+              description: "Your MiniPort trip has been completed successfully.",
+            });
+          }
         },
       )
       .subscribe();
@@ -302,6 +339,54 @@ function CustomerPage() {
     },
   });
 
+  const simulateWhatsAppBooking = async (source: "voice" | "image") => {
+    if (!user || !MINIPORT_TEST_MODE) return;
+    setMockWhatsAppBusy(true);
+    try {
+      const booking = await createBooking({
+        data: {
+          pickup: {
+            address: "MiniPort Test Pickup, Sector 15, Faridabad",
+            lat: 28.4089,
+            lng: 77.3178,
+            placeId: null,
+            contactName: "WhatsApp Test Sender",
+            contactPhone: "9999999999",
+          },
+          drop: {
+            address: "MiniPort Test Drop, Sector 24, Faridabad",
+            lat: 28.4295,
+            lng: 77.3141,
+            placeId: null,
+            contactName: "WhatsApp Test Receiver",
+            contactPhone: "9888888888",
+          },
+          stops: [],
+          vehicle: "tata_ace",
+          helperCount: 0,
+          couponCode: null,
+          coins: 0,
+          paymentMethod: "cod",
+          notes: `TEST WhatsApp AI ${source} booking — simulated incoming booking`,
+        },
+      });
+      try {
+        await notifyDriversOfNewBooking({ data: { bookingId: booking.id } });
+      } catch {
+        /* Dispatch notification is best-effort in test mode. */
+      }
+      await qc.invalidateQueries({ queryKey: ["my-bookings", user.id] });
+      toast.success("WhatsApp AI test booking created", {
+        description: `${source === "voice" ? "Voice" : "Image"} booking dispatched to the normal driver-matching flow.`,
+      });
+      setMockWhatsAppOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not create test booking");
+    } finally {
+      setMockWhatsAppBusy(false);
+    }
+  };
+
   const cancel = useMutation({
     mutationFn: async ({
       id,
@@ -396,8 +481,23 @@ function CustomerPage() {
     <div className="grid min-w-0 gap-6 lg:grid-cols-[1.1fr_1fr] [&>*]:min-w-0">
       {step === "form" ? (
         <section className="surface-card p-5">
-          <h2 className="font-display text-2xl tracking-wide text-secondary">New booking</h2>
-          <p className="text-sm text-muted-foreground">Faridabad only · transparent flat fare</p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-display text-2xl tracking-wide text-secondary">New booking</h2>
+              <p className="text-sm text-muted-foreground">Faridabad only · transparent flat fare</p>
+            </div>
+            {MINIPORT_TEST_MODE && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setMockWhatsAppOpen(true)}
+                className="shrink-0 border-amber-300 text-amber-800"
+              >
+                Test WhatsApp AI
+              </Button>
+            )}
+          </div>
 
           <div className="mt-5 space-y-4">
             <LocationRow
@@ -827,6 +927,39 @@ function CustomerPage() {
               Confirm cancel
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={mockWhatsAppOpen} onOpenChange={setMockWhatsAppOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>WhatsApp AI booking test</DialogTitle>
+            <DialogDescription>
+              Simulate an incoming WhatsApp AI voice/image booking without SMS, WhatsApp or AI APIs.
+              The booking goes through the normal dispatch flow.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={mockWhatsAppBusy}
+              onClick={() => void simulateWhatsAppBooking("voice")}
+            >
+              Simulate voice booking
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={mockWhatsAppBusy}
+              onClick={() => void simulateWhatsAppBooking("image")}
+            >
+              Simulate image booking
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Test-only: no real WhatsApp message is sent.
+          </p>
         </DialogContent>
       </Dialog>
 
