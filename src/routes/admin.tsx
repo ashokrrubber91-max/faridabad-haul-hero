@@ -194,6 +194,17 @@ type Booking = {
   commission_amount: number;
   driver_net_earning: number;
   payment_method: string;
+  stops?: Array<{
+    sequence: number;
+    address: string;
+    lat?: number;
+    lng?: number;
+    status?: string;
+    contact_name?: string | null;
+    contact_phone?: string | null;
+  }>;
+  is_multi_stop?: boolean;
+  total_stops?: number;
 };
 type Profile = { id: string; name: string; phone: string; active_mode: string; is_online: boolean };
 
@@ -937,6 +948,7 @@ function LiveTripsTab({
   const [assignFor, setAssignFor] = useState<Booking | null>(null);
   const [driverId, setDriverId] = useState<string>("");
   const [cancelFor, setCancelFor] = useState<Booking | null>(null);
+  const [detailsFor, setDetailsFor] = useState<Booking | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -1020,6 +1032,9 @@ function LiveTripsTab({
               <div className="min-w-0">
                 <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <Badge className={tone(meta.tone)}>{meta.label}</Badge>
+                  {b.is_multi_stop && (
+                    <Badge className="bg-primary text-primary-foreground hover:bg-primary">Multi-Stop</Badge>
+                  )}
                   <span>
                     {vehicleLabel(b.vehicle_type)} · {b.distance_km} km · ₹
                     {Number(b.fare).toFixed(0)}
@@ -1047,8 +1062,20 @@ function LiveTripsTab({
                     </>
                   )}
                 </p>
+                {b.is_multi_stop && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {(b.stops ?? []).map((stop) => (
+                      <Badge key={stop.sequence} variant="outline" className="text-[10px]">
+                        Stop {stop.sequence}: {stop.address}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex flex-col gap-1.5">
+                <Button size="sm" variant="outline" onClick={() => setDetailsFor(b)}>
+                  Route details
+                </Button>
                 {b.status === "pending" && (
                   <Button size="sm" variant="outline" onClick={() => setAssignFor(b)}>
                     {driver ? "Reassign driver" : "Assign driver"}
@@ -1093,6 +1120,41 @@ function LiveTripsTab({
               {busy ? "Assigning..." : "Assign"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!detailsFor} onOpenChange={(o) => !o && setDetailsFor(null)}>
+        <DialogContent className="max-h-[85vh] max-w-xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Trip route details</DialogTitle>
+          </DialogHeader>
+          {detailsFor && (
+            <div className="space-y-3">
+              <div className="rounded-lg border p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className={tone((STATUS_META[detailsFor.status] ?? STATUS_META.pending).tone)}>
+                    {(STATUS_META[detailsFor.status] ?? STATUS_META.pending).label}
+                  </Badge>
+                  {detailsFor.is_multi_stop && (
+                    <Badge className="bg-primary text-primary-foreground hover:bg-primary">Multi-Stop</Badge>
+                  )}
+                </div>
+                <div className="mt-3 space-y-2">
+                  <p className="text-sm font-medium text-secondary">Pickup: {detailsFor.pickup_address}</p>
+                  {(detailsFor.stops ?? []).map((stop) => (
+                    <p key={stop.sequence} className="text-sm text-warning-foreground">
+                      Stop {stop.sequence}: {stop.address}
+                    </p>
+                  ))}
+                  <p className="text-sm font-medium text-secondary">Final Drop: {detailsFor.drop_address}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-md border p-2">Stops: <strong>{detailsFor.total_stops ?? 1}</strong></div>
+                <div className="rounded-md border p-2">Fare: <strong>₹{Number(detailsFor.fare).toFixed(0)}</strong></div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
