@@ -124,7 +124,8 @@ function CustomerPage() {
   // selection must stay visible for every selectable vehicle.
   const helperEligible = !!selectedVehicle;
   const helperFee = helperEligible ? helperCount * 250 : 0;
-  const grossFare = baseFare + helperFee;
+  const extraStopFee = stops.length * 50;
+  const grossFare = baseFare + helperFee + extraStopFee;
 
   // If the currently picked vehicle is switched off by the team, move to the
   // first one that is actually bookable instead of quoting an unavailable truck.
