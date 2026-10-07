@@ -947,6 +947,8 @@ function ActiveJobCard({
   };
   const next = job.status === "accepted" ? "in_progress" : "completed";
   const nextStop = stops.find((s) => s.status !== "verified" && s.status !== "completed") ?? null;
+  const lastVerifiedStop = [...stops].reverse().find((s) => s.status === "verified") ?? null;
+  const allStopsVerified = stops.length === 0 || stops.every((s) => s.status === "verified" || s.status === "completed");
   const [stopOtp, setStopOtp] = useState("");
 
   const label = next === "in_progress" ? "Verify Pickup OTP" : "Verify Drop OTP";
@@ -1048,7 +1050,7 @@ function ActiveJobCard({
               <p className="mt-2 text-[11px] text-muted-foreground">
                 Navigation to the next stop unlocks only after arrival and OTP verification.
               </p>
-              {nextStop.status === "verified" && (
+              {lastVerifiedStop && lastVerifiedStop.sequence < nextStop.sequence && (
                 <Button
                   size="sm"
                   className="mt-2"
@@ -1179,7 +1181,11 @@ function ActiveJobCard({
           <Button
             size="sm"
             // Proof of delivery is mandatory, so the photo must be added first.
-            disabled={pending || otp.length !== 4 || (next === "completed" && !podPath)}
+            disabled={
+              pending ||
+              otp.length !== 4 ||
+              (next === "completed" && (!podPath || !allStopsVerified))
+            }
             onClick={() => {
               onVerify(otp, next, podPath);
               setOtp("");
@@ -1188,6 +1194,12 @@ function ActiveJobCard({
             {pending ? "Verifying…" : next === "in_progress" ? "Start trip" : "Complete trip"}
           </Button>
         </div>
+
+        {next === "completed" && !allStopsVerified && (
+          <p className="mt-3 rounded-md border border-warning/30 bg-warning/10 p-2 text-xs text-warning-foreground">
+            Complete and verify every extra stop before the final drop OTP can complete the trip.
+          </p>
+        )}
 
         {next === "completed" && (
           <div className="mt-3 border-t border-primary/20 pt-3">
