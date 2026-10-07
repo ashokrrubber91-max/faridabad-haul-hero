@@ -626,7 +626,7 @@ export function DriverPassesTab() {
   return (
     <Shell
       title="Driver passes monitor"
-      subtitle={${active} active · {${expired} expired"
+      subtitle={`${active} active · ${expired} expired`}
       query={rows}
     >
       {(rows.data ?? []).length === 0 ? (
