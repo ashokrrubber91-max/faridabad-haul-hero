@@ -24,9 +24,6 @@ alter table public.booking_stops
   add constraint booking_stops_status_check
   check (status in ('pending','arrived','verified','completed'));
 
-create unique index if not exists booking_stops_booking_sequence_uidx
-  on public.booking_stops(booking_id, sequence);
-
 create table if not exists private.booking_stop_otps (
   booking_id uuid not null references public.bookings(id) on delete cascade,
   sequence integer not null,
@@ -58,7 +55,9 @@ begin
   end if;
   return new;
 end;
-$$;
+$;
+
+revoke all on function public.booking_stop_generate_otp() from public, anon, authenticated;
 
 drop trigger if exists booking_stops_generate_otp on public.booking_stops;
 create trigger booking_stops_generate_otp after insert on public.booking_stops
