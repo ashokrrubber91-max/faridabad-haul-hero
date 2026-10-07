@@ -25,6 +25,8 @@ import {
   Send,
   Search,
   LogOut,
+  Clock3,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -54,7 +56,7 @@ import { KycReviewTab } from "@/components/admin/KycReviewTab";
 import { FaresVehiclesTab } from "@/components/admin/FaresVehiclesTab";
 import { BroadcastTab } from "@/components/admin/BroadcastTab";
 import { DrillDownDialog, type DrillDownColumn } from "@/components/admin/DrillDownDialog";
-import { WithdrawalsTab, DisputesTab, AuditTab } from "@/components/admin/OpsTabs";
+import { WithdrawalsTab, DisputesTab, AuditTab, TripIssuesTab, DriverPassesTab } from "@/components/admin/OpsTabs";
 import { getAdminSetupState, claimFirstAdmin } from "@/lib/admin.functions";
 import { SystemStatus } from "@/components/admin/SystemStatus";
 import { signOutEverywhere } from "@/lib/session";
@@ -218,6 +220,22 @@ function AdminPage() {
       return (data ?? []) as Booking[];
     },
   });
+
+  useEffect(() => {
+    const ch = supabase
+      .channel("admin-operations-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => {
+        void qc.invalidateQueries({ queryKey: ["admin-bookings"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "trip_issues" }, () => {
+        void qc.invalidateQueries({ queryKey: ["admin-trip-issues"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "driver_booking_passes" }, () => {
+        void qc.invalidateQueries({ queryKey: ["admin-driver-booking-passes"] });
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [qc]);
 
   const profiles = useQuery({
     queryKey: ["admin-profiles"],
@@ -427,6 +445,14 @@ function AdminPage() {
             <Ban className="h-3.5 w-3.5" />
             Disputes
           </TabsTrigger>
+          <TabsTrigger value="issues" className="gap-1.5">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Trip Issues
+          </TabsTrigger>
+          <TabsTrigger value="passes" className="gap-1.5">
+            <Clock3 className="h-3.5 w-3.5" />
+            Driver Passes
+          </TabsTrigger>
           <TabsTrigger value="audit" className="gap-1.5">
             <ShieldCheck className="h-3.5 w-3.5" />
             Audit & Security
@@ -634,6 +660,12 @@ function AdminPage() {
         {/* DISPUTES */}
         <TabsContent value="disputes">
           <DisputesTab profileMap={profileMap} />
+        </TabsContent>
+        <TabsContent value="issues">
+          <TripIssuesTab profileMap={profileMap} />
+        </TabsContent>
+        <TabsContent value="passes">
+          <DriverPassesTab />
         </TabsContent>
         {/* AUDIT & SECURITY */}
         <TabsContent value="audit">
