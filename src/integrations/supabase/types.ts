@@ -294,9 +294,6 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
-          is_multi_stop: boolean
-          stops: Json
-          total_stops: number
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
