@@ -62,10 +62,14 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
   const [permsDone, setPermsDone] = useState(false);
   const [record, setRecord] = useState<PermissionRecord>({});
   const [busy, setBusy] = useState<PermissionKey | null>(null);
+  const [permissionIndex, setPermissionIndex] = useState(0);
 
   useEffect(() => {
     setPermsDone(permissionFlowDone(userId));
-    setRecord(loadPermissionRecord(userId));
+    const saved = loadPermissionRecord(userId);
+    setRecord(saved);
+    const firstPending = PERMISSIONS.findIndex((p) => !saved[p.key]);
+    setPermissionIndex(firstPending >= 0 ? firstPending : PERMISSIONS.length);
   }, [userId]);
 
   const localOnboardingDone = permsDone;
@@ -94,12 +98,19 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
     const next = { ...record, [key]: outcome };
     setRecord(next);
     savePermissionRecord(userId, next);
-    if (outcome === "denied")
+    if (outcome === "denied") {
       toast.error(
-        "Permission not granted. You can allow it later in your browser or app settings.",
+        "Permission not granted. Tap Retry to ask again, or use your browser/app settings to allow it.",
       );
-    if (outcome === "unsupported")
-      toast.info("This device or browser can't grant this permission.");
+    } else {
+      const nextIndex = PERMISSIONS.findIndex((p, index) => index > permissionIndex && !next[p.key]);
+      setPermissionIndex(nextIndex >= 0 ? nextIndex : PERMISSIONS.length);
+    }
+    if (outcome === "unsupported") {
+      toast.info("This device or browser can't grant this permission. Continue to the next step.");
+      const nextIndex = PERMISSIONS.findIndex((p, index) => index > permissionIndex && !next[p.key]);
+      setPermissionIndex(nextIndex >= 0 ? nextIndex : PERMISSIONS.length);
+    }
   };
 
   const finish = async () => {
@@ -179,47 +190,78 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
                 MiniPort works best with these. Your device will ask you to confirm each one.
               </DialogDescription>
             </DialogHeader>
-            <ul className="space-y-2">
-              {PERMISSIONS.map((p) => {
+            {permissionIndex < PERMISSIONS.length ? (
+              (() => {
+                const p = PERMISSIONS[permissionIndex];
                 const Icon = ICONS[p.key];
                 const outcome = record[p.key];
                 return (
-                  <li key={p.key} className="flex items-center gap-3 rounded-md border p-3">
-                    <Icon className="h-5 w-5 shrink-0 text-primary" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-secondary">{p.label}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {isDriver ? p.driverReason : p.reason}
-                      </p>
+                  <div className="space-y-3">
+                    <div className="rounded-md border p-4">
+                      <div className="flex items-start gap-3">
+                        <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-secondary">
+                            {permissionIndex + 1}. {p.label}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {isDriver ? p.driverReason : p.reason}
+                          </p>
+                        </div>
+                      </div>
+                      {outcome === "denied" && (
+                        <p className="mt-3 rounded-md bg-destructive/5 p-2 text-xs text-destructive">
+                          Access was blocked. Tap Retry to request it again, or enable it in your
+                          browser/app settings and then continue.
+                        </p>
+                      )}
+                      {outcome === "unsupported" && (
+                        <p className="mt-3 rounded-md bg-muted p-2 text-xs text-muted-foreground">
+                          This permission is not available on this device/browser. Continue to
+                          the next step.
+                        </p>
+                      )}
+                      <div className="mt-3 flex gap-2">
+                        <Button
+                          size="sm"
+                          disabled={busy !== null}
+                          onClick={() => void ask(p.key)}
+                        >
+                          {busy === p.key ? "Asking…" : outcome === "denied" ? "Retry" : "Allow"}
+                        </Button>
+                        {outcome && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const nextIndex = PERMISSIONS.findIndex(
+                                (nextPermission, index) =>
+                                  index > permissionIndex && !record[nextPermission.key],
+                              );
+                              setPermissionIndex(nextIndex >= 0 ? nextIndex : PERMISSIONS.length);
+                            }}
+                          >
+                            Continue
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    {outcome === "granted" ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-success">
-                        <CheckCircle2 className="h-4 w-4" /> Allowed
-                      </span>
-                    ) : outcome ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                        <XCircle className="h-4 w-4" />
-                        {outcome === "denied" ? "Blocked" : "Not available"}
-                      </span>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={busy !== null}
-                        onClick={() => void ask(p.key)}
-                      >
-                        {busy === p.key ? "Asking…" : "Allow"}
-                      </Button>
-                    )}
-                  </li>
+                  </div>
                 );
-              })}
-            </ul>
+              })()
+            ) : (
+              <div className="rounded-md border border-success/30 bg-success/5 p-3 text-sm text-success">
+                All permission steps have been completed.
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">
-              Browsers share location only while MiniPort is open. “Always allow” background
-              location is available only in the installed Android app's settings, where supported.
+              Permissions are requested one at a time after login. Browsers share location only
+              while MiniPort is open; background “Always allow” is controlled by the installed
+              Android app settings where supported.
             </p>
-            <Button onClick={() => void finish()}>Done</Button>
+            <Button onClick={() => void finish()} disabled={permissionIndex < PERMISSIONS.length}>
+              Done
+            </Button>
           </>
         )}
       </DialogContent>
