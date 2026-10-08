@@ -112,12 +112,35 @@ function AccountPage() {
 
   const authoritativeActiveMode = activeModeQuery.data ?? null;
   const hasDriverRole = roles.includes("driver");
-  // Approved/driver-role accounts must never fall back to the customer profile
-  // merely because active_mode is still "customer" before the first driver session.
-  const isDriverProfile = !isAdmin && hasDriverRole;
-  const isCustomerProfile = !isAdmin && !hasDriverRole && authoritativeActiveMode === "customer";
+
+  // A driver-domain record is the source of truth for the Account screen too.
+  // This prevents an approved/pending/rejected driver from seeing customer-only
+  // GST and saved-address sections when the cached role is stale.
+  const driverKyc = useQuery({
+    queryKey: ["account-driver-kyc", user?.id],
+    enabled: !!user,
+    staleTime: 0,
+    refetchOnMount: "always",
+    queryFn: async () => {
+      if (!user?.id) throw new Error("Not signed in");
+      const { data, error } = await supabase
+        .from("driver_kyc")
+        .select("status")
+        .eq("driver_id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.status ?? null;
+    },
+  });
+
+  const driverKycStatus = driverKyc.data;
+  const hasDriverDomain = ["pending", "approved", "rejected"].includes(String(driverKycStatus ?? ""));
+  const isDriverProfile =
+    !isAdmin && (hasDriverRole || authoritativeActiveMode === "driver" || hasDriverDomain);
+  const isCustomerProfile = !isAdmin && !isDriverProfile && authoritativeActiveMode === "customer";
   const isDriverMode = isDriverProfile;
-  const driverStateKnown = !authLoading && freshRoles.isSuccess && activeModeQuery.isSuccess;
+  const driverStateKnown =
+    !authLoading && freshRoles.isSuccess && activeModeQuery.isSuccess && driverKyc.isSuccess;
   const showCustomerSections = driverStateKnown && isCustomerProfile;
 
   const monthlyDriverEarnings = useQuery({
@@ -130,7 +153,7 @@ function AccountPage() {
       start.setHours(0, 0, 0, 0);
       const { data, error } = await supabase
         .from("bookings")
-        .select("id, fare, driver_net_earning, updated_at, created_at, status")
+        .select("id, fare, commission_amount, driver_net_earning, updated_at, created_at, status")
         .eq("driver_id", user.id)
         .eq("status", "completed")
         .gte("updated_at", start.toISOString())
@@ -138,16 +161,29 @@ function AccountPage() {
         .order("updated_at", { ascending: false });
       if (error) throw error;
 
-      const months = new Map<string, { label: string; earnings: number; rides: number }>();
+      const months = new Map<string, {
+        label: string;
+        totalEarnings: number;
+        rides: number;
+        commission: number;
+        netEarning: number;
+      }>();
       for (const booking of data ?? []) {
         const date = new Date(booking.updated_at ?? booking.created_at);
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
         const current = months.get(key) ?? {
           label: date.toLocaleDateString("en-IN", { month: "long", year: "numeric" }),
-          earnings: 0,
+          totalEarnings: 0,
           rides: 0,
+          commission: 0,
+          netEarning: 0,
         };
-        current.earnings += Number(booking.driver_net_earning ?? booking.fare ?? 0);
+        const fare = Number(booking.fare ?? 0);
+        const commission = Number(booking.commission_amount ?? 0);
+        const net = Number(booking.driver_net_earning ?? Math.max(0, fare - commission));
+        current.totalEarnings += fare;
+        current.commission += commission;
+        current.netEarning += net;
         current.rides += 1;
         months.set(key, current);
       }
@@ -155,6 +191,22 @@ function AccountPage() {
       return Array.from(months.entries())
         .sort(([a], [b]) => b.localeCompare(a))
         .map(([key, value]) => ({ key, ...value }));
+    },
+  });
+
+  const driverPayouts = useQuery({
+    queryKey: ["driver-payout-history", user?.id],
+    enabled: Boolean(user?.id) && isDriverProfile && !isAdmin,
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("withdrawal_requests")
+        .select("id, amount, status, method, utr_number, rejection_reason, created_at, processed_at")
+        .eq("driver_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data ?? [];
     },
   });
 
@@ -385,13 +437,14 @@ function AccountPage() {
               <Wallet className="h-5 w-5 text-primary" />
               <div>
                 <h2 className="font-display text-xl tracking-wide text-secondary">
-                  Monthly earnings &amp; rides
+                  Monthly earnings &amp; payouts
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  Completed rides and your net earning, month by month.
+                  Your completed rides, earnings, commission and payout history.
                 </p>
               </div>
             </div>
+
             {monthlyDriverEarnings.isLoading ? (
               <Loader2 className="mt-4 h-4 w-4 animate-spin text-primary" />
             ) : monthlyDriverEarnings.isError ? (
@@ -401,25 +454,69 @@ function AccountPage() {
                 No completed rides in the last 6 months.
               </p>
             ) : (
-              <div className="mt-4 overflow-hidden rounded-md border">
+              <div className="mt-4 space-y-3">
                 {(monthlyDriverEarnings.data ?? []).map((month) => (
-                  <div
-                    key={month.key}
-                    className="flex items-center justify-between gap-3 border-b p-3 last:border-b-0"
-                  >
-                    <div>
+                  <div key={month.key} className="rounded-md border p-3">
+                    <div className="mb-3 flex items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-secondary">{month.label}</p>
                       <p className="text-xs text-muted-foreground">
                         {month.rides} completed {month.rides === 1 ? "ride" : "rides"}
                       </p>
                     </div>
-                    <p className="font-display text-lg text-success">
-                      ₹{month.earnings.toFixed(0)}
-                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+                      <div className="rounded bg-muted/40 p-2">
+                        <p className="text-muted-foreground">Total earnings</p>
+                        <p className="mt-1 font-semibold text-secondary">₹{month.totalEarnings.toFixed(0)}</p>
+                      </div>
+                      <div className="rounded bg-muted/40 p-2">
+                        <p className="text-muted-foreground">Commission</p>
+                        <p className="mt-1 font-semibold text-secondary">₹{month.commission.toFixed(0)}</p>
+                      </div>
+                      <div className="rounded bg-muted/40 p-2">
+                        <p className="text-muted-foreground">Net earning</p>
+                        <p className="mt-1 font-semibold text-success">₹{month.netEarning.toFixed(0)}</p>
+                      </div>
+                      <div className="rounded bg-muted/40 p-2">
+                        <p className="text-muted-foreground">Completed rides</p>
+                        <p className="mt-1 font-semibold text-secondary">{month.rides}</p>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
+
+            <div className="mt-4 border-t pt-4">
+              <h3 className="font-display text-base tracking-wide text-secondary">Wallet payout history</h3>
+              {driverPayouts.isLoading ? (
+                <Loader2 className="mt-3 h-4 w-4 animate-spin text-primary" />
+              ) : (driverPayouts.data ?? []).length === 0 ? (
+                <p className="mt-2 text-sm text-muted-foreground">No wallet payouts yet.</p>
+              ) : (
+                <div className="mt-2 divide-y rounded-md border">
+                  {(driverPayouts.data ?? []).map((payout) => (
+                    <div key={payout.id} className="flex items-center justify-between gap-3 p-3">
+                      <div>
+                        <p className="text-sm font-semibold text-secondary">
+                          ₹{Number(payout.amount ?? 0).toFixed(0)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(payout.created_at).toLocaleDateString("en-IN")} · {payout.method ?? "bank"} · {payout.status}
+                        </p>
+                        {payout.utr_number && (
+                          <p className="text-[11px] text-muted-foreground">UTR: {payout.utr_number}</p>
+                        )}
+                      </div>
+                      {payout.rejection_reason && (
+                        <p className="max-w-[12rem] text-right text-xs text-destructive">
+                          {payout.rejection_reason}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </section>
         )}
 
