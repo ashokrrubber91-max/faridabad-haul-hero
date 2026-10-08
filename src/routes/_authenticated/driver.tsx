@@ -368,8 +368,8 @@ function DriverPage() {
     (b) => b.status === "pending" && !b.driver_id && !b.cancelled_at,
   );
   const mine = (queue.data ?? []).filter((b) => b.driver_id === user?.id && b.status !== "pending");
-  const kycStatus = profile?.kyc_status ?? "not_submitted";
-  const kycVerified = kycStatus === "approved" || role === "admin";
+  const kycStatus = driverKyc.data ?? profile?.kyc_status ?? "not_submitted";
+  const kycVerified = kycApproved || role === "admin";
   const isOnline = kycVerified && (setOnline.variables ?? profile?.is_online ?? false);
 
   const today = new Date();
