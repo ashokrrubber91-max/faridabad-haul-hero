@@ -74,9 +74,10 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
   const dataReady = consent.isSuccess && onboardingProfile.isSuccess;
   const needsConsent = dataReady && consent.data === false;
 
-  // Never open until the account flag/local flag has been checked. Once either
-  // one is true, the modal is suppressed even if the legal-version query changes.
-  const open = dataReady && !onboardingDone && (needsConsent || consent.data === true);
+  // First login: show consent, then the one-time permission flow.
+  // If a policy version changes later, consent is shown again even when the
+  // device onboarding was already completed.
+  const open = dataReady && (needsConsent || (!onboardingDone && consent.data === true));
 
   const accept = async () => {
     setSaving(true);
