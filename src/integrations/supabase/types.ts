@@ -277,6 +277,7 @@ export type Database = {
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
+          fare_boost: number
           final_fare: number | null
           helper_count: number
           helper_fee: number
@@ -326,6 +327,7 @@ export type Database = {
           drop_verified_at?: string | null
           expires_at?: string | null
           fare: number
+          fare_boost?: number
           final_fare?: number | null
           helper_count?: number
           helper_fee?: number
@@ -375,6 +377,7 @@ export type Database = {
           drop_verified_at?: string | null
           expires_at?: string | null
           fare?: number
+          fare_boost?: number
           final_fare?: number | null
           helper_count?: number
           helper_fee?: number
@@ -1440,6 +1443,45 @@ export type Database = {
           },
         ]
       }
+      trip_issues: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          issue_type: string
+          reporter_id: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          issue_type: string
+          reporter_id: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          issue_type?: string
+          reporter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_issues_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_issues_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_consents: {
         Row: {
           accepted_at: string
@@ -1980,6 +2022,7 @@ export type Database = {
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
+          fare_boost: number
           final_fare: number | null
           helper_count: number
           helper_fee: number
@@ -2059,6 +2102,7 @@ export type Database = {
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
+          fare_boost: number
           final_fare: number | null
           helper_count: number
           helper_fee: number
@@ -2117,6 +2161,7 @@ export type Database = {
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
+          fare_boost: number
           final_fare: number | null
           helper_count: number
           helper_fee: number
@@ -2176,6 +2221,7 @@ export type Database = {
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
+          fare_boost: number
           final_fare: number | null
           helper_count: number
           helper_fee: number
@@ -2403,6 +2449,7 @@ export type Database = {
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
+          fare_boost: number
           final_fare: number | null
           helper_count: number
           helper_fee: number
@@ -2578,6 +2625,13 @@ export type Database = {
       ensure_my_referral_code: { Args: never; Returns: string }
       expire_stale_bookings: { Args: never; Returns: number }
       generate_unique_referral_code: { Args: never; Returns: string }
+      get_booking_driver_search_stats: {
+        Args: { _booking_id: string }
+        Returns: {
+          declined_captains: number
+          total_nearby: number
+        }[]
+      }
       get_booking_otps: {
         Args: { _booking_id: string }
         Returns: {
@@ -2684,6 +2738,65 @@ export type Database = {
         Args: { _booking_id: string }
         Returns: number
       }
+      set_booking_fare_boost: {
+        Args: { _booking_id: string; _boost: number }
+        Returns: {
+          cancellation_category:
+            | Database["public"]["Enums"]["cancellation_category"]
+            | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          coins_redeemed: number
+          commission_amount: number
+          commission_rate: number
+          coupon_code: string | null
+          coupon_discount: number
+          created_at: string
+          customer_id: string
+          distance_km: number
+          driver_id: string | null
+          driver_net_earning: number
+          drop_address: string
+          drop_lat: number | null
+          drop_lng: number | null
+          drop_verified_at: string | null
+          expires_at: string | null
+          fare: number
+          fare_boost: number
+          final_fare: number | null
+          helper_count: number
+          helper_fee: number
+          id: string
+          loading_overtime_minutes: number
+          loading_started_at: string | null
+          loading_stopped_at: string | null
+          notes: string | null
+          overtime_charge: number
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_verified_at: string | null
+          pod_photo_url: string | null
+          rating: number | null
+          review: string | null
+          service_zone: string
+          status: Database["public"]["Enums"]["booking_status"]
+          unloading_overtime_minutes: number
+          unloading_started_at: string | null
+          unloading_stopped_at: string | null
+          updated_at: string
+          vehicle_type: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_booking_stage: {
         Args: { _action: string; _booking_id: string }
         Returns: {
@@ -2709,6 +2822,7 @@ export type Database = {
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
+          fare_boost: number
           final_fare: number | null
           helper_count: number
           helper_fee: number
@@ -2869,6 +2983,7 @@ export type Database = {
           drop_verified_at: string | null
           expires_at: string | null
           fare: number
+          fare_boost: number
           final_fare: number | null
           helper_count: number
           helper_fee: number

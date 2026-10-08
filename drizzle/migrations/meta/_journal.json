@@ -29,6 +29,13 @@
       "when": 1791387039563,
       "tag": "0003_booking_messages_realtime",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791432165316,
+      "tag": "0004_wire_fare_boost_trip_issues_driver_search_stats",
+      "breakpoints": true
     }
   ]
 }
