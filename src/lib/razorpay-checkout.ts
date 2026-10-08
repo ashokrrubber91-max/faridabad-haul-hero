@@ -85,9 +85,20 @@ export async function openRazorpayCheckout(req: CheckoutRequest): Promise<Checko
       handler: (response: CheckoutSuccess) => finish(response),
     };
 
-    // Do not force a payment-method restriction here. Razorpay decides which
-    // methods are available for the merchant account; this lets enabled UPI,
-    // cards and other supported methods appear in Test Mode as configured.
+    // MiniPort Test Mode is intentionally card-only. Razorpay's sandbox uses
+    // dedicated dummy card details; disabling other rails avoids real-bank-style
+    // screens and keeps the test flow deterministic.
+    if (req.testMode) {
+      checkoutOptions.method = {
+        card: true,
+        upi: false,
+        netbanking: false,
+        wallet: false,
+        emi: false,
+        paylater: false,
+      };
+    }
+
     const rzp = new Razorpay(checkoutOptions);
 
     rzp.on("payment.failed", (response: unknown) => {
