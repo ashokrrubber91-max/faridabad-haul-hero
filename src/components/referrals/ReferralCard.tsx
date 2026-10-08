@@ -50,7 +50,6 @@ export function ReferralCard() {
         if (makeError) throw makeError;
         next = (made as unknown as string) ?? "";
       }
-      console.log("[MiniPort referral] referral_code:", next || null);
       setCode(next);
       setRows((referralsResult.data ?? []) as ReferralRow[]);
     } catch {
@@ -143,8 +142,9 @@ export function ReferralCard() {
       </div>
 
       <p className="mt-3 text-xs text-muted-foreground">
-        Customer referral: ₹100 after their first ride is completed. Driver referral: ₹100 after their
-        first ride is completed. Each invited account can qualify only once.
+        Customer referral: ₹100 when the invited customer books their first ride. Driver referral:
+        ₹100 when the invited driver completes their first ride. Each invited account can qualify once;
+        you can invite unlimited people.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
