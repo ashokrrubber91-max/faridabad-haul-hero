@@ -53,6 +53,26 @@ function DriverPage() {
   const qc = useQueryClient();
   const [dismissed, setDismissed] = useState<string[]>([]);
 
+  // Authoritative KYC status for the online gate. The profile mirror is useful
+  // for display, but the driver_kyc row is the source of truth here.
+  const driverKyc = useQuery({
+    queryKey: ["driver-online-kyc", user?.id],
+    enabled: !!user,
+    staleTime: 0,
+    refetchOnMount: "always",
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from("driver_kyc")
+        .select("status")
+        .eq("driver_id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.status ?? null;
+    },
+  });
+  const kycApproved = driverKyc.data === "approved";
+
   useEffect(() => {
     if (!user || role !== "driver" || activeMode === "driver") return;
     void setActiveMode("driver").catch(() => undefined);
@@ -60,8 +80,8 @@ function DriverPage() {
 
   const setOnline = useMutation({
     mutationFn: async (next: boolean) => {
-      if (next && profile?.kyc_status !== "approved" && role !== "admin") {
-        throw new Error("Driver must complete verification before going online.");
+      if (next && !kycApproved && role !== "admin") {
+        throw new Error("Driver verification must be approved before going online.");
       }
       const { error } = await supabase
         .from("profiles")
@@ -527,7 +547,7 @@ function DriverPage() {
             }
             setOnline.mutate(v);
           }}
-          disabled={setOnline.isPending || !!activeJob || !kycVerified}
+          disabled={setOnline.isPending || driverKyc.isLoading || !!activeJob || !kycApproved}
           aria-label="Toggle online"
         />
       </section>
