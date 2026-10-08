@@ -20,7 +20,6 @@ import {
 } from "@/hooks/useAuth";
 import { recordConsent } from "@/lib/legal";
 import { startPhoneOtp, verifyPhoneOtp } from "@/lib/phone-auth.functions";
-import { MINIPORT_TEST_MODE, TEST_OTP } from "@/lib/testing";
 
 /** Kept in step with the server-side cooldown; only used for the countdown UI. */
 const RESEND_COOLDOWN_SECONDS = 45;
@@ -80,13 +79,9 @@ function AuthPage() {
         <div className="surface-card p-6">
           <h1 className="font-display text-3xl tracking-wide text-secondary">Welcome</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Sign in with your phone number and password.
+            Sign in with your phone number and password. SMS OTP will be available after Twilio is
+            connected.
           </p>
-          {MINIPORT_TEST_MODE && (
-            <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
-              <strong>TESTING MODE:</strong> SMS is bypassed. Any phone number can be tested and the universal OTP is <strong>{TEST_OTP}</strong>.
-            </div>
-          )}
 
           <Tabs
             value={tab}
@@ -94,16 +89,14 @@ function AuthPage() {
             className="mt-5"
           >
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="otp">{MINIPORT_TEST_MODE ? "Test OTP" : "OTP"}</TabsTrigger>
+              <TabsTrigger value="otp">OTP (later)</TabsTrigger>
               <TabsTrigger value="signin">Password</TabsTrigger>
               <TabsTrigger value="signup">Sign up</TabsTrigger>
             </TabsList>
             <TabsContent value="otp" className="pt-5 space-y-5">
               \n{" "}
               <p className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-                {MINIPORT_TEST_MODE
-                  ? `Testing mode: enter ${TEST_OTP}. No SMS is sent.`
-                  : "SMS verification uses the configured phone provider."}
+                SMS verification is not connected yet. Connect Twilio later to enable OTP.
               </p>
               <OtpSignInForm />
               <OrDivider />
@@ -122,9 +115,7 @@ function AuthPage() {
           </Tabs>
         </div>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          {MINIPORT_TEST_MODE
-            ? `Testing mode is active — universal OTP ${TEST_OTP}`
-            : "Password sign-in is available now."}
+          Password sign-in is available now. SMS OTP will be enabled after Twilio is connected.
         </p>
       </main>
     </div>
@@ -158,20 +149,17 @@ function OtpSignInForm() {
 
   const sendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValidIndianMobile(phone)) {
-      toast.error("Enter a valid 10-digit mobile number");
-      return;
-    }
+    if (!isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
     setBusy(true);
     try {
-      const res = await start({ data: { phone: MINIPORT_TEST_MODE ? phone : normalisePhone(phone), intent: "signin" } });
+      const res = await start({ data: { phone: normalisePhone(phone), intent: "signin" } });
       if (!res.ok) {
         toast.error(res.message);
         return;
       }
       setSent(true);
-      setCooldown(MINIPORT_TEST_MODE ? 0 : RESEND_COOLDOWN_SECONDS);
-      toast.success(MINIPORT_TEST_MODE ? `Test OTP ready: ${TEST_OTP}` : `Code sent to +91 ${normalisePhone(phone)}`);
+      setCooldown(RESEND_COOLDOWN_SECONDS);
+      toast.success(`Code sent to +91 ${normalisePhone(phone)}`);
     } catch {
       toast.error("Network problem — please check your connection and try again.");
     } finally {
@@ -185,7 +173,7 @@ function OtpSignInForm() {
     setBusy(true);
     try {
       const res = await verify({
-        data: { phone: MINIPORT_TEST_MODE ? phone : normalisePhone(phone), code, intent: "signin" },
+        data: { phone: normalisePhone(phone), code, intent: "signin" },
       });
       if (!res.ok || !("tokenHash" in res)) {
         toast.error(res.ok ? "Please try again." : res.message);
@@ -209,26 +197,21 @@ function OtpSignInForm() {
       <form onSubmit={sendOtp} className="space-y-4">
         <div>
           <Label htmlFor="otp-phone">Phone number</Label>
-          <div className="flex items-stretch">
-            <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">+91</span>
-            <Input
-              id="otp-phone"
-              inputMode="numeric"
-              autoComplete="tel-national"
-              maxLength={10}
-              placeholder="9876543210"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-              className="rounded-l-none"
-              required
-            />
-          </div>
-          {phone.length > 0 && !isValidIndianMobile(phone) && (
-            <p className="mt-1 text-xs text-destructive">Enter a valid 10-digit mobile number</p>
-          )}
+          <Input
+            id="otp-phone"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="98xxxxxxxx"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            We&rsquo;ll text a one-time code to +91 {normalisePhone(phone)}
+          </p>
         </div>
-        <Button type="submit" className="h-11 w-full text-base" disabled={busy || !isValidIndianMobile(phone)}>
-          {busy ? "Sending…" : "Send OTP"}
+        <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
+          {busy ? "Sending\u2026" : "Send OTP"}
         </Button>
       </form>
     );
@@ -245,7 +228,7 @@ function OtpSignInForm() {
           maxLength={6}
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-          placeholder={MINIPORT_TEST_MODE ? TEST_OTP : "••••••"}
+          placeholder="••••••"
           className="text-center text-lg tracking-[0.4em]"
           required
         />
@@ -412,16 +395,13 @@ function SignUpForm({
   const sendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim().length < 2) return toast.error("Enter your name");
-    if (!isValidIndianMobile(phone)) {
-      toast.error("Enter a valid 10-digit mobile number");
-      return;
-    }
+    if (!isValidIndianMobile(phone)) return toast.error(PHONE_ERROR);
     if (!agreed)
       return toast.error("Please accept the Terms & Conditions and Privacy Policy to continue");
 
     setBusy(true);
     try {
-      const res = await start({ data: { phone: MINIPORT_TEST_MODE ? phone : normalisePhone(phone), intent: "signup" } });
+      const res = await start({ data: { phone: normalisePhone(phone), intent: "signup" } });
       if (!res.ok) {
         toast.error(res.message);
         return;
@@ -488,7 +468,7 @@ function SignUpForm({
             maxLength={6}
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            placeholder={MINIPORT_TEST_MODE ? TEST_OTP : "••••••"}
+            placeholder="••••••"
             className="text-center text-lg tracking-[0.4em]"
             required
           />
@@ -557,23 +537,15 @@ function SignUpForm({
       </div>
       <div>
         <Label htmlFor="su-phone">Phone number</Label>
-        <div className="flex items-stretch">
-          <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">+91</span>
-          <Input
-            id="su-phone"
-            inputMode="numeric"
-            autoComplete="tel-national"
-            maxLength={10}
-            placeholder="9876543210"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-            className="rounded-l-none"
-            required
-          />
-        </div>
-        {phone.length > 0 && !isValidIndianMobile(phone) && (
-          <p className="mt-1 text-xs text-destructive">Enter a valid 10-digit mobile number</p>
-        )}
+        <Input
+          id="su-phone"
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="98xxxxxxxx"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          required
+        />
       </div>
       <div>
         <Label htmlFor="su-referral">Referral code (optional)</Label>
@@ -625,13 +597,11 @@ function SignUpForm({
           .
         </span>
       </label>
-      <Button type="submit" className="h-11 w-full text-base" disabled={busy || !agreed || !isValidIndianMobile(phone)}>
+      <Button type="submit" className="h-11 w-full text-base" disabled={busy || !agreed}>
         {busy ? "Sending code\u2026" : "Send verification code"}
       </Button>
       <p className="text-center text-xs text-muted-foreground">
-        {MINIPORT_TEST_MODE
-          ? `Testing mode: enter ${TEST_OTP}; no SMS is sent.`
-          : "We text a one-time code to confirm your number before the account is created."}
+        We text a one-time code to confirm your number before the account is created.
       </p>
     </form>
   );

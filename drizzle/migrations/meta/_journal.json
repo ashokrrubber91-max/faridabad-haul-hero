@@ -29,6 +29,34 @@
       "when": 1791387039563,
       "tag": "0003_booking_messages_realtime",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791432165316,
+      "tag": "0004_wire_fare_boost_trip_issues_driver_search_stats",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791432203503,
+      "tag": "0005_driver_daily_pass_atomic_zero_commission",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791432297674,
+      "tag": "0006_daily_pass_starts_ends_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791432384811,
+      "tag": "0007_referral_first_completed_and_kyc_offline",
+      "breakpoints": true
     }
   ]
 }

@@ -64,7 +64,6 @@ export function ReviewBooking({
   const [breakupOpen, setBreakupOpen] = useState(false);
   const { map } = useVehicleMap();
   const specs = map.has(vehicle) ? vehicleSpecs(map.get(vehicle)!) : [];
-  const extraStopFee = stops.length * 50;
 
   return (
     <div className="surface-card p-5">
@@ -220,12 +219,6 @@ export function ReviewBooking({
               <span>+ ₹{helperFee}</span>
             </div>
           )}
-          {extraStopFee > 0 && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Extra stops ({stops.length})</span>
-              <span>+ ₹{extraStopFee}</span>
-            </div>
-          )}
           {discount > 0 && (
             <div className="flex justify-between text-success">
               <span>Discount / coins</span>
@@ -238,7 +231,7 @@ export function ReviewBooking({
           </div>
         </div>
 
-        <Button\n          type="button"\n          variant="outline"\n          className="h-11 w-full border-green-500/40 text-green-700 hover:bg-green-500/10"\n          onClick={() =>\n            window.open(\n              `https://wa.me/?text=${encodeURIComponent("Hi MiniPort, I need a vehicle to send goods. Please help me book a vehicle.")}`,\n              "_blank",\n              "noopener,noreferrer",\n            )\n          }\n        >\n          <MessageCircle className="h-4 w-4" /> Book via WhatsApp\n        </Button>\n        <Button onClick={onConfirm} disabled={submitting} className="h-11 w-full">
+        <Button onClick={onConfirm} disabled={submitting} className="h-11 w-full">
           {submitting ? "Booking…" : "Confirm & book · ₹" + fare}{" "}
           {!submitting && <ArrowRight className="h-4 w-4" />}
         </Button>
@@ -265,12 +258,6 @@ export function ReviewBooking({
               <div className="flex justify-between">
                 <span>Loading-unloading / helper</span>
                 <span>+ ₹{helperFee}</span>
-              </div>
-            )}
-            {extraStopFee > 0 && (
-              <div className="flex justify-between">
-                <span>Extra stops ({stops.length})</span>
-                <span>+ ₹{extraStopFee}</span>
               </div>
             )}
             {discount > 0 && coinsEnabled && (

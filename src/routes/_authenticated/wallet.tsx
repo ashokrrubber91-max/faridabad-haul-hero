@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDownLeft, ArrowUpRight, Building2, Coins, Loader2, Plus, Wallet } from "lucide-react";
 import { toast } from "sonner";
@@ -18,7 +18,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DriverTopupDialog } from "@/components/driver/DriverTopupDialog";
 import { ReferralCard } from "@/components/referrals/ReferralCard";
-import { DailyPassCard } from "@/components/driver/DailyPassCard";
 
 function formatMoney(n: number) {
   const abs = Math.abs(n).toFixed(2);
@@ -85,7 +84,7 @@ function WalletPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("driver_bank_accounts")
-        .select("id, driver_id, amount, method, status, note, upi_id, utr_number, rejection_reason, created_at, processed_at")
+        .select("*")
         .eq("driver_id", user!.id)
         .order("is_default", { ascending: false });
       if (error) throw error;
@@ -110,33 +109,6 @@ function WalletPage() {
 
   const cash = Number(wallet.data?.cash_balance ?? 0);
   const coins = Number(wallet.data?.coins_balance ?? 0);
-  useEffect(() => {
-    if (!user || !isDriver) return;
-    const ch = supabase
-      .channel(`driver-withdrawals-${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const n = payload.new as { kind?: string; title?: string; body?: string };
-          if (n.kind !== "withdrawal") return;
-          toast.info(n.title ?? "Withdrawal update", { description: n.body });
-          void qc.invalidateQueries({ queryKey: ["withdrawals", user.id] });
-          void qc.invalidateQueries({ queryKey: ["wallet", user.id] });
-          void qc.invalidateQueries({ queryKey: ["wallet-txns", user.id] });
-        },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(ch);
-    };
-  }, [user, isDriver, qc]);
-
 
   const monthNet = useMemo(() => {
     const start = new Date();
@@ -160,7 +132,7 @@ function WalletPage() {
         </p>
       </header>
 
-      {isDriver && <DailyPassCard />}\n\n      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         <section className="surface-card p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
             {isDriver ? "Available for withdrawal" : "Wallet balance"}
@@ -254,15 +226,8 @@ function WalletPage() {
                 <div>
                   <p className="font-semibold text-secondary">₹{Number(w.amount).toFixed(0)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(w.created_at).toLocaleString("en-IN")}
-                    {w.upi_id ? ` · ${w.upi_id}` : ""}
+                    {new Date(w.created_at).toLocaleString()}
                   </p>
-                  {w.utr_number && (
-                    <p className="text-xs text-success">UTR: {w.utr_number}</p>
-                  )}
-                  {w.rejection_reason && (
-                    <p className="text-xs text-destructive">Reason: {w.rejection_reason}</p>
-                  )}
                 </div>
                 <span
                   className={`rounded-md px-2 py-1 text-xs font-semibold ${
@@ -513,31 +478,23 @@ function WithdrawDialog({
 }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const storageKey = user ? `miniport:last-withdrawal-upi:${user.id}` : "";
   const [amount, setAmount] = useState("");
-  const [upiId, setUpiId] = useState("");
-
-  useEffect(() => {
-    if (!storageKey) return;
-    setUpiId(window.localStorage.getItem(storageKey) ?? "");
-  }, [storageKey]);
 
   const submit = useMutation({
     mutationFn: async () => {
       const amt = Number(amount);
-      const upi = upiId.trim();
+      if (!banks.length) throw new Error("Add a payout method first");
       if (!amt || amt < 100) throw new Error("Minimum withdrawal is ₹100");
       if (amt > cash) throw new Error("Amount exceeds your available balance");
-      if (!/^[A-Za-z0-9._-]{2,}@[A-Za-z0-9.-]{2,}$/.test(upi)) {
-        throw new Error("Enter a valid UPI ID");
-      }
-
-      const { error } = await supabase.rpc("request_wallet_withdrawal", {
-        p_amount: amt,
-        p_upi_id: upi,
+      const target = banks.find((b) => b.is_default) ?? banks[0];
+      const { error } = await supabase.from("withdrawal_requests").insert({
+        driver_id: user!.id,
+        amount: amt,
+        method: target.upi_id ? "upi" : "bank",
+        note: target.upi_id ?? `${target.bank_name} ****${target.account_number.slice(-4)}`,
       });
+
       if (error) throw error;
-      if (storageKey) window.localStorage.setItem(storageKey, upi);
     },
     onSuccess: () => {
       toast.success("Withdrawal requested — processed within 24 hours");
@@ -559,39 +516,17 @@ function WithdrawDialog({
         <DialogHeader>
           <DialogTitle>Withdraw earnings</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <Label htmlFor="w-amt">Amount (₹)</Label>
-            <Input
-              id="w-amt"
-              inputMode="numeric"
-              min={100}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
-              placeholder="100"
-            />
-            <p className="mt-1 text-xs text-muted-foreground">
-              Available ₹{cash.toFixed(2)} · minimum ₹100
-            </p>
-          </div>
-          <div>
-            <Label htmlFor="w-upi">UPI ID</Label>
-            <Input
-              id="w-upi"
-              value={upiId}
-              onChange={(e) => setUpiId(e.target.value)}
-              placeholder="name@upi"
-              autoComplete="off"
-            />
-            <p className="mt-1 text-xs text-muted-foreground">
-              Your last used UPI ID is saved on this device for the next withdrawal.
-            </p>
-          </div>
-          {banks.length > 0 && (
-            <p className="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-              Saved payout methods remain available in your profile. This withdrawal uses the UPI ID entered above.
-            </p>
-          )}
+        <div>
+          <Label htmlFor="w-amt">Amount (₹)</Label>
+          <Input
+            id="w-amt"
+            inputMode="numeric"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Available ₹{cash.toFixed(2)} · minimum ₹100
+          </p>
         </div>
         <DialogFooter>
           <Button onClick={() => submit.mutate()} disabled={submit.isPending}>

@@ -66,3 +66,14 @@
 - [x] Ops messages create ops tasks; TODAY gives a trip summary. Driver assignment, fares and payouts stay in the console — WhatsApp can never change a role, assign a driver or move money.
 - [x] `/tasks` page for drivers and ops, with start / mark done through a permission-checked server action.
 - Needs credentials before it can send or receive: Twilio account SID, auth token and the WhatsApp sender number.
+
+## Oct 8 production requirements
+- [ ] 1 Driver Account: no GST/Saved addresses/invoice wording
+- [ ] 2 Driver monthly finance (gross, rides, commission, net) + payout history
+- [ ] 3 Consent once per TERMS_VERSION, re-ask on version change
+- [ ] 4 Sequential permission onboarding with retry
+- [ ] 5 Online only when driver_kyc approved; force offline on non-approved
+- [ ] 6 Referral ₹100 on first completed ride only, once per referred account
+- [ ] 7 Razorpay test mode: card only for wallet top-up, instant credit
+- [ ] 8 Tata Ace shared 90-min loading+unloading pool, ₹2/min
+- [ ] 9 Cancellation reason/cancelled_by shown; payment failure never cancels

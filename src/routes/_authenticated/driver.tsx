@@ -39,7 +39,6 @@ import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
 import { useVehicleTypes, type VehicleType } from "@/lib/vehicles";
 import { sweepStaleBookings } from "@/lib/notifications.functions";
-import { MINIPORT_TEST_MODE } from "@/lib/testing";
 
 export const Route = createFileRoute("/_authenticated/driver")({
   head: () => ({ meta: [{ title: "Driver — MiniPort" }] }),
@@ -53,26 +52,6 @@ function DriverPage() {
   const qc = useQueryClient();
   const [dismissed, setDismissed] = useState<string[]>([]);
 
-  // Authoritative KYC status for the online gate. The profile mirror is useful
-  // for display, but the driver_kyc row is the source of truth here.
-  const driverKyc = useQuery({
-    queryKey: ["driver-online-kyc", user?.id],
-    enabled: !!user,
-    staleTime: 0,
-    refetchOnMount: "always",
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from("driver_kyc")
-        .select("status")
-        .eq("driver_id", user.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data?.status ?? null;
-    },
-  });
-  const kycApproved = driverKyc.data === "approved";
-
   useEffect(() => {
     if (!user || role !== "driver" || activeMode === "driver") return;
     void setActiveMode("driver").catch(() => undefined);
@@ -80,8 +59,8 @@ function DriverPage() {
 
   const setOnline = useMutation({
     mutationFn: async (next: boolean) => {
-      if (next && !kycApproved && role !== "admin") {
-        throw new Error("Driver verification must be approved before going online.");
+      if (next && profile?.kyc_status !== "approved" && role !== "admin") {
+        throw new Error("Driver must complete verification before going online.");
       }
       const { error } = await supabase
         .from("profiles")
@@ -368,8 +347,8 @@ function DriverPage() {
     (b) => b.status === "pending" && !b.driver_id && !b.cancelled_at,
   );
   const mine = (queue.data ?? []).filter((b) => b.driver_id === user?.id && b.status !== "pending");
-  const kycStatus = driverKyc.data ?? profile?.kyc_status ?? "not_submitted";
-  const kycVerified = kycApproved || role === "admin";
+  const kycStatus = profile?.kyc_status ?? "not_submitted";
+  const kycVerified = kycStatus === "approved" || role === "admin";
   const isOnline = kycVerified && (setOnline.variables ?? profile?.is_online ?? false);
 
   const today = new Date();
@@ -383,80 +362,6 @@ function DriverPage() {
   );
   const ridesToday = todayCompleted.length;
   const activeJob = mine.find((b) => b.status === "accepted" || b.status === "in_progress");
-
-  const customerProfile = useQuery({
-    queryKey: ["driver-active-customer", activeJob?.customer_id],
-    enabled: !!activeJob?.customer_id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("name, phone")
-        .eq("id", activeJob!.customer_id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const activeStops = useQuery({
-    queryKey: ["driver-active-stops", activeJob?.id],
-    enabled: !!activeJob?.id && Boolean(activeJob?.is_multi_stop),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("booking_stops")
-        .select("id, sequence, kind, address, latitude, longitude, contact_name, contact_phone, status, arrived_at, verified_at")
-        .eq("booking_id", activeJob!.id)
-        .eq("kind", "stop")
-        .order("sequence", { ascending: true });
-      if (error) throw error;
-      return data ?? [];
-    },
-    refetchInterval: MINIPORT_TEST_MODE ? 3000 : 10000,
-  });
-
-  const markStopArrived = useMutation({
-    mutationFn: async ({ bookingId, sequence }: { bookingId: string; sequence: number }) => {
-      const { data, error } = await supabase.rpc("mark_booking_stop_arrived", {
-        _booking_id: bookingId,
-        _sequence: sequence,
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      toast.success("Arrival confirmed — enter the stop OTP");
-      void qc.invalidateQueries({ queryKey: ["driver-active-stops", activeJob?.id] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const verifyStop = useMutation({
-    mutationFn: async ({
-      bookingId,
-      sequence,
-      otp,
-    }: {
-      bookingId: string;
-      sequence: number;
-      otp: string;
-    }) => {
-      const { data, error } = await supabase.rpc("verify_booking_stop", {
-        _booking_id: bookingId,
-        _sequence: sequence,
-        _otp: otp,
-      });
-      if (error) throw error;
-      const result = (data ?? {}) as { ok?: boolean; message?: string };
-      if (!result.ok) throw new Error(result.message || "Could not verify this stop");
-      return result;
-    },
-    onSuccess: () => {
-      toast.success("Stop verified — next navigation unlocked");
-      void qc.invalidateQueries({ queryKey: ["driver-active-stops", activeJob?.id] });
-      void qc.invalidateQueries({ queryKey: ["driver-feed", user?.id] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   const cash = wallet.data ?? 0;
   const walletLow = cash < 100;
@@ -547,7 +452,7 @@ function DriverPage() {
             }
             setOnline.mutate(v);
           }}
-          disabled={setOnline.isPending || driverKyc.isLoading || !!activeJob || !kycApproved}
+          disabled={setOnline.isPending || !!activeJob || !kycVerified}
           aria-label="Toggle online"
         />
       </section>
@@ -635,7 +540,6 @@ function DriverPage() {
       {activeJob && (
         <ActiveJobCard
           job={activeJob}
-          customerPhone={customerProfile.data?.phone ?? null}
           onVerify={(otp, next, podPath) =>
             verifyOtp.mutate({
               id: activeJob.id,
@@ -648,10 +552,6 @@ function DriverPage() {
           stageBusy={setStage.isPending}
           vehicle={vehicleFor(activeJob.vehicle_type)}
           pending={verifyOtp.isPending}
-          stops={activeStops.data ?? []}
-          onStopArrived={(sequence) => markStopArrived.mutate({ bookingId: activeJob.id, sequence })}
-          onStopVerify={(sequence, otp) => verifyStop.mutate({ bookingId: activeJob.id, sequence, otp })}
-          stopBusy={markStopArrived.isPending || verifyStop.isPending}
         />
       )}
 
@@ -908,19 +808,13 @@ function playRideAlert() {
 
 function ActiveJobCard({
   job,
-  customerPhone,
   onVerify,
   onStage,
   stageBusy,
   vehicle,
   pending,
-  stops,
-  onStopArrived,
-  onStopVerify,
-  stopBusy,
 }: {
   job: AnyRow;
-  customerPhone?: string | null;
   onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null) => void;
   onStage: (
     action: "start_loading" | "stop_loading" | "start_unloading" | "stop_unloading",
@@ -928,17 +822,6 @@ function ActiveJobCard({
   stageBusy: boolean;
   vehicle?: VehicleType;
   pending: boolean;
-  stops: Array<{
-    id: string;
-    sequence: number;
-    address: string;
-    latitude: number | null;
-    longitude: number | null;
-    status: string;
-  }>;
-  onStopArrived: (sequence: number) => void;
-  onStopVerify: (sequence: number, otp: string) => void;
-  stopBusy: boolean;
 }) {
   const [otp, setOtp] = useState("");
   const [podPath, setPodPath] = useState<string | null>(null);
@@ -967,11 +850,6 @@ function ActiveJobCard({
     toast.success("Proof photo attached");
   };
   const next = job.status === "accepted" ? "in_progress" : "completed";
-  const nextStop = stops.find((s) => s.status !== "verified" && s.status !== "completed") ?? null;
-  const lastVerifiedStop = [...stops].reverse().find((s) => s.status === "verified") ?? null;
-  const allStopsVerified = stops.length === 0 || stops.every((s) => s.status === "verified" || s.status === "completed");
-  const [stopOtp, setStopOtp] = useState("");
-
   const label = next === "in_progress" ? "Verify Pickup OTP" : "Verify Drop OTP";
   const contact = extractContact(job.notes, next === "in_progress" ? "Sender" : "Receiver");
   const commission = Math.round(Number(job.fare) * (Number(job.commission_rate) || 0.1));
@@ -989,18 +867,6 @@ function ActiveJobCard({
   return (
     <section className="surface-card border-l-4 border-l-primary p-4">
       <p className="text-xs font-semibold uppercase tracking-wider text-primary">Active job</p>
-      <div className="mt-3 grid grid-cols-4 gap-1 text-center text-[10px]">
-        {[
-          ["Accept Booking", true],
-          ["Arrived at Pickup", job.status === "in_progress" || !!job.loading_started_at],
-          ["Start Trip", job.status === "in_progress"],
-          ["Complete Trip", false],
-        ].map(([label, done], index) => (
-          <div key={String(label)} className={`rounded-md border px-1 py-2 ${done ? "border-success bg-success/10 text-success" : ((index === 1 && job.status === "accepted" && !job.loading_started_at) || (index === 2 && job.status === "accepted" && !!job.loading_stopped_at) || (index === 3 && job.status === "in_progress")) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
-            {done ? "✓ " : ""}{String(label)}
-          </div>
-        ))}
-      </div>
       <JobAddress
         label="Pickup"
         address={job.pickup_address}
@@ -1009,90 +875,6 @@ function ActiveJobCard({
       />
       <JobAddress label="Drop" address={job.drop_address} lat={job.drop_lat} lng={job.drop_lng} />
 
-      {stops.length > 0 && (
-        <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-            Multi-stop itinerary
-          </p>
-          <div className="mt-2 space-y-2">
-            {stops.map((stop) => (
-              <div key={stop.id} className="flex items-center gap-2 rounded-md border bg-background p-2">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                  {stop.sequence}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-secondary">{stop.address}</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {stop.status === "verified" ? "✓ Verified" : stop.status === "arrived" ? "Arrival confirmed · OTP required" : "Pending"}
-                  </p>
-                </div>
-                {stop.status === "verified" && <Badge className="bg-success text-success-foreground hover:bg-success">Done</Badge>}
-              </div>
-            ))}
-          </div>
-
-          {job.status === "in_progress" && nextStop && (
-            <div className="mt-3 border-t border-primary/20 pt-3">
-              <p className="text-xs font-semibold text-secondary">Next stop: Stop {nextStop.sequence}</p>
-              <p className="mt-1 text-sm text-secondary">{nextStop.address}</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={stopBusy || nextStop.status === "arrived"}
-                  onClick={() => onStopArrived(nextStop.sequence)}
-                >
-                  {nextStop.status === "arrived" ? "Arrival confirmed" : "Confirm arrival"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={stopBusy || nextStop.status !== "arrived" || stopOtp.length !== 4}
-                  onClick={() => {
-                    onStopVerify(nextStop.sequence, stopOtp);
-                    setStopOtp("");
-                  }}
-                >
-                  Verify stop OTP
-                </Button>
-              </div>
-              {nextStop.status === "arrived" && (
-                <div className="mt-2 flex gap-2">
-                  <Input
-                    inputMode="numeric"
-                    maxLength={4}
-                    value={stopOtp}
-                    onChange={(e) => setStopOtp(e.target.value.replace(/\D/g, ""))}
-                    placeholder="4-digit OTP"
-                    className="max-w-[9rem] text-center tracking-widest"
-                  />
-                </div>
-              )}
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                Navigation to the next stop unlocks only after arrival and OTP verification.
-              </p>
-              {lastVerifiedStop && lastVerifiedStop.sequence < nextStop.sequence && (
-                <Button
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => {
-                    const lat = nextStop.latitude;
-                    const lng = nextStop.longitude;
-                    const url =
-                      typeof lat === "number" && typeof lng === "number"
-                        ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`
-                        : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(nextStop.address)}&travelmode=driving`;
-                    window.open(url, "_blank", "noopener,noreferrer");
-                  }}
-                >
-                  Navigate to next stop
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
       <div
         className={`mt-3 rounded-md px-3 py-2 text-sm ${isCash ? "bg-warning/15 text-warning-foreground" : "bg-success/15 text-success-foreground"}`}
       >
@@ -1100,25 +882,6 @@ function ActiveJobCard({
         {isCash
           ? `Payment Mode: Cash — Collect ₹${Number(job.fare).toFixed(0)} from customer`
           : `Payment Mode: Online — ₹${net.toFixed(0)} will be added to your wallet`}
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-2 rounded-md border border-border bg-muted/20 p-3 text-xs">
-        <div><span className="text-muted-foreground">Distance</span><p className="font-semibold text-secondary">{Number(job.distance_km || 0).toFixed(1)} km</p></div>
-        <div><span className="text-muted-foreground">Helpers</span><p className="font-semibold text-secondary">{Number(job.helper_count || 0)}</p></div>
-        <div><span className="text-muted-foreground">Base fare</span><p className="font-semibold text-secondary">₹{(Number(job.fare || 0) - Number(job.fare_boost || 0)).toFixed(0)}</p></div>
-        <div><span className="text-muted-foreground">Fare boost</span><p className="font-semibold text-secondary">₹{Number(job.fare_boost || 0).toFixed(0)}</p></div>
-        <div><span className="text-muted-foreground">Helper fee</span><p className="font-semibold text-secondary">₹{Number(job.helper_fee || job.helper_charge || 0).toFixed(0)}</p></div>
-        <div><span className="text-muted-foreground">Driver net</span><p className="font-semibold text-success">₹{net.toFixed(0)}</p></div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-primary/20 bg-primary/5 p-3 text-xs">
-        <span className="font-semibold text-secondary">Trip status:</span>
-        <Badge variant="outline">{job.status === "accepted" ? "Accepted / Pickup" : "In transit"}</Badge>
-        {customerPhone && (
-          <Button asChild size="sm" variant="outline" className="ml-auto">
-            <a href={"tel:" + customerPhone}><Phone className="h-3.5 w-3.5" /> Call customer</a>
-          </Button>
-        )}
       </div>
 
       <WaitingChargesCard booking={job} vehicle={vehicle} />
@@ -1202,11 +965,7 @@ function ActiveJobCard({
           <Button
             size="sm"
             // Proof of delivery is mandatory, so the photo must be added first.
-            disabled={
-              pending ||
-              otp.length !== 4 ||
-              (next === "completed" && (!podPath || !allStopsVerified))
-            }
+            disabled={pending || otp.length !== 4 || (next === "completed" && !podPath)}
             onClick={() => {
               onVerify(otp, next, podPath);
               setOtp("");
@@ -1215,12 +974,6 @@ function ActiveJobCard({
             {pending ? "Verifying…" : next === "in_progress" ? "Start trip" : "Complete trip"}
           </Button>
         </div>
-
-        {next === "completed" && !allStopsVerified && (
-          <p className="mt-3 rounded-md border border-warning/30 bg-warning/10 p-2 text-xs text-warning-foreground">
-            Complete and verify every extra stop before the final drop OTP can complete the trip.
-          </p>
-        )}
 
         {next === "completed" && (
           <div className="mt-3 border-t border-primary/20 pt-3">

@@ -27,12 +27,12 @@ export function ReferralCard() {
     setLoading(true);
     try {
       const [profileResult, referralsResult] = await Promise.all([
-        (supabase as unknown as UntypedClient)
+        supabase
           .from("profiles")
           .select("referral_code")
           .eq("id", user.id)
           .maybeSingle(),
-        (supabase as unknown as UntypedClient)
+        supabase
           .from("referrals")
           .select("id,status,referred_type,reward_amount,created_at,rewarded_at")
           .eq("referrer_id", user.id)
@@ -143,7 +143,7 @@ export function ReferralCard() {
       </div>
 
       <p className="mt-3 text-xs text-muted-foreground">
-        Customer referral: ₹100 after their first ride is completed. Driver referral: ₹100 after their
+        Customer referral: ₹100 after their first ride is booked. Driver referral: ₹100 after their
         first ride is completed. Each invited account can qualify only once.
       </p>
 

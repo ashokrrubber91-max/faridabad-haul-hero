@@ -1,5 +1,5 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -53,7 +53,6 @@ import { createTripOrder, confirmTripPayment } from "@/lib/payments.functions";
 import { notifyDriversOfNewBooking } from "@/lib/push.functions";
 import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
 import { computeRoadRoute, createBooking } from "@/lib/routing.functions";
-import { MINIPORT_TEST_MODE } from "@/lib/testing";
 
 const ONLINE_METHODS: PaymentMethod[] = ["upi", "card", "netbanking"];
 
@@ -96,9 +95,6 @@ function CustomerPage() {
   const [gstinEnabled, setGstinEnabled] = useState(false);
   const [gstinId, setGstinId] = useState<string | null>(null);
   const [helperCount, setHelperCount] = useState(0);
-  const [mockWhatsAppOpen, setMockWhatsAppOpen] = useState(false);
-  const [mockWhatsAppBusy, setMockWhatsAppBusy] = useState(false);
-  const seenTripEvents = useRef(new Map<string, string>());
 
   // Distance always comes from the Routes API on the server — never a
   // straight-line estimate — because the fare is derived from it.
@@ -124,8 +120,7 @@ function CustomerPage() {
   // selection must stay visible for every selectable vehicle.
   const helperEligible = !!selectedVehicle;
   const helperFee = helperEligible ? helperCount * 250 : 0;
-  const extraStopFee = stops.length * 50;
-  const grossFare = baseFare + helperFee + extraStopFee;
+  const grossFare = baseFare + helperFee;
 
   // If the currently picked vehicle is switched off by the team, move to the
   // first one that is actually bookable instead of quoting an unavailable truck.
@@ -164,54 +159,11 @@ function CustomerPage() {
         .eq("customer_id", user!.id)
         .order("created_at", { ascending: false })
         // This screen only shows recent trips; full history lives on My rides.
-        .limit(15),
-    refetchInterval: MINIPORT_TEST_MODE ? 3000 : false,
+        .limit(15);
       if (error) throw error;
       return data ?? [];
     },
   });
-
-  useEffect(() => {
-    if (!bookings.data) return;
-
-    const rank: Record<string, number> = { assigned: 1, arrived: 2, completed: 3 };
-    for (const booking of bookings.data as Array<Record<string, unknown>>) {
-      const id = String(booking.id ?? "");
-      if (!id) continue;
-      const status = String(booking.status ?? "");
-      const eventKey =
-        status === "completed"
-          ? "completed"
-          : Boolean(booking.loading_started_at)
-            ? "arrived"
-            : status === "accepted"
-              ? "assigned"
-              : "";
-
-      if (!eventKey) continue;
-      const previous = seenTripEvents.current.get(id);
-      if (!previous) {
-        seenTripEvents.current.set(id, eventKey);
-        continue;
-      }
-      if (rank[eventKey] <= (rank[previous] ?? 0)) continue;
-
-      seenTripEvents.current.set(id, eventKey);
-      if (eventKey === "assigned") {
-        toast.success("Driver Assigned", {
-          description: "A MiniPort driver has accepted your booking.",
-        });
-      } else if (eventKey === "arrived") {
-        toast.info("Driver Arrived", {
-          description: "The driver has reached the pickup and loading can begin.",
-        });
-      } else if (eventKey === "completed") {
-        toast.success("Trip Completed", {
-          description: "Your MiniPort trip has been completed successfully.",
-        });
-      }
-    }
-  }, [bookings.data]);
 
   useEffect(() => {
     if (!user) return;
@@ -221,7 +173,7 @@ function CustomerPage() {
         "postgres_changes",
         { event: "*", schema: "public", table: "bookings", filter: `customer_id=eq.${user.id}` },
         () => {
-          void qc.invalidateQueries({ queryKey: ["my-bookings", user.id] });
+          qc.invalidateQueries({ queryKey: ["my-bookings", user.id] });
         },
       )
       .subscribe();
@@ -350,54 +302,6 @@ function CustomerPage() {
     },
   });
 
-  const simulateWhatsAppBooking = async (source: "voice" | "image") => {
-    if (!user || !MINIPORT_TEST_MODE) return;
-    setMockWhatsAppBusy(true);
-    try {
-      const booking = await createBooking({
-        data: {
-          pickup: {
-            address: "MiniPort Test Pickup, Sector 15, Faridabad",
-            lat: 28.4089,
-            lng: 77.3178,
-            placeId: null,
-            contactName: "WhatsApp Test Sender",
-            contactPhone: "9999999999",
-          },
-          drop: {
-            address: "MiniPort Test Drop, Sector 24, Faridabad",
-            lat: 28.4295,
-            lng: 77.3141,
-            placeId: null,
-            contactName: "WhatsApp Test Receiver",
-            contactPhone: "9888888888",
-          },
-          stops: [],
-          vehicle: "tata_ace",
-          helperCount: 0,
-          couponCode: null,
-          coins: 0,
-          paymentMethod: "cod",
-          notes: `TEST WhatsApp AI ${source} booking — simulated incoming booking`,
-        },
-      });
-      try {
-        await notifyDriversOfNewBooking({ data: { bookingId: booking.id } });
-      } catch {
-        /* Dispatch notification is best-effort in test mode. */
-      }
-      await qc.invalidateQueries({ queryKey: ["my-bookings", user.id] });
-      toast.success("WhatsApp AI test booking created", {
-        description: `${source === "voice" ? "Voice" : "Image"} booking dispatched to the normal driver-matching flow.`,
-      });
-      setMockWhatsAppOpen(false);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not create test booking");
-    } finally {
-      setMockWhatsAppBusy(false);
-    }
-  };
-
   const cancel = useMutation({
     mutationFn: async ({
       id,
@@ -490,28 +394,10 @@ function CustomerPage() {
 
   return (
     <div className="grid min-w-0 gap-6 lg:grid-cols-[1.1fr_1fr] [&>*]:min-w-0">
-      <div className="lg:col-span-2">
-        <ActiveOrdersCarousel bookings={(bookings.data ?? []) as Array<Record<string, unknown>>} />
-      </div>
       {step === "form" ? (
         <section className="surface-card p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="font-display text-2xl tracking-wide text-secondary">New booking</h2>
-              <p className="text-sm text-muted-foreground">Faridabad only · transparent flat fare</p>
-            </div>
-            {MINIPORT_TEST_MODE && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setMockWhatsAppOpen(true)}
-                className="shrink-0 border-amber-300 text-amber-800"
-              >
-                Test WhatsApp AI
-              </Button>
-            )}
-          </div>
+          <h2 className="font-display text-2xl tracking-wide text-secondary">New booking</h2>
+          <p className="text-sm text-muted-foreground">Faridabad only · transparent flat fare</p>
 
           <div className="mt-5 space-y-4">
             <LocationRow
@@ -777,7 +663,6 @@ function CustomerPage() {
                       bookingId={b.id}
                       vehicleType={vehicleLabel(b.vehicle_type)}
                       currentFare={Number(b.fare) || 0}
-                      currentBoost={Number(b.fare_boost) || 0}
                       paymentStatus={b.payment_status}
                       elapsedSeconds={Math.max(
                         0,
@@ -820,9 +705,6 @@ function CustomerPage() {
 
                   {(b.status === "accepted" || b.status === "in_progress") && (
                     <TripCodes bookingId={b.id} status={b.status} />
-                  )}
-                  {Boolean(b.is_multi_stop) && (b.status === "accepted" || b.status === "in_progress") && (
-                    <CustomerStopOtps bookingId={b.id} />
                   )}
                   {canCancel(b.status) && (
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -948,39 +830,6 @@ function CustomerPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={mockWhatsAppOpen} onOpenChange={setMockWhatsAppOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>WhatsApp AI booking test</DialogTitle>
-            <DialogDescription>
-              Simulate an incoming WhatsApp AI voice/image booking without SMS, WhatsApp or AI APIs.
-              The booking goes through the normal dispatch flow.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={mockWhatsAppBusy}
-              onClick={() => void simulateWhatsAppBooking("voice")}
-            >
-              Simulate voice booking
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={mockWhatsAppBusy}
-              onClick={() => void simulateWhatsAppBooking("image")}
-            >
-              Simulate image booking
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Test-only: no real WhatsApp message is sent.
-          </p>
-        </DialogContent>
-      </Dialog>
-
       <LocationSearchOverlay
         open={stage?.type === "search"}
         onOpenChange={(v) => !v && setStage(null)}
@@ -1038,100 +887,6 @@ function CustomerPage() {
       />
       <SupportChat role="customer" />
     </div>
-  );
-}
-
-function CustomerStopOtps({ bookingId }: { bookingId: string }) {
-  const query = useQuery({
-    queryKey: ["booking-stop-otps", bookingId],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_booking_stop_otps", {
-        _booking_id: bookingId,
-      });
-      if (error) throw error;
-      return (data ?? []) as Array<{ sequence: number; otp: string; verified_at: string | null }>;
-    },
-    refetchInterval: MINIPORT_TEST_MODE ? 3000 : 10000,
-  });
-
-  if (query.isLoading || query.isError || !query.data?.length) return null;
-
-  return (
-    <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-        Extra stop verification codes
-      </p>
-      <div className="mt-2 grid gap-2 sm:grid-cols-2">
-        {query.data.map((stop) => (
-          <div key={stop.sequence} className="flex items-center justify-between rounded-md bg-background px-3 py-2">
-            <span className="text-xs text-muted-foreground">Stop {stop.sequence}</span>
-            <span className="font-mono text-lg font-bold tracking-[0.25em] text-secondary">
-              {stop.verified_at ? "Verified" : stop.otp}
-            </span>
-          </div>
-        ))}
-      </div>
-      <p className="mt-2 text-[11px] text-muted-foreground">
-        Give the code to the person receiving the goods at that stop.
-      </p>
-    </div>
-  );
-}
-
-function ActiveOrdersCarousel({ bookings }: { bookings: Array<Record<string, unknown>> }) {
-  const active = bookings.filter((b) =>
-    ["pending", "accepted", "in_progress"].includes(String(b.status)),
-  );
-
-  if (active.length === 0) return null;
-
-  const statusLabel = (status: string) =>
-    status === "pending" ? "Searching" : status === "accepted" ? "Assigned" : "In transit";
-
-  return (
-    <section className="surface-card overflow-hidden p-4">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div>
-          <h2 className="font-display text-xl tracking-wide text-secondary">Active Orders</h2>
-          <p className="text-xs text-muted-foreground">
-            {active.length} ongoing {active.length === 1 ? "trip" : "trips"} · You can place another booking anytime.
-          </p>
-        </div>
-        <Badge variant="secondary">{active.length}</Badge>
-      </div>
-      <div className="flex snap-x gap-3 overflow-x-auto pb-1">
-        {active.map((b) => {
-          const status = String(b.status);
-          const stops = Array.isArray(b.stops) ? b.stops : [];
-          return (
-            <div
-              key={String(b.id)}
-              className="min-w-[250px] max-w-[300px] shrink-0 snap-start rounded-xl border bg-background p-3"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {String(b.vehicle_type ?? "Vehicle")}
-                </span>
-                <Badge className="bg-primary text-primary-foreground hover:bg-primary">
-                  {statusLabel(status)}
-                </Badge>
-              </div>
-              <p className="mt-2 truncate text-sm font-semibold text-secondary">
-                {String(b.pickup_address ?? "")}
-              </p>
-              <p className="mt-1 truncate text-xs text-muted-foreground">
-                → {String(b.drop_address ?? "")}
-              </p>
-              {stops.length > 0 && (
-                <p className="mt-2 text-[11px] font-medium text-warning">
-                  {stops.length} extra {stops.length === 1 ? "stop" : "stops"} · +₹{stops.length * 50}
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </section>
   );
 }
 

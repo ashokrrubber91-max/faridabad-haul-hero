@@ -112,35 +112,12 @@ function AccountPage() {
 
   const authoritativeActiveMode = activeModeQuery.data ?? null;
   const hasDriverRole = roles.includes("driver");
-
-  // A driver-domain record is the source of truth for the Account screen too.
-  // This prevents an approved/pending/rejected driver from seeing customer-only
-  // GST and saved-address sections when the cached role is stale.
-  const driverKyc = useQuery({
-    queryKey: ["account-driver-kyc", user?.id],
-    enabled: !!user,
-    staleTime: 0,
-    refetchOnMount: "always",
-    queryFn: async () => {
-      if (!user?.id) throw new Error("Not signed in");
-      const { data, error } = await supabase
-        .from("driver_kyc")
-        .select("status")
-        .eq("driver_id", user.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data?.status ?? null;
-    },
-  });
-
-  const driverKycStatus = driverKyc.data;
-  const hasDriverDomain = ["pending", "approved", "rejected"].includes(String(driverKycStatus ?? ""));
-  const isDriverProfile =
-    !isAdmin && (hasDriverRole || authoritativeActiveMode === "driver" || hasDriverDomain);
-  const isCustomerProfile = !isAdmin && !isDriverProfile && authoritativeActiveMode === "customer";
+  // Approved/driver-role accounts must never fall back to the customer profile
+  // merely because active_mode is still "customer" before the first driver session.
+  const isDriverProfile = !isAdmin && hasDriverRole;
+  const isCustomerProfile = !isAdmin && !hasDriverRole && authoritativeActiveMode === "customer";
   const isDriverMode = isDriverProfile;
-  const driverStateKnown =
-    !authLoading && freshRoles.isSuccess && activeModeQuery.isSuccess && driverKyc.isSuccess;
+  const driverStateKnown = !authLoading && freshRoles.isSuccess && activeModeQuery.isSuccess;
   const showCustomerSections = driverStateKnown && isCustomerProfile;
 
   const monthlyDriverEarnings = useQuery({
@@ -153,7 +130,9 @@ function AccountPage() {
       start.setHours(0, 0, 0, 0);
       const { data, error } = await supabase
         .from("bookings")
-        .select("id, fare, commission_amount, driver_net_earning, updated_at, created_at, status")
+        .select(
+          "id, fare, final_fare, commission_amount, driver_net_earning, updated_at, created_at, status",
+        )
         .eq("driver_id", user.id)
         .eq("status", "completed")
         .gte("updated_at", start.toISOString())
@@ -161,29 +140,23 @@ function AccountPage() {
         .order("updated_at", { ascending: false });
       if (error) throw error;
 
-      const months = new Map<string, {
-        label: string;
-        totalEarnings: number;
-        rides: number;
-        commission: number;
-        netEarning: number;
-      }>();
+      const months = new Map<
+        string,
+        { label: string; gross: number; commission: number; earnings: number; rides: number }
+      >();
       for (const booking of data ?? []) {
         const date = new Date(booking.updated_at ?? booking.created_at);
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
         const current = months.get(key) ?? {
           label: date.toLocaleDateString("en-IN", { month: "long", year: "numeric" }),
-          totalEarnings: 0,
-          rides: 0,
+          gross: 0,
           commission: 0,
-          netEarning: 0,
+          earnings: 0,
+          rides: 0,
         };
-        const fare = Number(booking.fare ?? 0);
-        const commission = Number(booking.commission_amount ?? 0);
-        const net = Number(booking.driver_net_earning ?? Math.max(0, fare - commission));
-        current.totalEarnings += fare;
-        current.commission += commission;
-        current.netEarning += net;
+        current.gross += Number(booking.final_fare ?? booking.fare ?? 0);
+        current.commission += Number(booking.commission_amount ?? 0);
+        current.earnings += Number(booking.driver_net_earning ?? booking.fare ?? 0);
         current.rides += 1;
         months.set(key, current);
       }
@@ -194,14 +167,14 @@ function AccountPage() {
     },
   });
 
-  const driverPayouts = useQuery({
+  const payoutHistory = useQuery({
     queryKey: ["driver-payout-history", user?.id],
     enabled: Boolean(user?.id) && isDriverProfile && !isAdmin,
     queryFn: async () => {
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from("withdrawal_requests")
-        .select("id, amount, status, method, utr_number, rejection_reason, created_at, processed_at")
+        .select("id, amount, method, status, note, created_at")
         .eq("driver_id", user.id)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -382,7 +355,7 @@ function AccountPage() {
               ? "Admin identity, platform controls and sign-out."
               : isDriverProfile
                 ? "Driver profile, vehicle documents and account settings."
-                : "Profile, addresses, GST and invoices."}
+                : "Profile, addresses and GST details."}
           </p>
         </header>
 
@@ -437,14 +410,13 @@ function AccountPage() {
               <Wallet className="h-5 w-5 text-primary" />
               <div>
                 <h2 className="font-display text-xl tracking-wide text-secondary">
-                  Monthly earnings &amp; payouts
+                  Monthly earnings &amp; rides
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  Your completed rides, earnings, commission and payout history.
+                  Earnings, commission and net, month by month.
                 </p>
               </div>
             </div>
-
             {monthlyDriverEarnings.isLoading ? (
               <Loader2 className="mt-4 h-4 w-4 animate-spin text-primary" />
             ) : monthlyDriverEarnings.isError ? (
@@ -454,69 +426,83 @@ function AccountPage() {
                 No completed rides in the last 6 months.
               </p>
             ) : (
-              <div className="mt-4 space-y-3">
+              <div className="mt-4 overflow-hidden rounded-md border">
                 {(monthlyDriverEarnings.data ?? []).map((month) => (
-                  <div key={month.key} className="rounded-md border p-3">
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-secondary">{month.label}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {month.rides} completed {month.rides === 1 ? "ride" : "rides"}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-                      <div className="rounded bg-muted/40 p-2">
-                        <p className="text-muted-foreground">Total earnings</p>
-                        <p className="mt-1 font-semibold text-secondary">₹{month.totalEarnings.toFixed(0)}</p>
+                  <div
+                    key={month.key}
+                    className="flex items-center justify-between gap-3 border-b p-3 last:border-b-0"
+                  >
+                    <div className="w-full">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-secondary">{month.label}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {month.rides} completed {month.rides === 1 ? "ride" : "rides"}
+                        </p>
                       </div>
-                      <div className="rounded bg-muted/40 p-2">
-                        <p className="text-muted-foreground">Commission</p>
-                        <p className="mt-1 font-semibold text-secondary">₹{month.commission.toFixed(0)}</p>
-                      </div>
-                      <div className="rounded bg-muted/40 p-2">
-                        <p className="text-muted-foreground">Net earning</p>
-                        <p className="mt-1 font-semibold text-success">₹{month.netEarning.toFixed(0)}</p>
-                      </div>
-                      <div className="rounded bg-muted/40 p-2">
-                        <p className="text-muted-foreground">Completed rides</p>
-                        <p className="mt-1 font-semibold text-secondary">{month.rides}</p>
-                      </div>
+                      <dl className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <dt className="text-muted-foreground">Total earnings</dt>
+                          <dd className="font-semibold text-secondary">
+                            ₹{month.gross.toFixed(0)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">Platform commission</dt>
+                          <dd className="font-semibold text-secondary">
+                            ₹{month.commission.toFixed(0)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">Net earning</dt>
+                          <dd className="font-display text-base text-success">
+                            ₹{month.earnings.toFixed(0)}
+                          </dd>
+                        </div>
+                      </dl>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+          </section>
+        )}
 
-            <div className="mt-4 border-t pt-4">
-              <h3 className="font-display text-base tracking-wide text-secondary">Wallet payout history</h3>
-              {driverPayouts.isLoading ? (
-                <Loader2 className="mt-3 h-4 w-4 animate-spin text-primary" />
-              ) : (driverPayouts.data ?? []).length === 0 ? (
-                <p className="mt-2 text-sm text-muted-foreground">No wallet payouts yet.</p>
-              ) : (
-                <div className="mt-2 divide-y rounded-md border">
-                  {(driverPayouts.data ?? []).map((payout) => (
-                    <div key={payout.id} className="flex items-center justify-between gap-3 p-3">
-                      <div>
-                        <p className="text-sm font-semibold text-secondary">
-                          ₹{Number(payout.amount ?? 0).toFixed(0)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(payout.created_at).toLocaleDateString("en-IN")} · {payout.method ?? "bank"} · {payout.status}
-                        </p>
-                        {payout.utr_number && (
-                          <p className="text-[11px] text-muted-foreground">UTR: {payout.utr_number}</p>
-                        )}
-                      </div>
-                      {payout.rejection_reason && (
-                        <p className="max-w-[12rem] text-right text-xs text-destructive">
-                          {payout.rejection_reason}
+        {isDriverProfile && !isAdmin && (
+          <section className="surface-card p-5">
+            <h2 className="font-display text-xl tracking-wide text-secondary">
+              Wallet payout history
+            </h2>
+            {payoutHistory.isLoading ? (
+              <Loader2 className="mt-4 h-4 w-4 animate-spin text-primary" />
+            ) : payoutHistory.isError ? (
+              <p className="mt-4 text-sm text-destructive">Could not load payouts.</p>
+            ) : (payoutHistory.data ?? []).length === 0 ? (
+              <p className="mt-4 text-sm text-muted-foreground">No payout requests yet.</p>
+            ) : (
+              <ul className="mt-4 divide-y rounded-md border">
+                {(payoutHistory.data ?? []).map((w) => (
+                  <li key={w.id} className="flex items-start justify-between gap-3 p-3 text-sm">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-secondary">
+                        ₹{Number(w.amount).toFixed(0)} · {w.method.toUpperCase()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(w.created_at).toLocaleDateString("en-IN")}
+                      </p>
+                      {w.note && (
+                        <p className="mt-1 break-words text-xs text-muted-foreground">
+                          {w.status === "rejected" ? "Reason: " : "UTR / note: "}
+                          {w.note}
                         </p>
                       )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs capitalize">
+                      {w.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         )}
 

@@ -27,9 +27,9 @@ export const STATUS_META: Record<
   string,
   { label: string; tone: "warning" | "primary" | "success" | "muted" | "destructive" }
 > = {
-  pending: { label: "Searching for driver", tone: "warning" },
+  pending: { label: "Awaiting driver", tone: "warning" },
   accepted: { label: "Driver assigned", tone: "primary" },
-  in_progress: { label: "In transit", tone: "primary" },
+  in_progress: { label: "On the way", tone: "primary" },
   completed: { label: "Completed", tone: "success" },
   cancelled: { label: "Cancelled", tone: "destructive" },
   expired: { label: "Expired — no driver", tone: "muted" },
@@ -75,4 +75,4 @@ export const VEHICLE_DETAILS: Record<
  * the `get_booking_otps` (customer) and `verify_booking_otp` (driver) functions.
  */
 export const BOOKING_FIELDS =
-  "id, customer_id, driver_id, pickup_address, drop_address, vehicle_type, distance_km, fare, fare_boost, helper_count, helper_fee, status, notes, created_at, updated_at, coupon_code, coupon_discount, coins_redeemed, payment_method, payment_status, commission_rate, commission_amount, driver_net_earning, pickup_verified_at, drop_verified_at, rating, review, pod_photo_url, cancellation_reason, pickup_lat, pickup_lng, drop_lat, drop_lng, loading_started_at, loading_stopped_at, unloading_started_at, unloading_stopped_at, service_zone, cancelled_at, expires_at, booking_source, loading_overtime_minutes, unloading_overtime_minutes, overtime_charge, final_fare, cancelled_by, cancellation_category, stops, is_multi_stop, total_stops";
+  "id, customer_id, driver_id, pickup_address, drop_address, vehicle_type, distance_km, fare, status, notes, created_at, updated_at, coupon_code, coupon_discount, coins_redeemed, payment_method, payment_status, commission_rate, commission_amount, driver_net_earning, pickup_verified_at, drop_verified_at, rating, review, pod_photo_url, cancellation_reason, pickup_lat, pickup_lng, drop_lat, drop_lng, loading_started_at, loading_stopped_at, unloading_started_at, unloading_stopped_at, service_zone, cancelled_at, expires_at, helper_count, helper_fee, loading_overtime_minutes, unloading_overtime_minutes, overtime_charge, final_fare, cancelled_by, cancellation_category, fare_boost";

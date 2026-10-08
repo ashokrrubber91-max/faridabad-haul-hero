@@ -25,8 +25,6 @@ import {
   Send,
   Search,
   LogOut,
-  Clock3,
-  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +54,7 @@ import { KycReviewTab } from "@/components/admin/KycReviewTab";
 import { FaresVehiclesTab } from "@/components/admin/FaresVehiclesTab";
 import { BroadcastTab } from "@/components/admin/BroadcastTab";
 import { DrillDownDialog, type DrillDownColumn } from "@/components/admin/DrillDownDialog";
-import { WithdrawalsTab, DisputesTab, AuditTab, TripIssuesTab, DriverPassesTab } from "@/components/admin/OpsTabs";
+import { WithdrawalsTab, DisputesTab, AuditTab } from "@/components/admin/OpsTabs";
 import { getAdminSetupState, claimFirstAdmin } from "@/lib/admin.functions";
 import { SystemStatus } from "@/components/admin/SystemStatus";
 import { signOutEverywhere } from "@/lib/session";
@@ -194,17 +192,6 @@ type Booking = {
   commission_amount: number;
   driver_net_earning: number;
   payment_method: string;
-  stops?: Array<{
-    sequence: number;
-    address: string;
-    lat?: number;
-    lng?: number;
-    status?: string;
-    contact_name?: string | null;
-    contact_phone?: string | null;
-  }>;
-  is_multi_stop?: boolean;
-  total_stops?: number;
 };
 type Profile = { id: string; name: string; phone: string; active_mode: string; is_online: boolean };
 
@@ -231,22 +218,6 @@ function AdminPage() {
       return (data ?? []) as Booking[];
     },
   });
-
-  useEffect(() => {
-    const ch = supabase
-      .channel("admin-operations-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => {
-        void qc.invalidateQueries({ queryKey: ["admin-bookings"] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "trip_issues" }, () => {
-        void qc.invalidateQueries({ queryKey: ["admin-trip-issues"] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "driver_booking_passes" }, () => {
-        void qc.invalidateQueries({ queryKey: ["admin-driver-booking-passes"] });
-      })
-      .subscribe();
-    return () => { void supabase.removeChannel(ch); };
-  }, [qc]);
 
   const profiles = useQuery({
     queryKey: ["admin-profiles"],
@@ -456,14 +427,6 @@ function AdminPage() {
             <Ban className="h-3.5 w-3.5" />
             Disputes
           </TabsTrigger>
-          <TabsTrigger value="issues" className="gap-1.5">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            Trip Issues
-          </TabsTrigger>
-          <TabsTrigger value="passes" className="gap-1.5">
-            <Clock3 className="h-3.5 w-3.5" />
-            Driver Passes
-          </TabsTrigger>
           <TabsTrigger value="audit" className="gap-1.5">
             <ShieldCheck className="h-3.5 w-3.5" />
             Audit & Security
@@ -671,12 +634,6 @@ function AdminPage() {
         {/* DISPUTES */}
         <TabsContent value="disputes">
           <DisputesTab profileMap={profileMap} />
-        </TabsContent>
-        <TabsContent value="issues">
-          <TripIssuesTab profileMap={profileMap} />
-        </TabsContent>
-        <TabsContent value="passes">
-          <DriverPassesTab />
         </TabsContent>
         {/* AUDIT & SECURITY */}
         <TabsContent value="audit">
@@ -944,11 +901,12 @@ function LiveTripsTab({
   drivers: Profile[];
   onChanged: () => void;
 }) {
-  const [statusFilter, setStatusFilter] = useState<"all" | "searching" | "accepted" | "in_transit" | "completed" | "cancelled">("all");
+  const live = bookings.filter(
+    (b) => b.status === "pending" || b.status === "accepted" || b.status === "in_progress",
+  );
   const [assignFor, setAssignFor] = useState<Booking | null>(null);
   const [driverId, setDriverId] = useState<string>("");
   const [cancelFor, setCancelFor] = useState<Booking | null>(null);
-  const [detailsFor, setDetailsFor] = useState<Booking | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -984,46 +942,20 @@ function LiveTripsTab({
     onChanged();
   };
 
-  const availableDrivers = drivers.filter(
-    (d) =>
-      d.is_online &&
-      !bookings.some(
-        (b) => b.driver_id === d.id && (b.status === "accepted" || b.status === "in_progress"),
-      ),
-  );
-  const filteredTrips = bookings.filter((b) => {
-    if (statusFilter === "all") return true;
-    if (statusFilter === "searching") return b.status === "pending";
-    if (statusFilter === "in_transit") return b.status === "in_progress";
-    return b.status === statusFilter;
-  });
+  const availableDrivers = drivers.filter((d) => d.is_online);
 
   return (
     <section className="surface-card">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <div>
-          <h3 className="font-display text-xl tracking-wide text-secondary">
-            Trip monitor ({filteredTrips.length})
-          </h3>
-          <p className="text-xs text-muted-foreground">Live booking status and manual driver assignment.</p>
-        </div>
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-          <SelectTrigger className="h-9 w-36 text-xs"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="searching">Searching</SelectItem>
-            <SelectItem value="accepted">Accepted</SelectItem>
-            <SelectItem value="in_transit">In transit</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="border-b border-border px-4 py-3">
+        <h3 className="font-display text-xl tracking-wide text-secondary">
+          Live trips ({live.length})
+        </h3>
       </div>
       <div className="divide-y divide-border">
-        {filteredTrips.length === 0 && (
+        {live.length === 0 && (
           <p className="px-4 py-8 text-center text-sm text-muted-foreground">No live trips.</p>
         )}
-        {filteredTrips.map((b) => {
+        {live.map((b) => {
           const meta = STATUS_META[b.status] ?? STATUS_META.pending;
           const customer = profileMap.get(b.customer_id);
           const driver = b.driver_id ? profileMap.get(b.driver_id) : null;
@@ -1032,9 +964,6 @@ function LiveTripsTab({
               <div className="min-w-0">
                 <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <Badge className={tone(meta.tone)}>{meta.label}</Badge>
-                  {b.is_multi_stop && (
-                    <Badge className="bg-primary text-primary-foreground hover:bg-primary">Multi-Stop</Badge>
-                  )}
                   <span>
                     {vehicleLabel(b.vehicle_type)} · {b.distance_km} km · ₹
                     {Number(b.fare).toFixed(0)}
@@ -1062,23 +991,11 @@ function LiveTripsTab({
                     </>
                   )}
                 </p>
-                {b.is_multi_stop && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {(b.stops ?? []).map((stop) => (
-                      <Badge key={stop.sequence} variant="outline" className="text-[10px]">
-                        Stop {stop.sequence}: {stop.address}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
               </div>
               <div className="flex flex-col gap-1.5">
-                <Button size="sm" variant="outline" onClick={() => setDetailsFor(b)}>
-                  Route details
-                </Button>
-                {b.status === "pending" && (
+                {!driver && b.status === "pending" && (
                   <Button size="sm" variant="outline" onClick={() => setAssignFor(b)}>
-                    {driver ? "Reassign driver" : "Assign driver"}
+                    Assign driver
                   </Button>
                 )}
                 <Button size="sm" variant="ghost" onClick={() => setCancelFor(b)}>
@@ -1120,41 +1037,6 @@ function LiveTripsTab({
               {busy ? "Assigning..." : "Assign"}
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!detailsFor} onOpenChange={(o) => !o && setDetailsFor(null)}>
-        <DialogContent className="max-h-[85vh] max-w-xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Trip route details</DialogTitle>
-          </DialogHeader>
-          {detailsFor && (
-            <div className="space-y-3">
-              <div className="rounded-lg border p-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge className={tone((STATUS_META[detailsFor.status] ?? STATUS_META.pending).tone)}>
-                    {(STATUS_META[detailsFor.status] ?? STATUS_META.pending).label}
-                  </Badge>
-                  {detailsFor.is_multi_stop && (
-                    <Badge className="bg-primary text-primary-foreground hover:bg-primary">Multi-Stop</Badge>
-                  )}
-                </div>
-                <div className="mt-3 space-y-2">
-                  <p className="text-sm font-medium text-secondary">Pickup: {detailsFor.pickup_address}</p>
-                  {(detailsFor.stops ?? []).map((stop) => (
-                    <p key={stop.sequence} className="text-sm text-warning-foreground">
-                      Stop {stop.sequence}: {stop.address}
-                    </p>
-                  ))}
-                  <p className="text-sm font-medium text-secondary">Final Drop: {detailsFor.drop_address}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-md border p-2">Stops: <strong>{detailsFor.total_stops ?? 1}</strong></div>
-                <div className="rounded-md border p-2">Fare: <strong>₹{Number(detailsFor.fare).toFixed(0)}</strong></div>
-              </div>
-            </div>
-          )}
         </DialogContent>
       </Dialog>
 

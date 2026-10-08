@@ -50,7 +50,7 @@ export interface CheckoutRequest {
   customerPhone?: string;
   description: string;
   method?: string;
-  /** Kept for compatibility; Razorpay account settings control available methods. */
+  /** True for rzp_test_ keys: restricts checkout to cards only. */
   testMode?: boolean;
 }
 
@@ -85,9 +85,8 @@ export async function openRazorpayCheckout(req: CheckoutRequest): Promise<Checko
       handler: (response: CheckoutSuccess) => finish(response),
     };
 
-    // MiniPort Test Mode is intentionally card-only. Razorpay's sandbox uses
-    // dedicated dummy card details; disabling other rails avoids real-bank-style
-    // screens and keeps the test flow deterministic.
+    // Test Mode wallet top-ups are card-only (Razorpay sandbox test cards).
+    // Live mode keeps the merchant account's configured methods unchanged.
     if (req.testMode) {
       checkoutOptions.method = {
         card: true,
@@ -98,7 +97,6 @@ export async function openRazorpayCheckout(req: CheckoutRequest): Promise<Checko
         paylater: false,
       };
     }
-
     const rzp = new Razorpay(checkoutOptions);
 
     rzp.on("payment.failed", (response: unknown) => {

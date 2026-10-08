@@ -1,13 +1,12 @@
 import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Clock3, IndianRupee, ShieldCheck, Zap, FlaskConical } from "lucide-react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { Clock3, IndianRupee, ShieldCheck, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { MINIPORT_TEST_MODE } from "@/lib/testing";
 
 type PassRow = {
   id: string;
@@ -27,9 +26,8 @@ function formatRemaining(ms: number) {
 
 export function DailyPassCard() {
   const { user } = useAuth();
+  const qc = useQueryClient();
   const [now, setNow] = useState(() => Date.now());
-  const [busy, setBusy] = useState(false);
-  const [rechargeBusy, setRechargeBusy] = useState(false);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -40,7 +38,7 @@ export function DailyPassCard() {
     queryKey: ["driver-daily-pass", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { data, error } = await (supabase as unknown as UntypedClient)
+      const { data, error } = await supabase
         .from("driver_daily_passes")
         .select("id,driver_id,starts_at,ends_at,amount,status")
         .eq("driver_id", user!.id)
@@ -63,7 +61,6 @@ export function DailyPassCard() {
       const { data, error } = await supabase
         .from("wallet_accounts")
         .select("cash_balance")
-        .eq("user_id", user!.id)
         .maybeSingle();
       if (error) throw error;
       return Number(data?.cash_balance ?? 0);
@@ -71,44 +68,23 @@ export function DailyPassCard() {
     refetchInterval: 30_000,
   });
 
-  const activate = async () => {
-    setBusy(true);
-    try {
-      const { data, error } = await (supabase as unknown as UntypedClient).rpc(
-        "purchase_daily_pass",
-        { p_driver_id: user!.id, p_pass_price: 99 },
+  const activate = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc(
+        "activate_driver_daily_pass",
       );
       if (error) throw error;
-      const result = data as { success?: boolean; message?: string };
-      if (!result?.success) throw new Error(result?.message || "Could not activate Daily Pass");
+      return data as PassRow;
+    },
+    onSuccess: () => {
       toast.success("₹99 Daily Pass activated for 24 hours");
-      await Promise.all([
-        pass.refetch(),
-        wallet.refetch(),
-      ]);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not activate Daily Pass");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const testRecharge = async () => {
-    setRechargeBusy(true);
-    try {
-      const { data, error } = await (supabase as unknown as UntypedClient).rpc(
-        "test_recharge_driver_wallet",
-        { p_amount: 500 },
-      );
-      if (error) throw error;
-      toast.success("Test recharge +₹500 added");
-      await wallet.refetch();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Test recharge failed");
-    } finally {
-      setRechargeBusy(false);
-    }
-  };
+      void qc.invalidateQueries({ queryKey: ["driver-daily-pass"] });
+      void qc.invalidateQueries({ queryKey: ["driver-daily-pass-wallet"] });
+      void qc.invalidateQueries({ queryKey: ["driver-wallet"] });
+      void qc.invalidateQueries({ queryKey: ["driver-feed"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Could not activate Daily Pass"),
+  });
 
   const active = pass.data;
   const balance = wallet.data ?? 0;
@@ -148,37 +124,26 @@ export function DailyPassCard() {
             <Clock3 className="h-3.5 w-3.5" />
             Expires {new Date(active.ends_at).toLocaleString("en-IN")}
           </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Completed rides during the active pass receive 100% of the fare with no MiniPort
+            commission.
+          </p>
         </div>
       ) : (
-        <div className="mt-4 flex flex-col gap-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="flex items-center gap-1 text-sm font-semibold text-secondary">
-                <IndianRupee className="h-4 w-4 text-primary" /> ₹99 from wallet
-              </p>
-              <p className="text-xs text-muted-foreground">Wallet balance: ₹{balance.toFixed(0)}</p>
-            </div>
-            {balance >= 99 ? (
-              <Button onClick={() => void activate()} disabled={busy}>
-                {busy ? "Activating…" : "Activate for ₹99"}
-              </Button>
-            ) : (
-              <Button variant="outline" asChild>
-                <Link to="/wallet">Add money to wallet</Link>
-              </Button>
-            )}
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="flex items-center gap-1 text-sm font-semibold text-secondary">
+              <IndianRupee className="h-4 w-4 text-primary" /> ₹99 from wallet
+            </p>
+            <p className="text-xs text-muted-foreground">Wallet balance: ₹{balance.toFixed(0)}</p>
           </div>
-
-          {MINIPORT_TEST_MODE && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full sm:w-fit"
-              onClick={() => void testRecharge()}
-              disabled={rechargeBusy}
-            >
-              <FlaskConical className="h-4 w-4" />
-              {rechargeBusy ? "Adding…" : "Test Recharge (+₹500)"}
+          {balance >= 99 ? (
+            <Button onClick={() => activate.mutate()} disabled={activate.isPending}>
+              {activate.isPending ? "Activating…" : "Activate for ₹99"}
+            </Button>
+          ) : (
+            <Button variant="outline" asChild>
+              <Link to="/wallet">Add money to wallet</Link>
             </Button>
           )}
         </div>

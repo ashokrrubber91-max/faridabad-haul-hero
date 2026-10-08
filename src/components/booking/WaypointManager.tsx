@@ -15,8 +15,6 @@ export function WaypointManager({
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
 }) {
-  const maxStops = 3;
-
   return (
     <div className="space-y-2">
       {stops.length > 0 && (
@@ -71,8 +69,8 @@ export function WaypointManager({
           ))}
         </ul>
       )}
-      <Button type="button" variant="outline" size="sm" onClick={onAdd} disabled={stops.length >= maxStops} className="w-full">
-        <Plus className="h-3.5 w-3.5" /> {stops.length >= maxStops ? "Maximum 3 extra stops" : "+ Add Extra Stop"}
+      <Button type="button" variant="outline" size="sm" onClick={onAdd} className="w-full">
+        <Plus className="h-3.5 w-3.5" /> Add a stop
       </Button>
     </div>
   );
