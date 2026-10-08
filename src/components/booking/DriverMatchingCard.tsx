@@ -54,7 +54,7 @@ export function DriverMatchingCard({
     queryKey: ["driver-search-stats", bookingId],
     enabled: !!bookingId,
     queryFn: async () => {
-      const { data, error } = await (supabase as unknown as UntypedClient).rpc(
+      const { data, error } = await supabase.rpc(
         "get_booking_driver_search_stats",
         {
           _booking_id: bookingId,
@@ -82,7 +82,7 @@ export function DriverMatchingCard({
       return;
     }
     try {
-      const { data, error } = await (supabase as unknown as UntypedClient).rpc(
+      const { data, error } = await supabase.rpc(
         "set_booking_fare_boost",
         {
           _booking_id: bookingId,

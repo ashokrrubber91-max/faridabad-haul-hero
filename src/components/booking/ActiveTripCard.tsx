@@ -86,7 +86,7 @@ export function ActiveTripCard({
       toast.error("Please sign in again to report an issue");
       return;
     }
-    const { error } = await (supabase as unknown as UntypedClient).from("trip_issues").insert({
+    const { error } = await supabase.from("trip_issues").insert({
       booking_id: bookingId,
       reporter_id: user.id,
       issue_type: tag,
