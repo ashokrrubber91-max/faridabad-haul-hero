@@ -130,7 +130,9 @@ function AccountPage() {
       start.setHours(0, 0, 0, 0);
       const { data, error } = await supabase
         .from("bookings")
-        .select("id, fare, final_fare, commission_amount, driver_net_earning, updated_at, created_at, status")
+        .select(
+          "id, fare, final_fare, commission_amount, driver_net_earning, updated_at, created_at, status",
+        )
         .eq("driver_id", user.id)
         .eq("status", "completed")
         .gte("updated_at", start.toISOString())
@@ -353,7 +355,7 @@ function AccountPage() {
               ? "Admin identity, platform controls and sign-out."
               : isDriverProfile
                 ? "Driver profile, vehicle documents and account settings."
-                : "Profile, addresses, GST and invoices."}
+                : "Profile, addresses and GST details."}
           </p>
         </header>
 
@@ -440,7 +442,9 @@ function AccountPage() {
                       <dl className="mt-2 grid grid-cols-3 gap-2 text-xs">
                         <div>
                           <dt className="text-muted-foreground">Total earnings</dt>
-                          <dd className="font-semibold text-secondary">₹{month.gross.toFixed(0)}</dd>
+                          <dd className="font-semibold text-secondary">
+                            ₹{month.gross.toFixed(0)}
+                          </dd>
                         </div>
                         <div>
                           <dt className="text-muted-foreground">Platform commission</dt>
