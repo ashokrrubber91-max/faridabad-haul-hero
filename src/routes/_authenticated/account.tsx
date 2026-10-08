@@ -141,7 +141,7 @@ function AccountPage() {
   const isDriverMode = isDriverProfile;
   const driverStateKnown =
     !authLoading && freshRoles.isSuccess && activeModeQuery.isSuccess && driverKyc.isSuccess;
-  const showCustomerSections = driverStateKnown && isCustomerProfile;
+  const showCustomerSections = driverStateKnown && isCustomerProfile && !hasDriverRole && !hasDriverDomain;
 
   const monthlyDriverEarnings = useQuery({
     queryKey: ["driver-monthly-earnings", user?.id],
