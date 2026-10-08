@@ -50,7 +50,7 @@ export interface CheckoutRequest {
   customerPhone?: string;
   description: string;
   method?: string;
-  /** Kept for compatibility; Razorpay account settings control available methods. */
+  /** True for rzp_test_ keys: restricts checkout to cards only. */
   testMode?: boolean;
 }
 
@@ -85,9 +85,18 @@ export async function openRazorpayCheckout(req: CheckoutRequest): Promise<Checko
       handler: (response: CheckoutSuccess) => finish(response),
     };
 
-    // Do not force a payment-method restriction here. Razorpay decides which
-    // methods are available for the merchant account; this lets enabled UPI,
-    // cards and other supported methods appear in Test Mode as configured.
+    // Test Mode wallet top-ups are card-only (Razorpay sandbox test cards).
+    // Live mode keeps the merchant account's configured methods unchanged.
+    if (req.testMode) {
+      checkoutOptions.method = {
+        card: true,
+        upi: false,
+        netbanking: false,
+        wallet: false,
+        emi: false,
+        paylater: false,
+      };
+    }
     const rzp = new Razorpay(checkoutOptions);
 
     rzp.on("payment.failed", (response: unknown) => {

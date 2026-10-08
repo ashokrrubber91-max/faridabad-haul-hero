@@ -130,7 +130,7 @@ function AccountPage() {
       start.setHours(0, 0, 0, 0);
       const { data, error } = await supabase
         .from("bookings")
-        .select("id, fare, driver_net_earning, updated_at, created_at, status")
+        .select("id, fare, final_fare, commission_amount, driver_net_earning, updated_at, created_at, status")
         .eq("driver_id", user.id)
         .eq("status", "completed")
         .gte("updated_at", start.toISOString())
@@ -138,15 +138,22 @@ function AccountPage() {
         .order("updated_at", { ascending: false });
       if (error) throw error;
 
-      const months = new Map<string, { label: string; earnings: number; rides: number }>();
+      const months = new Map<
+        string,
+        { label: string; gross: number; commission: number; earnings: number; rides: number }
+      >();
       for (const booking of data ?? []) {
         const date = new Date(booking.updated_at ?? booking.created_at);
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
         const current = months.get(key) ?? {
           label: date.toLocaleDateString("en-IN", { month: "long", year: "numeric" }),
+          gross: 0,
+          commission: 0,
           earnings: 0,
           rides: 0,
         };
+        current.gross += Number(booking.final_fare ?? booking.fare ?? 0);
+        current.commission += Number(booking.commission_amount ?? 0);
         current.earnings += Number(booking.driver_net_earning ?? booking.fare ?? 0);
         current.rides += 1;
         months.set(key, current);
@@ -155,6 +162,22 @@ function AccountPage() {
       return Array.from(months.entries())
         .sort(([a], [b]) => b.localeCompare(a))
         .map(([key, value]) => ({ key, ...value }));
+    },
+  });
+
+  const payoutHistory = useQuery({
+    queryKey: ["driver-payout-history", user?.id],
+    enabled: Boolean(user?.id) && isDriverProfile && !isAdmin,
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("withdrawal_requests")
+        .select("id, amount, method, status, note, created_at")
+        .eq("driver_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data ?? [];
     },
   });
 
@@ -388,7 +411,7 @@ function AccountPage() {
                   Monthly earnings &amp; rides
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  Completed rides and your net earning, month by month.
+                  Earnings, commission and net, month by month.
                 </p>
               </div>
             </div>
@@ -407,18 +430,74 @@ function AccountPage() {
                     key={month.key}
                     className="flex items-center justify-between gap-3 border-b p-3 last:border-b-0"
                   >
-                    <div>
-                      <p className="text-sm font-semibold text-secondary">{month.label}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {month.rides} completed {month.rides === 1 ? "ride" : "rides"}
-                      </p>
+                    <div className="w-full">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-secondary">{month.label}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {month.rides} completed {month.rides === 1 ? "ride" : "rides"}
+                        </p>
+                      </div>
+                      <dl className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <dt className="text-muted-foreground">Total earnings</dt>
+                          <dd className="font-semibold text-secondary">₹{month.gross.toFixed(0)}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">Platform commission</dt>
+                          <dd className="font-semibold text-secondary">
+                            ₹{month.commission.toFixed(0)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted-foreground">Net earning</dt>
+                          <dd className="font-display text-base text-success">
+                            ₹{month.earnings.toFixed(0)}
+                          </dd>
+                        </div>
+                      </dl>
                     </div>
-                    <p className="font-display text-lg text-success">
-                      ₹{month.earnings.toFixed(0)}
-                    </p>
                   </div>
                 ))}
               </div>
+            )}
+          </section>
+        )}
+
+        {isDriverProfile && !isAdmin && (
+          <section className="surface-card p-5">
+            <h2 className="font-display text-xl tracking-wide text-secondary">
+              Wallet payout history
+            </h2>
+            {payoutHistory.isLoading ? (
+              <Loader2 className="mt-4 h-4 w-4 animate-spin text-primary" />
+            ) : payoutHistory.isError ? (
+              <p className="mt-4 text-sm text-destructive">Could not load payouts.</p>
+            ) : (payoutHistory.data ?? []).length === 0 ? (
+              <p className="mt-4 text-sm text-muted-foreground">No payout requests yet.</p>
+            ) : (
+              <ul className="mt-4 divide-y rounded-md border">
+                {(payoutHistory.data ?? []).map((w) => (
+                  <li key={w.id} className="flex items-start justify-between gap-3 p-3 text-sm">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-secondary">
+                        ₹{Number(w.amount).toFixed(0)} · {w.method.toUpperCase()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(w.created_at).toLocaleDateString("en-IN")}
+                      </p>
+                      {w.note && (
+                        <p className="mt-1 break-words text-xs text-muted-foreground">
+                          {w.status === "rejected" ? "Reason: " : "UTR / note: "}
+                          {w.note}
+                        </p>
+                      )}
+                    </div>
+                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs capitalize">
+                      {w.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
         )}
