@@ -751,25 +751,31 @@ export type Database = {
         Row: {
           amount: number | null
           driver_id: string | null
+          ends_at: string
           expires_at: string | null
           id: string
           purchased_at: string | null
+          starts_at: string
           status: string | null
         }
         Insert: {
           amount?: number | null
           driver_id?: string | null
+          ends_at?: string
           expires_at?: string | null
           id?: string
           purchased_at?: string | null
+          starts_at?: string
           status?: string | null
         }
         Update: {
           amount?: number | null
           driver_id?: string | null
+          ends_at?: string
           expires_at?: string | null
           id?: string
           purchased_at?: string | null
+          starts_at?: string
           status?: string | null
         }
         Relationships: [
@@ -2061,9 +2067,11 @@ export type Database = {
         Returns: {
           amount: number | null
           driver_id: string | null
+          ends_at: string
           expires_at: string | null
           id: string
           purchased_at: string | null
+          starts_at: string
           status: string | null
         }
         SetofOptions: {

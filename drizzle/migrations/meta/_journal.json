@@ -43,6 +43,13 @@
       "when": 1791432203503,
       "tag": "0005_driver_daily_pass_atomic_zero_commission",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791432297674,
+      "tag": "0006_daily_pass_starts_ends_columns",
+      "breakpoints": true
     }
   ]
 }
