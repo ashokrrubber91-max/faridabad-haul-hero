@@ -143,7 +143,7 @@ export function ReferralCard() {
       </div>
 
       <p className="mt-3 text-xs text-muted-foreground">
-        Customer referral: ₹100 after their first ride is booked. Driver referral: ₹100 after their
+        Customer referral: ₹100 after their first ride is completed. Driver referral: ₹100 after their
         first ride is completed. Each invited account can qualify only once.
       </p>
 
