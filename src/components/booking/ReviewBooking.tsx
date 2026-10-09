@@ -33,6 +33,9 @@ export function ReviewBooking({
   gstin,
   scheduledAt,
   onScheduledAtChange,
+  cargoWeightKg,
+  onCargoWeightKgChange,
+  maxWeightKg,
   paymentMode,
   onPaymentModeChange,
   onBack,
@@ -55,6 +58,9 @@ export function ReviewBooking({
   gstin: CustomerGstin | null;
   scheduledAt: string;
   onScheduledAtChange: (value: string) => void;
+  cargoWeightKg: string;
+  onCargoWeightKgChange: (value: string) => void;
+  maxWeightKg: number | null;
   paymentMode: "cash" | "wallet" | "upi";
   onPaymentModeChange: (mode: "cash" | "wallet" | "upi") => void;
   onBack: () => void;
@@ -69,6 +75,8 @@ export function ReviewBooking({
   const { map } = useVehicleMap();
   const specs = map.has(vehicle) ? vehicleSpecs(map.get(vehicle)!) : [];
   const extraStopFee = stops.length * 50;
+  const minScheduledAt = new Date(Date.now() + 31 * 60_000 - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+  const maxScheduledAt = new Date(Date.now() + 30 * 24 * 60 * 60_000 - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 
   return (
     <div className="surface-card p-5">
@@ -124,6 +132,25 @@ export function ReviewBooking({
             </dl>
           </div>
         )}
+
+        <div className="rounded-xl border p-4">
+          <label htmlFor="cargo-weight-kg" className="text-sm font-bold text-secondary">Cargo weight (kg)</label>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Enter the estimated goods weight. {maxWeightKg ? "Selected vehicle capacity: " + maxWeightKg + " kg." : "Use the vehicle's rated capacity."}
+          </p>
+          <input
+            id="cargo-weight-kg"
+            type="number"
+            inputMode="decimal"
+            min="0.1"
+            step="0.1"
+            max={maxWeightKg ?? 100000}
+            value={cargoWeightKg}
+            onChange={(e) => onCargoWeightKgChange(e.target.value)}
+            placeholder="e.g. 450"
+            className="mt-3 h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+          />
+        </div>
 
         {notes.trim() && (
           <div className="rounded-md border p-3">
@@ -189,8 +216,8 @@ export function ReviewBooking({
         <div className="rounded-xl border p-4">
           <p className="text-sm font-bold text-secondary">Pickup schedule</p>
           <p className="mt-1 text-xs text-muted-foreground">Leave blank for the earliest available driver, or choose a future pickup time.</p>
-          <input type="datetime-local" value={scheduledAt} min={new Date(Date.now() + 31 * 60_000).toISOString().slice(0, 16)} onChange={(e) => onScheduledAtChange(e.target.value)} className="mt-3 h-11 w-full rounded-md border border-input bg-background px-3 text-sm" />
-          {scheduledAt && <p className="mt-2 text-xs font-medium text-primary">Driver alerts will be sent 30 minutes before pickup.</p>}
+          <input type="datetime-local" value={scheduledAt} min={minScheduledAt} max={maxScheduledAt} onChange={(e) => onScheduledAtChange(e.target.value)} className="mt-3 h-11 w-full rounded-md border border-input bg-background px-3 text-sm" />
+          {scheduledAt && <p className="mt-2 text-xs font-medium text-primary">Schedule 31 minutes to 30 days ahead. Dispatch happens only after payment succeeds; driver alerts go out 30 minutes before pickup.</p>}
         </div>
 
         <div className="rounded-xl border p-4">
