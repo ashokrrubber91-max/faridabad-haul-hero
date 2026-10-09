@@ -85,7 +85,7 @@ function WalletPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("driver_bank_accounts")
-        .select("id, driver_id, amount, method, status, note, upi_id, utr_number, rejection_reason, created_at, processed_at")
+        .select("id, driver_id, account_holder, bank_name, account_number, ifsc, upi_id, is_default, created_at, updated_at")
         .eq("driver_id", user!.id)
         .order("is_default", { ascending: false });
       if (error) throw error;
