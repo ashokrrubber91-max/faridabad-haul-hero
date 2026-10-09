@@ -72,6 +72,21 @@ async function buildClientContext(role: "customer" | "driver", userId?: string):
     }
 
     if (role === "driver") {
+      // Voice co-pilot context: answer today's completed rides and earnings from real records.
+      const now = new Date();
+      const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const { data: todayRows } = await supabase
+        .from("bookings")
+        .select("fare,commission_amount,driver_net_earning,updated_at,created_at")
+        .eq("driver_id", userId)
+        .eq("status", "completed")
+        .gte("updated_at", dayStart)
+        .lt("updated_at", new Date(new Date(dayStart).getTime() + 24 * 60 * 60 * 1000).toISOString());
+      const rides = todayRows ?? [];
+      const gross = rides.reduce((sum, row) => sum + Number(row.fare ?? 0), 0);
+      const commission = rides.reduce((sum, row) => sum + Number(row.commission_amount ?? 0), 0);
+      const net = rides.reduce((sum, row) => sum + Number(row.driver_net_earning ?? (Number(row.fare ?? 0) - Number(row.commission_amount ?? 0)), 0);
+      parts.push(`Today's driver earnings: ${rides.length} completed rides, gross fare ₹${gross.toFixed(0)}, commission ₹${commission.toFixed(0)}, net earning ₹${net.toFixed(0)}. If asked by voice, speak these exact figures and do not estimate.`);
       const { data: kyc } = await supabase
         .from("driver_kyc")
         .select("status,rejection_reason")
