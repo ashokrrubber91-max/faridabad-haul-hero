@@ -206,6 +206,7 @@ export type Database = {
       booking_stops: {
         Row: {
           address: string
+          arrived_at: string | null
           booking_id: string
           contact_name: string | null
           contact_phone: string | null
@@ -216,9 +217,12 @@ export type Database = {
           longitude: number | null
           place_id: string | null
           sequence: number
+          status: string
+          verified_at: string | null
         }
         Insert: {
           address: string
+          arrived_at?: string | null
           booking_id: string
           contact_name?: string | null
           contact_phone?: string | null
@@ -229,9 +233,12 @@ export type Database = {
           longitude?: number | null
           place_id?: string | null
           sequence: number
+          status?: string
+          verified_at?: string | null
         }
         Update: {
           address?: string
+          arrived_at?: string | null
           booking_id?: string
           contact_name?: string | null
           contact_phone?: string | null
@@ -242,6 +249,8 @@ export type Database = {
           longitude?: number | null
           place_id?: string | null
           sequence?: number
+          status?: string
+          verified_at?: string | null
         }
         Relationships: [
           {
@@ -255,6 +264,7 @@ export type Database = {
       }
       bookings: {
         Row: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -268,7 +278,8 @@ export type Database = {
           coupon_discount: number
           cargo_weight_kg: number | null
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -283,6 +294,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -300,13 +312,17 @@ export type Database = {
           service_zone: string
           scheduled_for: string | null
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         Insert: {
+          booking_source?: string
           cancellation_category?:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -320,7 +336,8 @@ export type Database = {
           coupon_discount?: number
           cargo_weight_kg?: number | null
           created_at?: string
-          customer_id: string
+          customer_id?: string | null
+          customer_phone?: string | null
           distance_km: number
           driver_id?: string | null
           driver_net_earning?: number
@@ -335,6 +352,7 @@ export type Database = {
           helper_count?: number
           helper_fee?: number
           id?: string
+          is_multi_stop?: boolean
           loading_overtime_minutes?: number
           loading_started_at?: string | null
           loading_stopped_at?: string | null
@@ -352,13 +370,17 @@ export type Database = {
           service_zone?: string
           scheduled_for?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
+          stops?: Json
+          total_stops?: number
           unloading_overtime_minutes?: number
           unloading_started_at?: string | null
           unloading_stopped_at?: string | null
           updated_at?: string
           vehicle_type: string
+          whatsapp_message_id?: string | null
         }
         Update: {
+          booking_source?: string
           cancellation_category?:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -372,7 +394,8 @@ export type Database = {
           coupon_discount?: number
           cargo_weight_kg?: number | null
           created_at?: string
-          customer_id?: string
+          customer_id?: string | null
+          customer_phone?: string | null
           distance_km?: number
           driver_id?: string | null
           driver_net_earning?: number
@@ -387,6 +410,7 @@ export type Database = {
           helper_count?: number
           helper_fee?: number
           id?: string
+          is_multi_stop?: boolean
           loading_overtime_minutes?: number
           loading_started_at?: string | null
           loading_stopped_at?: string | null
@@ -404,11 +428,14 @@ export type Database = {
           service_zone?: string
           scheduled_for?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
+          stops?: Json
+          total_stops?: number
           unloading_overtime_minutes?: number
           unloading_started_at?: string | null
           unloading_stopped_at?: string | null
           updated_at?: string
           vehicle_type?: string
+          whatsapp_message_id?: string | null
         }
         Relationships: [
           {
@@ -1462,6 +1489,9 @@ export type Database = {
           id: string
           issue_type: string
           reporter_id: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
         }
         Insert: {
           booking_id: string
@@ -1469,6 +1499,9 @@ export type Database = {
           id?: string
           issue_type: string
           reporter_id: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
         }
         Update: {
           booking_id?: string
@@ -1476,6 +1509,9 @@ export type Database = {
           id?: string
           issue_type?: string
           reporter_id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
         }
         Relationships: [
           {
@@ -1979,8 +2015,12 @@ export type Database = {
           id: string
           method: string
           note: string | null
+          processed_at: string | null
+          rejection_reason: string | null
           status: Database["public"]["Enums"]["withdrawal_status"]
           updated_at: string
+          upi_id: string | null
+          utr_number: string | null
         }
         Insert: {
           amount: number
@@ -1989,8 +2029,12 @@ export type Database = {
           id?: string
           method?: string
           note?: string | null
+          processed_at?: string | null
+          rejection_reason?: string | null
           status?: Database["public"]["Enums"]["withdrawal_status"]
           updated_at?: string
+          upi_id?: string | null
+          utr_number?: string | null
         }
         Update: {
           amount?: number
@@ -1999,8 +2043,12 @@ export type Database = {
           id?: string
           method?: string
           note?: string | null
+          processed_at?: string | null
+          rejection_reason?: string | null
           status?: Database["public"]["Enums"]["withdrawal_status"]
           updated_at?: string
+          upi_id?: string | null
+          utr_number?: string | null
         }
         Relationships: []
       }
@@ -2012,6 +2060,7 @@ export type Database = {
       accept_booking: {
         Args: { _booking_id: string }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2024,7 +2073,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -2039,6 +2089,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -2055,11 +2106,14 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -2094,6 +2148,7 @@ export type Database = {
       admin_assign_driver: {
         Args: { _booking_id: string; _driver_id: string }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2106,7 +2161,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -2121,6 +2177,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -2137,11 +2194,14 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -2153,6 +2213,7 @@ export type Database = {
       admin_cancel_booking: {
         Args: { _booking_id: string; _reason: string }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2165,7 +2226,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -2180,6 +2242,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -2196,11 +2259,14 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -2213,6 +2279,7 @@ export type Database = {
       admin_mark_refunded: {
         Args: { _booking_id: string }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2225,7 +2292,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -2240,6 +2308,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -2256,15 +2325,37 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
           to: "bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_resolve_trip_issue: {
+        Args: { _issue_id: string; _resolution_note: string }
+        Returns: {
+          booking_id: string
+          created_at: string
+          id: string
+          issue_type: string
+          reporter_id: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trip_issues"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -2441,6 +2532,7 @@ export type Database = {
       cancel_booking: {
         Args: { _booking_id: string; _note?: string; _reason: string }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2453,7 +2545,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -2468,6 +2561,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -2484,11 +2578,14 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -2653,6 +2750,7 @@ export type Database = {
           pickup_otp: string
         }[]
       }
+      get_booking_stop_otps: { Args: { _booking_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2662,6 +2760,10 @@ export type Database = {
       }
       is_kyc_approved: { Args: { _user_id: string }; Returns: boolean }
       is_trusted_booking_write: { Args: never; Returns: boolean }
+      mark_booking_stop_arrived: {
+        Args: { _booking_id: string; _sequence: number }
+        Returns: Json
+      }
       ops_task_set_status: {
         Args: { _id: string; _status: string }
         Returns: {
@@ -2688,6 +2790,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      process_withdrawal_admin: {
+        Args: {
+          p_reason?: string
+          p_request_id: string
+          p_status: string
+          p_utr_number?: string
+        }
+        Returns: Json
+      }
       record_consent: {
         Args: {
           _privacy_version: string
@@ -2709,6 +2820,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      request_wallet_withdrawal: {
+        Args: { p_amount: number; p_upi_id: string }
+        Returns: Json
       }
       review_driver_kyc: {
         Args: {
@@ -2755,6 +2870,7 @@ export type Database = {
       set_booking_fare_boost: {
         Args: { _booking_id: string; _boost: number }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2767,7 +2883,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -2782,6 +2899,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -2798,11 +2916,14 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -2814,6 +2935,7 @@ export type Database = {
       set_booking_stage: {
         Args: { _action: string; _booking_id: string }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2826,7 +2948,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -2841,6 +2964,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -2857,11 +2981,14 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -2975,6 +3102,7 @@ export type Database = {
       switch_failed_payment_to_cod: {
         Args: { _booking_id: string }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2987,7 +3115,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -3002,6 +3131,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -3018,11 +3148,14 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -3050,6 +3183,10 @@ export type Database = {
           }
       verify_booking_otp: {
         Args: { _booking_id: string; _otp: string; _stage: string }
+        Returns: Json
+      }
+      verify_booking_stop: {
+        Args: { _booking_id: string; _otp: string; _sequence: number }
         Returns: Json
       }
     }
