@@ -348,22 +348,6 @@ function DriverPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (loading)
-    return (
-      <Center>
-        <Loader2 className="h-5 w-5 animate-spin text-primary" />
-      </Center>
-    );
-  if (role && role !== "driver" && role !== "admin") return <Navigate to="/customer" />;
-  if (
-    role !== "admin" &&
-    roles.includes("driver") &&
-    roles.includes("customer") &&
-    activeMode === "customer"
-  ) {
-    return <Navigate to="/customer" />;
-  }
-
   const pending = (queue.data ?? []).filter(
     (b) => b.status === "pending" && !b.driver_id && !b.cancelled_at,
   );
@@ -473,6 +457,22 @@ function DriverPage() {
     kycVerified && isOnline && !activeJob
       ? pending.find((b) => !dismissed.includes(b.id))
       : undefined;
+
+  if (loading)
+    return (
+      <Center>
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      </Center>
+    );
+  if (role && role !== "driver" && role !== "admin") return <Navigate to="/customer" />;
+  if (
+    role !== "admin" &&
+    roles.includes("driver") &&
+    roles.includes("customer") &&
+    activeMode === "customer"
+  ) {
+    return <Navigate to="/customer" />;
+  }
 
   return (
     <div className="space-y-6">
