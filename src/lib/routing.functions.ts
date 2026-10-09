@@ -64,9 +64,6 @@ export const createBooking = createServerFn({ method: "POST" })
       const pickupMs = scheduledAt.getTime();
       if (pickupMs < now + 31 * 60_000) throw new Error("Scheduled pickup must be at least 31 minutes from now.");
       if (pickupMs > now + 30 * 24 * 60 * 60_000) throw new Error("Advance booking is available up to 30 days ahead.");
-      if (!["upi", "card", "netbanking"].includes(data.paymentMethod)) {
-        throw new Error("Scheduled bookings require online payment. Choose UPI, card or netbanking.");
-      }
     }
     const { computeRoadRouteServer } = await import("@/lib/routing.server");
     const route = await computeRoadRouteServer([
