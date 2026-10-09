@@ -391,7 +391,7 @@ function DriverPage() {
       const { data, error } = await supabase
         .from("profiles")
         .select("name, phone")
-        .eq("id", activeJob!.customer_id)
+        .eq("id", activeJob!.customer_id!)
         .maybeSingle();
       if (error) throw error;
       return data;
