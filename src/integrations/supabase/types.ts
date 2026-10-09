@@ -1465,6 +1465,9 @@ export type Database = {
           id: string
           issue_type: string
           reporter_id: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
         }
         Insert: {
           booking_id: string
@@ -1472,6 +1475,9 @@ export type Database = {
           id?: string
           issue_type: string
           reporter_id: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
         }
         Update: {
           booking_id?: string
@@ -1479,6 +1485,9 @@ export type Database = {
           id?: string
           issue_type?: string
           reporter_id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
         }
         Relationships: [
           {
@@ -2292,6 +2301,25 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_resolve_trip_issue: {
+        Args: { _issue_id: string; _resolution_note: string }
+        Returns: {
+          booking_id: string
+          created_at: string
+          id: string
+          issue_type: string
+          reporter_id: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trip_issues"
           isOneToOne: true
           isSetofReturn: false
         }
