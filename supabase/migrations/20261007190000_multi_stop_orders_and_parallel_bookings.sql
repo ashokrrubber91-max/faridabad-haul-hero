@@ -55,7 +55,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 
 revoke all on function public.booking_stop_generate_otp() from public, anon, authenticated;
 
@@ -145,7 +145,7 @@ as $$
 declare
   stop_row public.booking_stops%rowtype;
   otp_row private.booking_stop_otps%rowtype;
-  cleaned text := regexp_replace(coalesce(_otp, ''), '\\D', '', 'g');
+  cleaned text := regexp_replace(coalesce(_otp, ''), '\D', '', 'g');
 begin
   if auth.uid() is null then raise exception 'Authentication required'; end if;
   if not exists (
