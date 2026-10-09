@@ -3195,6 +3195,7 @@ export type Database = {
       app_role: "customer" | "driver" | "admin" | "staff"
       booking_status:
         | "pending"
+        | "scheduled"
         | "accepted"
         | "in_progress"
         | "completed"
