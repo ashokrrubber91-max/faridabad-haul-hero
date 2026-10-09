@@ -31,6 +31,8 @@ export function ReviewBooking({
   fare,
   notes,
   gstin,
+  scheduledAt,
+  onScheduledAtChange,
   paymentMode,
   onPaymentModeChange,
   onBack,
@@ -51,6 +53,8 @@ export function ReviewBooking({
   fare: number;
   notes: string;
   gstin: CustomerGstin | null;
+  scheduledAt: string;
+  onScheduledAtChange: (value: string) => void;
   paymentMode: "cash" | "wallet" | "upi";
   onPaymentModeChange: (mode: "cash" | "wallet" | "upi") => void;
   onBack: () => void;
@@ -180,6 +184,13 @@ export function ReviewBooking({
           >
             {coinsEnabled ? "ON" : "OFF"}
           </Button>
+        </div>
+
+        <div className="rounded-xl border p-4">
+          <p className="text-sm font-bold text-secondary">Pickup schedule</p>
+          <p className="mt-1 text-xs text-muted-foreground">Leave blank for the earliest available driver, or choose a future pickup time.</p>
+          <input type="datetime-local" value={scheduledAt} min={new Date(Date.now() + 31 * 60_000).toISOString().slice(0, 16)} onChange={(e) => onScheduledAtChange(e.target.value)} className="mt-3 h-11 w-full rounded-md border border-input bg-background px-3 text-sm" />
+          {scheduledAt && <p className="mt-2 text-xs font-medium text-primary">Driver alerts will be sent 30 minutes before pickup.</p>}
         </div>
 
         <div className="rounded-xl border p-4">
