@@ -170,11 +170,11 @@ function CustomerPage() {
         .eq("customer_id", user!.id)
         .order("created_at", { ascending: false })
         // This screen only shows recent trips; full history lives on My rides.
-        .limit(15),
-    refetchInterval: MINIPORT_TEST_MODE ? 3000 : false,
+        .limit(15);
       if (error) throw error;
       return data ?? [];
     },
+    refetchInterval: MINIPORT_TEST_MODE ? 3000 : false,
   });
 
   useEffect(() => {
