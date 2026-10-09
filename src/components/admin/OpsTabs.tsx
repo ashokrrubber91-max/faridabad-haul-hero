@@ -156,8 +156,8 @@ export function WithdrawalsTab() {
       const { error } = await supabase.rpc("process_withdrawal_admin", {
         p_request_id: id,
         p_status: status,
-        p_utr_number: utrNumber ?? null,
-        p_reason: rejectionReason ?? null,
+        p_utr_number: utrNumber || undefined,
+        p_reason: rejectionReason || undefined,
       });
       if (error) throw error;
     },
