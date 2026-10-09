@@ -196,13 +196,13 @@ function WalletPage() {
               <DriverTopupDialog />
             </div>
           ) : (
-            // Honest state: there is no customer top-up rail yet. Customers pay
-            // per trip at checkout, so a "Add money" button here would be a
-            // dead control. Coins earned on trips are shown below.
-            <p className="mt-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-              You pay for each trip at checkout — no top-up needed. Coins you earn are applied as a
-              discount on your next booking.
-            </p>
+            <div className="mt-4 space-y-2">
+              <DriverTopupDialog />
+              <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                Add money securely to your customer wallet and use your available balance when booking.
+                MiniPort Coins are shown separately and can be redeemed for eligible discounts.
+              </p>
+            </div>
           )}
         </section>
 
