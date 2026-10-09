@@ -140,6 +140,10 @@ function CustomerPage() {
   const discount = Math.min(grossFare, (promo?.discount ?? 0) + coins);
   const fare = Math.max(0, grossFare - discount);
 
+  useEffect(() => {
+    if (scheduledAt && !ONLINE_METHODS.includes(method)) setMethod("upi");
+  }, [scheduledAt, method]);
+
   const gstins = useQuery({
     queryKey: ["customer-gstins", user?.id],
     enabled: !!user,
@@ -778,6 +782,14 @@ function CustomerPage() {
                         <ArrowRight className="h-3 w-3 shrink-0" />
                         <span className="truncate">{b.drop_address}</span>
                       </p>
+                      {b.status === "scheduled" && b.scheduled_for && (
+                        <p className="mt-1 text-xs font-semibold text-primary">
+                          Scheduled pickup: {new Date(b.scheduled_for).toLocaleString("en-IN")}
+                        </p>
+                      )}
+                      {b.cargo_weight_kg != null && (
+                        <p className="mt-1 text-xs text-muted-foreground">Cargo weight: {b.cargo_weight_kg} kg</p>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="font-display text-xl text-secondary">
