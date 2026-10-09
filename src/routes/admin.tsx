@@ -182,7 +182,7 @@ function AdminSetupOrDenied() {
 
 type Booking = {
   id: string;
-  customer_id: string;
+  customer_id: string | null;
   driver_id: string | null;
   pickup_address: string;
   drop_address: string;
