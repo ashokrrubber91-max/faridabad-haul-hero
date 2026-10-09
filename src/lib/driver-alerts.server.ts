@@ -66,7 +66,7 @@ export async function alertCustomerAboutBooking(
     .select("customer_id")
     .eq("id", bookingId)
     .maybeSingle();
-  if (!booking) return;
+  if (!booking?.customer_id) return;
   const { data: tokenRows } = await supabaseAdmin
     .from("device_tokens")
     .select("token")
