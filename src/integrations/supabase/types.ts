@@ -206,6 +206,7 @@ export type Database = {
       booking_stops: {
         Row: {
           address: string
+          arrived_at: string | null
           booking_id: string
           contact_name: string | null
           contact_phone: string | null
@@ -216,9 +217,12 @@ export type Database = {
           longitude: number | null
           place_id: string | null
           sequence: number
+          status: string
+          verified_at: string | null
         }
         Insert: {
           address: string
+          arrived_at?: string | null
           booking_id: string
           contact_name?: string | null
           contact_phone?: string | null
@@ -229,9 +233,12 @@ export type Database = {
           longitude?: number | null
           place_id?: string | null
           sequence: number
+          status?: string
+          verified_at?: string | null
         }
         Update: {
           address?: string
+          arrived_at?: string | null
           booking_id?: string
           contact_name?: string | null
           contact_phone?: string | null
@@ -242,6 +249,8 @@ export type Database = {
           longitude?: number | null
           place_id?: string | null
           sequence?: number
+          status?: string
+          verified_at?: string | null
         }
         Relationships: [
           {
@@ -284,6 +293,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -300,6 +310,8 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
@@ -337,6 +349,7 @@ export type Database = {
           helper_count?: number
           helper_fee?: number
           id?: string
+          is_multi_stop?: boolean
           loading_overtime_minutes?: number
           loading_started_at?: string | null
           loading_stopped_at?: string | null
@@ -353,6 +366,8 @@ export type Database = {
           review?: string | null
           service_zone?: string
           status?: Database["public"]["Enums"]["booking_status"]
+          stops?: Json
+          total_stops?: number
           unloading_overtime_minutes?: number
           unloading_started_at?: string | null
           unloading_stopped_at?: string | null
@@ -390,6 +405,7 @@ export type Database = {
           helper_count?: number
           helper_fee?: number
           id?: string
+          is_multi_stop?: boolean
           loading_overtime_minutes?: number
           loading_started_at?: string | null
           loading_stopped_at?: string | null
@@ -406,6 +422,8 @@ export type Database = {
           review?: string | null
           service_zone?: string
           status?: Database["public"]["Enums"]["booking_status"]
+          stops?: Json
+          total_stops?: number
           unloading_overtime_minutes?: number
           unloading_started_at?: string | null
           unloading_stopped_at?: string | null
@@ -2065,6 +2083,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -2081,6 +2100,8 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
@@ -2150,6 +2171,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -2166,6 +2188,8 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
@@ -2212,6 +2236,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -2228,6 +2253,8 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
@@ -2275,6 +2302,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -2291,6 +2319,8 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
@@ -2525,6 +2555,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -2541,6 +2572,8 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
@@ -2711,6 +2744,7 @@ export type Database = {
           pickup_otp: string
         }[]
       }
+      get_booking_stop_otps: { Args: { _booking_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2720,6 +2754,10 @@ export type Database = {
       }
       is_kyc_approved: { Args: { _user_id: string }; Returns: boolean }
       is_trusted_booking_write: { Args: never; Returns: boolean }
+      mark_booking_stop_arrived: {
+        Args: { _booking_id: string; _sequence: number }
+        Returns: Json
+      }
       ops_task_set_status: {
         Args: { _id: string; _status: string }
         Returns: {
@@ -2855,6 +2893,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -2871,6 +2910,8 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
@@ -2917,6 +2958,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -2933,6 +2975,8 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
@@ -3081,6 +3125,7 @@ export type Database = {
           helper_count: number
           helper_fee: number
           id: string
+          is_multi_stop: boolean
           loading_overtime_minutes: number
           loading_started_at: string | null
           loading_stopped_at: string | null
@@ -3097,6 +3142,8 @@ export type Database = {
           review: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
+          stops: Json
+          total_stops: number
           unloading_overtime_minutes: number
           unloading_started_at: string | null
           unloading_stopped_at: string | null
@@ -3130,6 +3177,10 @@ export type Database = {
           }
       verify_booking_otp: {
         Args: { _booking_id: string; _otp: string; _stage: string }
+        Returns: Json
+      }
+      verify_booking_stop: {
+        Args: { _booking_id: string; _otp: string; _sequence: number }
         Returns: Json
       }
     }
