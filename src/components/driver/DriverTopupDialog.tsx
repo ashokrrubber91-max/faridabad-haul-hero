@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
 
 export function DriverTopupDialog() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
 
@@ -62,6 +64,8 @@ export function DriverTopupDialog() {
       });
 
       toast.success("Payment successful. Money has been added to your wallet.");
+      void queryClient.invalidateQueries({ queryKey: ["wallet", user?.id] });
+      void queryClient.invalidateQueries({ queryKey: ["wallet-txns", user?.id] });
       setOpen(false);
       setAmount("");
     } catch (e) {
