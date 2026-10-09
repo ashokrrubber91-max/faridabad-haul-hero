@@ -36,6 +36,13 @@
       "when": 1791524961908,
       "tag": "0004_whatsapp_ai_booking_source",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791525027540,
+      "tag": "0005_withdrawal_payout_details_safe",
+      "breakpoints": true
     }
   ]
 }

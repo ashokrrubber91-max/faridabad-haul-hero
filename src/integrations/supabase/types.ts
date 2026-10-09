@@ -1982,8 +1982,12 @@ export type Database = {
           id: string
           method: string
           note: string | null
+          processed_at: string | null
+          rejection_reason: string | null
           status: Database["public"]["Enums"]["withdrawal_status"]
           updated_at: string
+          upi_id: string | null
+          utr_number: string | null
         }
         Insert: {
           amount: number
@@ -1992,8 +1996,12 @@ export type Database = {
           id?: string
           method?: string
           note?: string | null
+          processed_at?: string | null
+          rejection_reason?: string | null
           status?: Database["public"]["Enums"]["withdrawal_status"]
           updated_at?: string
+          upi_id?: string | null
+          utr_number?: string | null
         }
         Update: {
           amount?: number
@@ -2002,8 +2010,12 @@ export type Database = {
           id?: string
           method?: string
           note?: string | null
+          processed_at?: string | null
+          rejection_reason?: string | null
           status?: Database["public"]["Enums"]["withdrawal_status"]
           updated_at?: string
+          upi_id?: string | null
+          utr_number?: string | null
         }
         Relationships: []
       }
@@ -2706,6 +2718,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      process_withdrawal_admin: {
+        Args: {
+          p_reason?: string
+          p_request_id: string
+          p_status: string
+          p_utr_number?: string
+        }
+        Returns: Json
+      }
       record_consent: {
         Args: {
           _privacy_version: string
@@ -2727,6 +2748,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      request_wallet_withdrawal: {
+        Args: { p_amount: number; p_upi_id: string }
+        Returns: Json
       }
       review_driver_kyc: {
         Args: {
