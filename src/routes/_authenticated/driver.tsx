@@ -760,6 +760,14 @@ function DriverPage() {
                           {addressLines(b.drop_address, b.drop_lat, b.drop_lng).primary}
                         </span>
                       </p>
+                      {b.scheduled_for && (
+                        <p className="mt-1 text-xs font-semibold text-primary">
+                          Scheduled pickup: {new Date(b.scheduled_for).toLocaleString("en-IN")}
+                        </p>
+                      )}
+                      {b.cargo_weight_kg != null && (
+                        <p className="mt-1 text-xs text-muted-foreground">Cargo weight: {b.cargo_weight_kg} kg</p>
+                      )}
                     </div>
                     <Badge className="bg-primary text-primary-foreground hover:bg-primary">
                       {meta.label}
