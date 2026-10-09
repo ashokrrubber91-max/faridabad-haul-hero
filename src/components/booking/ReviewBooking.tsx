@@ -61,8 +61,8 @@ export function ReviewBooking({
   cargoWeightKg: string;
   onCargoWeightKgChange: (value: string) => void;
   maxWeightKg: number | null;
-  paymentMode: "cash" | "wallet" | "upi";
-  onPaymentModeChange: (mode: "cash" | "wallet" | "upi") => void;
+  paymentMode: "cash" | "wallet" | "upi" | "card" | "netbanking";
+  onPaymentModeChange: (mode: "cash" | "wallet" | "upi" | "card" | "netbanking") => void;
   onBack: () => void;
   onEditPickup?: () => void;
   onEditDrop?: () => void;
@@ -215,7 +215,7 @@ export function ReviewBooking({
 
         <div className="rounded-xl border p-4">
           <p className="text-sm font-bold text-secondary">Pickup schedule</p>
-          <p className="mt-1 text-xs text-muted-foreground">Leave blank for the earliest available driver, or choose a future pickup time.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Leave blank for the earliest available driver, or choose a pickup 31 minutes to 30 days ahead. Scheduled trips require online payment.</p>
           <input type="datetime-local" value={scheduledAt} min={minScheduledAt} max={maxScheduledAt} onChange={(e) => onScheduledAtChange(e.target.value)} className="mt-3 h-11 w-full rounded-md border border-input bg-background px-3 text-sm" />
           {scheduledAt && <p className="mt-2 text-xs font-medium text-primary">Schedule 31 minutes to 30 days ahead. Dispatch happens only after payment succeeds; driver alerts go out 30 minutes before pickup.</p>}
         </div>
@@ -231,9 +231,11 @@ export function ReviewBooking({
             className="mt-3 h-11 w-full rounded-lg border bg-background px-3 text-sm font-medium text-secondary outline-none focus:ring-2 focus:ring-primary"
             aria-label="Payment method"
           >
-            <option value="cash">Cash</option>
-            <option value="wallet">Wallet</option>
+            <option value="cash" disabled={!!scheduledAt}>Cash{scheduledAt ? " (not available for scheduled trips)" : ""}</option>
+            <option value="wallet" disabled={!!scheduledAt}>Wallet{scheduledAt ? " (not available for scheduled trips)" : ""}</option>
             <option value="upi">UPI</option>
+            <option value="card">Card</option>
+            <option value="netbanking">Netbanking</option>
           </select>
           <Button
             type="button"
