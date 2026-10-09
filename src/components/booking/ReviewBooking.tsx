@@ -216,9 +216,9 @@ export function ReviewBooking({
 
         <div className="rounded-xl border p-4">
           <p className="text-sm font-bold text-secondary">Pickup schedule</p>
-          <p className="mt-1 text-xs text-muted-foreground">Leave blank for the earliest available driver, or choose a pickup 31 minutes to 30 days ahead. Scheduled trips require online payment.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Leave blank for the earliest available driver, or choose a pickup 31 minutes to 30 days ahead. Advance bookings support cash, wallet, UPI, card and MiniPort Coins.</p>
           <input type="datetime-local" value={scheduledAt} min={minScheduledAt} max={maxScheduledAt} onChange={(e) => onScheduledAtChange(e.target.value)} className="mt-3 h-11 w-full rounded-md border border-input bg-background px-3 text-sm" />
-          {scheduledAt && <p className="mt-2 text-xs font-medium text-primary">Schedule 31 minutes to 30 days ahead. Dispatch happens only after payment succeeds; driver alerts go out 30 minutes before pickup.</p>}
+          {scheduledAt && <p className="mt-2 text-xs font-medium text-primary">Schedule 31 minutes to 30 days ahead. Cash bookings are confirmed without online checkout; online bookings must complete payment before dispatch. Driver alerts go out 30 minutes before pickup.</p>}
         </div>
 
         <div className="rounded-xl border p-4">
@@ -232,8 +232,8 @@ export function ReviewBooking({
             className="mt-3 h-11 w-full rounded-lg border bg-background px-3 text-sm font-medium text-secondary outline-none focus:ring-2 focus:ring-primary"
             aria-label="Payment method"
           >
-            <option value="cash" disabled={!!scheduledAt}>Cash{scheduledAt ? " (not available for scheduled trips)" : ""}</option>
-            <option value="wallet" disabled={!!scheduledAt}>Wallet{scheduledAt ? " (not available for scheduled trips)" : ""}</option>
+            <option value="cash">Cash</option>
+            <option value="wallet">Wallet / MiniPort Coins</option>
             <option value="upi">UPI</option>
             <option value="card">Card</option>
             <option value="netbanking">Netbanking</option>
