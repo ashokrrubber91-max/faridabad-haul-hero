@@ -172,11 +172,11 @@ export const createWalletTopupOrder = createServerFn({ method: "POST" })
     z.object({ amount: z.number().finite().min(100).max(100000) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { data: roleOk } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "driver",
-    });
-    if (!roleOk) throw new Error("Driver access required");
+    const [{ data: driverRole }, { data: customerRole }] = await Promise.all([
+      context.supabase.rpc("has_role", { _user_id: context.userId, _role: "driver" }),
+      context.supabase.rpc("has_role", { _user_id: context.userId, _role: "customer" }),
+    ]);
+    if (!driverRole && !customerRole) throw new Error("Customer or driver access required");
     const { createRazorpayOrder, getRazorpayCredentials } = await import("@/lib/razorpay.server");
     const creds = getRazorpayCredentials();
     if (!creds) throw new Error("Online payments are not configured yet.");
