@@ -51,6 +51,7 @@ export const createBooking = createServerFn({ method: "POST" })
         coins: z.number().int().min(0).max(100000).default(0),
         paymentMethod: z.enum(["cod", "upi", "card", "netbanking", "wallet"]),
         scheduledAt: z.string().datetime().nullable().optional().default(null),
+        cargoWeightKg: z.number().finite().positive().max(100000).nullable().optional().default(null),
         helperCount: z.number().int().min(0).max(2).default(0),
         notes: z.string().trim().max(2000).nullable().default(null),
       })
@@ -58,7 +59,15 @@ export const createBooking = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const scheduledAt = data.scheduledAt ? new Date(data.scheduledAt) : null;
-    if (scheduledAt && scheduledAt.getTime() < Date.now() + 31 * 60_000) throw new Error("Scheduled pickup must be at least 31 minutes from now.");
+    if (scheduledAt) {
+      const now = Date.now();
+      const pickupMs = scheduledAt.getTime();
+      if (pickupMs < now + 31 * 60_000) throw new Error("Scheduled pickup must be at least 31 minutes from now.");
+      if (pickupMs > now + 30 * 24 * 60 * 60_000) throw new Error("Advance booking is available up to 30 days ahead.");
+      if (!["upi", "card", "netbanking"].includes(data.paymentMethod)) {
+        throw new Error("Scheduled bookings require online payment. Choose UPI, card or netbanking.");
+      }
+    }
     const { computeRoadRouteServer } = await import("@/lib/routing.server");
     const route = await computeRoadRouteServer([
       { lat: data.pickup.lat, lng: data.pickup.lng },
@@ -78,6 +87,11 @@ export const createBooking = createServerFn({ method: "POST" })
     if (!vt || !vt.active) throw new Error("That vehicle is not available for booking right now.");
     // All selectable MiniPort vehicle types are cargo/goods vehicles, so helper
     // selection applies to every vehicle option in the booking flow.
+    const cargoWeightKg = data.cargoWeightKg ?? null;
+    const weightLimitKg = Number(vt.weight_limit_kg ?? 0);
+    if (cargoWeightKg !== null && weightLimitKg > 0 && cargoWeightKg > weightLimitKg) {
+      throw new Error("Cargo weight exceeds this vehicle's " + weightLimitKg + " kg capacity.");
+    }
     const helperCount = data.helperCount;
     const helperFee = helperCount * 250;
 
@@ -114,6 +128,7 @@ export const createBooking = createServerFn({ method: "POST" })
         payment_method: data.paymentMethod,
         status: scheduledAt ? "scheduled" : "pending",
         scheduled_for: scheduledAt?.toISOString() ?? null,
+        cargo_weight_kg: cargoWeightKg,
         notes: data.notes,
       })
       .select("id, fare, distance_km, status, scheduled_for")
