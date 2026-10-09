@@ -29,6 +29,13 @@
       "when": 1791387039563,
       "tag": "0003_booking_messages_realtime",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791524961908,
+      "tag": "0004_whatsapp_ai_booking_source",
+      "breakpoints": true
     }
   ]
 }

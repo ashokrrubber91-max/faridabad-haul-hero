@@ -255,6 +255,7 @@ export type Database = {
       }
       bookings: {
         Row: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -267,7 +268,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -303,8 +305,10 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         Insert: {
+          booking_source?: string
           cancellation_category?:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -317,7 +321,8 @@ export type Database = {
           coupon_code?: string | null
           coupon_discount?: number
           created_at?: string
-          customer_id: string
+          customer_id?: string | null
+          customer_phone?: string | null
           distance_km: number
           driver_id?: string | null
           driver_net_earning?: number
@@ -353,8 +358,10 @@ export type Database = {
           unloading_stopped_at?: string | null
           updated_at?: string
           vehicle_type: string
+          whatsapp_message_id?: string | null
         }
         Update: {
+          booking_source?: string
           cancellation_category?:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -367,7 +374,8 @@ export type Database = {
           coupon_code?: string | null
           coupon_discount?: number
           created_at?: string
-          customer_id?: string
+          customer_id?: string | null
+          customer_phone?: string | null
           distance_km?: number
           driver_id?: string | null
           driver_net_earning?: number
@@ -403,6 +411,7 @@ export type Database = {
           unloading_stopped_at?: string | null
           updated_at?: string
           vehicle_type?: string
+          whatsapp_message_id?: string | null
         }
         Relationships: [
           {
@@ -2006,6 +2015,7 @@ export type Database = {
       accept_booking: {
         Args: { _booking_id: string }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2018,7 +2028,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -2054,6 +2065,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -2088,6 +2100,7 @@ export type Database = {
       admin_assign_driver: {
         Args: { _booking_id: string; _driver_id: string }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2100,7 +2113,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -2136,6 +2150,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -2147,6 +2162,7 @@ export type Database = {
       admin_cancel_booking: {
         Args: { _booking_id: string; _reason: string }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2159,7 +2175,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -2195,6 +2212,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -2207,6 +2225,7 @@ export type Database = {
       admin_mark_refunded: {
         Args: { _booking_id: string }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2219,7 +2238,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -2255,6 +2275,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -2435,6 +2456,7 @@ export type Database = {
       cancel_booking: {
         Args: { _booking_id: string; _note?: string; _reason: string }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2447,7 +2469,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -2483,6 +2506,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -2749,6 +2773,7 @@ export type Database = {
       set_booking_fare_boost: {
         Args: { _booking_id: string; _boost: number }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2761,7 +2786,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -2797,6 +2823,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -2808,6 +2835,7 @@ export type Database = {
       set_booking_stage: {
         Args: { _action: string; _booking_id: string }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2820,7 +2848,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -2856,6 +2885,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -2969,6 +2999,7 @@ export type Database = {
       switch_failed_payment_to_cod: {
         Args: { _booking_id: string }
         Returns: {
+          booking_source: string
           cancellation_category:
             | Database["public"]["Enums"]["cancellation_category"]
             | null
@@ -2981,7 +3012,8 @@ export type Database = {
           coupon_code: string | null
           coupon_discount: number
           created_at: string
-          customer_id: string
+          customer_id: string | null
+          customer_phone: string | null
           distance_km: number
           driver_id: string | null
           driver_net_earning: number
@@ -3017,6 +3049,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          whatsapp_message_id: string | null
         }
         SetofOptions: {
           from: "*"
