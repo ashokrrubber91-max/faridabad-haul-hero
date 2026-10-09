@@ -734,7 +734,7 @@ function CustomerPage() {
               setPending(drop);
               setStage({ type: "confirm", mode: "drop" });
             }}
-            paymentMode={method === "cod" ? "cash" : method === "upi" ? "upi" : "wallet"}
+            paymentMode={method === "cod" ? "cash" : method}
             onPaymentModeChange={(next) => setMethod(next === "cash" ? "cod" : next)}
             onConfirm={() => create.mutate()}
             submitting={create.isPending}
