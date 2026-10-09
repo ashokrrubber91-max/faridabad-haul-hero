@@ -266,6 +266,7 @@ export type Database = {
           commission_rate: number
           coupon_code: string | null
           coupon_discount: number
+          cargo_weight_kg: number | null
           created_at: string
           customer_id: string
           distance_km: number
@@ -297,6 +298,7 @@ export type Database = {
           rating: number | null
           review: string | null
           service_zone: string
+          scheduled_for: string | null
           status: Database["public"]["Enums"]["booking_status"]
           unloading_overtime_minutes: number
           unloading_started_at: string | null
@@ -316,6 +318,7 @@ export type Database = {
           commission_rate?: number
           coupon_code?: string | null
           coupon_discount?: number
+          cargo_weight_kg?: number | null
           created_at?: string
           customer_id: string
           distance_km: number
@@ -347,6 +350,7 @@ export type Database = {
           rating?: number | null
           review?: string | null
           service_zone?: string
+          scheduled_for?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
           unloading_overtime_minutes?: number
           unloading_started_at?: string | null
@@ -366,6 +370,7 @@ export type Database = {
           commission_rate?: number
           coupon_code?: string | null
           coupon_discount?: number
+          cargo_weight_kg?: number | null
           created_at?: string
           customer_id?: string
           distance_km?: number
@@ -397,6 +402,7 @@ export type Database = {
           rating?: number | null
           review?: string | null
           service_zone?: string
+          scheduled_for?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
           unloading_overtime_minutes?: number
           unloading_started_at?: string | null
