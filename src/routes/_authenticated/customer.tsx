@@ -94,6 +94,7 @@ function CustomerPage() {
   const [pendingStop, setPendingStop] = useState<PlacePick | null>(null);
   const [step, setStep] = useState<"form" | "review">("form");
   const [scheduledAt, setScheduledAt] = useState("");
+  const [cargoWeightKg, setCargoWeightKg] = useState("");
   const [gstinEnabled, setGstinEnabled] = useState(false);
   const [gstinId, setGstinId] = useState<string | null>(null);
   const [helperCount, setHelperCount] = useState(0);
@@ -236,7 +237,12 @@ function CustomerPage() {
       if (!pickup) throw new Error("Choose pickup location");
       if (!drop) throw new Error("Choose drop location");
       if (distanceKm <= 0) throw new Error("Road distance is still being calculated");
-      if (scheduledAt && new Date(scheduledAt).getTime() < Date.now() + 31 * 60_000) throw new Error("Scheduled pickup must be at least 31 minutes from now.");
+      if (scheduledAt) {
+        const pickupMs = new Date(scheduledAt).getTime();
+        if (pickupMs < Date.now() + 31 * 60_000) throw new Error("Scheduled pickup must be at least 31 minutes from now.");
+        if (pickupMs > Date.now() + 30 * 24 * 60 * 60_000) throw new Error("Advance booking is available up to 30 days ahead.");
+        if (!ONLINE_METHODS.includes(method)) throw new Error("Scheduled bookings require online payment. Choose UPI, card or netbanking.");
+      }
       const booking = await createBooking({
         data: {
           pickup: {
@@ -270,6 +276,7 @@ function CustomerPage() {
           coins,
           paymentMethod: method,
           scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+          cargoWeightKg: cargoWeightKg.trim() ? Number(cargoWeightKg) : null,
           notes:
             [
               notes.trim(),
@@ -337,6 +344,7 @@ function CustomerPage() {
           : result.paid ? "Payment received — finding a driver" : "Booking placed — finding a driver",
       );
       setScheduledAt("");
+      setCargoWeightKg("");
       setPickup(null);
       setDrop(null);
       setStops([]);
@@ -710,6 +718,9 @@ function CustomerPage() {
             gstin={selectedGstin}
             scheduledAt={scheduledAt}
             onScheduledAtChange={setScheduledAt}
+            cargoWeightKg={cargoWeightKg}
+            onCargoWeightKgChange={setCargoWeightKg}
+            maxWeightKg={Number(selectedVehicle?.weight_limit_kg ?? 0) || null}
             onBack={() => setStep("form")}
             onEditPickup={() => {
               setPending(pickup);
