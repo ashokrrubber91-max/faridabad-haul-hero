@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Coins,
   MapPin,
+  MessageCircle,
   Package,
   Pencil,
   ReceiptText,
@@ -278,7 +279,21 @@ export function ReviewBooking({
           </div>
         </div>
 
-        <Button\n          type="button"\n          variant="outline"\n          className="h-11 w-full border-green-500/40 text-green-700 hover:bg-green-500/10"\n          onClick={() =>\n            window.open(\n              `https://wa.me/?text=${encodeURIComponent("Hi MiniPort, I need a vehicle to send goods. Please help me book a vehicle.")}`,\n              "_blank",\n              "noopener,noreferrer",\n            )\n          }\n        >\n          <MessageCircle className="h-4 w-4" /> Book via WhatsApp\n        </Button>\n        <Button onClick={onConfirm} disabled={submitting} className="h-11 w-full">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full border-green-500/40 text-green-700 hover:bg-green-500/10"
+          onClick={() =>
+            window.open(
+              `https://wa.me/?text=${encodeURIComponent("Hi MiniPort, I need a vehicle to send goods. Please help me book a vehicle.")}`,
+              "_blank",
+              "noopener,noreferrer",
+            )
+          }
+        >
+          <MessageCircle className="h-4 w-4" /> Book via WhatsApp
+        </Button>
+        <Button onClick={onConfirm} disabled={submitting} className="h-11 w-full">
           {submitting ? "Booking…" : "Confirm & book · ₹" + fare}{" "}
           {!submitting && <ArrowRight className="h-4 w-4" />}
         </Button>
