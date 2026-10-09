@@ -228,7 +228,7 @@ function AdminPage() {
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
-      return (data ?? []) as Booking[];
+      return (data ?? []) as unknown as Booking[];
     },
   });
 
@@ -1025,7 +1025,7 @@ function LiveTripsTab({
         )}
         {filteredTrips.map((b) => {
           const meta = STATUS_META[b.status] ?? STATUS_META.pending;
-          const customer = profileMap.get(b.customer_id);
+          const customer = b.customer_id ? profileMap.get(b.customer_id) : null;
           const driver = b.driver_id ? profileMap.get(b.driver_id) : null;
           return (
             <div key={b.id} className="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_auto] sm:items-start">
