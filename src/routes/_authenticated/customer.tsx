@@ -188,7 +188,7 @@ function CustomerPage() {
       const eventKey =
         status === "completed"
           ? "completed"
-          : Boolean(booking.loading_started_at)
+          : booking.loading_started_at != null
             ? "arrived"
             : status === "accepted"
               ? "assigned"
