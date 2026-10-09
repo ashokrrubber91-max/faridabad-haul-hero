@@ -761,9 +761,12 @@ function DriverPage() {
                         </span>
                       </p>
                       {b.scheduled_for && (
-                        <p className="mt-1 text-xs font-semibold text-primary">
-                          Scheduled pickup: {new Date(b.scheduled_for).toLocaleString("en-IN")}
-                        </p>
+                        <div className="mt-2 space-y-1">
+                          <Badge variant="outline" className="border-primary/40 text-primary">Scheduled pickup</Badge>
+                          <p className="text-xs font-semibold text-primary">
+                            {new Date(b.scheduled_for).toLocaleString("en-IN")}
+                          </p>
+                        </div>
                       )}
                       {b.cargo_weight_kg != null && (
                         <p className="mt-1 text-xs text-muted-foreground">Cargo weight: {b.cargo_weight_kg} kg</p>
