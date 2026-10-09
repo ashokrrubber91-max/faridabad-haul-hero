@@ -110,7 +110,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
             to_phone: bareE164(params["To"] ?? ""),
             user_id: profile?.id ?? null,
             sender_role: role,
-            body: params["Body"] ?? "",
+            body: incomingBody,
             num_media: Number(params["NumMedia"] ?? 0) || 0,
             latitude: Number.isFinite(lat) ? lat : null,
             longitude: Number.isFinite(lng) ? lng : null,
@@ -133,7 +133,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
           const result = await handleInboundWhatsApp(supabaseAdmin, {
             id: stored.id,
             from_phone: bareE164(from),
-            body: params["Body"] ?? "",
+            body: incomingBody,
             latitude: Number.isFinite(lat) ? lat : null,
             longitude: Number.isFinite(lng) ? lng : null,
             user_id: profile?.id ?? null,
