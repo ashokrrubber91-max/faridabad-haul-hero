@@ -93,6 +93,7 @@ function CustomerPage() {
   const [stopStage, setStopStage] = useState<null | { type: "search" | "confirm" }>(null);
   const [pendingStop, setPendingStop] = useState<PlacePick | null>(null);
   const [step, setStep] = useState<"form" | "review">("form");
+  const [scheduledAt, setScheduledAt] = useState("");
   const [gstinEnabled, setGstinEnabled] = useState(false);
   const [gstinId, setGstinId] = useState<string | null>(null);
   const [helperCount, setHelperCount] = useState(0);
@@ -235,6 +236,7 @@ function CustomerPage() {
       if (!pickup) throw new Error("Choose pickup location");
       if (!drop) throw new Error("Choose drop location");
       if (distanceKm <= 0) throw new Error("Road distance is still being calculated");
+      if (scheduledAt && new Date(scheduledAt).getTime() < Date.now() + 31 * 60_000) throw new Error("Scheduled pickup must be at least 31 minutes from now.");
       const booking = await createBooking({
         data: {
           pickup: {
@@ -267,6 +269,7 @@ function CustomerPage() {
           couponCode: promo?.code ?? null,
           coins,
           paymentMethod: method,
+          scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
           notes:
             [
               notes.trim(),
@@ -320,7 +323,7 @@ function CustomerPage() {
 
       // Ring every online, verified driver. Never let a push failure break booking.
       try {
-        await notifyDriversOfNewBooking({ data: { bookingId: booking.id } });
+        if (!scheduledAt) await notifyDriversOfNewBooking({ data: { bookingId: booking.id } });
       } catch {
         /* alerts are best-effort */
       }
@@ -329,8 +332,11 @@ function CustomerPage() {
     },
     onSuccess: (result) => {
       toast.success(
-        result.paid ? "Payment received — finding a driver" : "Booking placed — finding a driver",
+        scheduledAt
+          ? `Booking scheduled for ${new Date(scheduledAt).toLocaleString("en-IN")} — drivers will be alerted 30 minutes before pickup`
+          : result.paid ? "Payment received — finding a driver" : "Booking placed — finding a driver",
       );
+      setScheduledAt("");
       setPickup(null);
       setDrop(null);
       setStops([]);
@@ -702,6 +708,8 @@ function CustomerPage() {
             fare={fare}
             notes={notes}
             gstin={selectedGstin}
+            scheduledAt={scheduledAt}
+            onScheduledAtChange={setScheduledAt}
             onBack={() => setStep("form")}
             onEditPickup={() => {
               setPending(pickup);
