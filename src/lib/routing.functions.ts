@@ -50,12 +50,15 @@ export const createBooking = createServerFn({ method: "POST" })
         couponCode: z.string().trim().max(40).nullable().default(null),
         coins: z.number().int().min(0).max(100000).default(0),
         paymentMethod: z.enum(["cod", "upi", "card", "netbanking", "wallet"]),
+        scheduledAt: z.string().datetime().nullable().optional().default(null),
         helperCount: z.number().int().min(0).max(2).default(0),
         notes: z.string().trim().max(2000).nullable().default(null),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
+    const scheduledAt = data.scheduledAt ? new Date(data.scheduledAt) : null;
+    if (scheduledAt && scheduledAt.getTime() < Date.now() + 31 * 60_000) throw new Error("Scheduled pickup must be at least 31 minutes from now.");
     const { computeRoadRouteServer } = await import("@/lib/routing.server");
     const route = await computeRoadRouteServer([
       { lat: data.pickup.lat, lng: data.pickup.lng },
@@ -109,9 +112,11 @@ export const createBooking = createServerFn({ method: "POST" })
         coupon_code: data.couponCode,
         coins_redeemed: data.coins,
         payment_method: data.paymentMethod,
+        status: scheduledAt ? "scheduled" : "pending",
+        scheduled_for: scheduledAt?.toISOString() ?? null,
         notes: data.notes,
       })
-      .select("id, fare, distance_km")
+      .select("id, fare, distance_km, status, scheduled_for")
       .single();
     if (error) throw new Error(error.message);
 
@@ -142,5 +147,7 @@ export const createBooking = createServerFn({ method: "POST" })
       fare: Number(booking.fare),
       distanceKm: Number(booking.distance_km),
       durationMin: route.durationMin,
+      status: booking.status,
+      scheduledFor: booking.scheduled_for,
     };
   });
