@@ -125,7 +125,19 @@ export function LiveTripMap({
       void supabase.removeChannel(ch);
     };
   }, [driverId]);
-  // Broadcast is the low-latency trip signal; refetch the canonical row immediately.\n  useEffect(() => {\n    if (!bookingId) return;\n    const ch = supabase\n      .channel(`trip:${bookingId}`, { config: { private: true } })\n      .on("broadcast", { event: "location" }, () => void location.refetch())\n      .subscribe();\n    return () => {\n      void supabase.removeChannel(ch);\n    };\n  }, [bookingId, location.refetch]);\n\n  const lastFix = useMemo<{ pos: LatLng; ageMs: number } | null>(() => {
+  // Broadcast is the low-latency trip signal; refetch the canonical row immediately.
+  useEffect(() => {
+    if (!bookingId) return;
+    const ch = supabase
+      .channel(`trip:${bookingId}`, { config: { private: true } })
+      .on("broadcast", { event: "location" }, () => void location.refetch())
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [bookingId, location.refetch]);
+
+  const lastFix = useMemo<{ pos: LatLng; ageMs: number } | null>(() => {
     const row = location.data;
     if (!row) return null;
     const lat = Number(row.latitude),
