@@ -28,6 +28,7 @@ export const STATUS_META: Record<
   { label: string; tone: "warning" | "primary" | "success" | "muted" | "destructive" }
 > = {
   pending: { label: "Searching for driver", tone: "warning" },
+  scheduled: { label: "Scheduled", tone: "primary" },
   accepted: { label: "Driver assigned", tone: "primary" },
   in_progress: { label: "In transit", tone: "primary" },
   completed: { label: "Completed", tone: "success" },
