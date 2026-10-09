@@ -140,10 +140,6 @@ function CustomerPage() {
   const discount = Math.min(grossFare, (promo?.discount ?? 0) + coins);
   const fare = Math.max(0, grossFare - discount);
 
-  useEffect(() => {
-    if (scheduledAt && !ONLINE_METHODS.includes(method)) setMethod("upi");
-  }, [scheduledAt, method]);
-
   const gstins = useQuery({
     queryKey: ["customer-gstins", user?.id],
     enabled: !!user,
@@ -245,7 +241,6 @@ function CustomerPage() {
         const pickupMs = new Date(scheduledAt).getTime();
         if (pickupMs < Date.now() + 31 * 60_000) throw new Error("Scheduled pickup must be at least 31 minutes from now.");
         if (pickupMs > Date.now() + 30 * 24 * 60 * 60_000) throw new Error("Advance booking is available up to 30 days ahead.");
-        if (!ONLINE_METHODS.includes(method)) throw new Error("Scheduled bookings require online payment. Choose UPI, card or netbanking.");
       }
       const booking = await createBooking({
         data: {
