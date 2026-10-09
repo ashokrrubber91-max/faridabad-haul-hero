@@ -16,6 +16,19 @@ export const Route = createFileRoute("/_authenticated/driver-rides")({
   component: DriverRidesPage,
 });
 
+// Keep ride history usable if PostgREST's schema cache temporarily lags behind
+// a newly-added optional booking column. The primary query still loads the full
+// history; the fallback uses long-standing columns and never requests OTP fields.
+const DRIVER_RIDE_FALLBACK_FIELDS =
+  "id,customer_id,driver_id,pickup_address,drop_address,vehicle_type,distance_km,fare,status,notes,created_at,updated_at,payment_method,payment_status,commission_amount,driver_net_earning,cancellation_reason,pickup_lat,pickup_lng,drop_lat,drop_lng,pod_photo_url";
+
+function errorMessage(error: unknown): string {
+  if (error && typeof error === "object" && "message" in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return "Unknown error";
+}
+
 function DriverRidesPage() {
   const { user } = useAuth();
   const [shown, setShown] = useState(20);
@@ -23,15 +36,30 @@ function DriverRidesPage() {
     queryKey: ["driver-rides", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const primary = await supabase
         .from("bookings")
         .select(BOOKING_FIELDS)
         .eq("driver_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(150);
-      if (error) throw error;
-      return data ?? [];
+      if (!primary.error) return primary.data ?? [];
+
+      // A stale API schema cache can reject a select containing a recently-added
+      // column even when the core ride rows are valid. Retry with stable columns.
+      const fallback = await supabase
+        .from("bookings")
+        .select(DRIVER_RIDE_FALLBACK_FIELDS)
+        .eq("driver_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(150);
+      if (!fallback.error) return fallback.data ?? [];
+
+      throw new Error(
+        `Ride history could not be loaded. ${errorMessage(fallback.error)} (full query: ${errorMessage(primary.error)})`,
+      );
     },
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
   });
   const list = rides.data ?? [];
   const completed = list.filter((b) => b.status === "completed");
@@ -55,6 +83,9 @@ function DriverRidesPage() {
           <Package className="mx-auto mb-2 h-5 w-5 text-destructive" />
           <p className="text-muted-foreground">
             We couldn&apos;t load your rides. Check your connection and try again.
+          </p>
+          <p className="mt-2 break-words text-xs text-muted-foreground">
+            {errorMessage(rides.error)}
           </p>
           <Button size="sm" variant="outline" className="mt-3" onClick={() => rides.refetch()}>
             Retry
