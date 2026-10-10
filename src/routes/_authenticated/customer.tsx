@@ -80,6 +80,7 @@ function CustomerPage() {
   const [promo, setPromo] = useState<{ code: string; discount: number } | null>(null);
   const [coins, setCoins] = useState(0);
   const [method, setMethod] = useState<PaymentMethod>("cod");
+  const [walletEnabled, setWalletEnabled] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<{
     id: string;
     addr: string;
@@ -155,6 +156,19 @@ function CustomerPage() {
   const selectedGstin = gstinEnabled
     ? ((gstins.data ?? []).find((g) => g.id === gstinId) ?? null)
     : null;
+
+  const walletBalanceQuery = useQuery({
+    queryKey: ["wallet", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("wallet_accounts").select("cash_balance").eq("user_id", user!.id).maybeSingle();
+      if (error) throw error;
+      return Number(data?.cash_balance ?? 0);
+    },
+  });
+  const walletBalance = Math.max(0, walletBalanceQuery.data ?? 0);
+  const walletDeduction = walletEnabled ? Math.min(walletBalance, fare) : 0;
+  const remainingPayable = Math.max(0, fare - walletDeduction);
 
   const bookings = useQuery({
     queryKey: ["my-bookings", user?.id],
@@ -273,7 +287,8 @@ function CustomerPage() {
           helperCount,
           couponCode: promo?.code ?? null,
           coins,
-          paymentMethod: method,
+          paymentMethod: walletEnabled && remainingPayable === 0 ? "wallet" : method,
+          walletDeductedAmount: walletDeduction,
           scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
           cargoWeightKg: cargoWeightKg.trim() ? Number(cargoWeightKg) : null,
           notes:
@@ -291,7 +306,7 @@ function CustomerPage() {
       });
 
       // Online methods must be paid before the trip goes out to drivers.
-      if (ONLINE_METHODS.includes(method)) {
+      if (ONLINE_METHODS.includes(method) && remainingPayable > 0) {
         try {
           const order = await createTripOrder({ data: { bookingId: booking.id } });
           const result = await openRazorpayCheckout({
@@ -334,7 +349,7 @@ function CustomerPage() {
         /* alerts are best-effort */
       }
 
-      return { paid: ONLINE_METHODS.includes(method), fare: Number(booking.fare) };
+      return { paid: ONLINE_METHODS.includes(method) && remainingPayable > 0, fare: Number(booking.fare) };
     },
     onSuccess: (result) => {
       toast.success(
@@ -350,6 +365,7 @@ function CustomerPage() {
       setNotes("");
       setPromo(null);
       setCoins(0);
+      setWalletEnabled(false);
       setGstinEnabled(false);
       setGstinId(null);
       setHelperCount(0);
@@ -733,6 +749,9 @@ function CustomerPage() {
             onPaymentModeChange={(next) => setMethod(next === "cash" ? "cod" : next)}
             onConfirm={() => create.mutate()}
             submitting={create.isPending}
+            walletBalance={walletBalance}
+            walletEnabled={walletEnabled}
+            onWalletEnabledChange={setWalletEnabled}
           />
         )
       )}
