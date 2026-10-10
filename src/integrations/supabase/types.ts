@@ -271,6 +271,7 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          cargo_weight_kg: number | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -308,6 +309,7 @@ export type Database = {
           pod_photo_url: string | null
           rating: number | null
           review: string | null
+          scheduled_for: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
           stops: Json
@@ -327,6 +329,7 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: Database["public"]["Enums"]["cancel_actor"] | null
+          cargo_weight_kg?: number | null
           coins_redeemed?: number
           commission_amount?: number
           commission_rate?: number
@@ -364,6 +367,7 @@ export type Database = {
           pod_photo_url?: string | null
           rating?: number | null
           review?: string | null
+          scheduled_for?: string | null
           service_zone?: string
           status?: Database["public"]["Enums"]["booking_status"]
           stops?: Json
@@ -383,6 +387,7 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: Database["public"]["Enums"]["cancel_actor"] | null
+          cargo_weight_kg?: number | null
           coins_redeemed?: number
           commission_amount?: number
           commission_rate?: number
@@ -420,6 +425,7 @@ export type Database = {
           pod_photo_url?: string | null
           rating?: number | null
           review?: string | null
+          scheduled_for?: string | null
           service_zone?: string
           status?: Database["public"]["Enums"]["booking_status"]
           stops?: Json
@@ -2061,6 +2067,7 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          cargo_weight_kg: number | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -2098,6 +2105,7 @@ export type Database = {
           pod_photo_url: string | null
           rating: number | null
           review: string | null
+          scheduled_for: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
           stops: Json
@@ -2149,6 +2157,7 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          cargo_weight_kg: number | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -2186,6 +2195,7 @@ export type Database = {
           pod_photo_url: string | null
           rating: number | null
           review: string | null
+          scheduled_for: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
           stops: Json
@@ -2214,6 +2224,7 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          cargo_weight_kg: number | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -2251,6 +2262,7 @@ export type Database = {
           pod_photo_url: string | null
           rating: number | null
           review: string | null
+          scheduled_for: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
           stops: Json
@@ -2280,6 +2292,7 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          cargo_weight_kg: number | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -2317,6 +2330,7 @@ export type Database = {
           pod_photo_url: string | null
           rating: number | null
           review: string | null
+          scheduled_for: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
           stops: Json
@@ -2533,6 +2547,7 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          cargo_weight_kg: number | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -2570,6 +2585,7 @@ export type Database = {
           pod_photo_url: string | null
           rating: number | null
           review: string | null
+          scheduled_for: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
           stops: Json
@@ -2871,6 +2887,7 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          cargo_weight_kg: number | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -2908,6 +2925,7 @@ export type Database = {
           pod_photo_url: string | null
           rating: number | null
           review: string | null
+          scheduled_for: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
           stops: Json
@@ -2936,6 +2954,7 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          cargo_weight_kg: number | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -2973,6 +2992,7 @@ export type Database = {
           pod_photo_url: string | null
           rating: number | null
           review: string | null
+          scheduled_for: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
           stops: Json
@@ -3103,6 +3123,7 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: Database["public"]["Enums"]["cancel_actor"] | null
+          cargo_weight_kg: number | null
           coins_redeemed: number
           commission_amount: number
           commission_rate: number
@@ -3140,6 +3161,7 @@ export type Database = {
           pod_photo_url: string | null
           rating: number | null
           review: string | null
+          scheduled_for: string | null
           service_zone: string
           status: Database["public"]["Enums"]["booking_status"]
           stops: Json
@@ -3194,6 +3216,7 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "expired"
+        | "scheduled"
       booking_stop_kind: "pickup" | "stop" | "drop"
       cancel_actor: "customer" | "driver" | "admin" | "system"
       cancellation_category:
@@ -3357,6 +3380,7 @@ export const Constants = {
         "completed",
         "cancelled",
         "expired",
+        "scheduled",
       ],
       booking_stop_kind: ["pickup", "stop", "drop"],
       cancel_actor: ["customer", "driver", "admin", "system"],
