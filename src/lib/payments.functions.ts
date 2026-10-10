@@ -24,14 +24,14 @@ export const createTripOrder = createServerFn({ method: "POST" })
 
     const { data: booking, error } = await context.supabase
       .from("bookings")
-      .select("id, customer_id, fare, payment_status, payment_method")
+      .select("id, customer_id, fare, final_payable_amount, payment_status, payment_method")
       .eq("id", data.bookingId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!booking || booking.customer_id !== context.userId) throw new Error("Booking not found");
     if (booking.payment_status === "paid") throw new Error("This trip is already paid");
 
-    const amount = Number(booking.fare);
+    const amount = Number(booking.final_payable_amount ?? booking.fare);
     if (!(amount > 0)) throw new Error("Nothing to pay for this trip");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -123,11 +123,11 @@ export const confirmTripPayment = createServerFn({ method: "POST" })
     if (!record.booking_id) throw new Error("Payment record is not linked to a trip");
     const { data: booking } = await supabaseAdmin
       .from("bookings")
-      .select("id, customer_id, fare, payment_status")
+      .select("id, customer_id, fare, final_payable_amount, payment_status")
       .eq("id", record.booking_id)
       .maybeSingle();
     if (!booking || booking.customer_id !== context.userId) throw new Error("Trip not found");
-    if (Math.abs(Number(booking.fare) - Number(record.amount)) > 0.01) {
+    if (Math.abs(Number(booking.final_payable_amount ?? booking.fare) - Number(record.amount)) > 0.01) {
       throw new Error("Payment amount does not match the trip fare");
     }
 
