@@ -276,7 +276,6 @@ export type Database = {
           commission_rate: number
           coupon_code: string | null
           coupon_discount: number
-          cargo_weight_kg: number | null
           created_at: string
           customer_id: string | null
           customer_phone: string | null
@@ -310,7 +309,6 @@ export type Database = {
           rating: number | null
           review: string | null
           service_zone: string
-          scheduled_for: string | null
           status: Database["public"]["Enums"]["booking_status"]
           stops: Json
           total_stops: number
@@ -334,7 +332,6 @@ export type Database = {
           commission_rate?: number
           coupon_code?: string | null
           coupon_discount?: number
-          cargo_weight_kg?: number | null
           created_at?: string
           customer_id?: string | null
           customer_phone?: string | null
@@ -368,7 +365,6 @@ export type Database = {
           rating?: number | null
           review?: string | null
           service_zone?: string
-          scheduled_for?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
           stops?: Json
           total_stops?: number
@@ -392,7 +388,6 @@ export type Database = {
           commission_rate?: number
           coupon_code?: string | null
           coupon_discount?: number
-          cargo_weight_kg?: number | null
           created_at?: string
           customer_id?: string | null
           customer_phone?: string | null
@@ -426,7 +421,6 @@ export type Database = {
           rating?: number | null
           review?: string | null
           service_zone?: string
-          scheduled_for?: string | null
           status?: Database["public"]["Enums"]["booking_status"]
           stops?: Json
           total_stops?: number
@@ -3195,7 +3189,6 @@ export type Database = {
       app_role: "customer" | "driver" | "admin" | "staff"
       booking_status:
         | "pending"
-        | "scheduled"
         | "accepted"
         | "in_progress"
         | "completed"
