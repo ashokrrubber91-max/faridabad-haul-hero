@@ -235,11 +235,12 @@ export function ReviewBooking({
               <span className="mt-1 block text-xs text-muted-foreground">Available: ₹{walletBalance}</span>
             </span>
           </label>
-          {walletEnabled && walletBalance > 0 && (
+          {walletEnabled && (
             <div className="mt-3 space-y-1 rounded-md bg-primary/5 p-3 text-sm">
-              <div className="flex justify-between"><span>Total fare</span><span>₹{Math.max(0, fare - (walletEnabled ? Math.min(walletBalance, fare) : 0))}</span></div>
-              <div className="flex justify-between text-success"><span>Wallet paid</span><span>−₹{Math.min(walletBalance, fare)}</span></div>
-              <div className="flex justify-between border-t pt-1 font-bold"><span>Remaining payable ({paymentMode === "cash" ? "Cash" : paymentMode.toUpperCase()})</span><span>₹{Math.max(0, fare - walletBalance)}</span></div>
+              <div className="flex justify-between"><span>Available wallet balance</span><span>₹{walletBalance}</span></div>
+              <div className="flex justify-between text-success"><span>Wallet deduction</span><span>−₹{Math.min(walletBalance, fare)}</span></div>
+              <div className="flex justify-between border-t pt-1 font-bold"><span>Final payable ({Math.min(walletBalance, fare) >= fare ? "Wallet" : paymentMode.toUpperCase()})</span><span>₹{Math.max(0, fare - Math.min(walletBalance, fare))}</span></div>
+              {fare > 0 && walletBalance >= fare && <p className="pt-1 text-xs font-medium text-success">Wallet covers the full fare. Booking can be confirmed without online checkout.</p>}
             </div>
           )}
         </div>
@@ -297,9 +298,21 @@ export function ReviewBooking({
             </div>
           )}
           <div className="mt-1 flex justify-between border-t pt-1 font-display text-lg text-secondary">
-            <span>Total payable</span>
+            <span>Total fare</span>
             <span>₹{fare}</span>
           </div>
+          {walletEnabled && (
+            <>
+              <div className="flex justify-between text-success">
+                <span>Wallet deduction</span>
+                <span>−₹{Math.min(walletBalance, fare)}</span>
+              </div>
+              <div className="flex justify-between border-t pt-1 font-bold text-secondary">
+                <span>Final payable ({walletBalance >= fare ? "Wallet" : paymentMode.toUpperCase()})</span>
+                <span>₹{Math.max(0, fare - Math.min(walletBalance, fare))}</span>
+              </div>
+            </>
+          )}
         </div>
 
         <Button
@@ -358,9 +371,21 @@ export function ReviewBooking({
               </div>
             )}
             <div className="flex justify-between border-t pt-2 font-bold">
-              <span>Total</span>
+              <span>Total fare</span>
               <span>₹{fare}</span>
             </div>
+            {walletEnabled && (
+              <>
+                <div className="flex justify-between text-success">
+                  <span>Wallet deduction</span>
+                  <span>−₹{Math.min(walletBalance, fare)}</span>
+                </div>
+                <div className="flex justify-between border-t pt-2 font-bold">
+                  <span>Final payable ({walletBalance >= fare ? "Wallet" : paymentMode.toUpperCase()})</span>
+                  <span>₹{Math.max(0, fare - Math.min(walletBalance, fare))}</span>
+                </div>
+              </>
+            )}
             <div className="mt-3 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
               Payment method:{" "}
               <span className="font-semibold text-secondary">{paymentMode.toUpperCase()}</span>
