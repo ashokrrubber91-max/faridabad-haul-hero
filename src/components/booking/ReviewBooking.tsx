@@ -44,6 +44,9 @@ export function ReviewBooking({
   onEditDrop,
   onConfirm,
   submitting,
+  walletBalance,
+  walletEnabled,
+  onWalletEnabledChange,
 }: {
   pickup: PlacePick;
   drop: PlacePick;
@@ -69,6 +72,9 @@ export function ReviewBooking({
   onEditDrop?: () => void;
   onConfirm: () => void;
   submitting: boolean;
+  walletBalance: number;
+  walletEnabled: boolean;
+  onWalletEnabledChange: (enabled: boolean) => void;
 }) {
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [coinsEnabled, setCoinsEnabled] = useState(discount > 0);
@@ -219,6 +225,23 @@ export function ReviewBooking({
           <p className="mt-1 text-xs text-muted-foreground">Leave blank for the earliest available driver, or choose a pickup 31 minutes to 30 days ahead. Advance bookings support cash, wallet, UPI, card and MiniPort Coins.</p>
           <input type="datetime-local" value={scheduledAt} min={minScheduledAt} max={maxScheduledAt} onChange={(e) => onScheduledAtChange(e.target.value)} className="mt-3 h-11 w-full rounded-md border border-input bg-background px-3 text-sm" />
           {scheduledAt && <p className="mt-2 text-xs font-medium text-primary">Schedule 31 minutes to 30 days ahead. Cash bookings are confirmed without online checkout; online bookings must complete payment before dispatch. Driver alerts go out 30 minutes before pickup.</p>}
+        </div>
+
+        <div className="rounded-xl border p-4">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input type="checkbox" checked={walletEnabled} onChange={(e) => onWalletEnabledChange(e.target.checked)} className="mt-1 h-4 w-4 accent-orange-500" />
+            <span className="flex-1">
+              <span className="block text-sm font-bold text-secondary">Use Wallet Balance</span>
+              <span className="mt-1 block text-xs text-muted-foreground">Available: ₹{walletBalance}</span>
+            </span>
+          </label>
+          {walletEnabled && walletBalance > 0 && (
+            <div className="mt-3 space-y-1 rounded-md bg-primary/5 p-3 text-sm">
+              <div className="flex justify-between"><span>Total fare</span><span>₹{Math.max(0, fare - (walletEnabled ? Math.min(walletBalance, fare) : 0))}</span></div>
+              <div className="flex justify-between text-success"><span>Wallet paid</span><span>−₹{Math.min(walletBalance, fare)}</span></div>
+              <div className="flex justify-between border-t pt-1 font-bold"><span>Remaining payable ({paymentMode === "cash" ? "Cash" : paymentMode.toUpperCase()})</span><span>₹{Math.max(0, fare - walletBalance)}</span></div>
+            </div>
+          )}
         </div>
 
         <div className="rounded-xl border p-4">
