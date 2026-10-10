@@ -256,7 +256,7 @@ export function ReviewBooking({
             aria-label="Payment method"
           >
             <option value="cash">Cash</option>
-            <option value="wallet">Wallet / MiniPort Coins</option>
+            
             <option value="upi">UPI</option>
             <option value="card">Card</option>
             <option value="netbanking">Netbanking</option>
@@ -317,7 +317,7 @@ export function ReviewBooking({
           <MessageCircle className="h-4 w-4" /> Book via WhatsApp
         </Button>
         <Button onClick={onConfirm} disabled={submitting} className="h-11 w-full">
-          {submitting ? "Booking…" : "Confirm & book · ₹" + fare}{" "}
+          {submitting ? "Booking…" : "Confirm & book · ₹" + Math.max(0, fare - (walletEnabled ? Math.min(walletBalance, fare) : 0))}{" "}
           {!submitting && <ArrowRight className="h-4 w-4" />}
         </Button>
         <button
