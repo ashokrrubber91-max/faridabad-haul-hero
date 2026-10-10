@@ -72,6 +72,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
 
         const sid = params["MessageSid"] ?? params["SmsMessageSid"] ?? "";
         const from = params["From"] ?? "";
+        const incomingBody = (params["Body"] ?? "").slice(0, 4000);
         if (!sid || !from) return new Response("Bad payload", { status: 400 });
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

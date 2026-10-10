@@ -64,6 +64,13 @@
       "when": 1791525187729,
       "tag": "0008_multi_stop_orders_and_parallel_bookings",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791633170905,
+      "tag": "0009_booking_schedule_cargo_fields",
+      "breakpoints": true
     }
   ]
 }

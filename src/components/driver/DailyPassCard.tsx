@@ -75,12 +75,10 @@ export function DailyPassCard() {
     setBusy(true);
     try {
       const { data, error } = await (supabase as unknown as UntypedClient).rpc(
-        "purchase_daily_pass",
-        { p_driver_id: user!.id, p_pass_price: 99 },
+        "activate_driver_daily_pass",
       );
       if (error) throw error;
-      const result = data as { success?: boolean; message?: string };
-      if (!result?.success) throw new Error(result?.message || "Could not activate Daily Pass");
+      if (!(data as PassRow | null)?.id) throw new Error("Could not activate Daily Pass");
       toast.success("₹99 Daily Pass activated for 24 hours");
       await Promise.all([
         pass.refetch(),
