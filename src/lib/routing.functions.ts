@@ -49,6 +49,7 @@ export const createBooking = createServerFn({ method: "POST" })
         vehicle: vehicleId,
         couponCode: z.string().trim().max(40).nullable().default(null),
         coins: z.number().int().min(0).max(100000).default(0),
+        walletDeductedAmount: z.number().finite().min(0).max(100000).default(0),
         paymentMethod: z.enum(["cod", "upi", "card", "netbanking", "wallet"]),
         scheduledAt: z.string().datetime().nullable().optional().default(null),
         cargoWeightKg: z.number().finite().positive().max(100000).nullable().optional().default(null),
@@ -154,9 +155,30 @@ export const createBooking = createServerFn({ method: "POST" })
     );
     if (stopsError) throw new Error(stopsError.message);
 
+    let walletDeductedAmount = 0;
+    let finalPayableAmount = Number(booking.fare);
+    if (data.walletDeductedAmount > 0) {
+      const { data: walletResult, error: walletError } = await context.supabase.rpc("apply_booking_wallet_deduction", {
+        _booking_id: booking.id,
+        _customer_id: context.userId,
+        _requested_amount: data.walletDeductedAmount,
+      });
+      if (walletError) {
+        await context.supabase.rpc("cancel_booking", { _booking_id: booking.id, _reason: "Wallet payment could not be completed" });
+        throw new Error(walletError.message);
+      }
+      const applied = walletResult as { wallet_deducted_amount?: number; final_payable_amount?: number };
+      walletDeductedAmount = Number(applied.wallet_deducted_amount ?? 0);
+      finalPayableAmount = Number(applied.final_payable_amount ?? booking.fare);
+    } else {
+      await context.supabase.from("bookings").update({ wallet_deducted_amount: 0, final_payable_amount: Number(booking.fare) }).eq("id", booking.id);
+    }
+
     return {
       id: booking.id,
       fare: Number(booking.fare),
+      walletDeductedAmount,
+      finalPayableAmount,
       distanceKm: Number(booking.distance_km),
       durationMin: route.durationMin,
       status: booking.status,
