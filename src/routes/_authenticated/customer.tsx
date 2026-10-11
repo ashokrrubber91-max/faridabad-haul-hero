@@ -181,7 +181,14 @@ function CustomerPage() {
         .order("created_at", { ascending: false })
         // This screen only shows recent trips; full history lives on My rides.
         .limit(15);
-      if (error) throw error;
+      if (error) {
+        console.error("[MiniPort] Customer booking history query failed", {
+          code: error.code,
+          message: error.message,
+          hint: error.hint,
+        });
+        throw error;
+      }
       return data ?? [];
     },
     refetchInterval: MINIPORT_TEST_MODE ? 3000 : false,
@@ -374,6 +381,7 @@ function CustomerPage() {
       qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
     },
     onError: (e: Error) => {
+      console.error("[MiniPort] Booking submission failed", e);
       toast.error(e.message);
       qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
     },
