@@ -133,7 +133,17 @@ export const createBooking = createServerFn({ method: "POST" })
       })
       .select("id, fare, distance_km, status, scheduled_for")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[MiniPort] Booking insert failed", {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        ownerColumn: "customer_id",
+        sessionUserId: context.userId,
+      });
+      throw new Error(`Booking insert failed (${error.code ?? "unknown"}): ${error.message}`);
+    }
 
     // Structured itinerary: sequence 0 = pickup, 1..3 = extra stops, 10 = drop.
     // Persisting stops properly replaces the old "Stops: ..." note text.
@@ -155,7 +165,17 @@ export const createBooking = createServerFn({ method: "POST" })
         contact_phone: row.place.contactPhone ?? null,
       })),
     );
-    if (stopsError) throw new Error(stopsError.message);
+    if (stopsError) {
+      console.error("[MiniPort] Booking itinerary insert failed", {
+        code: stopsError.code,
+        message: stopsError.message,
+        details: stopsError.details,
+        hint: stopsError.hint,
+        bookingId: booking.id,
+      });
+      // Keep the booking and itinerary failure visible for debugging; do not silently report success.
+      throw new Error(`Booking stops failed (${stopsError.code ?? "unknown"}): ${stopsError.message}`);
+    }
 
     let walletDeductedAmount = 0;
     let finalPayableAmount = Number(booking.fare);
