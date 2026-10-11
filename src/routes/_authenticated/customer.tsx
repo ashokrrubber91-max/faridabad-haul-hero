@@ -429,6 +429,13 @@ function CustomerPage() {
       });
       setMockWhatsAppOpen(false);
     } catch (error) {
+      console.error("[MiniPort] WhatsApp simulation booking failed", {
+        userId: user?.id ?? null,
+        code: (error as { code?: string })?.code ?? null,
+        message: error instanceof Error ? error.message : String(error),
+        details: (error as { details?: string })?.details ?? null,
+        hint: (error as { hint?: string })?.hint ?? null,
+      });
       toast.error(error instanceof Error ? error.message : "Could not create test booking");
     } finally {
       setMockWhatsAppBusy(false);
