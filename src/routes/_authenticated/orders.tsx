@@ -83,7 +83,15 @@ function OrdersPage() {
         .gte("created_at", twoYearsAgo)
         .order("created_at", { ascending: false })
         .limit(200);
-      if (error) throw error;
+      if (error) {
+        console.error("[MiniPort] Orders history query failed", {
+          code: error.code,
+          message: error.message,
+          hint: error.hint,
+          details: error.details,
+        });
+        throw error;
+      }
       return data ?? [];
     },
   });
