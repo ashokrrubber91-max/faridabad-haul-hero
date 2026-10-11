@@ -52,8 +52,17 @@ function DriverRidesPage() {
         .eq("driver_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(150);
-      if (!fallback.error) return fallback.data ?? [];
+      if (!fallback.error) {
+        console.warn("[MiniPort] Driver ride history loaded with fallback fields", {
+          primaryError: errorMessage(primary.error),
+        });
+        return fallback.data ?? [];
+      }
 
+      console.error("[MiniPort] Driver ride history query failed", {
+        primaryError: errorMessage(primary.error),
+        fallbackError: errorMessage(fallback.error),
+      });
       throw new Error(
         `Ride history could not be loaded. ${errorMessage(fallback.error)} (full query: ${errorMessage(primary.error)})`,
       );
