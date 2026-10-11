@@ -71,6 +71,13 @@
       "when": 1791633170905,
       "tag": "0009_booking_schedule_cargo_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791733024719,
+      "tag": "0010_keep_scheduled_status_on_insert",
+      "breakpoints": true
     }
   ]
 }
