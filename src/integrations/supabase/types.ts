@@ -291,6 +291,7 @@ export type Database = {
           fare: number
           fare_boost: number
           final_fare: number | null
+          final_payable_amount: number | null
           helper_count: number
           helper_fee: number
           id: string
@@ -319,6 +320,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          wallet_deducted_amount: number
           whatsapp_message_id: string | null
         }
         Insert: {
@@ -349,6 +351,7 @@ export type Database = {
           fare: number
           fare_boost?: number
           final_fare?: number | null
+          final_payable_amount?: number | null
           helper_count?: number
           helper_fee?: number
           id?: string
@@ -377,6 +380,7 @@ export type Database = {
           unloading_stopped_at?: string | null
           updated_at?: string
           vehicle_type: string
+          wallet_deducted_amount?: number
           whatsapp_message_id?: string | null
         }
         Update: {
@@ -407,6 +411,7 @@ export type Database = {
           fare?: number
           fare_boost?: number
           final_fare?: number | null
+          final_payable_amount?: number | null
           helper_count?: number
           helper_fee?: number
           id?: string
@@ -435,6 +440,7 @@ export type Database = {
           unloading_stopped_at?: string | null
           updated_at?: string
           vehicle_type?: string
+          wallet_deducted_amount?: number
           whatsapp_message_id?: string | null
         }
         Relationships: [
@@ -2087,6 +2093,7 @@ export type Database = {
           fare: number
           fare_boost: number
           final_fare: number | null
+          final_payable_amount: number | null
           helper_count: number
           helper_fee: number
           id: string
@@ -2115,6 +2122,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          wallet_deducted_amount: number
           whatsapp_message_id: string | null
         }
         SetofOptions: {
@@ -2177,6 +2185,7 @@ export type Database = {
           fare: number
           fare_boost: number
           final_fare: number | null
+          final_payable_amount: number | null
           helper_count: number
           helper_fee: number
           id: string
@@ -2205,6 +2214,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          wallet_deducted_amount: number
           whatsapp_message_id: string | null
         }
         SetofOptions: {
@@ -2244,6 +2254,7 @@ export type Database = {
           fare: number
           fare_boost: number
           final_fare: number | null
+          final_payable_amount: number | null
           helper_count: number
           helper_fee: number
           id: string
@@ -2272,6 +2283,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          wallet_deducted_amount: number
           whatsapp_message_id: string | null
         }
         SetofOptions: {
@@ -2312,6 +2324,7 @@ export type Database = {
           fare: number
           fare_boost: number
           final_fare: number | null
+          final_payable_amount: number | null
           helper_count: number
           helper_fee: number
           id: string
@@ -2340,6 +2353,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          wallet_deducted_amount: number
           whatsapp_message_id: string | null
         }
         SetofOptions: {
@@ -2504,6 +2518,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      apply_booking_wallet_deduction: {
+        Args: {
+          _booking_id: string
+          _customer_id: string
+          _requested_amount: number
+        }
+        Returns: Json
+      }
       attach_delivery_photo: {
         Args: { _booking_id: string; _pod_path: string }
         Returns: boolean
@@ -2567,6 +2589,7 @@ export type Database = {
           fare: number
           fare_boost: number
           final_fare: number | null
+          final_payable_amount: number | null
           helper_count: number
           helper_fee: number
           id: string
@@ -2595,6 +2618,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          wallet_deducted_amount: number
           whatsapp_message_id: string | null
         }
         SetofOptions: {
@@ -2907,6 +2931,7 @@ export type Database = {
           fare: number
           fare_boost: number
           final_fare: number | null
+          final_payable_amount: number | null
           helper_count: number
           helper_fee: number
           id: string
@@ -2935,6 +2960,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          wallet_deducted_amount: number
           whatsapp_message_id: string | null
         }
         SetofOptions: {
@@ -2974,6 +3000,7 @@ export type Database = {
           fare: number
           fare_boost: number
           final_fare: number | null
+          final_payable_amount: number | null
           helper_count: number
           helper_fee: number
           id: string
@@ -3002,6 +3029,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          wallet_deducted_amount: number
           whatsapp_message_id: string | null
         }
         SetofOptions: {
@@ -3143,6 +3171,7 @@ export type Database = {
           fare: number
           fare_boost: number
           final_fare: number | null
+          final_payable_amount: number | null
           helper_count: number
           helper_fee: number
           id: string
@@ -3171,6 +3200,7 @@ export type Database = {
           unloading_stopped_at: string | null
           updated_at: string
           vehicle_type: string
+          wallet_deducted_amount: number
           whatsapp_message_id: string | null
         }
         SetofOptions: {
