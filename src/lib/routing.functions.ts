@@ -109,7 +109,10 @@ export const createBooking = createServerFn({ method: "POST" })
         helper_fee: helperFee,
         distance_km: route.distanceKm,
         fare: Math.round(
-          Number(vt.base_fare) + Number(vt.per_km_fare) * route.distanceKm + helperFee,
+          Number(vt.base_fare) +
+          Number(vt.per_km_fare) * route.distanceKm +
+          helperFee +
+          data.stops.length * 50,
         ),
         total_stops: data.stops.length + 1,
         is_multi_stop: data.stops.length > 0,
