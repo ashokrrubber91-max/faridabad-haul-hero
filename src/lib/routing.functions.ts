@@ -105,6 +105,8 @@ export const createBooking = createServerFn({ method: "POST" })
         drop_lng: data.drop.lng,
         service_zone: "Faridabad",
         vehicle_type: data.vehicle,
+        helper_count: helperCount,
+        helper_fee: helperFee,
         distance_km: route.distanceKm,
         fare: Math.round(
           Number(vt.base_fare) + Number(vt.per_km_fare) * route.distanceKm + helperFee,
