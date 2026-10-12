@@ -19,7 +19,7 @@ function normalizePhone(value: string) {
 }
 
 async function verifyMetaSignature(req: Request, rawBody: string) {
-  if (!WHATSAPP_APP_SECRET) return true; // Keep webhook usable until the app secret is configured.
+  // Fail closed: never accept unsigned inbound messages when the app secret is missing.\n  if (!WHATSAPP_APP_SECRET) return false;
   const header = req.headers.get("x-hub-signature-256") ?? "";
   if (!header.startsWith("sha256=")) return false;
   const expected = header.slice(7);
@@ -232,6 +232,30 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
+    // A real booking must map to a registered customer identity. Never try to
+    // insert a booking with customer_id=null or treat an unknown sender as a user.
+    if (!profile?.id) {
+      await sendWhatsAppText(
+        fromNumber,
+        "This number is not registered with MiniPort yet. Please sign up in the MiniPort app with this mobile number, then send your booking again.",
+      );
+      return new Response("OK", { status: 200 });
+    }
+
+    const { data: customerRole } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", profile.id)
+      .eq("role", "customer")
+      .maybeSingle();
+    if (!customerRole) {
+      await sendWhatsAppText(
+        fromNumber,
+        "Please complete customer registration in MiniPort before creating a booking through WhatsApp.",
+      );
+      return new Response("OK", { status: 200 });
+    }
+
     const vehicleType = ["tata_ace", "pickup_8ft", "tata_407"].includes(bookingData.vehicle)
       ? bookingData.vehicle
       : "tata_ace";
@@ -251,7 +275,7 @@ serve(async (req) => {
     const { data: trip, error } = await supabase
       .from("bookings")
       .insert({
-        customer_id: profile?.id ?? null,
+        customer_id: profile.id,
         customer_phone: fromNumber,
         pickup_address: String(bookingData.pickup),
         drop_address: String(bookingData.drop),
