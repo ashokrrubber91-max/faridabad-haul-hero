@@ -59,6 +59,14 @@ export const createBooking = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
+    // Re-validate the active Supabase session before creating a booking.
+    // Never accept a customer_id supplied by the browser; use the verified user.
+    const { data: authData, error: authUserError } = await context.supabase.auth.getUser();
+    if (authUserError || !authData.user || authData.user.id !== context.userId) {
+      throw new Error("Your session expired. Please sign in again before booking.");
+    }
+    const authenticatedCustomerId = authData.user.id;
+
     const scheduledAt = data.scheduledAt ? new Date(data.scheduledAt) : null;
     if (scheduledAt) {
       const now = Date.now();
@@ -96,7 +104,7 @@ export const createBooking = createServerFn({ method: "POST" })
     const { data: booking, error } = await context.supabase
       .from("bookings")
       .insert({
-        customer_id: context.userId,
+        customer_id: authenticatedCustomerId,
         pickup_address: data.pickup.address,
         drop_address: data.drop.address,
         pickup_lat: data.pickup.lat,
