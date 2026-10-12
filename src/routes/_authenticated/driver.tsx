@@ -109,21 +109,26 @@ function DriverPage() {
       // a request the backend would refuse to assign. Runs server-side: the
       // cleanup function is not directly executable by signed-in users.
       await sweepStale({ data: undefined }).catch(() => undefined);
-      const [{ data, error }, passed] = await Promise.all([
+      const [openResult, assignedResult, passedResult] = await Promise.all([
+        // Open jobs are served by a security-definer RPC that returns no OTPs.
+        (supabase as any).rpc("get_open_driver_bookings"),
+        // A driver reads only rides assigned to their own account directly.
         supabase
           .from("bookings")
           .select(BOOKING_FIELDS)
-          .or(
-            `and(status.eq.pending,driver_id.is.null,cancelled_at.is.null),driver_id.eq.${user!.id}`,
-          )
+          .eq("driver_id", user!.id)
+          .neq("status", "pending")
           .order("created_at", { ascending: false })
           .limit(60),
-        // Rides this driver already passed must not come back into the feed.
         supabase.from("driver_booking_passes").select("booking_id").eq("driver_id", user!.id),
       ]);
-      if (error) throw error;
-      const skipped = new Set((passed.data ?? []).map((p) => p.booking_id));
-      return (data ?? []).filter((b) => b.driver_id === user!.id || !skipped.has(b.id));
+      if (openResult.error) throw openResult.error;
+      if (assignedResult.error) throw assignedResult.error;
+      if (passedResult.error) throw passedResult.error;
+      const skipped = new Set((passedResult.data ?? []).map((p) => p.booking_id));
+      const open = (openResult.data ?? []) as unknown as Array<Record<string, any>>;
+      const assigned = assignedResult.data ?? [];
+      return [...open.filter((b) => !skipped.has(String(b.id))), ...assigned];
     },
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
