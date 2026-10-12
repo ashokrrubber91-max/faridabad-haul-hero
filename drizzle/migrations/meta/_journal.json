@@ -85,6 +85,13 @@
       "when": 1791830466610,
       "tag": "0011_restore_bookings_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791831880184,
+      "tag": "0012_restore_multi_stop_fee",
+      "breakpoints": true
     }
   ]
 }
