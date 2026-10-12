@@ -196,7 +196,7 @@ serve(async (req) => {
   if (!(await verifyMetaSignature(req, rawBody)))
     return new Response("Invalid signature", { status: 401 });
 
-  let body: any;
+  let body: MetaWebhookBody;
   try {
     body = JSON.parse(rawBody);
   } catch {
