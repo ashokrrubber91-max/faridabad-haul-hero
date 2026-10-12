@@ -78,6 +78,13 @@
       "when": 1791733024719,
       "tag": "0010_keep_scheduled_status_on_insert",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791830466610,
+      "tag": "0011_restore_bookings_grants",
+      "breakpoints": true
     }
   ]
 }
