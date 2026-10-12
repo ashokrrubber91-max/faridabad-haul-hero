@@ -56,6 +56,18 @@ type IncentiveTier = { rides_required: number; bonus_amount: number; label: stri
  */
 type DriverJob = Database["public"]["Tables"]["bookings"]["Row"];
 
+/**
+ * `get_open_driver_bookings` is a security-definer RPC that returns booking
+ * columns without OTPs. It is not in the generated client types, so it is
+ * reached through this narrow cast instead of `any`.
+ */
+type OpenJobsClient = {
+  rpc: (fn: "get_open_driver_bookings") => Promise<{
+    data: unknown;
+    error: { message: string } | null;
+  }>;
+};
+
 function DriverPage() {
   const { user, role, roles, activeMode, profile, loading, setActiveMode } = useAuth();
   const qc = useQueryClient();
