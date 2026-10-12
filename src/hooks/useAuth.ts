@@ -20,6 +20,8 @@ export interface DriverLocationShare {
 
 export interface AuthState {
   loading: boolean;
+  syncError: string | null;
+  retryAccountSync: () => void;
   user: User | null;
   role: AppRole | null;
   roles: AppRole[];
@@ -41,18 +43,23 @@ export function useAuth(): AuthState {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [profile, setProfile] = useState<AuthState["profile"]>(null);
   const [loading, setLoading] = useState(true);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [syncAttempt, setSyncAttempt] = useState(0);
+  const retryAccountSync = useCallback(() => {
+    setSyncError(null);
+    setLoading(true);
+    setSyncAttempt((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     let active = true;
     let subscription: { unsubscribe: () => void } | null = null;
 
-    const failClosed = () => {
+    const markSyncError = () => {
       if (!active) return;
-      // A preview/configuration failure must not blank the public app.
-      // Keep the user signed out until Supabase becomes available.
-      setUser(null);
-      setRoles([]);
-      setProfile(null);
+      // Preserve any recovered session and show a retry action instead of
+      // falsely signing the user out when the network is temporarily down.
+      setSyncError("Account sync failed. Check your internet connection and retry.");
       setLoading(false);
     };
 
@@ -61,6 +68,7 @@ export function useAuth(): AuthState {
         if (!active) return;
         setRoles([]);
         setProfile(null);
+        setSyncError(null);
         setLoading(false);
         return;
       }
@@ -74,14 +82,16 @@ export function useAuth(): AuthState {
             .eq("id", u.id)
             .maybeSingle(),
         ]);
-        const [{ data: roleRows }, { data: profileRow }] = await Promise.race([
+        const [{ data: roleRows, error: roleError }, { data: profileRow, error: profileError }] = await Promise.race([
           query,
           new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error("AUTH_PROFILE_TIMEOUT")), 12000),
           ),
         ]);
 
+        if (roleError || profileError) throw roleError ?? profileError;
         if (!active) return;
+        setSyncError(null);
         setRoles((roleRows ?? []).map((r) => r.role as AppRole));
         setProfile(
           profileRow
@@ -98,22 +108,27 @@ export function useAuth(): AuthState {
         );
         setLoading(false);
       } catch {
-        failClosed();
+        markSyncError();
       }
     };
 
     let currentUserId: string | null = null;
 
     try {
-      supabase.auth
-        .getSession()
-        .then(({ data }) => {
-          const u = data.session?.user ?? null;
-          currentUserId = u?.id ?? null;
-          setUser(u);
-          void loadFor(u);
-        })
-        .catch(() => failClosed());
+      // Resolve persisted session before protected routes and booking screens
+      // are considered ready. A failed refresh remains retryable.
+      void supabase.auth.getSession().then(({ data, error }) => {
+        if (!active) return;
+        if (error) {
+          markSyncError();
+          return;
+        }
+        const u = data.session?.user ?? null;
+        currentUserId = u?.id ?? null;
+        setUser(u);
+        setSyncError(null);
+        void loadFor(u);
+      }).catch(() => markSyncError());
 
       const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
         if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
@@ -122,18 +137,19 @@ export function useAuth(): AuthState {
         currentUserId = u?.id ?? null;
         setUser(u);
         setLoading(true);
+        setSyncError(null);
         void loadFor(u);
       });
       subscription = sub.subscription;
     } catch {
-      failClosed();
+      markSyncError();
     }
 
     return () => {
       active = false;
       subscription?.unsubscribe();
     };
-  }, []);
+  }, [syncAttempt]);
 
   const [share, setShare] = useState<{
     state: LocationShareState;
@@ -278,7 +294,7 @@ export function useAuth(): AuthState {
     [user],
   );
 
-  return { user, role, roles, profile, activeMode, setActiveMode, loading, locationShare };
+  return { user, role, roles, profile, activeMode, setActiveMode, loading, syncError, retryAccountSync, locationShare };
 }
 
 export const INDIAN_MOBILE = /^[6-9]\d{9}$/;
