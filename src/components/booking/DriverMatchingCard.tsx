@@ -117,7 +117,8 @@ export function DriverMatchingCard({
               {declined} of {nearbyTotal} captains didn't accept your ride
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Current fare: ₹{fare.toFixed(0)}{boost > 0 ? ` · +₹${boost} fare boost` : ""}
+              Current fare: ₹{fare.toFixed(0)}
+              {boost > 0 ? ` · +₹${boost} fare boost` : ""}
             </p>
           </div>
           <Badge variant="outline">{progress}% search</Badge>

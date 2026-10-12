@@ -84,7 +84,8 @@ function AuthPage() {
           </p>
           {MINIPORT_TEST_MODE && (
             <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
-              <strong>TESTING MODE:</strong> SMS is bypassed. Any phone number can be tested and the universal OTP is <strong>{TEST_OTP}</strong>.
+              <strong>TESTING MODE:</strong> SMS is bypassed. Any phone number can be tested and the
+              universal OTP is <strong>{TEST_OTP}</strong>.
             </div>
           )}
 
@@ -164,14 +165,20 @@ function OtpSignInForm() {
     }
     setBusy(true);
     try {
-      const res = await start({ data: { phone: MINIPORT_TEST_MODE ? phone : normalisePhone(phone), intent: "signin" } });
+      const res = await start({
+        data: { phone: MINIPORT_TEST_MODE ? phone : normalisePhone(phone), intent: "signin" },
+      });
       if (!res.ok) {
         toast.error(res.message);
         return;
       }
       setSent(true);
       setCooldown(MINIPORT_TEST_MODE ? 0 : RESEND_COOLDOWN_SECONDS);
-      toast.success(MINIPORT_TEST_MODE ? `Test OTP ready: ${TEST_OTP}` : `Code sent to +91 ${normalisePhone(phone)}`);
+      toast.success(
+        MINIPORT_TEST_MODE
+          ? `Test OTP ready: ${TEST_OTP}`
+          : `Code sent to +91 ${normalisePhone(phone)}`,
+      );
     } catch {
       toast.error("Network problem — please check your connection and try again.");
     } finally {
@@ -210,7 +217,9 @@ function OtpSignInForm() {
         <div>
           <Label htmlFor="otp-phone">Phone number</Label>
           <div className="flex items-stretch">
-            <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">+91</span>
+            <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">
+              +91
+            </span>
             <Input
               id="otp-phone"
               inputMode="numeric"
@@ -227,7 +236,11 @@ function OtpSignInForm() {
             <p className="mt-1 text-xs text-destructive">Enter a valid 10-digit mobile number</p>
           )}
         </div>
-        <Button type="submit" className="h-11 w-full text-base" disabled={busy || !isValidIndianMobile(phone)}>
+        <Button
+          type="submit"
+          className="h-11 w-full text-base"
+          disabled={busy || !isValidIndianMobile(phone)}
+        >
           {busy ? "Sending…" : "Send OTP"}
         </Button>
       </form>
@@ -421,7 +434,9 @@ function SignUpForm({
 
     setBusy(true);
     try {
-      const res = await start({ data: { phone: MINIPORT_TEST_MODE ? phone : normalisePhone(phone), intent: "signup" } });
+      const res = await start({
+        data: { phone: MINIPORT_TEST_MODE ? phone : normalisePhone(phone), intent: "signup" },
+      });
       if (!res.ok) {
         toast.error(res.message);
         return;
@@ -558,7 +573,9 @@ function SignUpForm({
       <div>
         <Label htmlFor="su-phone">Phone number</Label>
         <div className="flex items-stretch">
-          <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">+91</span>
+          <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">
+            +91
+          </span>
           <Input
             id="su-phone"
             inputMode="numeric"
@@ -625,7 +642,11 @@ function SignUpForm({
           .
         </span>
       </label>
-      <Button type="submit" className="h-11 w-full text-base" disabled={busy || !agreed || !isValidIndianMobile(phone)}>
+      <Button
+        type="submit"
+        className="h-11 w-full text-base"
+        disabled={busy || !agreed || !isValidIndianMobile(phone)}
+      >
         {busy ? "Sending code\u2026" : "Send verification code"}
       </Button>
       <p className="text-center text-xs text-muted-foreground">

@@ -134,14 +134,17 @@ function AccountPage() {
   });
 
   const driverKycStatus = driverKyc.data;
-  const hasDriverDomain = ["pending", "approved", "rejected"].includes(String(driverKycStatus ?? ""));
+  const hasDriverDomain = ["pending", "approved", "rejected"].includes(
+    String(driverKycStatus ?? ""),
+  );
   const isDriverProfile =
     !isAdmin && (hasDriverRole || authoritativeActiveMode === "driver" || hasDriverDomain);
   const isCustomerProfile = !isAdmin && !isDriverProfile && authoritativeActiveMode === "customer";
   const isDriverMode = isDriverProfile;
   const driverStateKnown =
     !authLoading && freshRoles.isSuccess && activeModeQuery.isSuccess && driverKyc.isSuccess;
-  const showCustomerSections = driverStateKnown && isCustomerProfile && !hasDriverRole && !hasDriverDomain;
+  const showCustomerSections =
+    driverStateKnown && isCustomerProfile && !hasDriverRole && !hasDriverDomain;
 
   const monthlyDriverEarnings = useQuery({
     queryKey: ["driver-monthly-earnings", user?.id],
@@ -161,13 +164,16 @@ function AccountPage() {
         .order("updated_at", { ascending: false });
       if (error) throw error;
 
-      const months = new Map<string, {
-        label: string;
-        totalEarnings: number;
-        rides: number;
-        commission: number;
-        netEarning: number;
-      }>();
+      const months = new Map<
+        string,
+        {
+          label: string;
+          totalEarnings: number;
+          rides: number;
+          commission: number;
+          netEarning: number;
+        }
+      >();
       for (const booking of data ?? []) {
         const date = new Date(booking.updated_at ?? booking.created_at);
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -201,7 +207,9 @@ function AccountPage() {
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from("withdrawal_requests")
-        .select("id, amount, status, method, utr_number, rejection_reason, created_at, processed_at")
+        .select(
+          "id, amount, status, method, utr_number, rejection_reason, created_at, processed_at",
+        )
         .eq("driver_id", user.id)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -466,15 +474,21 @@ function AccountPage() {
                     <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
                       <div className="rounded bg-muted/40 p-2">
                         <p className="text-muted-foreground">Total earnings</p>
-                        <p className="mt-1 font-semibold text-secondary">₹{month.totalEarnings.toFixed(0)}</p>
+                        <p className="mt-1 font-semibold text-secondary">
+                          ₹{month.totalEarnings.toFixed(0)}
+                        </p>
                       </div>
                       <div className="rounded bg-muted/40 p-2">
                         <p className="text-muted-foreground">Commission</p>
-                        <p className="mt-1 font-semibold text-secondary">₹{month.commission.toFixed(0)}</p>
+                        <p className="mt-1 font-semibold text-secondary">
+                          ₹{month.commission.toFixed(0)}
+                        </p>
                       </div>
                       <div className="rounded bg-muted/40 p-2">
                         <p className="text-muted-foreground">Net earning</p>
-                        <p className="mt-1 font-semibold text-success">₹{month.netEarning.toFixed(0)}</p>
+                        <p className="mt-1 font-semibold text-success">
+                          ₹{month.netEarning.toFixed(0)}
+                        </p>
                       </div>
                       <div className="rounded bg-muted/40 p-2">
                         <p className="text-muted-foreground">Completed rides</p>
@@ -487,7 +501,9 @@ function AccountPage() {
             )}
 
             <div className="mt-4 border-t pt-4">
-              <h3 className="font-display text-base tracking-wide text-secondary">Wallet payout history</h3>
+              <h3 className="font-display text-base tracking-wide text-secondary">
+                Wallet payout history
+              </h3>
               {driverPayouts.isLoading ? (
                 <Loader2 className="mt-3 h-4 w-4 animate-spin text-primary" />
               ) : (driverPayouts.data ?? []).length === 0 ? (
@@ -501,10 +517,13 @@ function AccountPage() {
                           ₹{Number(payout.amount ?? 0).toFixed(0)}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(payout.created_at).toLocaleDateString("en-IN")} · {payout.method ?? "bank"} · {payout.status}
+                          {new Date(payout.created_at).toLocaleDateString("en-IN")} ·{" "}
+                          {payout.method ?? "bank"} · {payout.status}
                         </p>
                         {payout.utr_number && (
-                          <p className="text-[11px] text-muted-foreground">UTR: {payout.utr_number}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            UTR: {payout.utr_number}
+                          </p>
                         )}
                       </div>
                       {payout.rejection_reason && (

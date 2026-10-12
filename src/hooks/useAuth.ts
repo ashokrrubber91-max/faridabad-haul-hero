@@ -82,12 +82,13 @@ export function useAuth(): AuthState {
             .eq("id", u.id)
             .maybeSingle(),
         ]);
-        const [{ data: roleRows, error: roleError }, { data: profileRow, error: profileError }] = await Promise.race([
-          query,
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("AUTH_PROFILE_TIMEOUT")), 12000),
-          ),
-        ]);
+        const [{ data: roleRows, error: roleError }, { data: profileRow, error: profileError }] =
+          await Promise.race([
+            query,
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("AUTH_PROFILE_TIMEOUT")), 12000),
+            ),
+          ]);
 
         if (roleError || profileError) throw roleError ?? profileError;
         if (!active) return;
@@ -117,18 +118,21 @@ export function useAuth(): AuthState {
     try {
       // Resolve persisted session before protected routes and booking screens
       // are considered ready. A failed refresh remains retryable.
-      void supabase.auth.getSession().then(({ data, error }) => {
-        if (!active) return;
-        if (error) {
-          markSyncError();
-          return;
-        }
-        const u = data.session?.user ?? null;
-        currentUserId = u?.id ?? null;
-        setUser(u);
-        setSyncError(null);
-        void loadFor(u);
-      }).catch(() => markSyncError());
+      void supabase.auth
+        .getSession()
+        .then(({ data, error }) => {
+          if (!active) return;
+          if (error) {
+            markSyncError();
+            return;
+          }
+          const u = data.session?.user ?? null;
+          currentUserId = u?.id ?? null;
+          setUser(u);
+          setSyncError(null);
+          void loadFor(u);
+        })
+        .catch(() => markSyncError());
 
       const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
         if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
@@ -294,7 +298,18 @@ export function useAuth(): AuthState {
     [user],
   );
 
-  return { user, role, roles, profile, activeMode, setActiveMode, loading, syncError, retryAccountSync, locationShare };
+  return {
+    user,
+    role,
+    roles,
+    profile,
+    activeMode,
+    setActiveMode,
+    loading,
+    syncError,
+    retryAccountSync,
+    locationShare,
+  };
 }
 
 export const INDIAN_MOBILE = /^[6-9]\d{9}$/;

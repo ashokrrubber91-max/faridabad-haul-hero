@@ -127,7 +127,9 @@ export const confirmTripPayment = createServerFn({ method: "POST" })
       .eq("id", record.booking_id)
       .maybeSingle();
     if (!booking || booking.customer_id !== context.userId) throw new Error("Trip not found");
-    if (Math.abs(Number(booking.final_payable_amount ?? booking.fare) - Number(record.amount)) > 0.01) {
+    if (
+      Math.abs(Number(booking.final_payable_amount ?? booking.fare) - Number(record.amount)) > 0.01
+    ) {
       throw new Error("Payment amount does not match the trip fare");
     }
 
