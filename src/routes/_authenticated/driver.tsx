@@ -1,4 +1,5 @@
 import type { AnyRow } from "@/lib/rows";
+import type { Database } from "@/integrations/supabase/types";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
@@ -47,6 +48,13 @@ export const Route = createFileRoute("/_authenticated/driver")({
 });
 
 type IncentiveTier = { rides_required: number; bonus_amount: number; label: string };
+
+/**
+ * Both feed sources — the open-request RPC and this driver's own assigned trips —
+ * return the same booking columns, so the feed is one row type. Without this the
+ * open rows widened to a loose record and could not satisfy the job card props.
+ */
+type DriverJob = Database["public"]["Tables"]["bookings"]["Row"];
 
 function DriverPage() {
   const { user, role, roles, activeMode, profile, loading, setActiveMode } = useAuth();
@@ -126,8 +134,8 @@ function DriverPage() {
       if (assignedResult.error) throw assignedResult.error;
       if (passedResult.error) throw passedResult.error;
       const skipped = new Set((passedResult.data ?? []).map((p) => p.booking_id));
-      const open = (openResult.data ?? []) as unknown as Array<Record<string, any>>;
-      const assigned = assignedResult.data ?? [];
+      const open = (openResult.data ?? []) as unknown as DriverJob[];
+      const assigned = (assignedResult.data ?? []) as unknown as DriverJob[];
       return [...open.filter((b) => !skipped.has(String(b.id))), ...assigned];
     },
     refetchOnReconnect: true,
