@@ -1,4 +1,5 @@
 import type { AnyRow } from "@/lib/rows";
+import type { Database } from "@/integrations/supabase/types";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
@@ -47,6 +48,25 @@ export const Route = createFileRoute("/_authenticated/driver")({
 });
 
 type IncentiveTier = { rides_required: number; bonus_amount: number; label: string };
+
+/**
+ * Both feed sources — the open-request RPC and this driver's own assigned trips —
+ * return the same booking columns, so the feed is one row type. Without this the
+ * open rows widened to a loose record and could not satisfy the job card props.
+ */
+type DriverJob = Database["public"]["Tables"]["bookings"]["Row"];
+
+/**
+ * `get_open_driver_bookings` is a security-definer RPC that returns booking
+ * columns without OTPs. It is not in the generated client types, so it is
+ * reached through this narrow cast instead of `any`.
+ */
+type OpenJobsClient = {
+  rpc: (fn: "get_open_driver_bookings") => Promise<{
+    data: unknown;
+    error: { message: string } | null;
+  }>;
+};
 
 function DriverPage() {
   const { user, role, roles, activeMode, profile, loading, setActiveMode } = useAuth();
@@ -111,7 +131,7 @@ function DriverPage() {
       await sweepStale({ data: undefined }).catch(() => undefined);
       const [openResult, assignedResult, passedResult] = await Promise.all([
         // Open jobs are served by a security-definer RPC that returns no OTPs.
-        (supabase as any).rpc("get_open_driver_bookings"),
+        (supabase as unknown as OpenJobsClient).rpc("get_open_driver_bookings"),
         // A driver reads only rides assigned to their own account directly.
         supabase
           .from("bookings")
@@ -126,8 +146,8 @@ function DriverPage() {
       if (assignedResult.error) throw assignedResult.error;
       if (passedResult.error) throw passedResult.error;
       const skipped = new Set((passedResult.data ?? []).map((p) => p.booking_id));
-      const open = (openResult.data ?? []) as unknown as Array<Record<string, any>>;
-      const assigned = assignedResult.data ?? [];
+      const open = (openResult.data ?? []) as unknown as DriverJob[];
+      const assigned = (assignedResult.data ?? []) as unknown as DriverJob[];
       return [...open.filter((b) => !skipped.has(String(b.id))), ...assigned];
     },
     refetchOnReconnect: true,
@@ -393,7 +413,9 @@ function DriverPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("booking_stops")
-        .select("id, sequence, kind, address, latitude, longitude, contact_name, contact_phone, status, arrived_at, verified_at")
+        .select(
+          "id, sequence, kind, address, latitude, longitude, contact_name, contact_phone, status, arrived_at, verified_at",
+        )
         .eq("booking_id", activeJob!.id)
         .eq("kind", "stop")
         .order("sequence", { ascending: true });
@@ -654,8 +676,12 @@ function DriverPage() {
           vehicle={vehicleFor(activeJob.vehicle_type)}
           pending={verifyOtp.isPending}
           stops={activeStops.data ?? []}
-          onStopArrived={(sequence) => markStopArrived.mutate({ bookingId: activeJob.id, sequence })}
-          onStopVerify={(sequence, otp) => verifyStop.mutate({ bookingId: activeJob.id, sequence, otp })}
+          onStopArrived={(sequence) =>
+            markStopArrived.mutate({ bookingId: activeJob.id, sequence })
+          }
+          onStopVerify={(sequence, otp) =>
+            verifyStop.mutate({ bookingId: activeJob.id, sequence, otp })
+          }
           stopBusy={markStopArrived.isPending || verifyStop.isPending}
         />
       )}
@@ -767,14 +793,18 @@ function DriverPage() {
                       </p>
                       {b.scheduled_for && (
                         <div className="mt-2 space-y-1">
-                          <Badge variant="outline" className="border-primary/40 text-primary">Scheduled pickup</Badge>
+                          <Badge variant="outline" className="border-primary/40 text-primary">
+                            Scheduled pickup
+                          </Badge>
                           <p className="text-xs font-semibold text-primary">
                             {new Date(b.scheduled_for).toLocaleString("en-IN")}
                           </p>
                         </div>
                       )}
                       {b.cargo_weight_kg != null && (
-                        <p className="mt-1 text-xs text-muted-foreground">Cargo weight: {b.cargo_weight_kg} kg</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Cargo weight: {b.cargo_weight_kg} kg
+                        </p>
                       )}
                     </div>
                     <Badge className="bg-primary text-primary-foreground hover:bg-primary">
@@ -985,7 +1015,8 @@ function ActiveJobCard({
   const next = job.status === "accepted" ? "in_progress" : "completed";
   const nextStop = stops.find((s) => s.status !== "verified" && s.status !== "completed") ?? null;
   const lastVerifiedStop = [...stops].reverse().find((s) => s.status === "verified") ?? null;
-  const allStopsVerified = stops.length === 0 || stops.every((s) => s.status === "verified" || s.status === "completed");
+  const allStopsVerified =
+    stops.length === 0 || stops.every((s) => s.status === "verified" || s.status === "completed");
   const [stopOtp, setStopOtp] = useState("");
 
   const label = next === "in_progress" ? "Verify Pickup OTP" : "Verify Drop OTP";
@@ -1012,8 +1043,12 @@ function ActiveJobCard({
           ["Start Trip", job.status === "in_progress"],
           ["Complete Trip", false],
         ].map(([label, done], index) => (
-          <div key={String(label)} className={`rounded-md border px-1 py-2 ${done ? "border-success bg-success/10 text-success" : ((index === 1 && job.status === "accepted" && !job.loading_started_at) || (index === 2 && job.status === "accepted" && !!job.loading_stopped_at) || (index === 3 && job.status === "in_progress")) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
-            {done ? "✓ " : ""}{String(label)}
+          <div
+            key={String(label)}
+            className={`rounded-md border px-1 py-2 ${done ? "border-success bg-success/10 text-success" : (index === 1 && job.status === "accepted" && !job.loading_started_at) || (index === 2 && job.status === "accepted" && !!job.loading_stopped_at) || (index === 3 && job.status === "in_progress") ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+          >
+            {done ? "✓ " : ""}
+            {String(label)}
           </div>
         ))}
       </div>
@@ -1032,24 +1067,37 @@ function ActiveJobCard({
           </p>
           <div className="mt-2 space-y-2">
             {stops.map((stop) => (
-              <div key={stop.id} className="flex items-center gap-2 rounded-md border bg-background p-2">
+              <div
+                key={stop.id}
+                className="flex items-center gap-2 rounded-md border bg-background p-2"
+              >
                 <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                   {stop.sequence}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-secondary">{stop.address}</p>
                   <p className="text-[11px] text-muted-foreground">
-                    {stop.status === "verified" ? "✓ Verified" : stop.status === "arrived" ? "Arrival confirmed · OTP required" : "Pending"}
+                    {stop.status === "verified"
+                      ? "✓ Verified"
+                      : stop.status === "arrived"
+                        ? "Arrival confirmed · OTP required"
+                        : "Pending"}
                   </p>
                 </div>
-                {stop.status === "verified" && <Badge className="bg-success text-success-foreground hover:bg-success">Done</Badge>}
+                {stop.status === "verified" && (
+                  <Badge className="bg-success text-success-foreground hover:bg-success">
+                    Done
+                  </Badge>
+                )}
               </div>
             ))}
           </div>
 
           {job.status === "in_progress" && nextStop && (
             <div className="mt-3 border-t border-primary/20 pt-3">
-              <p className="text-xs font-semibold text-secondary">Next stop: Stop {nextStop.sequence}</p>
+              <p className="text-xs font-semibold text-secondary">
+                Next stop: Stop {nextStop.sequence}
+              </p>
               <p className="mt-1 text-sm text-secondary">{nextStop.address}</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <Button
@@ -1119,20 +1167,48 @@ function ActiveJobCard({
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2 rounded-md border border-border bg-muted/20 p-3 text-xs">
-        <div><span className="text-muted-foreground">Distance</span><p className="font-semibold text-secondary">{Number(job.distance_km || 0).toFixed(1)} km</p></div>
-        <div><span className="text-muted-foreground">Helpers</span><p className="font-semibold text-secondary">{Number(job.helper_count || 0)}</p></div>
-        <div><span className="text-muted-foreground">Base fare</span><p className="font-semibold text-secondary">₹{(Number(job.fare || 0) - Number(job.fare_boost || 0)).toFixed(0)}</p></div>
-        <div><span className="text-muted-foreground">Fare boost</span><p className="font-semibold text-secondary">₹{Number(job.fare_boost || 0).toFixed(0)}</p></div>
-        <div><span className="text-muted-foreground">Helper fee</span><p className="font-semibold text-secondary">₹{Number(job.helper_fee || job.helper_charge || 0).toFixed(0)}</p></div>
-        <div><span className="text-muted-foreground">Driver net</span><p className="font-semibold text-success">₹{net.toFixed(0)}</p></div>
+        <div>
+          <span className="text-muted-foreground">Distance</span>
+          <p className="font-semibold text-secondary">
+            {Number(job.distance_km || 0).toFixed(1)} km
+          </p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Helpers</span>
+          <p className="font-semibold text-secondary">{Number(job.helper_count || 0)}</p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Base fare</span>
+          <p className="font-semibold text-secondary">
+            ₹{(Number(job.fare || 0) - Number(job.fare_boost || 0)).toFixed(0)}
+          </p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Fare boost</span>
+          <p className="font-semibold text-secondary">₹{Number(job.fare_boost || 0).toFixed(0)}</p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Helper fee</span>
+          <p className="font-semibold text-secondary">
+            ₹{Number(job.helper_fee || job.helper_charge || 0).toFixed(0)}
+          </p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Driver net</span>
+          <p className="font-semibold text-success">₹{net.toFixed(0)}</p>
+        </div>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-primary/20 bg-primary/5 p-3 text-xs">
         <span className="font-semibold text-secondary">Trip status:</span>
-        <Badge variant="outline">{job.status === "accepted" ? "Accepted / Pickup" : "In transit"}</Badge>
+        <Badge variant="outline">
+          {job.status === "accepted" ? "Accepted / Pickup" : "In transit"}
+        </Badge>
         {customerPhone && (
           <Button asChild size="sm" variant="outline" className="ml-auto">
-            <a href={"tel:" + customerPhone}><Phone className="h-3.5 w-3.5" /> Call customer</a>
+            <a href={"tel:" + customerPhone}>
+              <Phone className="h-3.5 w-3.5" /> Call customer
+            </a>
           </Button>
         )}
       </div>

@@ -56,7 +56,13 @@ import { KycReviewTab } from "@/components/admin/KycReviewTab";
 import { FaresVehiclesTab } from "@/components/admin/FaresVehiclesTab";
 import { BroadcastTab } from "@/components/admin/BroadcastTab";
 import { DrillDownDialog, type DrillDownColumn } from "@/components/admin/DrillDownDialog";
-import { WithdrawalsTab, DisputesTab, AuditTab, TripIssuesTab, DriverPassesTab } from "@/components/admin/OpsTabs";
+import {
+  WithdrawalsTab,
+  DisputesTab,
+  AuditTab,
+  TripIssuesTab,
+  DriverPassesTab,
+} from "@/components/admin/OpsTabs";
 import { getAdminSetupState, claimFirstAdmin } from "@/lib/admin.functions";
 import { SystemStatus } from "@/components/admin/SystemStatus";
 import { signOutEverywhere } from "@/lib/session";
@@ -241,11 +247,17 @@ function AdminPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "trip_issues" }, () => {
         void qc.invalidateQueries({ queryKey: ["admin-trip-issues"] });
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "driver_booking_passes" }, () => {
-        void qc.invalidateQueries({ queryKey: ["admin-driver-booking-passes"] });
-      })
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "driver_booking_passes" },
+        () => {
+          void qc.invalidateQueries({ queryKey: ["admin-driver-booking-passes"] });
+        },
+      )
       .subscribe();
-    return () => { void supabase.removeChannel(ch); };
+    return () => {
+      void supabase.removeChannel(ch);
+    };
   }, [qc]);
 
   const profiles = useQuery({
@@ -944,7 +956,9 @@ function LiveTripsTab({
   drivers: Profile[];
   onChanged: () => void;
 }) {
-  const [statusFilter, setStatusFilter] = useState<"all" | "searching" | "accepted" | "in_transit" | "completed" | "cancelled">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "searching" | "accepted" | "in_transit" | "completed" | "cancelled"
+  >("all");
   const [assignFor, setAssignFor] = useState<Booking | null>(null);
   const [driverId, setDriverId] = useState<string>("");
   const [cancelFor, setCancelFor] = useState<Booking | null>(null);
@@ -1005,10 +1019,17 @@ function LiveTripsTab({
           <h3 className="font-display text-xl tracking-wide text-secondary">
             Trip monitor ({filteredTrips.length})
           </h3>
-          <p className="text-xs text-muted-foreground">Live booking status and manual driver assignment.</p>
+          <p className="text-xs text-muted-foreground">
+            Live booking status and manual driver assignment.
+          </p>
         </div>
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-          <SelectTrigger className="h-9 w-36 text-xs"><SelectValue /></SelectTrigger>
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
+        >
+          <SelectTrigger className="h-9 w-36 text-xs">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="searching">Searching</SelectItem>
@@ -1033,7 +1054,9 @@ function LiveTripsTab({
                 <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <Badge className={tone(meta.tone)}>{meta.label}</Badge>
                   {b.is_multi_stop && (
-                    <Badge className="bg-primary text-primary-foreground hover:bg-primary">Multi-Stop</Badge>
+                    <Badge className="bg-primary text-primary-foreground hover:bg-primary">
+                      Multi-Stop
+                    </Badge>
                   )}
                   <span>
                     {vehicleLabel(b.vehicle_type)} · {b.distance_km} km · ₹
@@ -1132,26 +1155,38 @@ function LiveTripsTab({
             <div className="space-y-3">
               <div className="rounded-lg border p-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge className={tone((STATUS_META[detailsFor.status] ?? STATUS_META.pending).tone)}>
+                  <Badge
+                    className={tone((STATUS_META[detailsFor.status] ?? STATUS_META.pending).tone)}
+                  >
                     {(STATUS_META[detailsFor.status] ?? STATUS_META.pending).label}
                   </Badge>
                   {detailsFor.is_multi_stop && (
-                    <Badge className="bg-primary text-primary-foreground hover:bg-primary">Multi-Stop</Badge>
+                    <Badge className="bg-primary text-primary-foreground hover:bg-primary">
+                      Multi-Stop
+                    </Badge>
                   )}
                 </div>
                 <div className="mt-3 space-y-2">
-                  <p className="text-sm font-medium text-secondary">Pickup: {detailsFor.pickup_address}</p>
+                  <p className="text-sm font-medium text-secondary">
+                    Pickup: {detailsFor.pickup_address}
+                  </p>
                   {(detailsFor.stops ?? []).map((stop) => (
                     <p key={stop.sequence} className="text-sm text-warning-foreground">
                       Stop {stop.sequence}: {stop.address}
                     </p>
                   ))}
-                  <p className="text-sm font-medium text-secondary">Final Drop: {detailsFor.drop_address}</p>
+                  <p className="text-sm font-medium text-secondary">
+                    Final Drop: {detailsFor.drop_address}
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-md border p-2">Stops: <strong>{detailsFor.total_stops ?? 1}</strong></div>
-                <div className="rounded-md border p-2">Fare: <strong>₹{Number(detailsFor.fare).toFixed(0)}</strong></div>
+                <div className="rounded-md border p-2">
+                  Stops: <strong>{detailsFor.total_stops ?? 1}</strong>
+                </div>
+                <div className="rounded-md border p-2">
+                  Fare: <strong>₹{Number(detailsFor.fare).toFixed(0)}</strong>
+                </div>
               </div>
             </div>
           )}

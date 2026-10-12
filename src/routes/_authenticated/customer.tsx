@@ -161,7 +161,11 @@ function CustomerPage() {
     queryKey: ["wallet", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase.from("wallet_accounts").select("cash_balance").eq("user_id", user!.id).maybeSingle();
+      const { data, error } = await supabase
+        .from("wallet_accounts")
+        .select("cash_balance")
+        .eq("user_id", user!.id)
+        .maybeSingle();
       if (error) throw error;
       return Number(data?.cash_balance ?? 0);
     },
@@ -260,8 +264,10 @@ function CustomerPage() {
       if (distanceKm <= 0) throw new Error("Road distance is still being calculated");
       if (scheduledAt) {
         const pickupMs = new Date(scheduledAt).getTime();
-        if (pickupMs < Date.now() + 31 * 60_000) throw new Error("Scheduled pickup must be at least 31 minutes from now.");
-        if (pickupMs > Date.now() + 30 * 24 * 60 * 60_000) throw new Error("Advance booking is available up to 30 days ahead.");
+        if (pickupMs < Date.now() + 31 * 60_000)
+          throw new Error("Scheduled pickup must be at least 31 minutes from now.");
+        if (pickupMs > Date.now() + 30 * 24 * 60 * 60_000)
+          throw new Error("Advance booking is available up to 30 days ahead.");
       }
       const booking = await createBooking({
         data: {
@@ -356,13 +362,18 @@ function CustomerPage() {
         /* alerts are best-effort */
       }
 
-      return { paid: ONLINE_METHODS.includes(method) && remainingPayable > 0, fare: Number(booking.fare) };
+      return {
+        paid: ONLINE_METHODS.includes(method) && remainingPayable > 0,
+        fare: Number(booking.fare),
+      };
     },
     onSuccess: (result) => {
       toast.success(
         scheduledAt
           ? `Booking scheduled for ${new Date(scheduledAt).toLocaleString("en-IN")} — drivers will be alerted 30 minutes before pickup`
-          : result.paid ? "Payment received — finding a driver" : "Booking placed — finding a driver",
+          : result.paid
+            ? "Payment received — finding a driver"
+            : "Booking placed — finding a driver",
       );
       setScheduledAt("");
       setCargoWeightKg("");
@@ -542,7 +553,9 @@ function CustomerPage() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="font-display text-2xl tracking-wide text-secondary">New booking</h2>
-              <p className="text-sm text-muted-foreground">Faridabad only · transparent flat fare</p>
+              <p className="text-sm text-muted-foreground">
+                Faridabad only · transparent flat fare
+              </p>
             </div>
             {MINIPORT_TEST_MODE && (
               <Button
@@ -817,7 +830,9 @@ function CustomerPage() {
                         </p>
                       )}
                       {b.cargo_weight_kg != null && (
-                        <p className="mt-1 text-xs text-muted-foreground">Cargo weight: {b.cargo_weight_kg} kg</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Cargo weight: {b.cargo_weight_kg} kg
+                        </p>
                       )}
                     </div>
                     <div className="text-right">
@@ -881,9 +896,10 @@ function CustomerPage() {
                   {(b.status === "accepted" || b.status === "in_progress") && (
                     <TripCodes bookingId={b.id} status={b.status} />
                   )}
-                  {Boolean(b.is_multi_stop) && (b.status === "accepted" || b.status === "in_progress") && (
-                    <CustomerStopOtps bookingId={b.id} />
-                  )}
+                  {Boolean(b.is_multi_stop) &&
+                    (b.status === "accepted" || b.status === "in_progress") && (
+                      <CustomerStopOtps bookingId={b.id} />
+                    )}
                   {canCancel(b.status) && (
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                       <p className="text-xs text-muted-foreground">
@@ -1123,7 +1139,10 @@ function CustomerStopOtps({ bookingId }: { bookingId: string }) {
       </p>
       <div className="mt-2 grid gap-2 sm:grid-cols-2">
         {query.data.map((stop) => (
-          <div key={stop.sequence} className="flex items-center justify-between rounded-md bg-background px-3 py-2">
+          <div
+            key={stop.sequence}
+            className="flex items-center justify-between rounded-md bg-background px-3 py-2"
+          >
             <span className="text-xs text-muted-foreground">Stop {stop.sequence}</span>
             <span className="font-mono text-lg font-bold tracking-[0.25em] text-secondary">
               {stop.verified_at ? "Verified" : stop.otp}
@@ -1154,7 +1173,8 @@ function ActiveOrdersCarousel({ bookings }: { bookings: Array<Record<string, unk
         <div>
           <h2 className="font-display text-xl tracking-wide text-secondary">Active Orders</h2>
           <p className="text-xs text-muted-foreground">
-            {active.length} ongoing {active.length === 1 ? "trip" : "trips"} · You can place another booking anytime.
+            {active.length} ongoing {active.length === 1 ? "trip" : "trips"} · You can place another
+            booking anytime.
           </p>
         </div>
         <Badge variant="secondary">{active.length}</Badge>
@@ -1184,7 +1204,8 @@ function ActiveOrdersCarousel({ bookings }: { bookings: Array<Record<string, unk
               </p>
               {stops.length > 0 && (
                 <p className="mt-2 text-[11px] font-medium text-warning">
-                  {stops.length} extra {stops.length === 1 ? "stop" : "stops"} · +₹{stops.length * 50}
+                  {stops.length} extra {stops.length === 1 ? "stop" : "stops"} · +₹
+                  {stops.length * 50}
                 </p>
               )}
             </div>

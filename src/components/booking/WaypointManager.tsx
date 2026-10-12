@@ -71,8 +71,16 @@ export function WaypointManager({
           ))}
         </ul>
       )}
-      <Button type="button" variant="outline" size="sm" onClick={onAdd} disabled={stops.length >= maxStops} className="w-full">
-        <Plus className="h-3.5 w-3.5" /> {stops.length >= maxStops ? "Maximum 3 extra stops" : "+ Add Extra Stop"}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onAdd}
+        disabled={stops.length >= maxStops}
+        className="w-full"
+      >
+        <Plus className="h-3.5 w-3.5" />{" "}
+        {stops.length >= maxStops ? "Maximum 3 extra stops" : "+ Add Extra Stop"}
       </Button>
     </div>
   );

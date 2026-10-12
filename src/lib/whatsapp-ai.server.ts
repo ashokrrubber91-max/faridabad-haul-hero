@@ -58,13 +58,15 @@ export function quickReplyIntent(body: string): "confirm" | "cancel" | null {
   return null;
 }
 
-
 /**
  * Transcribes a WhatsApp voice note using the configured AI gateway.
  * Media is fetched server-side with Twilio credentials; no media URL or secret
  * is exposed to the browser.
  */
-export async function transcribeWhatsAppVoice(mediaUrl: string, mediaType: string): Promise<string> {
+export async function transcribeWhatsAppVoice(
+  mediaUrl: string,
+  mediaType: string,
+): Promise<string> {
   const key = process.env["LOVABLE_API_KEY"]?.trim();
   const sid = process.env["TWILIO_ACCOUNT_SID"]?.trim();
   const token = process.env["TWILIO_AUTH_TOKEN"]?.trim();
@@ -82,13 +84,18 @@ export async function transcribeWhatsAppVoice(mediaUrl: string, mediaType: strin
   const gateway = createLovableAiGatewayProvider(key);
   const { text } = await generateText({
     model: gateway("google/gemini-3.5-flash"),
-    messages: [{
-      role: "user",
-      content: [
-        { type: "text", text: "Transcribe this WhatsApp voice note exactly. The speaker may use Hindi, English, or Hinglish. Return only the spoken words, preserving addresses, numbers, dates and times. Do not answer or summarize." },
-        { type: "file", data: bytes, mediaType: mediaType || "audio/ogg" },
-      ],
-    }],
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: "Transcribe this WhatsApp voice note exactly. The speaker may use Hindi, English, or Hinglish. Return only the spoken words, preserving addresses, numbers, dates and times. Do not answer or summarize.",
+          },
+          { type: "file", data: bytes, mediaType: mediaType || "audio/ogg" },
+        ],
+      },
+    ],
   });
   const transcript = text.trim().slice(0, 2000);
   if (!transcript) throw new Error("No speech could be recognized in this voice note");

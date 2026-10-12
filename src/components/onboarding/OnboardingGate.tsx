@@ -103,12 +103,16 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
         "Permission not granted. Tap Retry to ask again, or use your browser/app settings to allow it.",
       );
     } else {
-      const nextIndex = PERMISSIONS.findIndex((p, index) => index > permissionIndex && !next[p.key]);
+      const nextIndex = PERMISSIONS.findIndex(
+        (p, index) => index > permissionIndex && !next[p.key],
+      );
       setPermissionIndex(nextIndex >= 0 ? nextIndex : PERMISSIONS.length);
     }
     if (outcome === "unsupported") {
       toast.info("This device or browser can't grant this permission. Continue to the next step.");
-      const nextIndex = PERMISSIONS.findIndex((p, index) => index > permissionIndex && !next[p.key]);
+      const nextIndex = PERMISSIONS.findIndex(
+        (p, index) => index > permissionIndex && !next[p.key],
+      );
       setPermissionIndex(nextIndex >= 0 ? nextIndex : PERMISSIONS.length);
     }
   };
@@ -217,16 +221,12 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
                       )}
                       {outcome === "unsupported" && (
                         <p className="mt-3 rounded-md bg-muted p-2 text-xs text-muted-foreground">
-                          This permission is not available on this device/browser. Continue to
-                          the next step.
+                          This permission is not available on this device/browser. Continue to the
+                          next step.
                         </p>
                       )}
                       <div className="mt-3 flex gap-2">
-                        <Button
-                          size="sm"
-                          disabled={busy !== null}
-                          onClick={() => void ask(p.key)}
-                        >
+                        <Button size="sm" disabled={busy !== null} onClick={() => void ask(p.key)}>
                           {busy === p.key ? "Asking…" : outcome === "denied" ? "Retry" : "Allow"}
                         </Button>
                         {outcome && (

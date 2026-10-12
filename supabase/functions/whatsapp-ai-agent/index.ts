@@ -7,6 +7,23 @@ const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") ?? "";
 const WHATSAPP_APP_SECRET = Deno.env.get("WHATSAPP_APP_SECRET") ?? "";
 const GRAPH_VERSION = Deno.env.get("WHATSAPP_GRAPH_VERSION") ?? "v23.0";
 
+/**
+ * Meta's WhatsApp webhook payload, narrowed to only the fields this handler
+ * reads. Keeps the parsed body typed instead of an untyped record.
+ */
+type WhatsAppMessage = {
+  from: string | number;
+  id: string;
+  type: string;
+  audio: { id: string };
+  image: { id: string; caption?: string };
+  text?: { body?: string };
+};
+
+type MetaWebhookBody = {
+  entry?: Array<{ changes?: Array<{ value?: { messages?: WhatsAppMessage[] } }> }>;
+};
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -19,7 +36,8 @@ function normalizePhone(value: string) {
 }
 
 async function verifyMetaSignature(req: Request, rawBody: string) {
-  // Fail closed: never accept unsigned inbound messages when the app secret is missing.\n  if (!WHATSAPP_APP_SECRET) return false;
+  // Fail closed: never accept unsigned inbound messages when the app secret is missing.
+  if (!WHATSAPP_APP_SECRET) return false;
   const header = req.headers.get("x-hub-signature-256") ?? "";
   if (!header.startsWith("sha256=")) return false;
   const expected = header.slice(7);
@@ -38,10 +56,9 @@ async function verifyMetaSignature(req: Request, rawBody: string) {
 }
 
 async function whatsappMediaUrl(mediaId: string) {
-  const res = await fetch(
-    `https://graph.facebook.com/${GRAPH_VERSION}/${mediaId}`,
-    { headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` } },
-  );
+  const res = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${mediaId}`, {
+    headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` },
+  });
   if (!res.ok) throw new Error(`WhatsApp media lookup failed: ${res.status}`);
   const data = await res.json();
   return data.url as string;
@@ -56,7 +73,11 @@ async function transcribeAudio(mediaId: string) {
   if (!media.ok) throw new Error(`WhatsApp audio download failed: ${media.status}`);
   const bytes = await media.arrayBuffer();
   const form = new FormData();
-  form.append("file", new Blob([bytes], { type: media.headers.get("content-type") ?? "audio/ogg" }), "whatsapp.ogg");
+  form.append(
+    "file",
+    new Blob([bytes], { type: media.headers.get("content-type") ?? "audio/ogg" }),
+    "whatsapp.ogg",
+  );
   form.append("model", "whisper-1");
   const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
     method: "POST",
@@ -91,18 +112,20 @@ async function analyzeImage(mediaId: string, caption: string) {
     },
     body: JSON.stringify({
       model: "gpt-4o-mini",
-      messages: [{
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text:
-              "You are a logistics intake assistant. Describe only visible cargo/material information useful for a MiniPort booking. Do not invent weight. If the photo does not show a reliable weight, say weight is unknown. " +
-              (caption ? `Customer caption: ${caption}` : ""),
-          },
-          { type: "image_url", image_url: { url: dataUrl, detail: "low" } },
-        ],
-      }],
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text:
+                "You are a logistics intake assistant. Describe only visible cargo/material information useful for a MiniPort booking. Do not invent weight. If the photo does not show a reliable weight, say weight is unknown. " +
+                (caption ? `Customer caption: ${caption}` : ""),
+            },
+            { type: "image_url", image_url: { url: dataUrl, detail: "low" } },
+          ],
+        },
+      ],
       max_tokens: 300,
     }),
   });
@@ -139,22 +162,19 @@ async function extractBookingDetails(text: string) {
 
 async function sendWhatsAppText(to: string, message: string) {
   if (!WHATSAPP_TOKEN || !WHATSAPP_PHONE_NUMBER_ID) return;
-  await fetch(
-    `https://graph.facebook.com/${GRAPH_VERSION}/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${WHATSAPP_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to,
-        type: "text",
-        text: { body: message },
-      }),
+  await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to,
+      type: "text",
+      text: { body: message },
+    }),
+  });
 }
 
 serve(async (req) => {
@@ -173,9 +193,10 @@ serve(async (req) => {
   if (req.method !== "POST") return new Response("Not Found", { status: 404 });
 
   const rawBody = await req.text();
-  if (!(await verifyMetaSignature(req, rawBody))) return new Response("Invalid signature", { status: 401 });
+  if (!(await verifyMetaSignature(req, rawBody)))
+    return new Response("Invalid signature", { status: 401 });
 
-  let body: any;
+  let body: MetaWebhookBody;
   try {
     body = JSON.parse(rawBody);
   } catch {
@@ -211,7 +232,10 @@ serve(async (req) => {
     } else if (message.type === "text") {
       parsedText = String(message.text?.body ?? "");
     } else {
-      await sendWhatsAppText(fromNumber, "Please send text, a voice note, or a cargo photo with your MiniPort booking details.");
+      await sendWhatsAppText(
+        fromNumber,
+        "Please send text, a voice note, or a cargo photo with your MiniPort booking details.",
+      );
       return new Response("OK", { status: 200 });
     }
 
@@ -291,7 +315,10 @@ serve(async (req) => {
           bookingData.goods_type ? `Goods: ${bookingData.goods_type}` : "",
           bookingData.weight_kg ? `Weight: ${bookingData.weight_kg} kg` : "",
           parsedText.slice(0, 300),
-        ].filter(Boolean).join(" · ").slice(0, 500),
+        ]
+          .filter(Boolean)
+          .join(" · ")
+          .slice(0, 500),
         scheduled_for: bookingData.scheduled_for ?? null,
       })
       .select("id,pickup_address,drop_address,vehicle_type,fare,status")
@@ -299,15 +326,17 @@ serve(async (req) => {
 
     if (error || !trip) {
       console.error("[whatsapp-ai-agent] booking insert failed", error);
-      await sendWhatsAppText(fromNumber, "Sorry, MiniPort could not create the booking right now. Please try again.");
+      await sendWhatsAppText(
+        fromNumber,
+        "Sorry, MiniPort could not create the booking right now. Please try again.",
+      );
       return new Response("OK", { status: 200 });
     }
 
     // The existing driver screen subscribes to public.bookings. Inserting the row
     // therefore produces an immediate Postgres Changes event for eligible drivers,
     // while the admin console's bookings subscription refreshes its live monitor.
-    const reply =
-      `🚚 *MiniPort Booking Received!*
+    const reply = `🚚 *MiniPort Booking Received!*
 
 📍 Pickup: ${trip.pickup_address}
 🎯 Drop: ${trip.drop_address}
@@ -319,7 +348,10 @@ We are assigning nearby drivers in Faridabad now. Please keep MiniPort open for 
     await sendWhatsAppText(fromNumber, reply);
   } catch (error) {
     console.error("[whatsapp-ai-agent] processing error", error);
-    await sendWhatsAppText(fromNumber, "MiniPort could not process that message right now. Please send the pickup and drop again.");
+    await sendWhatsAppText(
+      fromNumber,
+      "MiniPort could not process that message right now. Please send the pickup and drop again.",
+    );
   }
 
   return new Response("OK", { status: 200 });

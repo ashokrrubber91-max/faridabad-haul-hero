@@ -80,10 +80,7 @@ export function DailyPassCard() {
       if (error) throw error;
       if (!(data as PassRow | null)?.id) throw new Error("Could not activate Daily Pass");
       toast.success("₹99 Daily Pass activated for 24 hours");
-      await Promise.all([
-        pass.refetch(),
-        wallet.refetch(),
-      ]);
+      await Promise.all([pass.refetch(), wallet.refetch()]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not activate Daily Pass");
     } finally {

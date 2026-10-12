@@ -85,7 +85,9 @@ function WalletPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("driver_bank_accounts")
-        .select("id, driver_id, account_holder, bank_name, account_number, ifsc, upi_id, is_default, created_at, updated_at")
+        .select(
+          "id, driver_id, account_holder, bank_name, account_number, ifsc, upi_id, is_default, created_at, updated_at",
+        )
         .eq("driver_id", user!.id)
         .order("is_default", { ascending: false });
       if (error) throw error;
@@ -137,7 +139,6 @@ function WalletPage() {
     };
   }, [user, isDriver, qc]);
 
-
   const monthNet = useMemo(() => {
     const start = new Date();
     start.setDate(1);
@@ -159,8 +160,8 @@ function WalletPage() {
             : "MiniPort coins and payment history."}
         </p>
       </header>
-
-      {isDriver && <DailyPassCard />}\n\n      <div className="grid gap-3 sm:grid-cols-2">
+      {isDriver && <DailyPassCard />}\n\n{" "}
+      <div className="grid gap-3 sm:grid-cols-2">
         <section className="surface-card p-5">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
             {isDriver ? "Available for withdrawal" : "Wallet balance"}
@@ -232,13 +233,10 @@ function WalletPage() {
           </p>
         </section>
       </div>
-
       {isDriver && (
         <BankAccounts userId={user?.id} accounts={banks.data ?? []} loading={banks.isLoading} />
       )}
-
       <ReferralCard />
-
       {isDriver && (withdrawals.data ?? []).length > 0 && (
         <section className="surface-card p-5">
           <h2 className="mb-3 font-display text-xl tracking-wide text-secondary">
@@ -253,9 +251,7 @@ function WalletPage() {
                     {new Date(w.created_at).toLocaleString("en-IN")}
                     {w.upi_id ? ` · ${w.upi_id}` : ""}
                   </p>
-                  {w.utr_number && (
-                    <p className="text-xs text-success">UTR: {w.utr_number}</p>
-                  )}
+                  {w.utr_number && <p className="text-xs text-success">UTR: {w.utr_number}</p>}
                   {w.rejection_reason && (
                     <p className="text-xs text-destructive">Reason: {w.rejection_reason}</p>
                   )}
@@ -276,7 +272,6 @@ function WalletPage() {
           </ul>
         </section>
       )}
-
       <section>
         <h2 className="mb-3 font-display text-2xl tracking-wide text-secondary">
           Transaction history
@@ -585,7 +580,8 @@ function WithdrawDialog({
           </div>
           {banks.length > 0 && (
             <p className="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-              Saved payout methods remain available in your profile. This withdrawal uses the UPI ID entered above.
+              Saved payout methods remain available in your profile. This withdrawal uses the UPI ID
+              entered above.
             </p>
           )}
         </div>

@@ -16,8 +16,20 @@ import { Badge } from "@/components/ui/badge";
 import { cancellationSummary } from "@/lib/cancellation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { vehicleLabel } from "@/lib/booking";
 
@@ -97,7 +109,9 @@ function Shell({
 export function WithdrawalsTab() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
-  const [action, setAction] = useState<{ id: string; status: "approved" | "rejected" } | null>(null);
+  const [action, setAction] = useState<{ id: string; status: "approved" | "rejected" } | null>(
+    null,
+  );
   const [utr, setUtr] = useState("");
   const [reason, setReason] = useState("");
 
@@ -106,7 +120,9 @@ export function WithdrawalsTab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("withdrawal_requests")
-        .select("id, driver_id, amount, method, status, note, upi_id, utr_number, rejection_reason, created_at, processed_at")
+        .select(
+          "id, driver_id, amount, method, status, note, upi_id, utr_number, rejection_reason, created_at, processed_at",
+        )
         .order("created_at", { ascending: false })
         .limit(300);
       if (error) throw error;
@@ -137,8 +153,10 @@ export function WithdrawalsTab() {
   useEffect(() => {
     const ch = supabase
       .channel("admin-withdrawals-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "withdrawal_requests" }, () =>
-        void qc.invalidateQueries({ queryKey: ["admin-withdrawals"] }),
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "withdrawal_requests" },
+        () => void qc.invalidateQueries({ queryKey: ["admin-withdrawals"] }),
       )
       .subscribe();
     return () => {
@@ -147,7 +165,12 @@ export function WithdrawalsTab() {
   }, [qc]);
 
   const settle = useMutation({
-    mutationFn: async ({ id, status, utrNumber, rejectionReason }: {
+    mutationFn: async ({
+      id,
+      status,
+      utrNumber,
+      rejectionReason,
+    }: {
       id: string;
       status: "approved" | "rejected";
       utrNumber?: string;
@@ -162,7 +185,11 @@ export function WithdrawalsTab() {
       if (error) throw error;
     },
     onSuccess: (_d, v) => {
-      toast.success(v.status === "approved" ? "Payout approved and UTR saved" : "Payout rejected — amount returned to driver");
+      toast.success(
+        v.status === "approved"
+          ? "Payout approved and UTR saved"
+          : "Payout rejected — amount returned to driver",
+      );
       setAction(null);
       setUtr("");
       setReason("");
@@ -176,20 +203,37 @@ export function WithdrawalsTab() {
     if (!q.trim()) return true;
     const p = people.data?.[r.driver_id];
     const needle = q.toLowerCase();
-    return p?.name?.toLowerCase().includes(needle) || p?.phone?.includes(q.trim()) || r.status.includes(needle) || (r.upi_id ?? "").toLowerCase().includes(needle);
+    return (
+      p?.name?.toLowerCase().includes(needle) ||
+      p?.phone?.includes(q.trim()) ||
+      r.status.includes(needle) ||
+      (r.upi_id ?? "").toLowerCase().includes(needle)
+    );
   });
-  const pendingTotal = (rows.data ?? []).filter((r) => r.status === "requested").reduce((s, r) => s + Number(r.amount), 0);
+  const pendingTotal = (rows.data ?? [])
+    .filter((r) => r.status === "requested")
+    .reduce((s, r) => s + Number(r.amount), 0);
 
   return (
     <>
       <Shell
         title="Payouts Management"
-        subtitle={(rows.data ?? []).filter((r) => r.status === "requested").length + " pending · " + money(pendingTotal) + " currently on hold"}
+        subtitle={
+          (rows.data ?? []).filter((r) => r.status === "requested").length +
+          " pending · " +
+          money(pendingTotal) +
+          " currently on hold"
+        }
         query={rows}
         toolbar={
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Driver, UPI or status" className="h-9 w-44 pl-7 text-xs sm:w-64" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Driver, UPI or status"
+              className="h-9 w-44 pl-7 text-xs sm:w-64"
+            />
           </div>
         }
       >
@@ -203,25 +247,53 @@ export function WithdrawalsTab() {
                 <li key={r.id} className="px-4 py-3">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-secondary">{p?.name ?? "Driver"} <span className="text-xs font-normal text-muted-foreground">{p?.phone ?? ""}</span></p>
-                      <p className="text-xs text-muted-foreground">{when(r.created_at)} · {r.method}</p>
-                      <p className="mt-1 text-sm font-medium text-secondary">UPI: {r.upi_id ?? r.note?.replace(/^UPI:\s*/, "") ?? "—"}</p>
+                      <p className="text-sm font-semibold text-secondary">
+                        {p?.name ?? "Driver"}{" "}
+                        <span className="text-xs font-normal text-muted-foreground">
+                          {p?.phone ?? ""}
+                        </span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {when(r.created_at)} · {r.method}
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-secondary">
+                        UPI: {r.upi_id ?? r.note?.replace(/^UPI:\s*/, "") ?? "—"}
+                      </p>
                       {r.utr_number && <p className="text-xs text-success">UTR: {r.utr_number}</p>}
-                      {r.rejection_reason && <p className="text-xs text-destructive">Rejection: {r.rejection_reason}</p>}
+                      {r.rejection_reason && (
+                        <p className="text-xs text-destructive">Rejection: {r.rejection_reason}</p>
+                      )}
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <span className="font-display text-lg text-secondary">{money(r.amount)}</span>
                       {r.status === "requested" ? (
                         <>
-                          <Button size="sm" disabled={settle.isPending} onClick={() => { setAction({ id: r.id, status: "approved" }); setUtr(""); }}>
+                          <Button
+                            size="sm"
+                            disabled={settle.isPending}
+                            onClick={() => {
+                              setAction({ id: r.id, status: "approved" });
+                              setUtr("");
+                            }}
+                          >
                             <CheckCircle2 className="h-3.5 w-3.5" /> Approve
                           </Button>
-                          <Button size="sm" variant="outline" disabled={settle.isPending} onClick={() => { setAction({ id: r.id, status: "rejected" }); setReason(""); }}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={settle.isPending}
+                            onClick={() => {
+                              setAction({ id: r.id, status: "rejected" });
+                              setReason("");
+                            }}
+                          >
                             <Ban className="h-3.5 w-3.5" /> Reject
                           </Button>
                         </>
                       ) : (
-                        <Badge variant={r.status === "paid" ? "secondary" : "destructive"}>{r.status}</Badge>
+                        <Badge variant={r.status === "paid" ? "secondary" : "destructive"}>
+                          {r.status}
+                        </Badge>
                       )}
                     </div>
                   </div>
@@ -232,27 +304,72 @@ export function WithdrawalsTab() {
         )}
       </Shell>
 
-      <Dialog open={!!action} onOpenChange={(open) => { if (!open) { setAction(null); setUtr(""); setReason(""); } }}>
+      <Dialog
+        open={!!action}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAction(null);
+            setUtr("");
+            setReason("");
+          }
+        }}
+      >
         <DialogContent>
-          <DialogHeader><DialogTitle>{action?.status === "approved" ? "Approve payout" : "Reject payout"}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>
+              {action?.status === "approved" ? "Approve payout" : "Reject payout"}
+            </DialogTitle>
+          </DialogHeader>
           {action?.status === "approved" ? (
             <div>
-              <p className="mb-2 text-sm text-muted-foreground">Enter the UTR / transaction reference after making the UPI transfer.</p>
-              <Input value={utr} onChange={(e) => setUtr(e.target.value)} placeholder="UTR / transaction reference" autoComplete="off" />
+              <p className="mb-2 text-sm text-muted-foreground">
+                Enter the UTR / transaction reference after making the UPI transfer.
+              </p>
+              <Input
+                value={utr}
+                onChange={(e) => setUtr(e.target.value)}
+                placeholder="UTR / transaction reference"
+                autoComplete="off"
+              />
             </div>
           ) : (
             <div>
-              <p className="mb-2 text-sm text-muted-foreground">Enter a reason. The held amount will be automatically returned to the driver's wallet.</p>
-              <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Rejection reason" autoComplete="off" />
+              <p className="mb-2 text-sm text-muted-foreground">
+                Enter a reason. The held amount will be automatically returned to the driver's
+                wallet.
+              </p>
+              <Input
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Rejection reason"
+                autoComplete="off"
+              />
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAction(null)}>Cancel</Button>
-            <Button disabled={settle.isPending || (action?.status === "approved" ? utr.trim().length < 3 : reason.trim().length < 3)} onClick={() => {
-              if (!action) return;
-              settle.mutate({ id: action.id, status: action.status, utrNumber: action.status === "approved" ? utr.trim() : undefined, rejectionReason: action.status === "rejected" ? reason.trim() : undefined });
-            }}>
-              {settle.isPending ? "Processing…" : action?.status === "approved" ? "Approve payout" : "Reject & refund"}
+            <Button variant="outline" onClick={() => setAction(null)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={
+                settle.isPending ||
+                (action?.status === "approved" ? utr.trim().length < 3 : reason.trim().length < 3)
+              }
+              onClick={() => {
+                if (!action) return;
+                settle.mutate({
+                  id: action.id,
+                  status: action.status,
+                  utrNumber: action.status === "approved" ? utr.trim() : undefined,
+                  rejectionReason: action.status === "rejected" ? reason.trim() : undefined,
+                });
+              }}
+            >
+              {settle.isPending
+                ? "Processing…"
+                : action?.status === "approved"
+                  ? "Approve payout"
+                  : "Reject & refund"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -469,7 +586,9 @@ export function TripIssuesTab({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("trip_issues")
-        .select("id, booking_id, reporter_id, issue_type, created_at, resolved_at, resolved_by, resolution_note")
+        .select(
+          "id, booking_id, reporter_id, issue_type, created_at, resolved_at, resolved_by, resolution_note",
+        )
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
@@ -513,7 +632,9 @@ export function TripIssuesTab({
       query={rows}
       toolbar={
         <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-          <SelectTrigger className="h-9 w-28 text-xs"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-9 w-28 text-xs">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="open">Open</SelectItem>
             <SelectItem value="resolved">Resolved</SelectItem>
@@ -525,11 +646,18 @@ export function TripIssuesTab({
       <div className="border-b border-border px-4 py-3">
         <div className="relative max-w-sm">
           <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Issue, booking, person" className="h-9 pl-7 text-xs" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Issue, booking, person"
+            className="h-9 pl-7 text-xs"
+          />
         </div>
       </div>
       {filtered.length === 0 ? (
-        <p className="p-6 text-center text-sm text-muted-foreground">No trip issues in this filter.</p>
+        <p className="p-6 text-center text-sm text-muted-foreground">
+          No trip issues in this filter.
+        </p>
       ) : (
         <ul className="divide-y divide-border">
           {filtered.map((issue) => {
@@ -540,11 +668,13 @@ export function TripIssuesTab({
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-secondary">{issue.issue_type}</p>
                     <p className="text-xs text-muted-foreground">
-                      Booking {String(issue.booking_id).slice(0, 8).toUpperCase()} · {reporter?.name ?? "User"} {reporter?.phone ?? ""} · {when(issue.created_at)}
+                      Booking {String(issue.booking_id).slice(0, 8).toUpperCase()} ·{" "}
+                      {reporter?.name ?? "User"} {reporter?.phone ?? ""} · {when(issue.created_at)}
                     </p>
                     {issue.resolved_at && (
                       <p className="mt-1 text-xs text-success">
-                        Resolved {when(issue.resolved_at)}{issue.resolution_note ? " · " + issue.resolution_note : ""}
+                        Resolved {when(issue.resolved_at)}
+                        {issue.resolution_note ? " · " + issue.resolution_note : ""}
                       </p>
                     )}
                   </div>
@@ -553,7 +683,13 @@ export function TripIssuesTab({
                       Resolved
                     </Badge>
                   ) : (
-                    <Button size="sm" onClick={() => { setResolving(issue); setNote(""); }}>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setResolving(issue);
+                        setNote("");
+                      }}
+                    >
                       <CheckCircle2 className="h-3.5 w-3.5" /> Resolve
                     </Button>
                   )}
@@ -564,17 +700,31 @@ export function TripIssuesTab({
         </ul>
       )}
 
-      <Dialog open={!!resolving} onOpenChange={(open) => { if (!open) { setResolving(null); setNote(""); } }}>
+      <Dialog
+        open={!!resolving}
+        onOpenChange={(open) => {
+          if (!open) {
+            setResolving(null);
+            setNote("");
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Resolve trip issue</DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
             <p className="text-sm text-secondary">{resolving?.issue_type}</p>
-            <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Resolution note" />
+            <Input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Resolution note"
+            />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setResolving(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setResolving(null)}>
+              Cancel
+            </Button>
             <Button onClick={resolve} disabled={busy || note.trim().length < 2}>
               {busy ? "Resolving..." : "Mark resolved"}
             </Button>
@@ -604,7 +754,10 @@ export function DriverPassesTab() {
       const driverIds = Array.from(new Set((passes ?? []).map((p) => p.driver_id)));
       const [bookingResult, driverResult] = await Promise.all([
         bookingIds.length
-          ? supabase.from("bookings").select("id,status,expires_at,pickup_address,drop_address").in("id", bookingIds)
+          ? supabase
+              .from("bookings")
+              .select("id,status,expires_at,pickup_address,drop_address")
+              .in("id", bookingIds)
           : Promise.resolve({ data: [], error: null }),
         driverIds.length
           ? supabase.from("profiles").select("id,name,phone").in("id", driverIds)
@@ -618,7 +771,9 @@ export function DriverPassesTab() {
       return (passes ?? []).map((p) => {
         const b = bookings.get(p.booking_id);
         const d = drivers.get(p.driver_id);
-        const expired = b?.status !== "pending" || (!!b?.expires_at && new Date(b.expires_at).getTime() <= Date.now());
+        const expired =
+          b?.status !== "pending" ||
+          (!!b?.expires_at && new Date(b.expires_at).getTime() <= Date.now());
         return { ...p, booking: b, driver: d, state: expired ? "expired" : "active" };
       });
     },
@@ -634,23 +789,33 @@ export function DriverPassesTab() {
       query={rows}
     >
       {(rows.data ?? []).length === 0 ? (
-        <p className="p-6 text-center text-sm text-muted-foreground">No driver passes recorded yet.</p>
+        <p className="p-6 text-center text-sm text-muted-foreground">
+          No driver passes recorded yet.
+        </p>
       ) : (
         <ul className="divide-y divide-border">
           {(rows.data ?? []).map((p) => (
             <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-secondary">
-                  {p.driver?.name ?? "Driver"} <span className="font-normal text-muted-foreground">{p.driver?.phone ?? ""}</span>
+                  {p.driver?.name ?? "Driver"}{" "}
+                  <span className="font-normal text-muted-foreground">{p.driver?.phone ?? ""}</span>
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
                   {p.booking?.pickup_address ?? "Pickup"} → {p.booking?.drop_address ?? "Drop"}
                 </p>
                 <p className="text-[11px] text-muted-foreground">
-                  Passed {when(p.created_at)} · booking {String(p.booking_id).slice(0, 8).toUpperCase()}
+                  Passed {when(p.created_at)} · booking{" "}
+                  {String(p.booking_id).slice(0, 8).toUpperCase()}
                 </p>
               </div>
-              <Badge className={p.state === "active" ? "bg-success text-success-foreground hover:bg-success" : "bg-muted text-muted-foreground hover:bg-muted"}>
+              <Badge
+                className={
+                  p.state === "active"
+                    ? "bg-success text-success-foreground hover:bg-success"
+                    : "bg-muted text-muted-foreground hover:bg-muted"
+                }
+              >
                 {p.state}
               </Badge>
             </li>

@@ -52,7 +52,14 @@ export const createBooking = createServerFn({ method: "POST" })
         walletDeductedAmount: z.number().finite().min(0).max(100000).default(0),
         paymentMethod: z.enum(["cod", "upi", "card", "netbanking", "wallet"]),
         scheduledAt: z.string().datetime().nullable().optional().default(null),
-        cargoWeightKg: z.number().finite().positive().max(100000).nullable().optional().default(null),
+        cargoWeightKg: z
+          .number()
+          .finite()
+          .positive()
+          .max(100000)
+          .nullable()
+          .optional()
+          .default(null),
         helperCount: z.number().int().min(0).max(2).default(0),
         notes: z.string().trim().max(2000).nullable().default(null),
       })
@@ -71,8 +78,10 @@ export const createBooking = createServerFn({ method: "POST" })
     if (scheduledAt) {
       const now = Date.now();
       const pickupMs = scheduledAt.getTime();
-      if (pickupMs < now + 31 * 60_000) throw new Error("Scheduled pickup must be at least 31 minutes from now.");
-      if (pickupMs > now + 30 * 24 * 60 * 60_000) throw new Error("Advance booking is available up to 30 days ahead.");
+      if (pickupMs < now + 31 * 60_000)
+        throw new Error("Scheduled pickup must be at least 31 minutes from now.");
+      if (pickupMs > now + 30 * 24 * 60 * 60_000)
+        throw new Error("Advance booking is available up to 30 days ahead.");
     }
     const { computeRoadRouteServer } = await import("@/lib/routing.server");
     const route = await computeRoadRouteServer([
@@ -118,9 +127,9 @@ export const createBooking = createServerFn({ method: "POST" })
         distance_km: route.distanceKm,
         fare: Math.round(
           Number(vt.base_fare) +
-          Number(vt.per_km_fare) * route.distanceKm +
-          helperFee +
-          data.stops.length * 50,
+            Number(vt.per_km_fare) * route.distanceKm +
+            helperFee +
+            data.stops.length * 50,
         ),
         total_stops: data.stops.length + 1,
         is_multi_stop: data.stops.length > 0,
@@ -185,26 +194,40 @@ export const createBooking = createServerFn({ method: "POST" })
         bookingId: booking.id,
       });
       // Keep the booking and itinerary failure visible for debugging; do not silently report success.
-      throw new Error(`Booking stops failed (${stopsError.code ?? "unknown"}): ${stopsError.message}`);
+      throw new Error(
+        `Booking stops failed (${stopsError.code ?? "unknown"}): ${stopsError.message}`,
+      );
     }
 
     let walletDeductedAmount = 0;
     let finalPayableAmount = Number(booking.fare);
     if (data.walletDeductedAmount > 0) {
-      const { data: walletResult, error: walletError } = await context.supabase.rpc("apply_booking_wallet_deduction", {
-        _booking_id: booking.id,
-        _customer_id: context.userId,
-        _requested_amount: data.walletDeductedAmount,
-      });
+      const { data: walletResult, error: walletError } = await context.supabase.rpc(
+        "apply_booking_wallet_deduction",
+        {
+          _booking_id: booking.id,
+          _customer_id: context.userId,
+          _requested_amount: data.walletDeductedAmount,
+        },
+      );
       if (walletError) {
-        await context.supabase.rpc("cancel_booking", { _booking_id: booking.id, _reason: "Wallet payment could not be completed" });
+        await context.supabase.rpc("cancel_booking", {
+          _booking_id: booking.id,
+          _reason: "Wallet payment could not be completed",
+        });
         throw new Error(walletError.message);
       }
-      const applied = walletResult as { wallet_deducted_amount?: number; final_payable_amount?: number };
+      const applied = walletResult as {
+        wallet_deducted_amount?: number;
+        final_payable_amount?: number;
+      };
       walletDeductedAmount = Number(applied.wallet_deducted_amount ?? 0);
       finalPayableAmount = Number(applied.final_payable_amount ?? booking.fare);
     } else {
-      await context.supabase.from("bookings").update({ wallet_deducted_amount: 0, final_payable_amount: Number(booking.fare) }).eq("id", booking.id);
+      await context.supabase
+        .from("bookings")
+        .update({ wallet_deducted_amount: 0, final_payable_amount: Number(booking.fare) })
+        .eq("id", booking.id);
     }
 
     return {

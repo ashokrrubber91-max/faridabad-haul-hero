@@ -82,8 +82,16 @@ export function ReviewBooking({
   const { map } = useVehicleMap();
   const specs = map.has(vehicle) ? vehicleSpecs(map.get(vehicle)!) : [];
   const extraStopFee = stops.length * 50;
-  const minScheduledAt = new Date(Date.now() + 31 * 60_000 - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
-  const maxScheduledAt = new Date(Date.now() + 30 * 24 * 60 * 60_000 - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+  const minScheduledAt = new Date(
+    Date.now() + 31 * 60_000 - new Date().getTimezoneOffset() * 60_000,
+  )
+    .toISOString()
+    .slice(0, 16);
+  const maxScheduledAt = new Date(
+    Date.now() + 30 * 24 * 60 * 60_000 - new Date().getTimezoneOffset() * 60_000,
+  )
+    .toISOString()
+    .slice(0, 16);
 
   return (
     <div className="surface-card p-5">
@@ -141,9 +149,14 @@ export function ReviewBooking({
         )}
 
         <div className="rounded-xl border p-4">
-          <label htmlFor="cargo-weight-kg" className="text-sm font-bold text-secondary">Cargo weight (kg)</label>
+          <label htmlFor="cargo-weight-kg" className="text-sm font-bold text-secondary">
+            Cargo weight (kg)
+          </label>
           <p className="mt-1 text-xs text-muted-foreground">
-            Enter the estimated goods weight. {maxWeightKg ? "Selected vehicle capacity: " + maxWeightKg + " kg." : "Use the vehicle's rated capacity."}
+            Enter the estimated goods weight.{" "}
+            {maxWeightKg
+              ? "Selected vehicle capacity: " + maxWeightKg + " kg."
+              : "Use the vehicle's rated capacity."}
           </p>
           <input
             id="cargo-weight-kg"
@@ -222,25 +235,64 @@ export function ReviewBooking({
 
         <div className="rounded-xl border p-4">
           <p className="text-sm font-bold text-secondary">Pickup schedule</p>
-          <p className="mt-1 text-xs text-muted-foreground">Leave blank for the earliest available driver, or choose a pickup 31 minutes to 30 days ahead. Advance bookings support cash, wallet, UPI, card and MiniPort Coins.</p>
-          <input type="datetime-local" value={scheduledAt} min={minScheduledAt} max={maxScheduledAt} onChange={(e) => onScheduledAtChange(e.target.value)} className="mt-3 h-11 w-full rounded-md border border-input bg-background px-3 text-sm" />
-          {scheduledAt && <p className="mt-2 text-xs font-medium text-primary">Schedule 31 minutes to 30 days ahead. Cash bookings are confirmed without online checkout; online bookings must complete payment before dispatch. Driver alerts go out 30 minutes before pickup.</p>}
+          <p className="mt-1 text-xs text-muted-foreground">
+            Leave blank for the earliest available driver, or choose a pickup 31 minutes to 30 days
+            ahead. Advance bookings support cash, wallet, UPI, card and MiniPort Coins.
+          </p>
+          <input
+            type="datetime-local"
+            value={scheduledAt}
+            min={minScheduledAt}
+            max={maxScheduledAt}
+            onChange={(e) => onScheduledAtChange(e.target.value)}
+            className="mt-3 h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+          />
+          {scheduledAt && (
+            <p className="mt-2 text-xs font-medium text-primary">
+              Schedule 31 minutes to 30 days ahead. Cash bookings are confirmed without online
+              checkout; online bookings must complete payment before dispatch. Driver alerts go out
+              30 minutes before pickup.
+            </p>
+          )}
         </div>
 
         <div className="rounded-xl border p-4">
           <label className="flex cursor-pointer items-start gap-3">
-            <input type="checkbox" checked={walletEnabled} onChange={(e) => onWalletEnabledChange(e.target.checked)} className="mt-1 h-4 w-4 accent-orange-500" />
+            <input
+              type="checkbox"
+              checked={walletEnabled}
+              onChange={(e) => onWalletEnabledChange(e.target.checked)}
+              className="mt-1 h-4 w-4 accent-orange-500"
+            />
             <span className="flex-1">
               <span className="block text-sm font-bold text-secondary">Use Wallet Balance</span>
-              <span className="mt-1 block text-xs text-muted-foreground">Available: ₹{walletBalance}</span>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Available: ₹{walletBalance}
+              </span>
             </span>
           </label>
           {walletEnabled && (
             <div className="mt-3 space-y-1 rounded-md bg-primary/5 p-3 text-sm">
-              <div className="flex justify-between"><span>Available wallet balance</span><span>₹{walletBalance}</span></div>
-              <div className="flex justify-between text-success"><span>Wallet deduction</span><span>−₹{Math.min(walletBalance, fare)}</span></div>
-              <div className="flex justify-between border-t pt-1 font-bold"><span>Final payable ({Math.min(walletBalance, fare) >= fare ? "Wallet" : paymentMode.toUpperCase()})</span><span>₹{Math.max(0, fare - Math.min(walletBalance, fare))}</span></div>
-              {fare > 0 && walletBalance >= fare && <p className="pt-1 text-xs font-medium text-success">Wallet covers the full fare. Booking can be confirmed without online checkout.</p>}
+              <div className="flex justify-between">
+                <span>Available wallet balance</span>
+                <span>₹{walletBalance}</span>
+              </div>
+              <div className="flex justify-between text-success">
+                <span>Wallet deduction</span>
+                <span>−₹{Math.min(walletBalance, fare)}</span>
+              </div>
+              <div className="flex justify-between border-t pt-1 font-bold">
+                <span>
+                  Final payable (
+                  {Math.min(walletBalance, fare) >= fare ? "Wallet" : paymentMode.toUpperCase()})
+                </span>
+                <span>₹{Math.max(0, fare - Math.min(walletBalance, fare))}</span>
+              </div>
+              {fare > 0 && walletBalance >= fare && (
+                <p className="pt-1 text-xs font-medium text-success">
+                  Wallet covers the full fare. Booking can be confirmed without online checkout.
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -257,7 +309,7 @@ export function ReviewBooking({
             aria-label="Payment method"
           >
             <option value="cash">Cash</option>
-            
+
             <option value="upi">UPI</option>
             <option value="card">Card</option>
             <option value="netbanking">Netbanking</option>
@@ -308,7 +360,9 @@ export function ReviewBooking({
                 <span>−₹{Math.min(walletBalance, fare)}</span>
               </div>
               <div className="flex justify-between border-t pt-1 font-bold text-secondary">
-                <span>Final payable ({walletBalance >= fare ? "Wallet" : paymentMode.toUpperCase()})</span>
+                <span>
+                  Final payable ({walletBalance >= fare ? "Wallet" : paymentMode.toUpperCase()})
+                </span>
                 <span>₹{Math.max(0, fare - Math.min(walletBalance, fare))}</span>
               </div>
             </>
@@ -330,7 +384,10 @@ export function ReviewBooking({
           <MessageCircle className="h-4 w-4" /> Book via WhatsApp
         </Button>
         <Button onClick={onConfirm} disabled={submitting} className="h-11 w-full">
-          {submitting ? "Booking…" : "Confirm & book · ₹" + Math.max(0, fare - (walletEnabled ? Math.min(walletBalance, fare) : 0))}{" "}
+          {submitting
+            ? "Booking…"
+            : "Confirm & book · ₹" +
+              Math.max(0, fare - (walletEnabled ? Math.min(walletBalance, fare) : 0))}{" "}
           {!submitting && <ArrowRight className="h-4 w-4" />}
         </Button>
         <button
@@ -381,7 +438,9 @@ export function ReviewBooking({
                   <span>−₹{Math.min(walletBalance, fare)}</span>
                 </div>
                 <div className="flex justify-between border-t pt-2 font-bold">
-                  <span>Final payable ({walletBalance >= fare ? "Wallet" : paymentMode.toUpperCase()})</span>
+                  <span>
+                    Final payable ({walletBalance >= fare ? "Wallet" : paymentMode.toUpperCase()})
+                  </span>
                   <span>₹{Math.max(0, fare - Math.min(walletBalance, fare))}</span>
                 </div>
               </>
