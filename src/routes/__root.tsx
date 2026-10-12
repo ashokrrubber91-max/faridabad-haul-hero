@@ -137,7 +137,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   const location = useLocation();
-  const { role, profile } = useAuth();
+  const { role, profile, loading: authLoading, syncError, retryAccountSync } = useAuth();
   const isAdmin = role === "admin" && location.pathname.startsWith("/admin");
 
   useEffect(() => {
@@ -183,7 +183,24 @@ function RootComponent() {
           </Button>
         </div>
       )}
-      <Outlet />
+      {authLoading ? (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background px-6">
+          <div className="w-full max-w-sm rounded-2xl border bg-card p-6 text-center shadow-lg">
+            <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+            <h2 className="text-lg font-semibold">Restoring your account</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Please wait while MiniPort restores your secure session.</p>
+          </div>
+        </div>
+      ) : syncError ? (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background px-6">
+          <div className="w-full max-w-sm rounded-2xl border bg-card p-6 text-center shadow-lg">
+            <h2 className="text-lg font-semibold">Account sync needed</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{syncError}</p>
+            <Button className="mt-4 w-full" onClick={retryAccountSync}>Retry Account Sync</Button>
+            <Button className="mt-2 w-full" variant="outline" onClick={() => window.location.reload()}>Reload app</Button>
+          </div>
+        </div>
+      ) : <Outlet />}
       <Toaster richColors position="top-center" />
       <OfflineBanner />
     </QueryClientProvider>
