@@ -191,7 +191,7 @@ function OrdersPage() {
     <div className="space-y-4">
       <header>
         <h1 className="font-display text-3xl tracking-wide text-secondary">My rides</h1>
-        <p className="text-sm text-muted-foreground">Every booking from the last 2 years.</p>
+        <p className="text-sm text-muted-foreground">Your active, completed and cancelled trips in one place.</p>
       </header>
 
       <Tabs
@@ -202,7 +202,7 @@ function OrdersPage() {
         }}
       >
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="active">Active</TabsTrigger>
+          <TabsTrigger value="active">Active Rides</TabsTrigger>
           <TabsTrigger value="completed">Completed</TabsTrigger>
           <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
         </TabsList>
