@@ -7,6 +7,23 @@ const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") ?? "";
 const WHATSAPP_APP_SECRET = Deno.env.get("WHATSAPP_APP_SECRET") ?? "";
 const GRAPH_VERSION = Deno.env.get("WHATSAPP_GRAPH_VERSION") ?? "v23.0";
 
+/**
+ * Meta's WhatsApp webhook payload, narrowed to only the fields this handler
+ * reads. Keeps the parsed body typed instead of an untyped record.
+ */
+type WhatsAppMessage = {
+  from: string | number;
+  id: string;
+  type: string;
+  audio: { id: string };
+  image: { id: string; caption?: string };
+  text?: { body?: string };
+};
+
+type MetaWebhookBody = {
+  entry?: Array<{ changes?: Array<{ value?: { messages?: WhatsAppMessage[] } }> }>;
+};
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -19,7 +36,8 @@ function normalizePhone(value: string) {
 }
 
 async function verifyMetaSignature(req: Request, rawBody: string) {
-  // Fail closed: never accept unsigned inbound messages when the app secret is missing.\n  if (!WHATSAPP_APP_SECRET) return false;
+  // Fail closed: never accept unsigned inbound messages when the app secret is missing.
+  if (!WHATSAPP_APP_SECRET) return false;
   const header = req.headers.get("x-hub-signature-256") ?? "";
   if (!header.startsWith("sha256=")) return false;
   const expected = header.slice(7);

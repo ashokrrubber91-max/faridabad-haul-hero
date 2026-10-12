@@ -131,7 +131,7 @@ function DriverPage() {
       await sweepStale({ data: undefined }).catch(() => undefined);
       const [openResult, assignedResult, passedResult] = await Promise.all([
         // Open jobs are served by a security-definer RPC that returns no OTPs.
-        (supabase as any).rpc("get_open_driver_bookings"),
+        (supabase as unknown as OpenJobsClient).rpc("get_open_driver_bookings"),
         // A driver reads only rides assigned to their own account directly.
         supabase
           .from("bookings")
