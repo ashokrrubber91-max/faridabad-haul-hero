@@ -365,15 +365,16 @@ function CustomerPage() {
       return {
         paid: ONLINE_METHODS.includes(method) && remainingPayable > 0,
         fare: Number(booking.fare),
+        bookingId: booking.id,
       };
     },
     onSuccess: (result) => {
+      if (!scheduledAt) {
+        window.location.href = `/searching?bookingId=${encodeURIComponent(result.bookingId)}`;
+        return;
+      }
       toast.success(
-        scheduledAt
-          ? `Booking scheduled for ${new Date(scheduledAt).toLocaleString("en-IN")} — drivers will be alerted 30 minutes before pickup`
-          : result.paid
-            ? "Payment received — finding a driver"
-            : "Booking placed — finding a driver",
+        `Booking scheduled for ${new Date(scheduledAt).toLocaleString("en-IN")} — drivers will be alerted 30 minutes before pickup`,
       );
       setScheduledAt("");
       setCargoWeightKg("");
