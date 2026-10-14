@@ -48,6 +48,7 @@ import { vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
 import { NotificationsCard } from "@/components/NotificationsCard";
 import { DriverAccountProfile } from "@/components/driver/DriverAccountProfile";
 import { AdminAccountProfile } from "@/components/admin/AdminAccountProfile";
+import { LegalConsentCard } from "@/components/account/LegalConsentCard";
 import { signOutEverywhere } from "@/lib/session";
 import { BecomeDriverCard } from "@/components/driver/BecomeDriverCard";
 import { DeleteAccountCard } from "@/components/account/DeleteAccountCard";
@@ -725,6 +726,7 @@ function AccountPage() {
             </section>
 
             {user && !isDriverProfile && <BecomeDriverCard userId={user.id} />}
+            {showCustomerSections && <LegalConsentCard userId={user.id} />}
 
             <section className="surface-card space-y-2 p-5">
               <h2 className="font-display text-xl tracking-wide text-secondary">More</h2>
