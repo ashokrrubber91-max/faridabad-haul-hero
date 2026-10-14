@@ -20,6 +20,8 @@ import {
   User as UserIcon,
   Wallet,
   IndianRupee,
+  Calendar,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +34,13 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { SupportChat } from "@/components/support/SupportChat";
@@ -199,6 +208,12 @@ function AccountPage() {
         .map(([key, value]) => ({ key, ...value }));
     },
   });
+
+  const [selectedMonth, setSelectedMonth] = useState("all");
+  const filteredMonths = useMemo(() => {
+    if (selectedMonth === "all") return monthlyDriverEarnings.data ?? [];
+    return (monthlyDriverEarnings.data ?? []).filter((m) => m.key === selectedMonth);
+  }, [monthlyDriverEarnings.data, selectedMonth]);
 
   const driverPayouts = useQuery({
     queryKey: ["driver-payout-history", user?.id],
@@ -445,12 +460,32 @@ function AccountPage() {
               <Wallet className="h-5 w-5 text-primary" />
               <div>
                 <h2 className="font-display text-xl tracking-wide text-secondary">
-                  Monthly earnings &amp; payouts
+                  Monthly Earnings & Trips
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   Your completed rides, earnings, commission and payout history.
                 </p>
               </div>
+            </div>
+
+            <div className="mt-4 flex items-center gap-3">
+              <label htmlFor="month-filter" className="text-xs text-muted-foreground whitespace-nowrap">
+                Filter by month:
+              </label>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger id="month-filter" className="w-[180px]">
+                  <SelectValue placeholder="All months" />
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All months</SelectItem>
+                  {(monthlyDriverEarnings.data ?? []).map((month) => (
+                    <SelectItem key={month.key} value={month.key}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {monthlyDriverEarnings.isLoading ? (
@@ -463,7 +498,7 @@ function AccountPage() {
               </p>
             ) : (
               <div className="mt-4 space-y-3">
-                {(monthlyDriverEarnings.data ?? []).map((month) => (
+                {filteredMonths.map((month) => (
                   <div key={month.key} className="rounded-md border p-3">
                     <div className="mb-3 flex items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-secondary">{month.label}</p>
