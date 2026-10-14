@@ -2628,6 +2628,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      change_searching_booking_vehicle: {
+        Args: { _booking_id: string; _vehicle_type: string }
+        Returns: Json
+      }
       claim_first_admin: { Args: { _user_id: string }; Returns: boolean }
       claim_sms_jobs: {
         Args: { _limit?: number }
