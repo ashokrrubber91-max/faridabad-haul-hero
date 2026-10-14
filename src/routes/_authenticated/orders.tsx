@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import {
   Loader2,
   Package,
   RotateCcw,
+  ChevronRight,
   Search,
   Star,
   Truck,
@@ -27,9 +28,8 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { cancellationSummary } from "@/lib/cancellation";
 import { STATUS_META, vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
-import { buildInvoiceHtml, invoiceNumber, openInvoice } from "@/lib/invoice";
+import { buildInvoiceHtml, openInvoice } from "@/lib/invoice";
 import { TripDetailDialog } from "@/components/booking/TripDetailDialog";
 
 export const Route = createFileRoute("/_authenticated/orders")({
@@ -76,10 +76,11 @@ function OrdersPage() {
     queryKey: ["orders", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      if (!user) return [];
       const { data, error } = await supabase
         .from("bookings")
         .select(BOOKING_FIELDS)
-        .eq("customer_id", user!.id)
+        .eq("customer_id", user.id)
         .gte("created_at", twoYearsAgo)
         .order("created_at", { ascending: false })
         .limit(200);
@@ -94,50 +95,7 @@ function OrdersPage() {
       }
       return data ?? [];
     },
-  });
-
-  const driverIds = useMemo(
-    () =>
-      Array.from(new Set((orders.data ?? []).map((o) => o.driver_id).filter(Boolean))) as string[],
-    [orders.data],
-  );
-
-  // Driver name/number come from a guarded lookup: the phone number is only
-  // returned while the trip is actually running, never from the profile table.
-  const bookingIdsWithDriver = useMemo(
-    () => (orders.data ?? []).filter((o) => o.driver_id).map((o) => o.id),
-    [orders.data],
-  );
-  const drivers = useQuery({
-    queryKey: ["order-driver-contacts", bookingIdsWithDriver.join(",")],
-    enabled: bookingIdsWithDriver.length > 0,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("booking_contacts", {
-        _booking_ids: bookingIdsWithDriver,
-      });
-      if (error) throw error;
-      const map: Record<string, { name: string; phone: string | null }> = {};
-      (data ?? []).forEach((r) => {
-        map[r.booking_id] = { name: r.name, phone: r.phone };
-      });
-      return map;
-    },
-  });
-
-  const kycByDriver = useQuery({
-    queryKey: ["order-driver-vehicles", driverIds.join(",")],
-    enabled: driverIds.length > 0,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("driver_kyc")
-        .select("driver_id, vehicle_number")
-        .in("driver_id", driverIds);
-      const map: Record<string, string> = {};
-      (data ?? []).forEach((d) => {
-        if (d.vehicle_number) map[d.driver_id] = d.vehicle_number;
-      });
-      return map;
-    },
+    refetchInterval: 5000,
   });
 
   const rate = useMutation({
@@ -163,7 +121,7 @@ function OrdersPage() {
   const list = all
     .filter((o) =>
       filter === "active"
-        ? ["pending", "accepted", "in_progress"].includes(o.status)
+        ? ["pending", "scheduled", "accepted", "arrived", "in_progress"].includes(o.status)
         : filter === "completed"
           ? o.status === "completed"
           : o.status === "cancelled" || o.status === "expired",
@@ -191,7 +149,7 @@ function OrdersPage() {
     <div className="space-y-4">
       <header>
         <h1 className="font-display text-3xl tracking-wide text-secondary">My rides</h1>
-        <p className="text-sm text-muted-foreground">Your active, completed and cancelled trips in one place.</p>
+        
       </header>
 
       <Tabs
@@ -201,7 +159,7 @@ function OrdersPage() {
           setShown(10);
         }}
       >
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid h-12 w-full grid-cols-3 rounded-lg">
           <TabsTrigger value="active">Active Rides</TabsTrigger>
           <TabsTrigger value="completed">Completed</TabsTrigger>
           <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
@@ -254,134 +212,25 @@ function OrdersPage() {
             : `No ${filter} rides yet.`}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-3 md:grid-cols-2">
           {list.slice(0, shown).map((b) => {
             const meta = STATUS_META[b.status] ?? STATUS_META.pending;
-            const driver = b.driver_id ? drivers.data?.[b.id] : null;
-            const vehicleNumber = b.driver_id ? kycByDriver.data?.[b.driver_id] : null;
             return (
-              <article key={b.id} className="surface-card p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      CRN {b.id.slice(0, 8).toUpperCase()} ·{" "}
-                      {new Date(b.created_at).toLocaleDateString("en-IN")}
-                    </p>
-                    <p className="mt-1 truncate text-sm font-medium text-secondary">
-                      {b.pickup_address}
-                    </p>
-                    <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <ArrowRight className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{b.drop_address}</span>
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {vehicleLabel(b.vehicle_type)} · {Number(b.distance_km).toFixed(1)} km
-                    </p>
+              <article key={b.id} className="overflow-hidden rounded-lg border bg-card">
+                <Button variant="ghost" className="h-auto w-full flex-col items-stretch gap-3 rounded-none p-4 text-left font-normal" onClick={() => setDetail(b.id)} aria-label={`Open ${vehicleLabel(b.vehicle_type)} ride ${b.id.slice(0,8)}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2"><Truck className="h-5 w-5 shrink-0 text-primary" /><span className="truncate font-semibold">{vehicleLabel(b.vehicle_type)}</span></div>
+                    <Badge variant={meta.tone === "destructive" ? "destructive" : "secondary"} className={tone(meta.tone)}>{meta.label}</Badge>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <p className="font-display text-xl text-secondary">
-                      ₹{Number(b.final_fare || b.fare).toFixed(0)}
-                    </p>
-                    {Number(b.overtime_charge ?? 0) > 0 && (
-                      <p className="text-[11px] text-muted-foreground">
-                        incl. ₹{Number(b.overtime_charge).toFixed(0)} waiting
-                      </p>
-                    )}
-                    <Badge
-                      variant={meta.tone === "destructive" ? "destructive" : "secondary"}
-                      className={tone(meta.tone)}
-                    >
-                      {meta.label}
-                    </Badge>
-                  </div>
-                </div>
-
-                {driver && (
-                  <div className="mt-3 flex items-center gap-2 rounded-md bg-muted/40 px-3 py-2 text-xs text-secondary">
-                    <Truck className="h-3.5 w-3.5 text-primary" />
-                    <span className="font-semibold">{driver.name}</span>
-                    {vehicleNumber && (
-                      <span className="text-muted-foreground">· {vehicleNumber}</span>
-                    )}
-                    {driver.phone && (
-                      <a href={`tel:${driver.phone}`} className="ml-auto font-medium text-primary">
-                        {driver.phone}
-                      </a>
-                    )}
-                  </div>
-                )}
-
-                {(() => {
-                  const closure = cancellationSummary(b);
-                  if (!closure) return null;
-                  return (
-                    <div
-                      className={`mt-3 rounded-md border px-3 py-2 text-xs ${
-                        closure.isPaymentFailure
-                          ? "border-warning bg-warning/10"
-                          : "border-destructive/30 bg-destructive/5"
-                      }`}
-                    >
-                      <p
-                        className={`text-sm font-semibold ${
-                          closure.isPaymentFailure ? "text-secondary" : "text-destructive"
-                        }`}
-                      >
-                        {closure.title}
-                      </p>
-                      {closure.who && closure.who !== closure.title && (
-                        <p className="mt-0.5 text-muted-foreground">{closure.who}</p>
-                      )}
-                      {closure.reason && (
-                        <p className="mt-1 text-muted-foreground">
-                          <span className="font-medium text-secondary">Reason:</span>{" "}
-                          {closure.reason}
-                        </p>
-                      )}
-                      {closure.at && (
-                        <p className="mt-0.5 text-muted-foreground">Closed on {closure.at}</p>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={() => setDetail(b.id)}>
-                    View details
-                  </Button>
-                  {b.status === "completed" && (
-                    <Button size="sm" variant="outline" onClick={() => downloadInvoice(b)}>
-                      <Download className="h-3.5 w-3.5" /> Invoice{" "}
-                      {invoiceNumber(b.id, b.created_at).split("/").pop()}
-                    </Button>
-                  )}
-                  {b.status === "completed" && !b.rating && (
-                    <Button
-                      size="sm"
-                      onClick={() => setRateTarget({ id: b.id, addr: b.drop_address })}
-                    >
-                      <Star className="h-3.5 w-3.5" /> Rate trip
-                    </Button>
-                  )}
-                  {b.rating ? (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-warning/15 px-2 py-1 text-xs font-semibold text-warning-foreground">
-                      {"★".repeat(b.rating)}
-                      <span className="text-muted-foreground">{"★".repeat(5 - b.rating)}</span>
-                    </span>
-                  ) : null}
-                  {(b.status === "completed" || b.status === "cancelled") && (
-                    <Button size="sm" variant="ghost" asChild>
-                      <a href={`/customer?again=${b.id}`}>
-                        <RotateCcw className="h-3.5 w-3.5" /> Book again
-                      </a>
-                    </Button>
-                  )}
-                </div>
+                  <div className="w-full min-w-0 space-y-1 text-sm"><p className="truncate">{b.pickup_address}</p><p className="flex items-center gap-2 text-muted-foreground"><ArrowRight className="h-3 w-3 shrink-0" /><span className="truncate">{b.drop_address}</span></p></div>
+                  {b.scheduled_for && <p className="whitespace-normal text-xs text-primary">Scheduled for {new Date(b.scheduled_for).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}</p>}
+                  <div className="flex w-full items-center justify-between border-t pt-3"><span className="text-xs text-muted-foreground">{new Date(b.created_at).toLocaleDateString("en-IN")} · {Number(b.distance_km).toFixed(1)} km</span><span className="flex items-center gap-2 text-lg font-bold">₹{Number(b.final_fare ?? b.fare).toFixed(0)}<ChevronRight className="h-4 w-4 text-muted-foreground" /></span></div>
+                </Button>
               </article>
             );
           })}
           {list.length > shown && (
-            <Button variant="outline" className="w-full" onClick={() => setShown((n) => n + 10)}>
+            <Button variant="outline" className="w-full md:col-span-2" onClick={() => setShown((n) => n + 10)}>
               Show older rides ({list.length - shown} more)
             </Button>
           )}
@@ -391,6 +240,16 @@ function OrdersPage() {
       <TripDetailDialog
         booking={all.find((o) => o.id === detail) ?? null}
         onClose={() => setDetail(null)}
+        actions={(() => {
+          const b = all.find(o => o.id === detail);
+          if (!b) return null;
+          return <div className="flex flex-wrap gap-2">
+            {["pending", "scheduled", "accepted", "in_progress"].includes(b.status) && <Button asChild><Link to="/searching" search={{ bookingId: b.id }}>Track ride <ArrowRight className="h-4 w-4" /></Link></Button>}
+            {b.status === "completed" && <Button size="sm" variant="outline" onClick={() => downloadInvoice(b)}><Download className="h-4 w-4" />Invoice</Button>}
+            {b.status === "completed" && !b.rating && <Button size="sm" onClick={() => { setDetail(null); setRateTarget({ id: b.id, addr: b.drop_address }); }}><Star className="h-4 w-4" />Rate trip</Button>}
+            {["completed", "cancelled", "expired"].includes(b.status) && <Button variant="outline" size="sm" asChild><a href={`/customer?again=${b.id}`}><RotateCcw className="h-4 w-4" />Book again</a></Button>}
+          </div>;
+        })()}
       />
 
       <Dialog open={!!rateTarget} onOpenChange={(v) => !v && setRateTarget(null)}>
