@@ -73,19 +73,22 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 export function TripDetailDialog({
   booking,
   onClose,
+  actions,
 }: {
   booking: Booking | null;
   onClose: () => void;
+  actions?: React.ReactNode;
 }) {
   const [switchingCash, setSwitchingCash] = useState(false);
   const extraStops = useQuery({
     queryKey: ["booking-stops", booking?.id],
     enabled: !!booking?.id,
     queryFn: async () => {
+      if (!booking) return [];
       const { data, error } = await supabase
         .from("booking_stops")
         .select("id, address, sequence")
-        .eq("booking_id", booking!.id)
+        .eq("booking_id", booking.id)
         .eq("kind", "stop")
         .order("sequence");
       if (error) throw error;
@@ -224,6 +227,7 @@ export function TripDetailDialog({
             )}
           </div>
         )}
+        {actions}
       </DialogContent>
     </Dialog>
   );
