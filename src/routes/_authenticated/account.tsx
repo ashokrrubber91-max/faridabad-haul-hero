@@ -726,7 +726,7 @@ function AccountPage() {
             </section>
 
             {user && !isDriverProfile && <BecomeDriverCard userId={user.id} />}
-            {showCustomerSections && <LegalConsentCard userId={user.id} />}
+            {user && showCustomerSections && <LegalConsentCard userId={user.id} />}
 
             <section className="surface-card space-y-2 p-5">
               <h2 className="font-display text-xl tracking-wide text-secondary">More</h2>
