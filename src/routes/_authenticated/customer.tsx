@@ -117,6 +117,44 @@ function CustomerPage() {
   const [mockWhatsAppOpen, setMockWhatsAppOpen] = useState(false);
   const [mockWhatsAppBusy, setMockWhatsAppBusy] = useState(false);
   const seenTripEvents = useRef(new Map<string, string>());
+  const bookAgainLoaded = useRef(false);
+
+  // Prefill the booking form when a customer taps "Book again" from order history.
+  useEffect(() => {
+    if (!user || bookAgainLoaded.current) return;
+    const againId = new URLSearchParams(window.location.search).get("again");
+    if (!againId) return;
+    bookAgainLoaded.current = true;
+    void (async () => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select(BOOKING_FIELDS)
+        .eq("id", againId)
+        .eq("customer_id", user.id)
+        .maybeSingle();
+      if (error || !data) {
+        toast.error("Could not load that previous ride. Please choose locations again.");
+        return;
+      }
+      setPickup({
+        address: data.pickup_address,
+        lat: Number(data.pickup_lat) || FARIDABAD_CENTER.lat,
+        lng: Number(data.pickup_lng) || FARIDABAD_CENTER.lng,
+        placeId: null,
+      });
+      setDrop({
+        address: data.drop_address,
+        lat: Number(data.drop_lat) || FARIDABAD_CENTER.lat,
+        lng: Number(data.drop_lng) || FARIDABAD_CENTER.lng,
+        placeId: null,
+      });
+      const priorVehicle = String(data.vehicle_type ?? "");
+      if (priorVehicle) setVehicle(priorVehicle as VehicleId);
+      setStep("form");
+      window.history.replaceState({}, "", window.location.pathname);
+      toast.success("Previous ride details filled in. Review and book when ready.");
+    })();
+  }, [user]);
 
   // Distance always comes from the Routes API on the server — never a
   // straight-line estimate — because the fare is derived from it.
