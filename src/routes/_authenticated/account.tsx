@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { ReferralCard } from "@/components/referrals/ReferralCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -213,7 +213,7 @@ function AccountPage() {
   const [selectedMonth, setSelectedMonth] = useState("all");
   const filteredMonths = useMemo(() => {
     if (selectedMonth === "all") return monthlyDriverEarnings.data ?? [];
-    return (monthlyDriverEarnings.data ?? []).filter((m) => m.key === selectedMonth);
+    return (monthlyDriverEarnings.data ?? []).filter((m: any) => m.key === selectedMonth);
   }, [monthlyDriverEarnings.data, selectedMonth]);
 
   const driverPayouts = useQuery({
@@ -480,7 +480,7 @@ function AccountPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All months</SelectItem>
-                  {(monthlyDriverEarnings.data ?? []).map((month) => (
+                  {(monthlyDriverEarnings.data ?? []).map((month: any) => (
                     <SelectItem key={month.key} value={month.key}>
                       {month.label}
                     </SelectItem>
@@ -499,7 +499,7 @@ function AccountPage() {
               </p>
             ) : (
               <div className="mt-4 space-y-3">
-                {filteredMonths.map((month) => (
+                {filteredMonths.map((month: any) => (
                   <div key={month.key} className="rounded-md border p-3">
                     <div className="mb-3 flex items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-secondary">{month.label}</p>
