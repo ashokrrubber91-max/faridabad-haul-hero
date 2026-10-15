@@ -1,10 +1,11 @@
 # MiniPort roadmap
 
 ## Dedicated booking and ride history
-- [ ] Full-screen interactive pickup search and live tracking with real booking updates.
-- [ ] Sixty-second recovery with safe fare boost and same-booking vehicle change.
-- [ ] Compact segmented ride history with detailed actions preserved.
-- [ ] Verify live screens, recovery safeguards and app checks.
+- [x] Full-screen interactive pickup search and live tracking with real booking updates.
+- [x] Sixty-second recovery with safe fare boost and same-booking vehicle change.
+- [x] Compact segmented ride history with detailed actions preserved.
+- [x] Preview build checks and lint; desktop/mobile signed-out access checks.
+- [ ] Authenticated live booking, recovery and ride-history verification — blocked until a customer account is identified or signed in.
 
 ## Batch 1 — Auth + role-specific profiles (done)
 - [x] Shared sign-out for all roles (`src/lib/session.ts`)

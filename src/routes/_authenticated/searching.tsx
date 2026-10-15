@@ -86,22 +86,24 @@ function SearchingPage() {
     },
     refetchInterval: 3000,
   });
+  const userId = user?.id;
+  const refetchBooking = booking.refetch;
   useEffect(() => {
-    if (!user || !bookingId) return;
+    if (!userId || !bookingId) return;
     const channel = supabase
       .channel(`searching:${bookingId}`)
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "bookings", filter: `id=eq.${bookingId}` },
         () => {
-          void booking.refetch();
+          void refetchBooking();
         },
       )
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [user?.id, bookingId, booking.refetch]);
+  }, [userId, bookingId, refetchBooking]);
   const b = booking.data;
   const searching = b?.status === "pending";
   const tracking = b?.status === "accepted" || b?.status === "in_progress";
