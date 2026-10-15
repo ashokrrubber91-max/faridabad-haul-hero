@@ -17,6 +17,7 @@ interface Props {
   dropLng?: number | null;
   phase: "accepted" | "in_progress";
   distanceKm: number;
+  immersive?: boolean;
 }
 type LatLng = { lat: number; lng: number };
 const FRESH_MS = 120_000;
@@ -32,6 +33,7 @@ export function LiveTripMap({
   dropLng,
   phase,
   distanceKm,
+  immersive = false,
 }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
@@ -97,10 +99,11 @@ export function LiveTripMap({
     refetchInterval: 25_000,
     refetchOnWindowFocus: true,
     queryFn: async () => {
+      if (!driverId) return null;
       const { data, error } = await supabase
         .from("driver_locations")
         .select("latitude, longitude, updated_at, speed_mps")
-        .eq("driver_id", driverId!)
+        .eq("driver_id", driverId)
         .maybeSingle();
       if (error) throw error;
       return data ?? null;
@@ -158,7 +161,10 @@ export function LiveTripMap({
     enabled: !!origin && !!target,
     staleTime: 30_000,
     retry: 1,
-    queryFn: () => computeRoadRoute({ data: { points: [origin!, target!] } }),
+    queryFn: () => {
+      if (!origin || !target) throw new Error("Route coordinates unavailable");
+      return computeRoadRoute({ data: { points: [origin, target] } });
+    },
   });
   const remainingKm = driverPos && road.data ? road.data.distanceKm : null;
   const eta = driverPos && road.data?.durationMin ? road.data.durationMin : null;
@@ -281,8 +287,20 @@ export function LiveTripMap({
         : `Trip in progress · ${Math.max(0.5, distanceKm).toFixed(1)} km booked route`;
 
   return (
-    <div className="mt-3 overflow-hidden rounded-md border border-primary/30">
-      <div className="flex items-center justify-between gap-2 bg-primary/10 px-3 py-2 text-primary">
+    <div
+      className={
+        immersive
+          ? "absolute inset-0 flex flex-col overflow-hidden"
+          : "mt-3 overflow-hidden rounded-md border border-primary/30"
+      }
+    >
+      <div
+        className={
+          immersive
+            ? "absolute inset-x-3 bottom-3 z-10 rounded-lg border bg-card/95 px-3 py-2 text-foreground shadow-sm"
+            : "flex items-center justify-between gap-2 bg-primary/10 px-3 py-2 text-primary"
+        }
+      >
         <div className="flex items-center gap-2">
           {routeFailed ? (
             <AlertTriangle className="h-4 w-4" />
@@ -294,7 +312,13 @@ export function LiveTripMap({
           <p className="text-sm font-semibold">{headline}</p>
         </div>
       </div>
-      <div className="relative h-[240px] w-full bg-muted">
+      <div
+        className={
+          immersive
+            ? "relative min-h-0 w-full flex-1 bg-muted"
+            : "relative h-[240px] w-full bg-muted"
+        }
+      >
         <div ref={mapRef} className="absolute inset-0 h-full w-full" />
         {mapError ? (
           <div className="absolute inset-0 grid place-items-center px-4 text-center">
@@ -312,22 +336,26 @@ export function LiveTripMap({
           ))
         )}
       </div>
-      <p className="border-t bg-background px-3 py-1.5 text-[11px] text-muted-foreground">
-        {routeFailed
-          ? "Road route could not be loaded, so no route line is shown. Pickup and drop pins are exact."
-          : driverPos
-            ? "Live driver location and road route · updates automatically"
-            : staleMinutes !== null
-              ? "The last position shown was too old to be trusted, so the driver pin is hidden until a new GPS update arrives."
-              : "Driver location appears once their app shares GPS (location permission needed)."}
-      </p>
-      <TripSafetyActions
-        bookingId={bookingId}
-        pickupAddress={pickupAddress}
-        dropAddress={dropAddress}
-        phase={phase}
-        eta={eta}
-      />
+      {!immersive && (
+        <p className="border-t bg-background px-3 py-1.5 text-[11px] text-muted-foreground">
+          {routeFailed
+            ? "Road route could not be loaded, so no route line is shown. Pickup and drop pins are exact."
+            : driverPos
+              ? "Live driver location and road route · updates automatically"
+              : staleMinutes !== null
+                ? "The last position shown was too old to be trusted, so the driver pin is hidden until a new GPS update arrives."
+                : "Driver location appears once their app shares GPS (location permission needed)."}
+        </p>
+      )}
+      {!immersive && (
+        <TripSafetyActions
+          bookingId={bookingId}
+          pickupAddress={pickupAddress}
+          dropAddress={dropAddress}
+          phase={phase}
+          eta={eta}
+        />
+      )}
     </div>
   );
 }

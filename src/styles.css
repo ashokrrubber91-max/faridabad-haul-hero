@@ -41,8 +41,8 @@
   --radius: 0.75rem;
 
   /* Bold Orange palette */
-  --background: oklch(0.985 0.012 75);       /* #FFF7ED warm cream */
-  --foreground: oklch(0.18 0.025 265);       /* near #111827 */
+  --background: oklch(0.985 0.012 75); /* #FFF7ED warm cream */
+  --foreground: oklch(0.18 0.025 265); /* near #111827 */
   --ink: oklch(0.18 0.025 265);
 
   --card: oklch(1 0 0);
@@ -50,10 +50,10 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.025 265);
 
-  --primary: oklch(0.72 0.19 45);            /* #F97316 orange */
+  --primary: oklch(0.72 0.19 45); /* #F97316 orange */
   --primary-foreground: oklch(0.99 0.003 75);
 
-  --secondary: oklch(0.18 0.025 265);        /* dark ink as secondary */
+  --secondary: oklch(0.18 0.025 265); /* dark ink as secondary */
   --secondary-foreground: oklch(0.99 0.003 75);
 
   --muted: oklch(0.955 0.018 75);
@@ -65,7 +65,7 @@
   --destructive: oklch(0.6 0.23 27);
   --destructive-foreground: oklch(0.99 0 0);
 
-  --success: oklch(0.7 0.16 155);            /* #10B981 emerald */
+  --success: oklch(0.7 0.16 155); /* #10B981 emerald */
   --success-foreground: oklch(0.99 0 0);
 
   --warning: oklch(0.82 0.16 85);
@@ -92,20 +92,28 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
+  * {
+    border-color: var(--color-border);
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-feature-settings: "ss01", "cv11";
   }
-  h1, h2, h3 { letter-spacing: -0.02em; }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
+  }
 }
 
 @utility surface-card {
   background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 1px 0 var(--color-border), 0 8px 24px -16px oklch(0.18 0.025 265 / 0.18);
+  box-shadow:
+    0 1px 0 var(--color-border),
+    0 8px 24px -16px oklch(0.18 0.025 265 / 0.18);
 }
 
 @utility brand-gradient {
@@ -121,11 +129,22 @@
   background: color-mix(in oklch, var(--primary) 12%, transparent);
   animation: ride-scan 3s ease-out infinite;
 }
-.ride-radar-delayed { animation-delay: 1.5s; }
+.ride-radar-delayed {
+  animation-delay: 1.5s;
+}
 @keyframes ride-scan {
-  from { transform: scale(0.35); opacity: 0.8; }
-  to { transform: scale(1.7); opacity: 0; }
+  from {
+    transform: scale(0.35);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1.7);
+    opacity: 0;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ride-radar { animation: none; opacity: 0.25; }
+  .ride-radar {
+    animation: none;
+    opacity: 0.25;
+  }
 }
