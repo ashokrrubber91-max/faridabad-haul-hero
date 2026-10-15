@@ -1,5 +1,13 @@
 # MiniPort roadmap
 
+## Home, repeat booking and proof improvements
+
+- [ ] Keep the top active-rides widget and remove any redundant lower history.
+- [ ] Fast in-app handoff to full-screen searching/tracking after confirmation.
+- [ ] Completed-trip delivery proof with private, short-lived photo access.
+- [ ] Reliable owner-scoped Book Again pickup/drop/vehicle prefill.
+- [ ] Reduce unnecessary history refreshes and verify available workflows.
+
 ## Dedicated booking and ride history
 
 - [x] Full-screen interactive pickup search and live tracking with real booking updates.
