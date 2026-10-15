@@ -187,7 +187,7 @@ export function SupportChat({ role }: { role: "customer" | "driver" }) {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg transition-transform hover:scale-105"
+          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] right-3 z-30 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg transition-transform hover:scale-105 sm:bottom-5 sm:right-5"
           aria-label="Help & Support"
         >
           <MessageCircle className="h-5 w-5" />
@@ -196,7 +196,7 @@ export function SupportChat({ role }: { role: "customer" | "driver" }) {
       )}
 
       {open && (
-        <div className="fixed inset-x-0 bottom-0 z-50 flex justify-end px-0 pb-0 sm:inset-auto sm:bottom-5 sm:right-5 sm:px-0">
+        <div className="fixed inset-x-0 bottom-[env(safe-area-inset-bottom,0px)] z-[60] flex justify-end px-0 pb-0 sm:inset-auto sm:bottom-5 sm:right-5 sm:px-0">
           <div className="flex h-[80vh] w-full max-w-md flex-col rounded-t-2xl border border-border bg-background shadow-2xl sm:h-[600px] sm:rounded-2xl">
             <header className="flex items-center justify-between border-b border-border px-4 py-3">
               <div className="flex items-center gap-2">
