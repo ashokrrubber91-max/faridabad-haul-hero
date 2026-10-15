@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { AnyRow } from "@/lib/rows";
+import { Camera, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { vehicleLabel, STATUS_META } from "@/lib/booking";
 import { supabase } from "@/integrations/supabase/client";
 import { cancellationSummary } from "@/lib/cancellation";
+import { useAuth } from "@/hooks/useAuth";
 
 type Booking = {
   id: string;
@@ -42,6 +43,7 @@ type Booking = {
   unloading_stopped_at?: string | null;
   notes?: string | null;
   rating?: number | null;
+  pod_photo_url?: string | null;
 };
 const PAYMENT_LABEL: Record<string, string> = {
   cod: "Cash on delivery",
@@ -80,9 +82,28 @@ export function TripDetailDialog({
   actions?: React.ReactNode;
 }) {
   const [switchingCash, setSwitchingCash] = useState(false);
+  const { user } = useAuth();
+  const [proofBookingId, setProofBookingId] = useState<string | null>(null);
+  const showProof = !!booking && proofBookingId === booking.id;
+  const proof = useQuery({
+    queryKey: ["delivery-proof", user?.id, booking?.id, booking?.pod_photo_url],
+    enabled: !!user && showProof && booking?.status === "completed" && !!booking.pod_photo_url,
+    staleTime: 240_000,
+    gcTime: 300_000,
+    retry: 1,
+    queryFn: async () => {
+      if (!booking?.pod_photo_url) throw new Error("No delivery photo was attached to this ride.");
+      const { data, error } = await supabase.storage
+        .from("delivery-proof")
+        .createSignedUrl(booking.pod_photo_url, 300);
+      if (error) throw error;
+      return data.signedUrl;
+    },
+  });
   const extraStops = useQuery({
-    queryKey: ["booking-stops", booking?.id],
+    queryKey: ["booking-stops", user?.id, booking?.id],
     enabled: !!booking?.id,
+    staleTime: 60_000,
     queryFn: async () => {
       if (!booking) return [];
       const { data, error } = await supabase
@@ -224,6 +245,36 @@ export function TripDetailDialog({
             )}
             {b.payment_status === "refunded" && (
               <p className="mt-1 text-xs text-success">Refund has been processed.</p>
+            )}
+          </div>
+        )}
+        {b.status === "completed" && (
+          <div className="space-y-3 border-t pt-4">
+            <Button
+              className="w-full"
+              onClick={() => setProofBookingId(showProof ? null : b.id)}
+              aria-expanded={showProof}
+            >
+              <Camera className="h-4 w-4" />
+              {showProof ? "Hide Proof" : "View Proof"}
+            </Button>
+            {showProof && (
+              <div aria-live="polite">
+                {!b.pod_photo_url ? (
+                  <p className="text-sm text-muted-foreground">No delivery photo was attached to this ride.</p>
+                ) : proof.isPending ? (
+                  <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Loading delivery proof…
+                  </div>
+                ) : proof.isError ? (
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <p>Couldn’t load the delivery photo.</p>
+                    <Button variant="outline" size="sm" onClick={() => void proof.refetch()}>Retry proof</Button>
+                  </div>
+                ) : proof.data ? (
+                  <img src={proof.data} alt="Delivery photo attached to this completed MiniPort ride" className="max-h-[50dvh] w-full rounded-md object-contain" />
+                ) : null}
+              </div>
             )}
           </div>
         )}

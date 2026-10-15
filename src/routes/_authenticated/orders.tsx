@@ -95,7 +95,11 @@ function OrdersPage() {
       }
       return data ?? [];
     },
-    refetchInterval: 5000,
+    staleTime: 15_000,
+    refetchInterval: (query) =>
+      query.state.data?.some((o) => ["pending", "accepted", "in_progress"].includes(o.status))
+        ? 15_000
+        : false,
   });
 
   const rate = useMutation({
@@ -313,10 +317,10 @@ function OrdersPage() {
               )}
               {["completed", "cancelled", "expired"].includes(b.status) && (
                 <Button variant="outline" size="sm" asChild>
-                  <a href={`/customer?again=${b.id}`}>
+                  <Link to="/customer" search={{ again: b.id }}>
                     <RotateCcw className="h-4 w-4" />
                     Book again
-                  </a>
+                  </Link>
                 </Button>
               )}
             </div>
