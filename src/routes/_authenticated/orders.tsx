@@ -179,14 +179,15 @@ function OrdersPage() {
           className="h-7 border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
         />
         {search && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setSearch("")}
             aria-label="Clear search"
             className="text-xs font-medium text-primary"
           >
             Clear
-          </button>
+          </Button>
         )}
       </div>
 
@@ -260,11 +261,11 @@ function OrdersPage() {
           </DialogHeader>
           <div className="flex justify-center gap-2">
             {[1, 2, 3, 4, 5].map((n) => (
-              <button key={n} type="button" onClick={() => setStars(n)} aria-label={`${n} star`}>
+              <Button key={n} variant="ghost" size="icon" onClick={() => setStars(n)} aria-label={`${n} star`}>
                 <Star
                   className={`h-8 w-8 ${n <= stars ? "fill-warning text-warning" : "text-muted-foreground"}`}
                 />
-              </button>
+              </Button>
             ))}
           </div>
           <Textarea

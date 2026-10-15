@@ -13,6 +13,7 @@ import { useVehicleTypes } from "@/lib/vehicles";
 import { SearchingMap } from "@/components/booking/SearchingMap";
 import { LiveTripMap } from "@/components/booking/LiveTripMap";
 import { ActiveTripCard } from "@/components/booking/ActiveTripCard";
+import { TripSafetyActions } from "@/components/booking/TripSafetyActions";
 
 export const Route = createFileRoute("/_authenticated/searching")({
   validateSearch: (search: Record<string, unknown>) => ({ bookingId: typeof search.bookingId === "string" ? search.bookingId : "" }),
@@ -97,6 +98,7 @@ function SearchingPage() {
             <div className="space-y-3 text-sm"><p className="flex items-start gap-3"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>{b.pickup_address}</span></p><p className="flex items-start gap-3"><ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" /><span>{b.drop_address}</span></p></div>
             {b.scheduled_for && <Badge variant="outline" className="mt-3 whitespace-normal"><Clock className="mr-1 h-3 w-3" />Scheduled for {new Date(b.scheduled_for).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}</Badge>}
             {tracking && <ActiveTripCard bookingId={b.id} driverId={b.driver_id} vehicleType={b.vehicle_type} status={b.status === "accepted" ? "accepted" : "in_progress"} />}
+            {tracking && <TripSafetyActions bookingId={b.id} pickupAddress={b.pickup_address} dropAddress={b.drop_address} phase={b.status === "accepted" ? "accepted" : "in_progress"} eta={null} />}
             {searching ? <div className="mt-5 flex items-center justify-between gap-3"><p className="text-xs text-muted-foreground">{elapsed < 60 ? "Checking available captains near your pickup" : "Still searching for an available captain"}</p><Button variant="secondary" size="sm" onClick={() => setRecoveryOpen(true)}>Ride options <ChevronRight className="h-4 w-4" /></Button></div> : <Button variant="outline" className="mt-5 w-full" onClick={() => navigate({ to: "/orders" })}>View ride details <ArrowRight className="h-4 w-4" /></Button>}
           </> : <div className="py-6 text-sm text-muted-foreground">{bookingId ? "Loading your pickup and trip details…" : "Choose a ride from My Rides to track it."}</div>}
         </div>
