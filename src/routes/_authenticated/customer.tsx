@@ -58,14 +58,22 @@ import { MINIPORT_TEST_MODE } from "@/lib/testing";
 const ONLINE_METHODS: PaymentMethod[] = ["upi", "card", "netbanking"];
 
 export const Route = createFileRoute("/_authenticated/customer")({
-  head: () => ({ meta: [
-    { title: "Book a truck — MiniPort" },
-    { name: "description", content: "Book a MiniPort mini-truck in Faridabad with pickup, vehicle and fare details." },
-    { property: "og:title", content: "Book a truck — MiniPort" },
-    { property: "og:description", content: "Book your MiniPort pickup and delivery in Faridabad." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Book a truck — MiniPort" },
+      {
+        name: "description",
+        content: "Book a MiniPort mini-truck in Faridabad with pickup, vehicle and fare details.",
+      },
+      { property: "og:title", content: "Book a truck — MiniPort" },
+      {
+        property: "og:description",
+        content: "Book your MiniPort pickup and delivery in Faridabad.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: CustomerPage,
 });
 

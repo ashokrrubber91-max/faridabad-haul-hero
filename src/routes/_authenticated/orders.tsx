@@ -149,7 +149,6 @@ function OrdersPage() {
     <div className="space-y-4">
       <header>
         <h1 className="font-display text-3xl tracking-wide text-secondary">My rides</h1>
-        
       </header>
 
       <Tabs
@@ -218,20 +217,61 @@ function OrdersPage() {
             const meta = STATUS_META[b.status] ?? STATUS_META.pending;
             return (
               <article key={b.id} className="overflow-hidden rounded-lg border bg-card">
-                <Button variant="ghost" className="h-auto w-full flex-col items-stretch gap-3 rounded-none p-4 text-left font-normal" onClick={() => setDetail(b.id)} aria-label={`Open ${vehicleLabel(b.vehicle_type)} ride ${b.id.slice(0,8)}`}>
+                <Button
+                  variant="ghost"
+                  className="h-auto w-full flex-col items-stretch gap-3 rounded-none p-4 text-left font-normal"
+                  onClick={() => setDetail(b.id)}
+                  aria-label={`Open ${vehicleLabel(b.vehicle_type)} ride ${b.id.slice(0, 8)}`}
+                >
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2"><Truck className="h-5 w-5 shrink-0 text-primary" /><span className="truncate font-semibold">{vehicleLabel(b.vehicle_type)}</span></div>
-                    <Badge variant={meta.tone === "destructive" ? "destructive" : "secondary"} className={tone(meta.tone)}>{meta.label}</Badge>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Truck className="h-5 w-5 shrink-0 text-primary" />
+                      <span className="truncate font-semibold">{vehicleLabel(b.vehicle_type)}</span>
+                    </div>
+                    <Badge
+                      variant={meta.tone === "destructive" ? "destructive" : "secondary"}
+                      className={tone(meta.tone)}
+                    >
+                      {meta.label}
+                    </Badge>
                   </div>
-                  <div className="w-full min-w-0 space-y-1 text-sm"><p className="truncate">{b.pickup_address}</p><p className="flex items-center gap-2 text-muted-foreground"><ArrowRight className="h-3 w-3 shrink-0" /><span className="truncate">{b.drop_address}</span></p></div>
-                  {b.scheduled_for && <p className="whitespace-normal text-xs text-primary">Scheduled for {new Date(b.scheduled_for).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}</p>}
-                  <div className="flex w-full items-center justify-between border-t pt-3"><span className="text-xs text-muted-foreground">{new Date(b.created_at).toLocaleDateString("en-IN")} · {Number(b.distance_km).toFixed(1)} km</span><span className="flex items-center gap-2 text-lg font-bold">₹{Number(b.final_fare ?? b.fare).toFixed(0)}<ChevronRight className="h-4 w-4 text-muted-foreground" /></span></div>
+                  <div className="w-full min-w-0 space-y-1 text-sm">
+                    <p className="truncate">{b.pickup_address}</p>
+                    <p className="flex items-center gap-2 text-muted-foreground">
+                      <ArrowRight className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{b.drop_address}</span>
+                    </p>
+                  </div>
+                  {b.scheduled_for && (
+                    <p className="whitespace-normal text-xs text-primary">
+                      Scheduled for{" "}
+                      {new Date(b.scheduled_for).toLocaleString("en-IN", {
+                        timeZone: "Asia/Kolkata",
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </p>
+                  )}
+                  <div className="flex w-full items-center justify-between border-t pt-3">
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(b.created_at).toLocaleDateString("en-IN")} ·{" "}
+                      {Number(b.distance_km).toFixed(1)} km
+                    </span>
+                    <span className="flex items-center gap-2 text-lg font-bold">
+                      ₹{Number(b.final_fare ?? b.fare).toFixed(0)}
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </span>
+                  </div>
                 </Button>
               </article>
             );
           })}
           {list.length > shown && (
-            <Button variant="outline" className="w-full md:col-span-2" onClick={() => setShown((n) => n + 10)}>
+            <Button
+              variant="outline"
+              className="w-full md:col-span-2"
+              onClick={() => setShown((n) => n + 10)}
+            >
               Show older rides ({list.length - shown} more)
             </Button>
           )}
@@ -242,14 +282,45 @@ function OrdersPage() {
         booking={all.find((o) => o.id === detail) ?? null}
         onClose={() => setDetail(null)}
         actions={(() => {
-          const b = all.find(o => o.id === detail);
+          const b = all.find((o) => o.id === detail);
           if (!b) return null;
-          return <div className="flex flex-wrap gap-2">
-            {["pending", "scheduled", "accepted", "in_progress"].includes(b.status) && <Button asChild><Link to="/searching" search={{ bookingId: b.id }}>Track ride <ArrowRight className="h-4 w-4" /></Link></Button>}
-            {b.status === "completed" && <Button size="sm" variant="outline" onClick={() => downloadInvoice(b)}><Download className="h-4 w-4" />Invoice</Button>}
-            {b.status === "completed" && !b.rating && <Button size="sm" onClick={() => { setDetail(null); setRateTarget({ id: b.id, addr: b.drop_address }); }}><Star className="h-4 w-4" />Rate trip</Button>}
-            {["completed", "cancelled", "expired"].includes(b.status) && <Button variant="outline" size="sm" asChild><a href={`/customer?again=${b.id}`}><RotateCcw className="h-4 w-4" />Book again</a></Button>}
-          </div>;
+          return (
+            <div className="flex flex-wrap gap-2">
+              {["pending", "scheduled", "accepted", "in_progress"].includes(b.status) && (
+                <Button asChild>
+                  <Link to="/searching" search={{ bookingId: b.id }}>
+                    Track ride <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              )}
+              {b.status === "completed" && (
+                <Button size="sm" variant="outline" onClick={() => downloadInvoice(b)}>
+                  <Download className="h-4 w-4" />
+                  Invoice
+                </Button>
+              )}
+              {b.status === "completed" && !b.rating && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setDetail(null);
+                    setRateTarget({ id: b.id, addr: b.drop_address });
+                  }}
+                >
+                  <Star className="h-4 w-4" />
+                  Rate trip
+                </Button>
+              )}
+              {["completed", "cancelled", "expired"].includes(b.status) && (
+                <Button variant="outline" size="sm" asChild>
+                  <a href={`/customer?again=${b.id}`}>
+                    <RotateCcw className="h-4 w-4" />
+                    Book again
+                  </a>
+                </Button>
+              )}
+            </div>
+          );
         })()}
       />
 
@@ -261,7 +332,13 @@ function OrdersPage() {
           </DialogHeader>
           <div className="flex justify-center gap-2">
             {[1, 2, 3, 4, 5].map((n) => (
-              <Button key={n} variant="ghost" size="icon" onClick={() => setStars(n)} aria-label={`${n} star`}>
+              <Button
+                key={n}
+                variant="ghost"
+                size="icon"
+                onClick={() => setStars(n)}
+                aria-label={`${n} star`}
+              >
                 <Star
                   className={`h-8 w-8 ${n <= stars ? "fill-warning text-warning" : "text-muted-foreground"}`}
                 />
