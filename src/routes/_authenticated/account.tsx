@@ -94,7 +94,7 @@ function AccountPage() {
         .select("role")
         .eq("user_id", user.id);
       if (error) throw error;
-      return (data ?? []).map((r) => r.role as string);
+      return (data ?? []).map((r: any) => r.role as string);
     },
   });
   const roles: string[] = [...cachedRoles, ...(freshRoles.data ?? [])];
@@ -546,7 +546,7 @@ function AccountPage() {
                 <p className="mt-2 text-sm text-muted-foreground">No wallet payouts yet.</p>
               ) : (
                 <div className="mt-2 divide-y rounded-md border">
-                  {(driverPayouts.data ?? []).map((payout) => (
+                  {(driverPayouts.data ?? []).map((payout: any) => (
                     <div key={payout.id} className="flex items-center justify-between gap-3 p-3">
                       <div>
                         <p className="text-sm font-semibold text-secondary">
@@ -638,7 +638,7 @@ function AccountPage() {
                 </p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {(gstins.data ?? []).map((g) => (
+                  {(gstins.data ?? []).map((g: any) => (
                     <li key={g.id} className="flex items-center gap-3 py-2.5">
                       <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
@@ -702,7 +702,7 @@ function AccountPage() {
                 </p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {(addresses.data ?? []).map((a) => (
+                  {(addresses.data ?? []).map((a: any) => (
                     <li key={a.id} className="flex items-center gap-3 py-2.5">
                       <Home className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
