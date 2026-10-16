@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -54,10 +54,14 @@ import { notifyDriversOfNewBooking } from "@/lib/push.functions";
 import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
 import { computeRoadRoute, createBooking } from "@/lib/routing.functions";
 import { MINIPORT_TEST_MODE } from "@/lib/testing";
+import { repeatBookingLocation } from "@/lib/rebooking";
 
 const ONLINE_METHODS: PaymentMethod[] = ["upi", "card", "netbanking"];
 
 export const Route = createFileRoute("/_authenticated/customer")({
+  validateSearch: (search: Record<string, unknown>): { again?: string } => ({
+    again: typeof search.again === "string" ? search.again : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Book a truck — MiniPort" },
@@ -82,6 +86,8 @@ type Stage = { type: "search" | "confirm"; mode: "pickup" | "drop" } | null;
 function CustomerPage() {
   const { user, role, roles, activeMode, loading, profile } = useAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const { again } = Route.useSearch();
   const [vehicle, setVehicle] = useState<VehicleId>("tata_ace");
   // Vehicles, their fares and their free loading time are managed by the team.
   const catalogue = useVehicleTypes(true);
@@ -117,44 +123,68 @@ function CustomerPage() {
   const [mockWhatsAppOpen, setMockWhatsAppOpen] = useState(false);
   const [mockWhatsAppBusy, setMockWhatsAppBusy] = useState(false);
   const seenTripEvents = useRef(new Map<string, string>());
-  const bookAgainLoaded = useRef(false);
+  const bookAgainLoaded = useRef("");
+  const [prefilling, setPrefilling] = useState(false);
 
-  // Prefill the booking form when a customer taps "Book again" from order history.
   useEffect(() => {
-    if (!user || bookAgainLoaded.current) return;
-    const againId = new URLSearchParams(window.location.search).get("again");
-    if (!againId) return;
-    bookAgainLoaded.current = true;
+    if (!user || !again || bookAgainLoaded.current === again) return;
+    let disposed = false;
+    setPrefilling(true);
     void (async () => {
-      const { data, error } = await supabase
-        .from("bookings")
-        .select(BOOKING_FIELDS)
-        .eq("id", againId)
-        .eq("customer_id", user.id)
-        .maybeSingle();
-      if (error || !data) {
-        toast.error("Could not load that previous ride. Please choose locations again.");
-        return;
+      try {
+        const cached = qc.getQueryData<Array<Record<string, unknown>>>(["orders", user.id]);
+        const cachedRide = cached?.find((ride) => ride.id === again);
+        const { data, error } = cachedRide
+          ? { data: cachedRide, error: null }
+          : await supabase
+              .from("bookings")
+              .select(
+                "pickup_address,drop_address,pickup_lat,pickup_lng,drop_lat,drop_lng,vehicle_type",
+              )
+              .eq("id", again)
+              .eq("customer_id", user.id)
+              .maybeSingle();
+        if (error) throw error;
+        if (!data)
+          throw new Error("Could not load that previous ride. Please choose locations again.");
+        const [previousPickup, previousDrop] = await Promise.all([
+          repeatBookingLocation({
+            address: String(data.pickup_address),
+            latitude: data.pickup_lat == null ? null : Number(data.pickup_lat),
+            longitude: data.pickup_lng == null ? null : Number(data.pickup_lng),
+          }),
+          repeatBookingLocation({
+            address: String(data.drop_address),
+            latitude: data.drop_lat == null ? null : Number(data.drop_lat),
+            longitude: data.drop_lng == null ? null : Number(data.drop_lng),
+          }),
+        ]);
+        if (disposed) return;
+        setPickup(previousPickup);
+        setDrop(previousDrop);
+        setVehicle(String(data.vehicle_type));
+        setStops([]);
+        setScheduledAt("");
+        setPromo(null);
+        setCoins(0);
+        setHelperCount(0);
+        setNotes("");
+        setStep("form");
+        bookAgainLoaded.current = again;
+        toast.success("Previous ride details filled in. Review and book when ready.");
+      } catch (error) {
+        if (!disposed)
+          toast.error(
+            error instanceof Error ? error.message : "Could not load your previous ride.",
+          );
+      } finally {
+        if (!disposed) setPrefilling(false);
       }
-      setPickup({
-        address: data.pickup_address,
-        lat: Number(data.pickup_lat) || FARIDABAD_CENTER.lat,
-        lng: Number(data.pickup_lng) || FARIDABAD_CENTER.lng,
-        placeId: null,
-      });
-      setDrop({
-        address: data.drop_address,
-        lat: Number(data.drop_lat) || FARIDABAD_CENTER.lat,
-        lng: Number(data.drop_lng) || FARIDABAD_CENTER.lng,
-        placeId: null,
-      });
-      const priorVehicle = String(data.vehicle_type ?? "");
-      if (priorVehicle) setVehicle(priorVehicle as VehicleId);
-      setStep("form");
-      window.history.replaceState({}, "", window.location.pathname);
-      toast.success("Previous ride details filled in. Review and book when ready.");
     })();
-  }, [user]);
+    return () => {
+      disposed = true;
+    };
+  }, [user, again, qc]);
 
   // Distance always comes from the Routes API on the server — never a
   // straight-line estimate — because the fare is derived from it.
@@ -168,11 +198,14 @@ function CustomerPage() {
     enabled: !!routePoints,
     staleTime: 60_000,
     retry: 1,
-    queryFn: () => computeRoadRoute({ data: { points: routePoints! } }),
+    queryFn: () => {
+      if (!routePoints) throw new Error("Choose pickup and drop locations");
+      return computeRoadRoute({ data: { points: routePoints } });
+    },
   });
   const distanceKm = routeQuote.data?.distanceKm ?? 0;
   const allVehicles = catalogue.data ?? [];
-  const vehicles = allVehicles.filter((v) => v.active);
+  const vehicles = useMemo(() => (catalogue.data ?? []).filter((v) => v.active), [catalogue.data]);
   const vehicleFor = (id: string): VehicleType | undefined => allVehicles.find((v) => v.id === id);
   const selectedVehicle = vehicles.find((v) => v.id === vehicle);
   const baseFare = selectedVehicle ? fareFor(selectedVehicle, distanceKm) : 0;
@@ -231,10 +264,11 @@ function CustomerPage() {
     queryKey: ["my-bookings", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      if (!user) return [];
       const { data, error } = await supabase
         .from("bookings")
         .select(BOOKING_FIELDS)
-        .eq("customer_id", user!.id)
+        .eq("customer_id", user.id)
         .order("created_at", { ascending: false })
         // This screen only shows recent trips; full history lives on My rides.
         .limit(15);
@@ -248,7 +282,8 @@ function CustomerPage() {
       }
       return data ?? [];
     },
-    refetchInterval: MINIPORT_TEST_MODE ? 3000 : false,
+    staleTime: 10_000,
+    refetchInterval: MINIPORT_TEST_MODE ? 3000 : 30_000,
   });
 
   useEffect(() => {
@@ -409,10 +444,10 @@ function CustomerPage() {
       }
 
       // Ring every online, verified driver. Never let a push failure break booking.
-      try {
-        if (!scheduledAt) await notifyDriversOfNewBooking({ data: { bookingId: booking.id } });
-      } catch {
-        /* alerts are best-effort */
+      if (!scheduledAt) {
+        void notifyDriversOfNewBooking({ data: { bookingId: booking.id } }).catch(() => {
+          /* alerts are best-effort and never delay the ride screen */
+        });
       }
 
       return {
@@ -422,28 +457,10 @@ function CustomerPage() {
       };
     },
     onSuccess: (result) => {
-      if (!scheduledAt) {
-        window.location.href = `/searching?bookingId=${encodeURIComponent(result.bookingId)}`;
-        return;
-      }
-      toast.success(
-        `Booking scheduled for ${new Date(scheduledAt).toLocaleString("en-IN")} — drivers will be alerted 30 minutes before pickup`,
-      );
-      setScheduledAt("");
-      setCargoWeightKg("");
-      setPickup(null);
-      setDrop(null);
-      setStops([]);
-      setNotes("");
-      setPromo(null);
-      setCoins(0);
-      setWalletEnabled(false);
-      setGstinEnabled(false);
-      setGstinId(null);
-      setHelperCount(0);
-      setStep("form");
-      qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
-      qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
+      void qc.invalidateQueries({ queryKey: ["my-bookings", user?.id] });
+      void qc.invalidateQueries({ queryKey: ["orders", user?.id] });
+      void qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
+      void navigate({ to: "/searching", search: { bookingId: result.bookingId } });
     },
     onError: (e: Error) => {
       console.error("[MiniPort] Booking submission failed", e);
@@ -602,7 +619,14 @@ function CustomerPage() {
       <div className="lg:col-span-2">
         <ActiveOrdersCarousel bookings={(bookings.data ?? []) as Array<Record<string, unknown>>} />
       </div>
-      {step === "form" ? (
+      {prefilling ? (
+        <div
+          className="lg:col-span-2 flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground"
+          aria-live="polite"
+        >
+          <Loader2 className="h-5 w-5 animate-spin" /> Filling in your previous ride…
+        </div>
+      ) : step === "form" ? (
         <section className="surface-card p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -837,7 +861,6 @@ function CustomerPage() {
           />
         )
       )}
-
 
       <Dialog
         open={!!cancelTarget}

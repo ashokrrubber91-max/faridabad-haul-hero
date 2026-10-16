@@ -14,3 +14,5 @@
 - Keep customer live ride search/tracking in the dedicated searching route; use the existing owner-scoped booking and live-location data to avoid duplicate booking state.
 - Same-booking vehicle recovery uses the restricted database RPC, never a direct client vehicle/fare update, to preserve financial integrity.
 - Ride-history cards open the shared trip dialog with optional page-owned actions so invoice, rating and tracking workflows remain available.
+- Repeat bookings use validated router search and owner-scoped reads; missing historic coordinates are geocoded instead of replaced with a default pickup pin.
+- Delivery proof is fetched on demand from private storage with short-lived signed URLs, keeping evidence out of initial history requests.
