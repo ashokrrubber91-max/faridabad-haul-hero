@@ -2,11 +2,12 @@
 
 ## Home, repeat booking and proof improvements
 
-- [ ] Keep the top active-rides widget and remove any redundant lower history.
-- [ ] Fast in-app handoff to full-screen searching/tracking after confirmation.
-- [ ] Completed-trip delivery proof with private, short-lived photo access.
-- [ ] Reliable owner-scoped Book Again pickup/drop/vehicle prefill.
-- [ ] Reduce unnecessary history refreshes and verify available workflows.
+- [x] Keep the top active-rides widget and remove redundant lower history.
+- [x] Fast in-app handoff to full-screen searching/tracking after confirmation.
+- [x] Completed-trip delivery proof with private, short-lived photo access.
+- [x] Reliable owner-scoped Book Again pickup/drop/vehicle prefill; existing ride prefill verified signed in.
+- [x] Reduce unnecessary history refreshes, GPS-driven renders and navigation reloads; targeted lint and three regression tests pass, preview builds.
+- [ ] New-booking confirmation and completed-proof photo verification — permission onboarding intermittently blocks browser interaction; no new live ride dispatched during these checks.
 
 ## Dedicated booking and ride history
 
