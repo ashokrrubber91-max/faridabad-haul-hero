@@ -196,7 +196,16 @@ export function useAuth(): AuthState {
           failures = 0;
           notifiedCode = null;
           const now = Date.now();
-          setShare({ state: "live", message: null, lastFixAt: position.timestamp || now });
+          setShare((previous) => {
+            const lastFixAt = position.timestamp || now;
+            if (
+              previous.state === "live" &&
+              !previous.message &&
+              lastFixAt - (previous.lastFixAt ?? 0) < 10_000
+            )
+              return previous;
+            return { state: "live", message: null, lastFixAt };
+          });
           if (now - lastSentAt < 10_000) return;
           lastSentAt = now;
           const { latitude, longitude, accuracy, heading, speed } = position.coords;

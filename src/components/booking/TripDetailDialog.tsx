@@ -261,7 +261,9 @@ export function TripDetailDialog({
             {showProof && (
               <div aria-live="polite">
                 {!b.pod_photo_url ? (
-                  <p className="text-sm text-muted-foreground">No delivery photo was attached to this ride.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No delivery photo was attached to this ride.
+                  </p>
                 ) : proof.isPending ? (
                   <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" /> Loading delivery proof…
@@ -269,10 +271,16 @@ export function TripDetailDialog({
                 ) : proof.isError ? (
                   <div className="space-y-2 text-sm text-muted-foreground">
                     <p>Couldn’t load the delivery photo.</p>
-                    <Button variant="outline" size="sm" onClick={() => void proof.refetch()}>Retry proof</Button>
+                    <Button variant="outline" size="sm" onClick={() => void proof.refetch()}>
+                      Retry proof
+                    </Button>
                   </div>
                 ) : proof.data ? (
-                  <img src={proof.data} alt="Delivery photo attached to this completed MiniPort ride" className="max-h-[50dvh] w-full rounded-md object-contain" />
+                  <img
+                    src={proof.data}
+                    alt="Delivery photo attached to this completed MiniPort ride"
+                    className="max-h-[50dvh] w-full rounded-md object-contain"
+                  />
                 ) : null}
               </div>
             )}

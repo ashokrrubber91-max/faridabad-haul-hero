@@ -66,10 +66,6 @@ function SearchingPage() {
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [recoveredId, setRecoveredId] = useState("");
   const [vehicleChoice, setVehicleChoice] = useState<string | null>(null);
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
   const booking = useQuery({
     queryKey: ["searching-booking", user?.id, bookingId],
     enabled: !!user && !!bookingId,
@@ -84,8 +80,23 @@ function SearchingPage() {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 3000,
+    staleTime: 10_000,
+    refetchInterval: (query) =>
+      query.state.data && ["completed", "cancelled", "expired"].includes(query.state.data.status)
+        ? false
+        : 15_000,
   });
+  useEffect(() => {
+    const createdAt = booking.data?.created_at;
+    if (!createdAt || booking.data?.status !== "pending") return;
+    const delay = Math.max(
+      0,
+      new Date(booking.data?.scheduled_for ?? createdAt).getTime() + 60_000 - Date.now(),
+    );
+    setNow(Date.now());
+    const timer = window.setTimeout(() => setNow(Date.now()), delay);
+    return () => window.clearTimeout(timer);
+  }, [booking.data?.created_at, booking.data?.scheduled_for, booking.data?.status]);
   const userId = user?.id;
   const refetchBooking = booking.refetch;
   useEffect(() => {
