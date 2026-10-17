@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  CreditCard,
   ArrowRight,
   CheckCircle2,
   ChevronRight,
@@ -66,6 +67,7 @@ function SearchingPage() {
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [recoveredId, setRecoveredId] = useState("");
   const [vehicleChoice, setVehicleChoice] = useState<string | null>(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
   const booking = useQuery({
     queryKey: ["searching-booking", user?.id, bookingId],
     enabled: !!user && !!bookingId,
@@ -169,7 +171,34 @@ function SearchingPage() {
     b.payment_method === "cod" &&
     !b.coupon_code &&
     Number(b.coins_redeemed ?? 0) === 0;
-  const busy = boost.isPending || changeVehicle.isPending;
+  const busy = boost.isPending || changeVehicle.isPending || cancelBusy;
+  const cancelRide = async () => {
+    if (!b || !searching || cancelBusy) return;
+    const reason = window.prompt("Why do you want to cancel this booking?", "Changed my plans");
+    if (reason === null) return;
+    if (reason.trim().length < 3) {
+      toast.error("Please enter a cancellation reason (at least 3 characters).");
+      return;
+    }
+    setCancelBusy(true);
+    try {
+      const { error } = await supabase.rpc("cancel_booking", {
+        _booking_id: b.id,
+        _reason: reason.trim(),
+        _note: null,
+      });
+      if (error) throw new Error(error.message);
+      await refresh();
+      setRecoveryOpen(false);
+      toast.success("Booking cancelled.");
+      void qc.invalidateQueries({ queryKey: ["orders"] });
+      void qc.invalidateQueries({ queryKey: ["my-bookings"] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not cancel this booking.");
+    } finally {
+      setCancelBusy(false);
+    }
+  };
   const heading = !b
     ? "Connecting to logistics network…"
     : searching
@@ -274,6 +303,13 @@ function SearchingPage() {
                   ₹{Number(b.final_fare ?? b.fare).toFixed(0)}
                 </p>
               </div>
+              <div className="my-3 flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <CreditCard className="h-4 w-4 text-primary" />
+                  <span className="text-muted-foreground">Payment method</span>
+                </div>
+                <span className="text-sm font-semibold">{b.payment_method === "cod" ? "Cash on delivery" : b.payment_method === "online" ? "Online payment" : String(b.payment_method).replaceAll("_", " ")}</span>
+              </div>
               <div className="space-y-3 text-sm">
                 <p className="flex items-start gap-3">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -368,6 +404,16 @@ function SearchingPage() {
             </Button>
           </DrawerHeader>
           <div className="space-y-5 px-6 pb-4">
+            {b && (
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground">Current payment method</p>
+                <p className="mt-1 font-semibold">{b.payment_method === "cod" ? "Cash on delivery" : b.payment_method === "online" ? "Online payment" : String(b.payment_method).replaceAll("_", " ")}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Payment method changes are available from the booking payment options before checkout.</p>
+              </div>
+            )}
+            <Button variant="destructive" className="w-full" disabled={busy || !searching} onClick={cancelRide}>
+              {cancelBusy ? "Cancelling…" : "Cancel Booking"}
+            </Button>
             <div>
               <h3 className="flex items-center gap-2 text-sm font-semibold">
                 <TrendingUp className="h-4 w-4 text-primary" />
