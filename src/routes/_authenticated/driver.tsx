@@ -196,6 +196,23 @@ function DriverPage() {
         {
           event: "INSERT",
           schema: "public",
+          table: "booking_dispatch_offers",
+          filter: `driver_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const offer = payload.new as { booking_id?: string; expires_at?: string };
+          qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
+          if (offer.booking_id) {
+            toast.info("Ride request for you", { description: "Accept within 20 seconds." });
+            playRideAlert();
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
           table: "bookings",
           filter: "status=eq.pending",
         },
