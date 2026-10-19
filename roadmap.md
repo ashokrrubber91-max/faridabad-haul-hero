@@ -2,9 +2,10 @@
 
 ## Ride controls monitoring review
 
-- [ ] Restore delivery and extra-stop codes, waiting charges and cancellation for active rides on tracking.
+- [x] Restore delivery and extra-stop codes, waiting charges and cancellation for active rides on tracking.
 - [x] Verify cancelled-payment report against live routine — stale; unpaid status is preserved.
-- [ ] Run regression checks and verify tracking controls; authenticated check needs a preview sign-in.
+- [x] Run regression checks — seven tests pass, targeted lint clean, preview build OK.
+- [ ] Verify delivery codes and cancellation on an actual active ride — requesting user has no matching signed-in account.
 
 ## Home, repeat booking and proof improvements
 
