@@ -183,11 +183,12 @@ function SearchingPage() {
       toast.error("Please enter a cancellation reason (at least 3 characters).");
       return;
     }
-    const feeNotice = b.status === "in_progress"
-      ? `The trip has started. A cancellation charge of ₹${Math.round(Number(b.fare) * 0.25)} (25% of the fare) applies.`
-      : b.status === "accepted"
-        ? "Cancellation is free for 5 minutes after acceptance. After that, 10% of the fare (₹25–₹50) applies. The charge is settled from your wallet."
-        : "No driver assigned yet — cancellation is free.";
+    const feeNotice =
+      b.status === "in_progress"
+        ? `The trip has started. A cancellation charge of ₹${Math.round(Number(b.fare) * 0.25)} (25% of the fare) applies.`
+        : b.status === "accepted"
+          ? "Cancellation is free for 5 minutes after acceptance. After that, 10% of the fare (₹25–₹50) applies. The charge is settled from your wallet."
+          : "No driver assigned yet — cancellation is free.";
     if (!window.confirm(`${feeNotice}\n\nCancel this booking?`)) return;
     setCancelBusy(true);
     try {
