@@ -16,3 +16,4 @@
 - Ride-history cards open the shared trip dialog with optional page-owned actions so invoice, rating and tracking workflows remain available.
 - Repeat bookings use validated router search and owner-scoped reads; missing historic coordinates are geocoded instead of replaced with a default pickup pin.
 - Delivery proof is fetched on demand from private storage with short-lived signed URLs, keeping evidence out of initial history requests.
+- Customer delivery/stop codes and cancellation remain accessible on live tracking through the existing restricted RPCs, so removing Home history cannot remove fulfillment controls.
