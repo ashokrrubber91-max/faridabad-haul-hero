@@ -1,5 +1,12 @@
 # MiniPort roadmap
 
+## Ride controls monitoring review
+
+- [x] Restore delivery and extra-stop codes, waiting charges and cancellation for active rides on tracking.
+- [x] Verify cancelled-payment report against live routine — stale; unpaid status is preserved.
+- [x] Run regression checks — seven tests pass, targeted lint clean, preview build OK.
+- [ ] Verify delivery codes and cancellation on an actual active ride — requesting user has no matching signed-in account.
+
 ## Home, repeat booking and proof improvements
 
 - [x] Keep the top active-rides widget and remove redundant lower history.

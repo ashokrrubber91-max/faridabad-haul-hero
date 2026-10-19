@@ -52,10 +52,11 @@ export function ActiveTripCard({
     queryKey: ["active-driver-vehicle", driverId],
     enabled: !!driverId,
     queryFn: async () => {
+      if (!driverId) return null;
       const { data } = await supabase
         .from("driver_kyc")
         .select("vehicle_number")
-        .eq("driver_id", driverId!)
+        .eq("driver_id", driverId)
         .maybeSingle();
       return data?.vehicle_number ?? null;
     },
@@ -73,7 +74,7 @@ export function ActiveTripCard({
   });
 
   const driverName = contact.data?.name ?? (contact.isLoading ? "Captain" : "Assigned driver");
-  const pin = (codes.data ?? "").padStart(4, "0").slice(0, 4);
+  const pin = codes.data ? String(codes.data).padStart(4, "0").slice(0, 4) : null;
   const model = vehicleLabel(vehicleType);
 
   const reportIssue = async (tag: string) => {
