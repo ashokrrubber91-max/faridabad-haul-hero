@@ -406,7 +406,7 @@ function AccountPage() {
               ? "Admin identity, platform controls and sign-out."
               : isDriverProfile
                 ? "Driver profile, vehicle documents and account settings."
-                : "Profile, addresses, GST and invoices."}
+                : "Profile, monthly earnings and account settings."}
           </p>
         </header>
 
@@ -758,18 +758,6 @@ function AccountPage() {
           <section className="surface-card p-5">
             <h2 className="font-display text-xl tracking-wide text-secondary">Account actions</h2>
             <div className="mt-2 space-y-2">
-              <a
-                className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-                href="/privacy.html"
-              >
-                Privacy policy
-              </a>
-              <a
-                className="flex w-full items-center justify-start rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-                href="/terms.html"
-              >
-                Terms of service
-              </a>
               <DeleteAccountCard />
               <Button
                 variant="ghost"
