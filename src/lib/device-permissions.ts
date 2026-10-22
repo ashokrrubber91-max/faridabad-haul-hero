@@ -87,9 +87,11 @@ export async function requestPermission(key: PermissionKey): Promise<PermissionO
       return await new Promise((resolve) =>
         navigator.geolocation.getCurrentPosition(
           () => resolve("granted"),
-          // Timeout/unavailable still means permission was granted.
-          (e) => resolve(e.code === e.PERMISSION_DENIED ? "denied" : "granted"),
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+          // A timeout or unavailable GPS is NOT a successful location permission.
+          // Keep the step retryable so a driver cannot mistakenly finish onboarding
+          // with stale/no location and then appear online without sharing GPS.
+          (e) => resolve(e.code === e.PERMISSION_DENIED ? "denied" : "denied"),
+          { enableHighAccuracy: true, timeout: 25000, maximumAge: 0 },
         ),
       );
     }
