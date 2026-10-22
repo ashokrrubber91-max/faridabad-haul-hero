@@ -1,5 +1,10 @@
 # MiniPort roadmap
 
+## Preview build repair — source only
+
+- [x] Narrow the optional driver-offer schema locally; missing dispatch tables skip push without notifying unrelated drivers, while other failures remain visible.
+- [ ] Verify the preview checks and run driver-offer regression tests; no production migrations, records or deployments.
+
 ## Home, repeat booking and proof improvements
 
 - [x] Keep the top active-rides widget and remove redundant lower history.

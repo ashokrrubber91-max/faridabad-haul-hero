@@ -1,5 +1,44 @@
 /** Server-only push delivery for the currently offered sequential driver. */
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendPushToTokens } from "./push.server";
+
+/** Optional schema supplied by the unapplied sequential-dispatch migration. */
+type DispatchDatabase = {
+  public: {
+    Tables: {
+      booking_dispatch_offers: {
+        Row: { booking_id: string; driver_id: string; status: string; expires_at: string };
+        Insert: { booking_id: string; driver_id: string; status: string; expires_at: string };
+        Update: { booking_id?: string; driver_id?: string; status?: string; expires_at?: string };
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+  };
+};
+
+export async function getOfferedDriverId(
+  client: SupabaseClient<DispatchDatabase>,
+  bookingId: string,
+): Promise<string | null> {
+  const { data: offers, error } = await client
+    .from("booking_dispatch_offers")
+    .select("driver_id")
+    .eq("booking_id", bookingId)
+    .eq("status", "offered")
+    .gt("expires_at", new Date().toISOString())
+    .limit(1);
+
+  if (error) {
+    if (error.code === "42P01" || error.code === "PGRST205") {
+      console.warn("[MiniPort] Driver push skipped: sequential dispatch is not installed.");
+      return null;
+    }
+    throw new Error(error.message);
+  }
+  return offers?.[0]?.driver_id ?? null;
+}
 
 export async function alertDriversAboutBooking(
   bookingId: string,
@@ -18,15 +57,11 @@ export async function alertDriversAboutBooking(
 
   // Sequential dispatch must never notify every online driver. Only push to the
   // driver who currently owns a live offer; expired/declined offers are excluded.
-  const { data: offers, error: offerError } = await supabaseAdmin
-    .from("booking_dispatch_offers")
-    .select("driver_id")
-    .eq("booking_id", bookingId)
-    .eq("status", "offered")
-    .gt("expires_at", new Date().toISOString())
-    .limit(1);
-  if (offerError) throw new Error(offerError.message);
-  const driverId = offers?.[0]?.driver_id;
+  // Keep the optional table's schema local; generated live-database types stay unchanged.
+  const driverId = await getOfferedDriverId(
+    supabaseAdmin as unknown as SupabaseClient<DispatchDatabase>,
+    bookingId,
+  );
   if (!driverId) return { sent: 0, failed: 0 };
 
   const { data: tokenRows, error: tokenError } = await supabaseAdmin
