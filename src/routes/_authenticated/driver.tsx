@@ -103,12 +103,18 @@ function DriverPage() {
       if (next && !kycApproved && role !== "admin") {
         throw new Error("Driver verification must be approved before going online.");
       }
-      const { error } = await supabase
-        .from("profiles")
-        .update({ is_online: next })
-        .eq("id", user!.id);
-      if (error) throw error;
-      return next;
+      const protectedClient = supabase as unknown as {
+        rpc: (
+          fn: "set_driver_online",
+          args: { _is_online: boolean },
+        ) => Promise<{ data: boolean | null; error: { message: string } | null }>;
+      };
+      const { data, error } = await protectedClient.rpc("set_driver_online", {
+        _is_online: next,
+      });
+      if (error) throw new Error(error.message);
+      if (data !== next) throw new Error("Could not confirm driver online status.");
+      return data;
     },
     onSuccess: (next) => toast.success(next ? "You're online — receiving jobs" : "You're offline"),
     onError: (e: Error) => toast.error(e.message),
