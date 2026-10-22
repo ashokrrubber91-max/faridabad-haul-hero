@@ -123,7 +123,7 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
 
         const { data: record } = await supabaseAdmin
           .from("payments")
-          .select("id, booking_id, customer_id, amount, currency, state")
+          .select("id, booking_id, customer_id, amount, currency, state, method")
           .eq("provider_order_id", payment.order_id)
           .maybeSingle();
         if (!record) return json({ ok: true });
@@ -147,7 +147,45 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
             return json({ ok: true });
           }
 
-          if (record.state !== "paid") {
+          // Wallet top-ups must use the same atomic, idempotent settlement
+          // routine as checkout confirmation. Never mark a top-up paid first:
+          // confirmation would then mistake it for an already-credited payment.
+          if (record.method === "wallet_topup") {
+            const { data: credit, error: creditError } = await (
+              supabaseAdmin as unknown as {
+                rpc: (fn: "credit_driver_wallet_topup", args: {
+                  _payment_id: string;
+                  _driver_id: string;
+                  _amount: number;
+                  _provider_payment_id: string;
+                }) => Promise<{ data: unknown; error: { code?: string; message: string } | null }>;
+              }
+            ).rpc("credit_driver_wallet_topup", {
+              _payment_id: record.id,
+              _driver_id: record.customer_id,
+              _amount: Number(record.amount),
+              _provider_payment_id: payment.id ?? "",
+            });
+            if (creditError) {
+              // Let Razorpay retry if settlement failed; the event is not
+              // considered processed until the wallet transaction commits.
+              await supabaseAdmin
+                .from("webhook_events")
+                .delete()
+                .eq("provider", "razorpay")
+                .eq("event_id", eventId);
+              return json({ ok: false, error: "wallet_settlement_failed", message: creditError.message }, 500);
+            }
+            const result = credit as { ok?: boolean } | null;
+            if (!result?.ok) {
+              await supabaseAdmin
+                .from("webhook_events")
+                .delete()
+                .eq("provider", "razorpay")
+                .eq("event_id", eventId);
+              return json({ ok: false, error: "wallet_settlement_failed" }, 500);
+            }
+          } else if (record.state !== "paid") {
             await supabaseAdmin
               .from("payments")
               .update({
