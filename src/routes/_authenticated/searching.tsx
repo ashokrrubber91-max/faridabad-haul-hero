@@ -119,9 +119,10 @@ function SearchingPage() {
     onError: (e: Error) => toast.error(e.message),
   });
   const canChange = searching && b?.payment_status === "pending" && b.payment_method === "cod" && !b.coupon_code && Number(b.coins_redeemed ?? 0) === 0;
+  const canCancelRide = !!b && ["pending", "accepted", "in_progress"].includes(b.status) && !b.cancelled_at;
   const busy = boost.isPending || changeVehicle.isPending || cancelBusy;
   const cancelRide = async () => {
-    if (!b || !searching || cancelBusy) return;
+    if (!b || !canCancelRide || cancelBusy) return;
     const reason = window.prompt("Why do you want to cancel this booking?", "Changed my plans");
     if (reason === null) return;
     if (reason.trim().length < 3) { toast.error("Please enter a cancellation reason (at least 3 characters)."); return; }
@@ -163,7 +164,7 @@ function SearchingPage() {
             {b.scheduled_for && <Badge variant="outline" className="mt-3 whitespace-normal"><Clock className="mr-1 h-3 w-3" /> Scheduled for {new Date(b.scheduled_for).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}</Badge>}
             {tracking && <ActiveTripCard bookingId={b.id} driverId={b.driver_id} vehicleType={b.vehicle_type} status={b.status === "accepted" ? "accepted" : "in_progress"} />}
             {tracking && <TripSafetyActions bookingId={b.id} pickupAddress={b.pickup_address} dropAddress={b.drop_address} phase={b.status === "accepted" ? "accepted" : "in_progress"} eta={null} />}
-            {searching ? <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">{elapsed < 60 ? "Checking available captains near your pickup" : "Still searching for an available captain"}</p><div className="flex gap-2"><Button variant="destructive" size="sm" disabled={busy} onClick={cancelRide}>{cancelBusy ? "Cancelling…" : "Cancel Booking"}</Button><Button variant="secondary" size="sm" onClick={() => setRecoveryOpen(true)}>Ride options <ChevronRight className="h-4 w-4" /></Button></div></div> : <Button variant="outline" className="mt-5 w-full" onClick={() => navigate({ to: "/orders" })}>View ride details <ArrowRight className="h-4 w-4" /></Button>}
+            {searching ? <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">{elapsed < 60 ? "Checking available captains near your pickup" : "Still searching for an available captain"}</p><div className="flex gap-2"><Button variant="destructive" size="sm" disabled={busy || !canCancelRide} onClick={cancelRide}>{cancelBusy ? "Cancelling…" : "Cancel Booking"}</Button><Button variant="secondary" size="sm" onClick={() => setRecoveryOpen(true)}>Ride options <ChevronRight className="h-4 w-4" /></Button></div></div> : <div className="mt-5 flex flex-col gap-2 sm:flex-row"><Button variant="outline" className="flex-1" onClick={() => navigate({ to: "/orders" })}>View ride details <ArrowRight className="h-4 w-4" /></Button>{tracking && canCancelRide && <Button variant="destructive" className="flex-1" disabled={busy} onClick={cancelRide}>{cancelBusy ? "Cancelling…" : "Cancel active ride"}</Button>}</div>}
           </> : <div className="py-6 text-sm text-muted-foreground">{bookingId ? "Loading your pickup and trip details…" : "Choose a ride from My Rides to track it."}</div>}
         </div>
       </section>
