@@ -61,7 +61,10 @@ export function computeTataAceSharedWaiting(
   const totalOvertime = Math.max(0, totalElapsed - TATA_ACE_TOTAL_FREE_MINUTES);
   // Attribute overtime first to loading beyond its 70-minute base; remaining
   // overtime is attributed to unloading, while the total charge stays shared.
-  const loadingOvertime = Math.min(totalOvertime, Math.max(0, loading - TATA_ACE_LOADING_FREE_MINUTES));
+  const loadingOvertime = Math.min(
+    totalOvertime,
+    Math.max(0, loading - TATA_ACE_LOADING_FREE_MINUTES),
+  );
   const unloadingOvertime = totalOvertime - loadingOvertime;
   return {
     loadingMinutes: loading,
