@@ -1,11 +1,10 @@
 # MiniPort roadmap
 
-## Ride controls monitoring review
+## Preview build repair — source only
 
-- [x] Restore delivery and extra-stop codes, waiting charges and cancellation for active rides on tracking.
-- [x] Verify cancelled-payment report against live routine — stale; unpaid status is preserved.
-- [x] Run regression checks — seven tests pass, targeted lint clean, preview build OK.
-- [ ] Verify delivery codes and cancellation on an actual active ride — requesting user has no matching signed-in account.
+- [x] Narrow the optional driver-offer schema locally; missing dispatch tables skip push without notifying unrelated drivers, while other failures remain visible.
+- [x] Preview harness reported build OK at 2026-10-22 08:22:34 UTC; 8 regression tests passed across driver offers and rebooking. No production migrations, records or deployments.
+- Remaining pilot issues are not certified by this build fix; live dispatch remains blocked by the unapplied dispatch schema, and authenticated push delivery was not exercised.
 
 ## Home, repeat booking and proof improvements
 
