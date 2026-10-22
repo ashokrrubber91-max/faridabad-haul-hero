@@ -5,12 +5,14 @@ This request covers ~25 subsystems. Shipping it in one turn would break more tha
 ## Phase 2 (next turn) — Navigation shells + Orders + Wallet + Account
 
 **Customer: persistent 4-tab bottom nav**
+
 - `Home` — "Book Now" / "Drive with MiniPort" cards + the booking form.
 - `Orders` — full history (2-year window), status pills, driver name + vehicle number, "Book Again", invoice download link.
 - `Wallet` — coins balance, reward ledger, cashback lines, full transaction history, "Add money" and "Transfer to bank" entry points (payment rails wired in Phase 4).
 - `Account` — name/email, saved addresses, multiple GSTINs with a default flag, support access, monthly bulk invoice download.
 
 **Driver: 3-screen nav**
+
 - `Home` (request queue) · `My Rides` · `Profile`.
 - Active/accepted ride moves to its own dedicated screen.
 - Profile: vehicle details, document photos (RC, Insurance, number plate, DL, PUC), net monthly earnings after commission, bank account details for withdrawals + QR.

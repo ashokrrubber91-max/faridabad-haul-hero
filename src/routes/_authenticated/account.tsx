@@ -470,7 +470,10 @@ function AccountPage() {
             </div>
 
             <div className="mt-4 flex items-center gap-3">
-              <label htmlFor="month-filter" className="text-xs text-muted-foreground whitespace-nowrap">
+              <label
+                htmlFor="month-filter"
+                className="text-xs text-muted-foreground whitespace-nowrap"
+              >
                 Filter by month:
               </label>
               <Select value={selectedMonth} onValueChange={setSelectedMonth}>
