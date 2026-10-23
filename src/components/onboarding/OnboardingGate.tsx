@@ -128,11 +128,25 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
       .eq("id", userId);
 
     if (error) {
-      toast.error("Onboarding saved on this device, but account sync failed. Please try again.");
-      return;
+      // The update may have committed even if the client lost its response.
+      // Verify the persisted account flag before showing a sync failure.
+      const verify = async () =>
+        supabase.from("profiles").select("onboarding_completed").eq("id", userId).maybeSingle();
+      let check = await verify();
+      if (check.error || check.data?.onboarding_completed !== true) {
+        // Retry once; this is an idempotent profile flag update and touches no trip data.
+        await supabase.from("profiles").update({ onboarding_completed: true }).eq("id", userId);
+        check = await verify();
+      }
+      if (check.data?.onboarding_completed !== true) {
+        toast.error("Onboarding is saved on this device. Account sync will retry when connection returns.");
+        void qc.invalidateQueries({ queryKey: ["onboarding-profile", userId] });
+        return;
+      }
     }
 
     qc.setQueryData(["onboarding-profile", userId], true);
+    void qc.invalidateQueries({ queryKey: ["onboarding-profile", userId] });
   };
 
   return (
