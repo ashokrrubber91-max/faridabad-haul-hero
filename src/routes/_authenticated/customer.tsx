@@ -1155,7 +1155,10 @@ function ActiveOrdersCarousel({ bookings }: { bookings: Array<Record<string, unk
 function sanitizeDriverNotes(value: string): string {
   return value
     .replace(/https?:\/\/\S+/gi, "")
-    .replace(/\b(?:access_token|refresh_token|session|token|code_verifier|state)\s*[=:]\s*[^\s&]+/gi, "")
+    .replace(
+      /\b(?:access_token|refresh_token|session|token|code_verifier|state)\s*[=:]\s*[^\s&]+/gi,
+      "",
+    )
     .replace(/[?&](?:access_token|refresh_token|session|token|code_verifier|state)=[^\s&]+/gi, "")
     .replace(/\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g, "")
     .replace(/[ \t]{2,}/g, " ")
