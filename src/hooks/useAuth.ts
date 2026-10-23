@@ -196,6 +196,18 @@ export function useAuth(): AuthState {
           failures = 0;
           notifiedCode = null;
           const now = Date.now();
+          try {
+            window.localStorage.setItem(
+              `miniport-last-driver-fix:${user.id}`,
+              JSON.stringify({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                at: position.timestamp || now,
+              }),
+            );
+          } catch {
+            // GPS still works if browser storage is unavailable.
+          }
           setShare((previous) => {
             const lastFixAt = position.timestamp || now;
             if (
@@ -247,7 +259,32 @@ export function useAuth(): AuthState {
               : error.code === error.TIMEOUT
                 ? GEO_MESSAGES.timeout
                 : GEO_MESSAGES.unavailable;
-          setShare((s) => ({ ...s, state: "error", message }));
+          let lastKnownAt: number | null = null;
+          try {
+            const raw = window.localStorage.getItem(`miniport-last-driver-fix:${user.id}`);
+            if (raw) {
+              const cached = JSON.parse(raw) as { lat?: number; lng?: number; at?: number };
+              if (
+                Number.isFinite(cached.lat) &&
+                Number.isFinite(cached.lng) &&
+                Number.isFinite(cached.at)
+              ) {
+                lastKnownAt = cached.at!;
+              }
+            }
+          } catch {
+            // A missing cache must not prevent GPS retry.
+          }
+          const displayMessage =
+            error.code === error.TIMEOUT && lastKnownAt !== null
+              ? "GPS is taking longer than usual. Last saved location is available while we retry; keep GPS on for live dispatch."
+              : message;
+          setShare((s) => ({
+            ...s,
+            state: "error",
+            message: displayMessage,
+            lastFixAt: lastKnownAt ?? s.lastFixAt,
+          }));
           if (notifiedCode !== error.code) {
             notifiedCode = error.code;
             toast.error(message);
@@ -259,7 +296,7 @@ export function useAuth(): AuthState {
           const delay = Math.min(60_000, 5_000 * 2 ** (failures - 1));
           retryTimer = setTimeout(start, delay);
         },
-        { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 },
+        { enableHighAccuracy: true, maximumAge: 15000, timeout: 60000 },
       );
     };
 
