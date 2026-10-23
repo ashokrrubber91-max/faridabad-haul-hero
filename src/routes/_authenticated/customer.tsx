@@ -749,7 +749,7 @@ function CustomerPage() {
                 rows={2}
                 placeholder="2 mattresses + 1 sofa"
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={(e) => setNotes(sanitizeDriverNotes(e.target.value))}
                 maxLength={300}
               />
             </div>
@@ -1090,6 +1090,7 @@ function CustomerStopOtps({ bookingId }: { bookingId: string }) {
 }
 
 function ActiveOrdersCarousel({ bookings }: { bookings: Array<Record<string, unknown>> }) {
+  const navigate = useNavigate();
   const active = bookings.filter((b) =>
     ["pending", "accepted", "in_progress"].includes(String(b.status)),
   );
@@ -1116,9 +1117,12 @@ function ActiveOrdersCarousel({ bookings }: { bookings: Array<Record<string, unk
           const status = String(b.status);
           const stops = Array.isArray(b.stops) ? b.stops : [];
           return (
-            <div
+            <button
               key={String(b.id)}
-              className="min-w-[250px] max-w-[300px] shrink-0 snap-start rounded-xl border bg-background p-3"
+              type="button"
+              onClick={() => void navigate({ to: "/searching" })}
+              aria-label={"Open active trip " + String(b.id)}
+              className="min-w-[250px] max-w-[300px] shrink-0 snap-start rounded-xl border bg-background p-3 text-left transition-colors hover:border-primary/50 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -1140,12 +1144,22 @@ function ActiveOrdersCarousel({ bookings }: { bookings: Array<Record<string, unk
                   {stops.length * 50}
                 </p>
               )}
-            </div>
+            </button>
           );
         })}
       </div>
     </section>
   );
+}
+
+function sanitizeDriverNotes(value: string): string {
+  return value
+    .replace(/https?:\/\/\S+/gi, "")
+    .replace(/\b(?:access_token|refresh_token|session|token|code_verifier|state)\s*[=:]\s*[^\s&]+/gi, "")
+    .replace(/[?&](?:access_token|refresh_token|session|token|code_verifier|state)=[^\s&]+/gi, "")
+    .replace(/\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .trimStart();
 }
 
 function LocationRow({
