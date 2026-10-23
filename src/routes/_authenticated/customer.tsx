@@ -1120,7 +1120,7 @@ function ActiveOrdersCarousel({ bookings }: { bookings: Array<Record<string, unk
             <button
               key={String(b.id)}
               type="button"
-              onClick={() => void navigate({ to: "/searching" })}
+              onClick={() => void navigate({ to: "/orders" })}
               aria-label={"Open active trip " + String(b.id)}
               className="min-w-[250px] max-w-[300px] shrink-0 snap-start rounded-xl border bg-background p-3 text-left transition-colors hover:border-primary/50 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
