@@ -139,7 +139,9 @@ export function OnboardingGate({ userId, isDriver }: { userId: string; isDriver:
         check = await verify();
       }
       if (check.data?.onboarding_completed !== true) {
-        toast.error("Onboarding is saved on this device. Account sync will retry when connection returns.");
+        toast.error(
+          "Onboarding is saved on this device. Account sync will retry when connection returns.",
+        );
         void qc.invalidateQueries({ queryKey: ["onboarding-profile", userId] });
         return;
       }

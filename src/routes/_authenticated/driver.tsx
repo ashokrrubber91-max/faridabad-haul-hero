@@ -122,11 +122,18 @@ function DriverPage() {
         if (next) {
           const [{ data: kycRows, error: kycError }, { data: profileRow, error: profileError }] =
             await Promise.all([
-              supabase.from("driver_kyc").select("status").eq("driver_id", user!.id).order("updated_at", { ascending: false }).limit(1),
+              supabase
+                .from("driver_kyc")
+                .select("status")
+                .eq("driver_id", user!.id)
+                .order("updated_at", { ascending: false })
+                .limit(1),
               supabase.from("profiles").select("kyc_status").eq("id", user!.id).maybeSingle(),
             ]);
           if (kycError || profileError) {
-            throw new Error(kycError?.message ?? profileError?.message ?? "Could not verify driver status.");
+            throw new Error(
+              kycError?.message ?? profileError?.message ?? "Could not verify driver status.",
+            );
           }
           if (kycRows?.[0]?.status !== "approved" || profileRow?.kyc_status !== "approved") {
             throw new Error("Driver verification must be approved before going online.");
