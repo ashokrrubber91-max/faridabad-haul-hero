@@ -112,9 +112,36 @@ function DriverPage() {
       const { data, error } = await protectedClient.rpc("set_driver_online", {
         _is_online: next,
       });
-      if (error) throw new Error(error.message);
-      if (data !== next) throw new Error("Could not confirm driver online status.");
-      return data;
+      if (!error && data === next) return data;
+      // Compatibility fallback for a temporarily stale PostgREST schema cache.
+      // Never allow online state unless both the KYC row and profile mirror are approved.
+      const schemaCacheError =
+        !!error &&
+        /set_driver_online|schema cache|PGRST202|could not find the function/i.test(error.message);
+      if (schemaCacheError) {
+        if (next) {
+          const [{ data: kycRows, error: kycError }, { data: profileRow, error: profileError }] =
+            await Promise.all([
+              supabase.from("driver_kyc").select("status").eq("driver_id", user!.id).order("updated_at", { ascending: false }).limit(1),
+              supabase.from("profiles").select("kyc_status").eq("id", user!.id).maybeSingle(),
+            ]);
+          if (kycError || profileError) {
+            throw new Error(kycError?.message ?? profileError?.message ?? "Could not verify driver status.");
+          }
+          if (kycRows?.[0]?.status !== "approved" || profileRow?.kyc_status !== "approved") {
+            throw new Error("Driver verification must be approved before going online.");
+          }
+        }
+        const { data: updatedProfile, error: fallbackError } = await supabase
+          .from("profiles")
+          .update({ is_online: next })
+          .eq("id", user!.id)
+          .select("is_online")
+          .maybeSingle();
+        if (fallbackError) throw new Error(fallbackError.message);
+        if (updatedProfile?.is_online === next) return next;
+      }
+      throw new Error(error?.message ?? "Could not confirm driver online status.");
     },
     onSuccess: (next) => toast.success(next ? "You're online — receiving jobs" : "You're offline"),
     onError: (e: Error) => toast.error(e.message),
