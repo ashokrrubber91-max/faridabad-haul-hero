@@ -54,7 +54,7 @@ export function CheckoutExtras({
   });
 
   const balance = wallet.data ?? 0;
-  const maxCoins = Math.min(balance, Math.floor(fare * 0.5));
+  const maxCoins = Math.min(balance, Math.max(0, Math.floor(fare)));
 
   const applyPromo = async () => {
     if (!code.trim()) return;
@@ -145,7 +145,7 @@ export function CheckoutExtras({
               />
             </div>
             <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-              <span>Enter any amount up to {maxCoins} coins (50% of fare)</span>
+              <span>1 coin = ₹1 · Redeem up to the full fare</span>
               <span className="font-semibold text-success">−₹{coins}</span>
             </div>
           </>
