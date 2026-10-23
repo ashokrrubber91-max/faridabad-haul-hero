@@ -47,7 +47,7 @@ export async function readPermissionState(): Promise<"granted" | "prompt" | "den
  * animation in flight, otherwise mobile browsers refuse to show the prompt.
  */
 export async function getCurrentFix(
-  options: PositionOptions = { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
+  options: PositionOptions = { enableHighAccuracy: true, timeout: 60000, maximumAge: 60000 },
 ): Promise<GeoFix> {
   if (!isGeolocationSupported()) throw failure("unsupported");
   if (
