@@ -67,13 +67,17 @@ export function ActiveTripCard({
       const { data, error } = await supabase.rpc("get_booking_otps", { _booking_id: bookingId });
       if (error) throw error;
       const row = (data ?? [])[0];
-      return row?.pickup_otp ? String(row.pickup_otp) : null;
+      return {
+        pickup: row?.pickup_otp ? String(row.pickup_otp) : null,
+        drop: row?.drop_otp ? String(row.drop_otp) : null,
+      };
     },
     staleTime: 30_000,
   });
 
   const driverName = contact.data?.name ?? (contact.isLoading ? "Captain" : "Assigned driver");
-  const pin = (codes.data ?? "").padStart(4, "0").slice(0, 4);
+  const pin = codes.data?.pickup ? codes.data.pickup.padStart(4, "0").slice(0, 4) : null;
+  const dropCode = codes.data?.drop ?? null;
   const model = vehicleLabel(vehicleType);
 
   const reportIssue = async (tag: string) => {
@@ -124,6 +128,16 @@ export function ActiveTripCard({
                 </span>
               ))}
             </div>
+          </div>
+        )}
+
+        {dropCode && (
+          <div className="mt-3 rounded-xl border-2 border-success/30 bg-success/5 p-3 text-center">
+            <p className="text-xs font-semibold text-secondary">Delivery code</p>
+            <p className="mt-1 font-display text-2xl tracking-[0.3em] text-success">{dropCode}</p>
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              Share with the receiver — the driver needs it to finish delivery.
+            </p>
           </div>
         )}
 
