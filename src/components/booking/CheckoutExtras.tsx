@@ -54,7 +54,7 @@ export function CheckoutExtras({
   });
 
   const balance = wallet.data ?? 0;
-  const maxCoins = Math.min(balance, Math.max(0, Math.floor(fare)));
+  const maxCoins = Math.min(balance, Math.max(0, Math.floor(fare - (promo?.discount ?? 0))));
 
   const applyPromo = async () => {
     if (!code.trim()) return;
