@@ -1,5 +1,13 @@
 # MiniPort roadmap
 
+## Booking enhancements — preview/source only (24 October 2026)
+
+- [ ] Capacity-safe part-load matching, discounting and pooled driver/tracking flow — discount policy needs confirmation; any database-dependent work must stay unapplied to production.
+- [ ] Interactive Offers & Coins sheet with actual eligible promos, balance and custom ₹1-per-coin redemption.
+- [ ] Driver notes: speech-to-text, private goods photos and short audio instructions; remove garbled auto-filled content without stripping legitimate notes.
+- [ ] Confirm the remainder of the request: feature 3 cuts off mid-sentence and feature 4 is missing.
+- [ ] Verify changed flows and regression tests; record exact preview diagnostics and any isolated-test-backend blockers.
+
 ## Preview build repair — source only
 
 - [x] Narrow the optional driver-offer schema locally; missing dispatch tables skip push without notifying unrelated drivers, while other failures remain visible.
