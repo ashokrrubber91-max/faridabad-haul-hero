@@ -32,7 +32,13 @@ export function CheckoutExtras({
 }) {
   return (
     <div className="space-y-4">
-      <OffersCoins fare={fare} promo={promo} setPromo={setPromo} coins={coins} setCoins={setCoins} />
+      <OffersCoins
+        fare={fare}
+        promo={promo}
+        setPromo={setPromo}
+        coins={coins}
+        setCoins={setCoins}
+      />
 
       {/* Payment method */}
       <div>

@@ -101,7 +101,12 @@ function CustomerPage() {
   const [attachments, setAttachments] = useState<NoteAttachment[]>([]);
   const attachmentRef = useRef(attachments);
   attachmentRef.current = attachments;
-  useEffect(() => () => { attachmentRef.current.forEach((attachment) => URL.revokeObjectURL(attachment.url)); }, []);
+  useEffect(
+    () => () => {
+      attachmentRef.current.forEach((attachment) => URL.revokeObjectURL(attachment.url));
+    },
+    [],
+  );
   const [stage, setStage] = useState<Stage>(null);
   const [pending, setPending] = useState<PlacePick | null>(null);
   const [locatingMode, setLocatingMode] = useState<"pickup" | "drop" | null>(null);
@@ -233,7 +238,12 @@ function CustomerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalogue.data]);
   const walletBalanceQuery = useWalletBalances();
-  const redeemedCoins = coinsToRedeem(coins, walletBalanceQuery.data?.coins ?? 0, grossFare, promo?.discount ?? 0);
+  const redeemedCoins = coinsToRedeem(
+    coins,
+    walletBalanceQuery.data?.coins ?? 0,
+    grossFare,
+    promo?.discount ?? 0,
+  );
   const discount = bookingDiscount(grossFare, promo?.discount ?? 0, redeemedCoins);
   const fare = Math.max(0, grossFare - discount);
 
@@ -346,7 +356,10 @@ function CustomerPage() {
     mutationFn: async () => {
       if (!pickup) throw new Error("Choose pickup location");
       if (!drop) throw new Error("Choose drop location");
-      if (attachments.length > 0) throw new Error("Private attachment uploads are not available in this testing setup. Remove the drafts before booking; your text notes will still be included.");
+      if (attachments.length > 0)
+        throw new Error(
+          "Private attachment uploads are not available in this testing setup. Remove the drafts before booking; your text notes will still be included.",
+        );
       if (distanceKm <= 0) throw new Error("Road distance is still being calculated");
       if (scheduledAt) {
         const pickupMs = new Date(scheduledAt).getTime();
@@ -731,18 +744,49 @@ function CustomerPage() {
                 helperCount={helperCount}
                 onHelperCountChange={setHelperCount}
                 coins={walletBalanceQuery.data?.coins ?? 0}
-                maxCoins={coinsToRedeem(Number.MAX_SAFE_INTEGER, walletBalanceQuery.data?.coins ?? 0, grossFare, promo?.discount ?? 0)}
+                maxCoins={coinsToRedeem(
+                  Number.MAX_SAFE_INTEGER,
+                  walletBalanceQuery.data?.coins ?? 0,
+                  grossFare,
+                  promo?.discount ?? 0,
+                )}
                 coinValue={walletBalanceQuery.data?.coins ?? 0}
                 useCoins={redeemedCoins > 0}
                 onUseCoinsChange={(enabled) => {
-                  setCoins(enabled ? coinsToRedeem(Number.MAX_SAFE_INTEGER, walletBalanceQuery.data?.coins ?? 0, grossFare, promo?.discount ?? 0) : 0);
+                  setCoins(
+                    enabled
+                      ? coinsToRedeem(
+                          Number.MAX_SAFE_INTEGER,
+                          walletBalanceQuery.data?.coins ?? 0,
+                          grossFare,
+                          promo?.discount ?? 0,
+                        )
+                      : 0,
+                  );
                 }}
               />
             )}
 
-            <PartLoadOption weight={cargoWeightKg} onWeightChange={setCargoWeightKg} capacity={Number(selectedVehicle?.payload_kg ?? selectedVehicle?.weight_limit_kg ?? 0)} standardFare={baseFare} />
-            <DriverNotes value={notes} onChange={setNotes} attachments={attachments} onAttachmentsChange={setAttachments} />
-            {attachments.length > 0 && <p role="status" className="text-xs text-warning">Photos and recordings are draft previews only; private uploads are not yet available for this testing setup.</p>}
+            <PartLoadOption
+              weight={cargoWeightKg}
+              onWeightChange={setCargoWeightKg}
+              capacity={Number(
+                selectedVehicle?.payload_kg ?? selectedVehicle?.weight_limit_kg ?? 0,
+              )}
+              standardFare={baseFare}
+            />
+            <DriverNotes
+              value={notes}
+              onChange={setNotes}
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
+            />
+            {attachments.length > 0 && (
+              <p role="status" className="text-xs text-warning">
+                Photos and recordings are draft previews only; private uploads are not yet available
+                for this testing setup.
+              </p>
+            )}
 
             <GstinSelect
               enabled={gstinEnabled}

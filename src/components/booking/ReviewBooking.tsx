@@ -185,7 +185,27 @@ export function ReviewBooking({
             <p className="mt-1 text-sm text-secondary">{notes}</p>
           </div>
         )}
-        {attachments.length > 0 && <div className="space-y-2 border-y py-3"><p className="text-sm font-semibold">Driver note attachments</p>{attachments.map((attachment) => attachment.kind === "photo" ? <img key={attachment.id} src={attachment.url} alt="Goods photo draft" className="max-h-48 w-full rounded-md object-contain" /> : <audio key={attachment.id} controls src={attachment.url} className="w-full" />)}<p className="text-xs text-warning">Attachments are draft previews only. Private upload is not available in this testing setup; remove drafts before booking.</p></div>}
+        {attachments.length > 0 && (
+          <div className="space-y-2 border-y py-3">
+            <p className="text-sm font-semibold">Driver note attachments</p>
+            {attachments.map((attachment) =>
+              attachment.kind === "photo" ? (
+                <img
+                  key={attachment.id}
+                  src={attachment.url}
+                  alt="Goods photo draft"
+                  className="max-h-48 w-full rounded-md object-contain"
+                />
+              ) : (
+                <audio key={attachment.id} controls src={attachment.url} className="w-full" />
+              ),
+            )}
+            <p className="text-xs text-warning">
+              Attachments are draft previews only. Private upload is not available in this testing
+              setup; remove drafts before booking.
+            </p>
+          </div>
+        )}
 
         {gstin && (
           <div className="rounded-md border p-3">
@@ -364,7 +384,11 @@ export function ReviewBooking({
         >
           <MessageCircle className="h-4 w-4" /> Book via WhatsApp
         </Button>
-        <Button onClick={onConfirm} disabled={submitting || attachments.length > 0} className="h-11 w-full">
+        <Button
+          onClick={onConfirm}
+          disabled={submitting || attachments.length > 0}
+          className="h-11 w-full"
+        >
           {submitting
             ? "Booking…"
             : "Confirm & book · ₹" +
