@@ -70,7 +70,14 @@ import { RouteErrorFallback } from "@/components/RouteErrorFallback";
 import { AccountManagementTab } from "@/components/admin/AccountManagementTab";
 
 export const Route = createFileRoute("/admin")({
-  head: () => ({ meta: [{ title: "Admin — MiniPort" }] }),
+  head: () => ({ meta: [
+    { title: "Admin — MiniPort" },
+    { name: "description", content: "MiniPort operations for bookings, drivers, support and payouts." },
+    { property: "og:title", content: "Admin — MiniPort" },
+    { property: "og:description", content: "Manage Faridabad bookings, driver verification and MiniPort operations." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: AdminGate,
   errorComponent: RouteErrorFallback,
 });
