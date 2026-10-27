@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { sanitizeDriverNotes } from "@/lib/driver-notes";
 
 const point = z.object({
   lat: z.number().min(-90).max(90),
@@ -149,7 +150,7 @@ export const createBooking = createServerFn({ method: "POST" })
         status: scheduledAt ? "scheduled" : "pending",
         scheduled_for: scheduledAt?.toISOString() ?? null,
         cargo_weight_kg: cargoWeightKg,
-        notes: data.notes,
+        notes: data.notes ? sanitizeDriverNotes(data.notes).trim() || null : null,
       })
       .select("id, fare, distance_km, status, scheduled_for")
       .single();

@@ -1,13 +1,7 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { Tag, Coins, CreditCard, Loader2, X } from "lucide-react";
+import { CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { OffersCoins } from "@/components/booking/OffersCoins";
 
 export type PaymentMethod = "cod" | "wallet" | "upi" | "card" | "netbanking";
 
@@ -36,127 +30,9 @@ export function CheckoutExtras({
   method: PaymentMethod;
   setMethod: (m: PaymentMethod) => void;
 }) {
-  const { user } = useAuth();
-  const [code, setCode] = useState("");
-  const [checking, setChecking] = useState(false);
-
-  const wallet = useQuery({
-    queryKey: ["wallet", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("wallet_accounts")
-        .select("coins_balance")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      return Number(data?.coins_balance ?? 0);
-    },
-  });
-
-  const balance = wallet.data ?? 0;
-  const maxCoins = Math.min(balance, Math.max(0, Math.floor(fare - (promo?.discount ?? 0))));
-
-  const applyPromo = async () => {
-    if (!code.trim()) return;
-    setChecking(true);
-    const { data, error } = await supabase.rpc("validate_coupon", {
-      _code: code.trim(),
-      _fare: fare,
-    });
-    setChecking(false);
-    if (error) return toast.error(error.message);
-    const row = Array.isArray(data) ? data[0] : data;
-    if (!row || row.message !== "ok") return toast.error(row?.message || "Invalid code");
-    setPromo({ code: row.code, discount: Number(row.discount) });
-    toast.success(`₹${row.discount} off applied`);
-  };
-
   return (
-    <div className="space-y-4 rounded-md border border-border bg-muted/30 p-4">
-      {/* Promo */}
-      <div>
-        <Label className="flex items-center gap-1.5">
-          <Tag className="h-3.5 w-3.5" /> Promo code
-        </Label>
-        {promo ? (
-          <div className="mt-1 flex items-center justify-between rounded-md border border-success bg-success/10 px-3 py-2 text-sm">
-            <span className="font-semibold text-success">
-              {promo.code} · −₹{promo.discount}
-            </span>
-            <button
-              onClick={() => setPromo(null)}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
-          <div className="mt-1 flex gap-2">
-            <Input
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="Try WELCOME50"
-              className="uppercase"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={applyPromo}
-              disabled={checking || !code.trim() || fare <= 0}
-            >
-              {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Coins */}
-      <div>
-        <div className="flex items-center justify-between">
-          <Label className="flex items-center gap-1.5">
-            <Coins className="h-3.5 w-3.5 text-primary" /> Miniport Coins
-          </Label>
-          <span className="text-xs text-muted-foreground">Balance: {balance}</span>
-        </div>
-        {maxCoins > 0 ? (
-          <>
-            <div className="mt-2 flex items-center gap-3">
-              <Slider
-                value={[coins]}
-                min={0}
-                max={maxCoins}
-                step={1}
-                onValueChange={(v) => setCoins(v[0])}
-                className="flex-1"
-              />
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={maxCoins}
-                value={coins === 0 ? "" : coins}
-                placeholder="0"
-                onChange={(e) => {
-                  const raw = Math.floor(Number(e.target.value.replace(/\D/g, "")) || 0);
-                  setCoins(Math.max(0, Math.min(maxCoins, raw)));
-                }}
-                className="w-24 text-right"
-                aria-label="Coins to redeem"
-              />
-            </div>
-            <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-              <span>1 coin = ₹1 · Redeem up to the full fare</span>
-              <span className="font-semibold text-success">−₹{coins}</span>
-            </div>
-          </>
-        ) : (
-          <p className="mt-1 text-xs text-muted-foreground">
-            {balance === 0
-              ? "Complete a trip to earn coins (2% cashback)."
-              : "Enter pickup/drop to redeem coins."}
-          </p>
-        )}
-      </div>
+    <div className="space-y-4">
+      <OffersCoins fare={fare} promo={promo} setPromo={setPromo} coins={coins} setCoins={setCoins} />
 
       {/* Payment method */}
       <div>
@@ -165,18 +41,20 @@ export function CheckoutExtras({
         </Label>
         <div className="mt-1 grid gap-1.5">
           {METHODS.map((m) => (
-            <button
+            <Button
               key={m.id}
               type="button"
               disabled={!m.available}
               onClick={() => setMethod(m.id)}
-              className={`flex items-center justify-between rounded-md border p-2.5 text-left text-sm transition-colors ${
+              variant="outline"
+              aria-pressed={method === m.id}
+              className={`h-auto flex-wrap items-center justify-between gap-1 rounded-md border p-2.5 text-left text-sm transition-colors ${
                 method === m.id ? "border-primary bg-accent" : "border-border"
               } ${!m.available ? "opacity-50 cursor-not-allowed" : "hover:bg-muted"}`}
             >
               <span className="font-medium text-secondary">{m.label}</span>
               <span className="text-xs text-muted-foreground">{m.hint}</span>
-            </button>
+            </Button>
           ))}
         </div>
       </div>

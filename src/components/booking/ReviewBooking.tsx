@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
-  Coins,
   MapPin,
   MessageCircle,
   Package,
@@ -18,6 +17,8 @@ import { vehicleLabel, type VehicleId } from "@/lib/booking";
 import type { PlacePick } from "@/components/booking/LocationSearchOverlay";
 import type { CustomerGstin } from "@/components/booking/GstinSelect";
 import { useVehicleMap, vehicleSpecs } from "@/lib/vehicles";
+import { OffersCoins, type OffersCoinsProps } from "@/components/booking/OffersCoins";
+import type { NoteAttachment } from "@/lib/driver-notes";
 
 export function ReviewBooking({
   pickup,
@@ -47,6 +48,8 @@ export function ReviewBooking({
   walletBalance,
   walletEnabled,
   onWalletEnabledChange,
+  offers,
+  attachments,
 }: {
   pickup: PlacePick;
   drop: PlacePick;
@@ -75,12 +78,14 @@ export function ReviewBooking({
   walletBalance: number;
   walletEnabled: boolean;
   onWalletEnabledChange: (enabled: boolean) => void;
+  offers: OffersCoinsProps;
+  attachments: NoteAttachment[];
 }) {
   const [checklistOpen, setChecklistOpen] = useState(false);
-  const [coinsEnabled, setCoinsEnabled] = useState(discount > 0);
   const [breakupOpen, setBreakupOpen] = useState(false);
   const { map } = useVehicleMap();
-  const specs = map.has(vehicle) ? vehicleSpecs(map.get(vehicle)!) : [];
+  const selectedVehicle = map.get(vehicle);
+  const specs = selectedVehicle ? vehicleSpecs(selectedVehicle) : [];
   const extraStopFee = stops.length * 50;
   const minScheduledAt = new Date(
     Date.now() + 31 * 60_000 - new Date().getTimezoneOffset() * 60_000,
@@ -180,6 +185,7 @@ export function ReviewBooking({
             <p className="mt-1 text-sm text-secondary">{notes}</p>
           </div>
         )}
+        {attachments.length > 0 && <div className="space-y-2 border-y py-3"><p className="text-sm font-semibold">Driver note attachments</p>{attachments.map((attachment) => attachment.kind === "photo" ? <img key={attachment.id} src={attachment.url} alt="Goods photo draft" className="max-h-48 w-full rounded-md object-contain" /> : <audio key={attachment.id} controls src={attachment.url} className="w-full" />)}<p className="text-xs text-warning">Attachments are draft previews only. Private upload is not available in this testing setup; remove drafts before booking.</p></div>}
 
         {gstin && (
           <div className="rounded-md border p-3">
@@ -206,32 +212,7 @@ export function ReviewBooking({
           )}
         </div>
 
-        <div
-          className={
-            "flex items-center justify-between rounded-xl border p-4 " +
-            (coinsEnabled ? "border-primary bg-primary/5" : "")
-          }
-        >
-          <div className="flex items-start gap-2">
-            <Coins className="mt-0.5 h-5 w-5 text-primary" />
-            <div>
-              <p className="text-sm font-bold text-secondary">Offers &amp; Coins</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {discount > 0
-                  ? "Use MiniPort Coins to save ₹" + discount
-                  : "Use MiniPort Coins to save ₹X"}
-              </p>
-            </div>
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            variant={coinsEnabled ? "default" : "outline"}
-            onClick={() => setCoinsEnabled((v) => !v)}
-          >
-            {coinsEnabled ? "ON" : "OFF"}
-          </Button>
-        </div>
+        <OffersCoins {...offers} />
 
         <div className="rounded-xl border p-4">
           <p className="text-sm font-bold text-secondary">Pickup schedule</p>
@@ -346,7 +327,7 @@ export function ReviewBooking({
           {discount > 0 && (
             <div className="flex justify-between text-success">
               <span>Discount / coins</span>
-              <span>− ₹{fare >= baseFare ? discount : 0}</span>
+              <span>− ₹{discount}</span>
             </div>
           )}
           <div className="mt-1 flex justify-between border-t pt-1 font-display text-lg text-secondary">
@@ -383,7 +364,7 @@ export function ReviewBooking({
         >
           <MessageCircle className="h-4 w-4" /> Book via WhatsApp
         </Button>
-        <Button onClick={onConfirm} disabled={submitting} className="h-11 w-full">
+        <Button onClick={onConfirm} disabled={submitting || attachments.length > 0} className="h-11 w-full">
           {submitting
             ? "Booking…"
             : "Confirm & book · ₹" +
@@ -421,9 +402,9 @@ export function ReviewBooking({
                 <span>+ ₹{extraStopFee}</span>
               </div>
             )}
-            {discount > 0 && coinsEnabled && (
+            {discount > 0 && (
               <div className="flex justify-between text-success">
-                <span>MiniPort Coins</span>
+                <span>Offers / MiniPort Coins</span>
                 <span>− ₹{discount}</span>
               </div>
             )}
