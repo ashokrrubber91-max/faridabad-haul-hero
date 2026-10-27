@@ -15,7 +15,11 @@ export const Route = createFileRoute("/")({
           "Book a Tata Ace, Pickup or Tata 407 anywhere in Faridabad. Live driver assignment, transparent fares.",
       },
       { property: "og:title", content: "MiniPort — Mini truck booking in Faridabad" },
-      { property: "og:description", content: "Book a Tata Ace, Pickup or Tata 407 in Faridabad with live driver assignment and transparent fares." },
+      {
+        property: "og:description",
+        content:
+          "Book a Tata Ace, Pickup or Tata 407 in Faridabad with live driver assignment and transparent fares.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

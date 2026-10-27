@@ -11,14 +11,23 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVehicleTypes } from "@/lib/vehicles";
 
 export const Route = createFileRoute("/_authenticated/driver-kyc")({
-  head: () => ({ meta: [
-    { title: "Driver verification — MiniPort" },
-    { name: "description", content: "Submit identity and vehicle documents for MiniPort driver verification." },
-    { property: "og:title", content: "Driver verification — MiniPort" },
-    { property: "og:description", content: "Apply as a verified MiniPort driver with your driving, identity and vehicle documents." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Driver verification — MiniPort" },
+      {
+        name: "description",
+        content: "Submit identity and vehicle documents for MiniPort driver verification.",
+      },
+      { property: "og:title", content: "Driver verification — MiniPort" },
+      {
+        property: "og:description",
+        content:
+          "Apply as a verified MiniPort driver with your driving, identity and vehicle documents.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: DriverKycPage,
 });
 

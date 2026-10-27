@@ -2,11 +2,13 @@
 
 ## Booking enhancements — preview/source only (24 October 2026)
 
-- [ ] Capacity-safe part-load matching, discounting and pooled driver/tracking flow — discount policy needs confirmation; any database-dependent work must stay unapplied to production.
-- [ ] Interactive Offers & Coins sheet with actual eligible promos, balance and custom ₹1-per-coin redemption.
-- [ ] Driver notes: speech-to-text, private goods photos and short audio instructions; remove garbled auto-filled content without stripping legitimate notes.
-- [ ] Confirm the remainder of the request: feature 3 cuts off mid-sentence and feature 4 is missing.
-- [ ] Verify changed flows and regression tests; record exact preview diagnostics and any isolated-test-backend blockers.
+- [x] Confirmed three features: 25% discount on matched loads, immediate standard-fare dispatch without a match; ₹1 per coin.
+- [x] Added tested capacity/itinerary/pricing planning rules and a capacity-aware part-load preview. Sharing remains disabled, with no fake matches or fare writes.
+- [ ] Actual pooled dispatch/acceptance/tracking/settlement — blocked by no isolated test backend and absent atomic shared-run/capacity/payment capability. No production schema or records changed.
+- [x] Offers & Coins opens from form and review with real promo validation, custom coin redemption, shared parent state and a dedicated typed cash/coins query (avoids the old wallet cache collision).
+- [x] Driver-note dictation and local photo/audio draft previews; permissions requested only on taps, recording capped at 60 seconds, files checked, cleanup applied and credential artifacts removed client/server without stripping genuine links.
+- [ ] Private attachment delivery to driver — blocked by no dedicated private attachment bucket/association/policies and no isolated test backend. Drafts are explicitly labeled; submission is blocked with drafts rather than silently dropping them.
+- [ ] Verification in progress: 21 unit tests passed; targeted lint had one hook warning (subsequently corrected). Full-project lint has seven pre-existing account-page errors and 15 other warnings. Signed-in session unavailable; own-account mint failed, no arbitrary customer selected and no production writes made.
 
 ## Preview build repair — source only
 

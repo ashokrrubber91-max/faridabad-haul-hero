@@ -12,14 +12,22 @@ import { cancellationSummary } from "@/lib/cancellation";
 import { QuickChatModal } from "@/components/chat/QuickChatModal";
 
 export const Route = createFileRoute("/_authenticated/driver-rides")({
-  head: () => ({ meta: [
-    { title: "My Rides — MiniPort Driver" },
-    { name: "description", content: "Review your MiniPort rides, delivery proof and net earnings." },
-    { property: "og:title", content: "My Rides — MiniPort Driver" },
-    { property: "og:description", content: "View your MiniPort driver trip history and delivery records." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "My Rides — MiniPort Driver" },
+      {
+        name: "description",
+        content: "Review your MiniPort rides, delivery proof and net earnings.",
+      },
+      { property: "og:title", content: "My Rides — MiniPort Driver" },
+      {
+        property: "og:description",
+        content: "View your MiniPort driver trip history and delivery records.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: DriverRidesPage,
 });
 
