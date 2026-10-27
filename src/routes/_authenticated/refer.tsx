@@ -10,7 +10,10 @@ export const Route = createFileRoute("/_authenticated/refer")({
         content: "Invite customers and drivers to MiniPort and track referral rewards.",
       },
       { property: "og:title", content: "Refer & Earn — MiniPort" },
-      { property: "og:description", content: "Share your MiniPort referral with customers and drivers and track your rewards." },
+      {
+        property: "og:description",
+        content: "Share your MiniPort referral with customers and drivers and track your rewards.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

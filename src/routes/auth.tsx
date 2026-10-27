@@ -44,7 +44,11 @@ export const Route = createFileRoute("/auth")({
         content: "Sign in or create your MiniPort account to book a mini truck or accept rides.",
       },
       { property: "og:title", content: "Sign in — MiniPort" },
-      { property: "og:description", content: "Sign in or create a MiniPort account for Faridabad mini-truck bookings and driver rides." },
+      {
+        property: "og:description",
+        content:
+          "Sign in or create a MiniPort account for Faridabad mini-truck bookings and driver rides.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
