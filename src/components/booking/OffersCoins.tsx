@@ -95,7 +95,7 @@ export function OffersCoins({ fare, promo, setPromo, coins, setCoins }: OffersCo
     return () => {
       cancelled = true;
     };
-  }, [fare, promo?.code, promo?.discount, setPromo]);
+  }, [fare, promo, setPromo]);
 
   const apply = async (value: string) => {
     if (checking || !value.trim() || fare <= 0) return;

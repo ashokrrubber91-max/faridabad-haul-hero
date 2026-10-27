@@ -17,3 +17,6 @@
 - Repeat bookings use validated router search and owner-scoped reads; missing historic coordinates are geocoded instead of replaced with a default pickup pin.
 - Delivery proof is fetched on demand from private storage with short-lived signed URLs, keeping evidence out of initial history requests.
 - Optional sequential-dispatch push uses a narrow local schema boundary and skips only missing-table errors; never broaden recipients or edit generated live types to mask unapplied migrations.
+- Booking offers and review share one parent-owned discount state and one typed wallet-balances query so cash and coins cannot collide in the query cache.
+- Keep co-loading planning separate from assignment and financial writes; never enable pooled acceptance before atomic backend run/capacity/payment safeguards exist.
+- Goods-photo/audio drafts remain local until a dedicated private booking-attachment capability is installed; never repurpose KYC or delivery-proof storage, silently discard drafts, or embed media URLs in notes.

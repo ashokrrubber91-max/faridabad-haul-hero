@@ -55,6 +55,11 @@ import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
 import { computeRoadRoute, createBooking } from "@/lib/routing.functions";
 import { MINIPORT_TEST_MODE } from "@/lib/testing";
 import { repeatBookingLocation } from "@/lib/rebooking";
+import { DriverNotes } from "@/components/booking/DriverNotes";
+import { PartLoadOption } from "@/components/booking/PartLoadOption";
+import { useWalletBalances } from "@/hooks/useWalletBalances";
+import { bookingDiscount, coinsToRedeem } from "@/lib/booking-discounts";
+import { sanitizeDriverNotes, type NoteAttachment } from "@/lib/driver-notes";
 
 const ONLINE_METHODS: PaymentMethod[] = ["upi", "card", "netbanking"];
 
@@ -94,6 +99,15 @@ function CustomerPage() {
   const [pickup, setPickup] = useState<PlacePick | null>(null);
   const [drop, setDrop] = useState<PlacePick | null>(null);
   const [notes, setNotes] = useState("");
+  const [attachments, setAttachments] = useState<NoteAttachment[]>([]);
+  const attachmentRef = useRef(attachments);
+  attachmentRef.current = attachments;
+  useEffect(
+    () => () => {
+      attachmentRef.current.forEach((attachment) => URL.revokeObjectURL(attachment.url));
+    },
+    [],
+  );
   const [stage, setStage] = useState<Stage>(null);
   const [pending, setPending] = useState<PlacePick | null>(null);
   const [locatingMode, setLocatingMode] = useState<"pickup" | "drop" | null>(null);
@@ -224,7 +238,14 @@ function CustomerPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalogue.data]);
-  const discount = Math.min(grossFare, (promo?.discount ?? 0) + coins);
+  const walletBalanceQuery = useWalletBalances();
+  const redeemedCoins = coinsToRedeem(
+    coins,
+    walletBalanceQuery.data?.coins ?? 0,
+    grossFare,
+    promo?.discount ?? 0,
+  );
+  const discount = bookingDiscount(grossFare, promo?.discount ?? 0, redeemedCoins);
   const fare = Math.max(0, grossFare - discount);
 
   const gstins = useQuery({
@@ -243,20 +264,7 @@ function CustomerPage() {
     ? ((gstins.data ?? []).find((g) => g.id === gstinId) ?? null)
     : null;
 
-  const walletBalanceQuery = useQuery({
-    queryKey: ["wallet", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("wallet_accounts")
-        .select("cash_balance")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      if (error) throw error;
-      return Number(data?.cash_balance ?? 0);
-    },
-  });
-  const walletBalance = Math.max(0, walletBalanceQuery.data ?? 0);
+  const walletBalance = walletBalanceQuery.data?.cash ?? 0;
   const walletDeduction = walletEnabled ? Math.min(walletBalance, fare) : 0;
   const remainingPayable = Math.max(0, fare - walletDeduction);
 
@@ -349,6 +357,10 @@ function CustomerPage() {
     mutationFn: async () => {
       if (!pickup) throw new Error("Choose pickup location");
       if (!drop) throw new Error("Choose drop location");
+      if (attachments.length > 0)
+        throw new Error(
+          "Private attachment uploads are not available in this testing setup. Remove the drafts before booking; your text notes will still be included.",
+        );
       if (distanceKm <= 0) throw new Error("Road distance is still being calculated");
       if (scheduledAt) {
         const pickupMs = new Date(scheduledAt).getTime();
@@ -387,14 +399,14 @@ function CustomerPage() {
           vehicle,
           helperCount,
           couponCode: promo?.code ?? null,
-          coins,
+          coins: redeemedCoins,
           paymentMethod: walletEnabled && remainingPayable === 0 ? "wallet" : method,
           walletDeductedAmount: walletDeduction,
           scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
           cargoWeightKg: cargoWeightKg.trim() ? Number(cargoWeightKg) : null,
           notes:
             [
-              notes.trim(),
+              sanitizeDriverNotes(notes).trim(),
               stops.length > 0 && `Stops: ${stops.map((s) => s.address).join(" → ")}`,
               pickup.contactName && `Sender: ${pickup.contactName} (${pickup.contactPhone ?? ""})`,
               drop.contactName && `Receiver: ${drop.contactName} (${drop.contactPhone ?? ""})`,
@@ -732,27 +744,50 @@ function CustomerPage() {
                 }}
                 helperCount={helperCount}
                 onHelperCountChange={setHelperCount}
-                coins={coins}
-                maxCoins={coins}
-                coinValue={coins}
-                useCoins={coins > 0}
+                coins={walletBalanceQuery.data?.coins ?? 0}
+                maxCoins={coinsToRedeem(
+                  Number.MAX_SAFE_INTEGER,
+                  walletBalanceQuery.data?.coins ?? 0,
+                  grossFare,
+                  promo?.discount ?? 0,
+                )}
+                coinValue={walletBalanceQuery.data?.coins ?? 0}
+                useCoins={redeemedCoins > 0}
                 onUseCoinsChange={(enabled) => {
-                  if (!enabled) setCoins(0);
+                  setCoins(
+                    enabled
+                      ? coinsToRedeem(
+                          Number.MAX_SAFE_INTEGER,
+                          walletBalanceQuery.data?.coins ?? 0,
+                          grossFare,
+                          promo?.discount ?? 0,
+                        )
+                      : 0,
+                  );
                 }}
               />
             )}
 
-            <div>
-              <Label htmlFor="notes">Notes for driver (optional)</Label>
-              <Textarea
-                id="notes"
-                rows={2}
-                placeholder="2 mattresses + 1 sofa"
-                value={notes}
-                onChange={(e) => setNotes(sanitizeDriverNotes(e.target.value))}
-                maxLength={300}
-              />
-            </div>
+            <PartLoadOption
+              weight={cargoWeightKg}
+              onWeightChange={setCargoWeightKg}
+              capacity={Number(
+                selectedVehicle?.payload_kg ?? selectedVehicle?.weight_limit_kg ?? 0,
+              )}
+              standardFare={baseFare}
+            />
+            <DriverNotes
+              value={notes}
+              onChange={setNotes}
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
+            />
+            {attachments.length > 0 && (
+              <p role="status" className="text-xs text-warning">
+                Photos and recordings are draft previews only; private uploads are not yet available
+                for this testing setup.
+              </p>
+            )}
 
             <GstinSelect
               enabled={gstinEnabled}
@@ -836,6 +871,8 @@ function CustomerPage() {
             discount={discount}
             fare={fare}
             notes={notes}
+            attachments={attachments}
+            offers={{ fare: grossFare, promo, setPromo, coins: redeemedCoins, setCoins }}
             gstin={selectedGstin}
             scheduledAt={scheduledAt}
             onScheduledAtChange={setScheduledAt}
@@ -1150,19 +1187,6 @@ function ActiveOrdersCarousel({ bookings }: { bookings: Array<Record<string, unk
       </div>
     </section>
   );
-}
-
-function sanitizeDriverNotes(value: string): string {
-  return value
-    .replace(/https?:\/\/\S+/gi, "")
-    .replace(
-      /\b(?:access_token|refresh_token|session|token|code_verifier|state)\s*[=:]\s*[^\s&]+/gi,
-      "",
-    )
-    .replace(/[?&](?:access_token|refresh_token|session|token|code_verifier|state)=[^\s&]+/gi, "")
-    .replace(/\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g, "")
-    .replace(/[ \t]{2,}/g, " ")
-    .trimStart();
 }
 
 function LocationRow({

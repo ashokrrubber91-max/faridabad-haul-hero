@@ -74,10 +74,12 @@ export function DriverNotes({
       toast.error("Up to four attachments per booking.");
       return;
     }
-    current.onAttachmentsChange([
+    const next = [
       ...current.attachments,
       { id: crypto.randomUUID(), kind, file, url: URL.createObjectURL(file) },
-    ]);
+    ];
+    latest.current = { ...current, attachments: next };
+    current.onAttachmentsChange(next);
   };
   const stopRecording = () => {
     if (recorder.current?.state === "recording") recorder.current.stop();

@@ -43,7 +43,22 @@ import { sweepStaleBookings } from "@/lib/notifications.functions";
 import { MINIPORT_TEST_MODE } from "@/lib/testing";
 
 export const Route = createFileRoute("/_authenticated/driver")({
-  head: () => ({ meta: [{ title: "Driver — MiniPort" }] }),
+  head: () => ({
+    meta: [
+      { title: "Driver — MiniPort" },
+      {
+        name: "description",
+        content: "View Faridabad ride requests and manage your active MiniPort deliveries.",
+      },
+      { property: "og:title", content: "Driver — MiniPort" },
+      {
+        property: "og:description",
+        content: "Manage availability, ride requests and active MiniPort deliveries in Faridabad.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: DriverPage,
 });
 
