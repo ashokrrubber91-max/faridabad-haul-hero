@@ -8,7 +8,9 @@
 - [x] Offers & Coins opens from form and review with real promo validation, custom coin redemption, shared parent state and a dedicated typed cash/coins query (avoids the old wallet cache collision).
 - [x] Driver-note dictation and local photo/audio draft previews; permissions requested only on taps, recording capped at 60 seconds, files checked, cleanup applied and credential artifacts removed client/server without stripping genuine links.
 - [ ] Private attachment delivery to driver — blocked by no dedicated private attachment bucket/association/policies and no isolated test backend. Drafts are explicitly labeled; submission is blocked with drafts rather than silently dropping them.
-- [ ] Verification in progress: 21 unit tests passed; targeted lint had one hook warning (subsequently corrected). Full-project lint has seven pre-existing account-page errors and 15 other warnings. Signed-in session unavailable; own-account mint failed, no arbitrary customer selected and no production writes made.
+- [x] Verification: 21 unit tests passed (0 failures, 34 assertions); booking-change lint and formatting clean. Preview harness typecheck/build OK at 2026-10-27 00:58:41 UTC. Full-project lint still has seven pre-existing account-page errors and 15 warnings; this task did not rewrite account behavior.
+- [x] Isolated real-control browser checks (not authenticated end-to-end): photo draft rendered, simulated microphone created playable local audio, test-only 125 coins plus mock ₹50 promo changed ₹400 to ₹225; mobile 384px sheet has no horizontal overflow and no page errors. Mock balances/promos were confined to the browser test, not added to app data.
+- [ ] Authenticated booking/real offers and redemption readback, real-device dictation/recording and driver receipt — no available identified authenticated account; own-account mint failed. Sign in in the preview to enable account-specific checks. No arbitrary customer selected, no new ride, wallet write, production migration, storage change or publish/deploy performed.
 
 ## Preview build repair — source only
 
