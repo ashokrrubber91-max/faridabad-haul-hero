@@ -71,17 +71,7 @@ type IncentiveTier = { rides_required: number; bonus_amount: number; label: stri
  */
 type DriverJob = Database["public"]["Tables"]["bookings"]["Row"];
 
-/**
- * `get_open_driver_bookings` is a security-definer RPC that returns booking
- * columns without OTPs. It is not in the generated client types, so it is
- * reached through this narrow cast instead of `any`.
- */
-type OpenJobsClient = {
-  rpc: (fn: "get_open_driver_bookings") => Promise<{
-    data: unknown;
-    error: { message: string } | null;
-  }>;
-};
+/** Open jobs are fetched through the typed, OTP-safe security-definer RPC. */
 
 function DriverPage() {
   const { user, role, roles, activeMode, profile, loading, setActiveMode } = useAuth();
@@ -186,7 +176,7 @@ function DriverPage() {
       await sweepStale({ data: undefined }).catch(() => undefined);
       const [openResult, assignedResult, passedResult] = await Promise.all([
         // Open jobs are served by a security-definer RPC that returns no OTPs.
-        (supabase as unknown as OpenJobsClient).rpc("get_open_driver_bookings"),
+        supabase.rpc("get_open_driver_bookings"),
         // A driver reads only rides assigned to their own account directly.
         supabase
           .from("bookings")
