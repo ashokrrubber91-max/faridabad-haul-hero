@@ -74,23 +74,59 @@ export function useAuth(): AuthState {
       }
 
       try {
-        const query = Promise.all([
-          supabase.from("user_roles").select("role").eq("user_id", u.id),
-          supabase
-            .from("profiles")
-            .select("name, phone, active_mode, is_online, kyc_status, service_zone")
-            .eq("id", u.id)
-            .maybeSingle(),
-        ]);
-        const [{ data: roleRows, error: roleError }, { data: profileRow, error: profileError }] =
-          await Promise.race([
-            query,
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error("AUTH_PROFILE_TIMEOUT")), 12000),
-            ),
-          ]);
+        // Retry transient auth refresh/network delays before marking account sync as failed.
+        let roleRows: { role: string }[] | null = null;
+        let profileRow: {
+          name: string | null;
+          phone: string;
+          active_mode: string;
+          is_online: boolean;
+          kyc_status: KycStatus;
+          service_zone: string;
+        } | null = null;
+        let lastError: unknown = null;
 
-        if (roleError || profileError) throw roleError ?? profileError;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          try {
+            const query = Promise.all([
+              supabase.from("user_roles").select("role").eq("user_id", u.id),
+              supabase
+                .from("profiles")
+                .select("name, phone, active_mode, is_online, kyc_status, service_zone")
+                .eq("id", u.id)
+                .maybeSingle(),
+            ]);
+            const result = await Promise.race([
+              query,
+              new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error("AUTH_PROFILE_TIMEOUT")), 12000),
+              ),
+            ]);
+            const [roleResult, profileResult] = result;
+            if (roleResult.error || profileResult.error) {
+              throw roleResult.error ?? profileResult.error;
+            }
+            roleRows = roleResult.data;
+            profileRow = profileResult.data;
+            lastError = null;
+            break;
+          } catch (error) {
+            lastError = error;
+            if (attempt < 2) {
+              // Refresh an expiring session once, then retry with backoff.
+              if (attempt === 0) {
+                try {
+                  await supabase.auth.refreshSession();
+                } catch {
+                  // A normal retry below is still useful if refresh is unavailable.
+                }
+              }
+              await new Promise((resolve) => setTimeout(resolve, 400 * 2 ** attempt));
+            }
+          }
+        }
+
+        if (lastError) throw lastError;
         if (!active) return;
         setSyncError(null);
         setRoles((roleRows ?? []).map((r) => r.role as AppRole));
