@@ -71,7 +71,39 @@ type IncentiveTier = { rides_required: number; bonus_amount: number; label: stri
  */
 type DriverJob = Database["public"]["Tables"]["bookings"]["Row"];
 
-/** Open jobs are fetched through the typed, OTP-safe security-definer RPC. */
+/**
+ * Open jobs prefer the OTP-safe security-definer RPC. When that RPC is not
+ * installed in the live database, fall back to the RLS-guarded bookings read
+ * (KYC approved, online, same zone, not passed). BOOKING_FIELDS carries no OTP
+ * or customer phone columns.
+ */
+async function loadOpenDriverJobs(): Promise<{ data: unknown[] | null; error: Error | null }> {
+  const rpc = supabase.rpc as unknown as (
+    fn: string,
+  ) => Promise<{ data: unknown[] | null; error: { code?: string; message: string } | null }>;
+  const viaRpc = await rpc("get_open_driver_bookings");
+  const missing =
+    !!viaRpc.error &&
+    (viaRpc.error.code === "PGRST202" ||
+      viaRpc.error.code === "42883" ||
+      /could not find the function/i.test(viaRpc.error.message));
+  if (!missing) {
+    return { data: viaRpc.data, error: viaRpc.error ? new Error(viaRpc.error.message) : null };
+  }
+  const direct = await supabase
+    .from("bookings")
+    .select(BOOKING_FIELDS)
+    .eq("status", "pending")
+    .is("driver_id", null)
+    .is("cancelled_at", null)
+    .order("created_at", { ascending: false })
+    .limit(60);
+  const now = Date.now();
+  const rows = (direct.data ?? []).filter(
+    (b) => !b.expires_at || new Date(b.expires_at).getTime() > now,
+  );
+  return { data: rows, error: direct.error ? new Error(direct.error.message) : null };
+}
 
 function DriverPage() {
   const {
