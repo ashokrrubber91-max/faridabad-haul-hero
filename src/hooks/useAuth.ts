@@ -21,6 +21,8 @@ export interface DriverLocationShare {
 export interface AuthState {
   loading: boolean;
   syncError: string | null;
+  /** Non-fatal: profile details failed to load but roles (and role-gated screens) still work. */
+  profileSyncError: string | null;
   retryAccountSync: () => void;
   user: User | null;
   role: AppRole | null;
@@ -44,6 +46,7 @@ export function useAuth(): AuthState {
   const [profile, setProfile] = useState<AuthState["profile"]>(null);
   const [loading, setLoading] = useState(true);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [profileSyncError, setProfileSyncError] = useState<string | null>(null);
   const [syncAttempt, setSyncAttempt] = useState(0);
   const retryAccountSync = useCallback(() => {
     setSyncError(null);
@@ -69,6 +72,7 @@ export function useAuth(): AuthState {
         setRoles([]);
         setProfile(null);
         setSyncError(null);
+        setProfileSyncError(null);
         setLoading(false);
         return;
       }
@@ -85,6 +89,9 @@ export function useAuth(): AuthState {
           service_zone: string;
         } | null = null;
         let lastError: unknown = null;
+        // Profile mirror failures (for example a permission error) must not
+        // block role-gated screens such as the driver feed.
+        let profileError: { message?: string } | null = null;
 
         for (let attempt = 0; attempt < 3; attempt += 1) {
           try {
@@ -103,11 +110,16 @@ export function useAuth(): AuthState {
               ),
             ]);
             const [roleResult, profileResult] = result;
-            if (roleResult.error || profileResult.error) {
-              throw roleResult.error ?? profileResult.error;
-            }
+            if (roleResult.error) throw roleResult.error;
             roleRows = roleResult.data;
-            profileRow = profileResult.data;
+            if (profileResult.error) {
+              profileError = profileResult.error;
+              // Retry transient failures; on the last attempt fall through with roles only.
+              if (attempt < 2) throw profileResult.error;
+            } else {
+              profileError = null;
+              profileRow = profileResult.data;
+            }
             lastError = null;
             break;
           } catch (error) {
@@ -126,9 +138,18 @@ export function useAuth(): AuthState {
           }
         }
 
-        if (lastError) throw lastError;
+        // Roles are required for route gating; a profile-only failure is degraded, not fatal.
+        if (lastError && !(roleRows && profileError)) throw lastError;
         if (!active) return;
         setSyncError(null);
+        if (profileError) {
+          console.warn("[MiniPort] Profile sync failed; continuing without profile", {
+            message: profileError.message,
+          });
+          setProfileSyncError("Some account details could not be loaded.");
+        } else {
+          setProfileSyncError(null);
+        }
         setRoles((roleRows ?? []).map((r) => r.role as AppRole));
         setProfile(
           profileRow
@@ -389,6 +410,7 @@ export function useAuth(): AuthState {
     setActiveMode,
     loading,
     syncError,
+    profileSyncError,
     retryAccountSync,
     locationShare,
   };
