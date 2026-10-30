@@ -107,14 +107,25 @@ async function loadOpenDriverJobs(): Promise<{ data: unknown[] | null; error: Er
 
 /** Retry only temporary transport/service failures; never retry RLS or SQL errors. */
 function isTransientRideFeedError(error: unknown): boolean {
-  const value = error as { status?: number; code?: string; message?: string; name?: string; cause?: { message?: string } };
+  const value = error as {
+    status?: number;
+    code?: string;
+    message?: string;
+    name?: string;
+    cause?: { message?: string };
+  };
   const status = Number(value?.status ?? 0);
   if ([408, 425, 429, 500, 502, 503, 504, 520].includes(status)) return true;
   const code = String(value?.code ?? "").toUpperCase();
-  if (["ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "EAI_AGAIN", "NETWORK_ERROR"].includes(code)) return true;
+  if (["ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "EAI_AGAIN", "NETWORK_ERROR"].includes(code))
+    return true;
   const message = `${value?.message ?? ""} ${value?.cause?.message ?? ""}`.toLowerCase();
-  return value?.name === "TypeError" ||
-    /failed to fetch|network request failed|networkerror|connection (?:lost|reset|closed)|timed? ?out|timeout|temporarily unavailable|service unavailable|cloudflare/.test(message);
+  return (
+    value?.name === "TypeError" ||
+    /failed to fetch|network request failed|networkerror|connection (?:lost|reset|closed)|timed? ?out|timeout|temporarily unavailable|service unavailable|cloudflare/.test(
+      message,
+    )
+  );
 }
 
 function DriverPage() {
@@ -851,48 +862,68 @@ function DriverPage() {
             <AlertTriangle className="mx-auto mb-2 h-5 w-5 text-warning" />
             <p className="font-medium text-secondary">Ride requests are temporarily unavailable.</p>
             <p className="mt-1 text-muted-foreground">
-              Check your internet connection. MiniPort will retry automatically when the connection returns.
+              Check your internet connection. MiniPort will retry automatically when the connection
+              returns.
             </p>
-            <Button size="sm" variant="outline" className="mt-3" onClick={() => queue.refetch()} disabled={queue.isFetching}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-3"
+              onClick={() => queue.refetch()}
+              disabled={queue.isFetching}
+            >
               {queue.isFetching ? "Reconnecting…" : "Retry now"}
             </Button>
           </div>
         ) : (
           <>
             {queue.isError && queue.data && (
-              <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-secondary" role="status">
-                <span>Connection interrupted. Showing your last loaded requests while MiniPort reconnects.</span>
-                <Button size="sm" variant="outline" onClick={() => queue.refetch()} disabled={queue.isFetching}>
+              <div
+                className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-secondary"
+                role="status"
+              >
+                <span>
+                  Connection interrupted. Showing your last loaded requests while MiniPort
+                  reconnects.
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => queue.refetch()}
+                  disabled={queue.isFetching}
+                >
                   {queue.isFetching ? "Retrying…" : "Retry"}
                 </Button>
               </div>
             )}
             {pending.length === 0 ? (
-          <div className="surface-card p-6 text-center text-sm text-muted-foreground">
-            <Truck className="mx-auto mb-2 h-5 w-5" />
-            {isOnline ? "Looking for rides in Faridabad…" : "Go online to receive job requests."}
-          </div>
-        ) : (
-          <div className="grid gap-3">
-            {pending.map((b) => (
-              <PendingJob
-                key={b.id}
-                job={b}
-                onAccept={() => accept.mutate(b.id)}
-                onDecline={() => decline.mutate(b.id)}
-                pending={accept.isPending || decline.isPending}
-                // Only the tapped card shows progress; every accept button stays
-                // disabled meanwhile, so a double tap cannot send two claims.
-                busyAction={
-                  accept.isPending && accept.variables === b.id
-                    ? "accepting"
-                    : decline.isPending && decline.variables === b.id
-                      ? "passing"
-                      : null
-                }
-              />
-            ))}
-          </div>
+              <div className="surface-card p-6 text-center text-sm text-muted-foreground">
+                <Truck className="mx-auto mb-2 h-5 w-5" />
+                {isOnline
+                  ? "Looking for rides in Faridabad…"
+                  : "Go online to receive job requests."}
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                {pending.map((b) => (
+                  <PendingJob
+                    key={b.id}
+                    job={b}
+                    onAccept={() => accept.mutate(b.id)}
+                    onDecline={() => decline.mutate(b.id)}
+                    pending={accept.isPending || decline.isPending}
+                    // Only the tapped card shows progress; every accept button stays
+                    // disabled meanwhile, so a double tap cannot send two claims.
+                    busyAction={
+                      accept.isPending && accept.variables === b.id
+                        ? "accepting"
+                        : decline.isPending && decline.variables === b.id
+                          ? "passing"
+                          : null
+                    }
+                  />
+                ))}
+              </div>
             )}
           </>
         )}
