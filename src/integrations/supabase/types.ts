@@ -3043,6 +3043,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_driver_online: { Args: { _is_online: boolean }; Returns: boolean }
       set_my_active_mode: {
         Args: { _mode: string }
         Returns: {
