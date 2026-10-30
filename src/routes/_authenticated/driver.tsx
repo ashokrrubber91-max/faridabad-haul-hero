@@ -105,6 +105,18 @@ async function loadOpenDriverJobs(): Promise<{ data: unknown[] | null; error: Er
   return { data: rows, error: direct.error ? new Error(direct.error.message) : null };
 }
 
+/** Retry only temporary transport/service failures; never retry RLS or SQL errors. */
+function isTransientRideFeedError(error: unknown): boolean {
+  const value = error as { status?: number; code?: string; message?: string; name?: string; cause?: { message?: string } };
+  const status = Number(value?.status ?? 0);
+  if ([408, 425, 429, 500, 502, 503, 504, 520].includes(status)) return true;
+  const code = String(value?.code ?? "").toUpperCase();
+  if (["ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "EAI_AGAIN", "NETWORK_ERROR"].includes(code)) return true;
+  const message = `${value?.message ?? ""} ${value?.cause?.message ?? ""}`.toLowerCase();
+  return value?.name === "TypeError" ||
+    /failed to fetch|network request failed|networkerror|connection (?:lost|reset|closed)|timed? ?out|timeout|temporarily unavailable|service unavailable|cloudflare/.test(message);
+}
+
 function DriverPage() {
   const {
     user,
@@ -236,6 +248,11 @@ function DriverPage() {
       const assigned = (assignedResult.data ?? []) as unknown as DriverJob[];
       return [...open.filter((b) => !skipped.has(String(b.id))), ...assigned];
     },
+    // Ride-feed reads are safe to retry. React Query retries only transient
+    // network/availability failures; permission, RLS and SQL errors are shown
+    // immediately and are never hidden by repeated requests.
+    retry: (failureCount, error) => failureCount < 2 && isTransientRideFeedError(error),
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 4000),
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
     refetchInterval: 30000,
@@ -829,17 +846,28 @@ function DriverPage() {
               </div>
             ))}
           </div>
-        ) : queue.isError ? (
-          <div className="surface-card p-6 text-center text-sm">
-            <AlertTriangle className="mx-auto mb-2 h-5 w-5 text-destructive" />
-            <p className="text-muted-foreground">
-              Could not load ride requests. Check your connection.
+        ) : queue.isError && !queue.data ? (
+          <div className="surface-card p-6 text-center text-sm" role="alert">
+            <AlertTriangle className="mx-auto mb-2 h-5 w-5 text-warning" />
+            <p className="font-medium text-secondary">Ride requests are temporarily unavailable.</p>
+            <p className="mt-1 text-muted-foreground">
+              Check your internet connection. MiniPort will retry automatically when the connection returns.
             </p>
-            <Button size="sm" variant="outline" className="mt-3" onClick={() => queue.refetch()}>
-              Retry
+            <Button size="sm" variant="outline" className="mt-3" onClick={() => queue.refetch()} disabled={queue.isFetching}>
+              {queue.isFetching ? "Reconnecting…" : "Retry now"}
             </Button>
           </div>
-        ) : pending.length === 0 ? (
+        ) : (
+          <>
+            {queue.isError && queue.data && (
+              <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-secondary" role="status">
+                <span>Connection interrupted. Showing your last loaded requests while MiniPort reconnects.</span>
+                <Button size="sm" variant="outline" onClick={() => queue.refetch()} disabled={queue.isFetching}>
+                  {queue.isFetching ? "Retrying…" : "Retry"}
+                </Button>
+              </div>
+            )}
+            {pending.length === 0 ? (
           <div className="surface-card p-6 text-center text-sm text-muted-foreground">
             <Truck className="mx-auto mb-2 h-5 w-5" />
             {isOnline ? "Looking for rides in Faridabad…" : "Go online to receive job requests."}
@@ -865,6 +893,8 @@ function DriverPage() {
               />
             ))}
           </div>
+            )}
+          </>
         )}
       </section>
 
