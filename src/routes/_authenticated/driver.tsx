@@ -74,7 +74,17 @@ type DriverJob = Database["public"]["Tables"]["bookings"]["Row"];
 /** Open jobs are fetched through the typed, OTP-safe security-definer RPC. */
 
 function DriverPage() {
-  const { user, role, roles, activeMode, profile, loading, setActiveMode } = useAuth();
+  const {
+    user,
+    role,
+    roles,
+    activeMode,
+    profile,
+    loading,
+    setActiveMode,
+    profileSyncError,
+    retryAccountSync,
+  } = useAuth();
   const qc = useQueryClient();
   const [dismissed, setDismissed] = useState<string[]>([]);
 
@@ -565,6 +575,23 @@ function DriverPage() {
 
   return (
     <div className="space-y-6">
+      {profileSyncError && (
+        <div
+          role="status"
+          className="surface-card flex items-start gap-3 border-l-4 border-l-warning bg-warning/5 p-3"
+        >
+          <AlertTriangle className="mt-0.5 h-4 w-4 text-warning" />
+          <div className="flex-1 text-sm">
+            <p className="font-semibold text-secondary">{profileSyncError}</p>
+            <p className="text-xs text-muted-foreground">
+              Your job feed still works. Online status may show as offline until details reload.
+            </p>
+          </div>
+          <Button size="sm" variant="outline" onClick={retryAccountSync}>
+            Retry
+          </Button>
+        </div>
+      )}
       {!kycVerified && (
         <div className="surface-card flex items-start gap-3 border-l-4 border-l-primary bg-primary/5 p-3">
           <ShieldCheck className="mt-0.5 h-4 w-4 text-primary" />
