@@ -21,6 +21,8 @@ export interface DriverLocationShare {
 export interface AuthState {
   loading: boolean;
   syncError: string | null;
+  /** Non-fatal: profile details failed to load but roles (and role-gated screens) still work. */
+  profileSyncError: string | null;
   retryAccountSync: () => void;
   user: User | null;
   role: AppRole | null;
@@ -44,6 +46,7 @@ export function useAuth(): AuthState {
   const [profile, setProfile] = useState<AuthState["profile"]>(null);
   const [loading, setLoading] = useState(true);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [profileSyncError, setProfileSyncError] = useState<string | null>(null);
   const [syncAttempt, setSyncAttempt] = useState(0);
   const retryAccountSync = useCallback(() => {
     setSyncError(null);
@@ -69,6 +72,7 @@ export function useAuth(): AuthState {
         setRoles([]);
         setProfile(null);
         setSyncError(null);
+        setProfileSyncError(null);
         setLoading(false);
         return;
       }
@@ -406,6 +410,7 @@ export function useAuth(): AuthState {
     setActiveMode,
     loading,
     syncError,
+    profileSyncError,
     retryAccountSync,
     locationShare,
   };
