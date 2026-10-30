@@ -185,8 +185,7 @@ function DriverPage() {
       // cleanup function is not directly executable by signed-in users.
       await sweepStale({ data: undefined }).catch(() => undefined);
       const [openResult, assignedResult, passedResult] = await Promise.all([
-        // Open jobs are served by a security-definer RPC that returns no OTPs.
-        supabase.rpc("get_open_driver_bookings"),
+        loadOpenDriverJobs(),
         // A driver reads only rides assigned to their own account directly.
         supabase
           .from("bookings")
