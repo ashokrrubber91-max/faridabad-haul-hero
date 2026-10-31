@@ -543,7 +543,6 @@ function DriverPage() {
     dispatchCtxRef.current = dispatchCtx;
   }, [dispatchCtx]);
 
-
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayCompleted = mine.filter(
