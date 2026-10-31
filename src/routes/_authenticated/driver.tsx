@@ -705,6 +705,24 @@ function DriverPage() {
           </Button>
         </div>
       )}
+      {vehicleTypeUnknown && (
+        <div
+          role="status"
+          className="surface-card flex items-start gap-3 border-l-4 border-l-warning bg-warning/5 p-3"
+        >
+          <Truck className="mt-0.5 h-4 w-4 text-warning" />
+          <div className="flex-1 text-sm">
+            <p className="font-semibold text-secondary">Vehicle type not set</p>
+            <p className="text-xs text-muted-foreground">
+              Instant ride pop-ups only match your vehicle type. Select your vehicle in verification
+              so matching requests can reach you.
+            </p>
+          </div>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/driver-kyc">Update</Link>
+          </Button>
+        </div>
+      )}
       {walletLow && (
         <div className="surface-card flex items-start gap-3 border-l-4 border-l-warning bg-warning/5 p-3">
           <AlertTriangle className="mt-0.5 h-4 w-4 text-warning" />

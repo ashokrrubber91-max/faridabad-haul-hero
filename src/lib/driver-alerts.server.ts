@@ -24,9 +24,7 @@ type DispatchDatabase = {
 };
 
 export type DispatchTarget =
-  | { mode: "offer"; driverId: string }
-  | { mode: "no_offer" }
-  | { mode: "not_installed" };
+  { mode: "offer"; driverId: string } | { mode: "no_offer" } | { mode: "not_installed" };
 
 /**
  * Sequential dispatch target for a booking. "not_installed" means the optional

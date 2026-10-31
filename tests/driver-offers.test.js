@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { getOfferedDriverId } from "../src/lib/driver-alerts.server";
+import { getDispatchTarget, getOfferedDriverId } from "../src/lib/driver-alerts.server";
 
 function offerClient(result) {
   const calls = [];
@@ -59,5 +59,17 @@ describe("Optional sequential driver push", () => {
   test("keeps permission and service failures visible", async () => {
     const { client } = offerClient({ data: null, error: { code: "42501", message: "Denied" } });
     await expect(getOfferedDriverId(client, "booking-1")).rejects.toThrow("Denied");
+  });
+});
+
+describe("Dispatch target", () => {
+  test("reports a missing dispatch table so matched drivers are notified instead", async () => {
+    const { client } = offerClient({ data: null, error: { code: "PGRST205", message: "Missing" } });
+    expect(await getDispatchTarget(client, "booking-1")).toEqual({ mode: "not_installed" });
+  });
+
+  test("keeps sequential dispatch exclusive when the table exists but has no live offer", async () => {
+    const { client } = offerClient({ data: [], error: null });
+    expect(await getDispatchTarget(client, "booking-1")).toEqual({ mode: "no_offer" });
   });
 });
