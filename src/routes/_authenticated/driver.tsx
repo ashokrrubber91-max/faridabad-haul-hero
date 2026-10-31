@@ -42,6 +42,7 @@ import { useVehicleTypes, type VehicleType } from "@/lib/vehicles";
 import { sweepStaleBookings } from "@/lib/notifications.functions";
 import { MINIPORT_TEST_MODE } from "@/lib/testing";
 import {
+  DEFAULT_SERVICE_ZONE,
   isRideAlertMatch,
   resolveDriverVehicleType,
   type DriverDispatchContext,
@@ -531,6 +532,13 @@ function DriverPage() {
     driverKyc.data?.vehicle_id,
     (catalogue.data ?? []).map((v) => v.id),
   );
+  const activeVehicleLabel =
+    (catalogue.data ?? []).find((v) => v.id === driverVehicleType)?.label ??
+    (driverVehicleType ? vehicleLabel(driverVehicleType) : "Not set");
+  const driverServiceZone = profile?.service_zone || DEFAULT_SERVICE_ZONE;
+  const zoneMatchingJobs = pending.filter(
+    (booking) => (booking.service_zone || DEFAULT_SERVICE_ZONE) === driverServiceZone,
+  ).length;
   const vehicleTypeUnknown =
     role === "driver" && kycApproved && !!catalogue.data && !driverVehicleType;
   const dispatchCtx = useMemo<DriverDispatchContext>(
@@ -777,6 +785,40 @@ function DriverPage() {
           disabled={setOnline.isPending || driverKyc.isLoading || !!activeJob || !kycApproved}
           aria-label="Toggle online"
         />
+      </section>
+
+      {/* Temporary dispatch debug banner: helps verify the exact driver matching inputs. */}
+      <section
+        role="status"
+        aria-label="Driver dispatch debug status"
+        className="surface-card border border-dashed border-primary/40 bg-primary/5 p-3"
+      >
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+            Temporary debug status
+          </p>
+          <Badge variant="outline">Driver home</Badge>
+        </div>
+        <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
+          <div>
+            <p className="text-xs text-muted-foreground">Active vehicle</p>
+            <p className="font-semibold text-secondary">{activeVehicleLabel}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Online status</p>
+            <p className={`font-semibold ${isOnline ? "text-success" : "text-destructive"}`}>
+              {isOnline ? "Online" : "Offline"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Service zone match</p>
+            <p className="font-semibold text-secondary">
+              {pending.length === 0
+                ? `No open jobs · ${driverServiceZone}`
+                : `${zoneMatchingJobs}/${pending.length} open jobs match · ${driverServiceZone}`}
+            </p>
+          </div>
+        </div>
       </section>
 
       <LiveLocationStatus />
