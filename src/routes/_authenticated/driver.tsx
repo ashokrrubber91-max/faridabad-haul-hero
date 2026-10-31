@@ -325,9 +325,10 @@ function DriverPage() {
     const showInstantly = (row: DriverJob) => {
       const ctx = dispatchCtxRef.current;
       if (!ctx || !isRideAlertMatch(row, ctx)) return;
-      qc.setQueryData<DriverJob[]>(feedKey, (prev) =>
-        prev && !prev.some((b) => b.id === row.id) ? [row, ...prev] : prev,
-      );
+      const prev = qc.getQueryData<DriverJob[]>(feedKey);
+      // Already listed (for example a fare boost on a known request): no new alert.
+      if (!prev || prev.some((b) => b.id === row.id)) return;
+      qc.setQueryData<DriverJob[]>(feedKey, [row, ...prev]);
       playRideAlert();
     };
     // Scoped listeners only: new open requests, requests that just got taken,
