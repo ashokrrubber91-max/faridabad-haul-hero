@@ -514,9 +514,30 @@ function DriverPage() {
     (b) => b.status === "pending" && !b.driver_id && !b.cancelled_at,
   );
   const mine = (queue.data ?? []).filter((b) => b.driver_id === user?.id && b.status !== "pending");
-  const kycStatus = driverKyc.data ?? profile?.kyc_status ?? "not_submitted";
+  const kycStatus = driverKyc.data?.status ?? profile?.kyc_status ?? "not_submitted";
   const kycVerified = kycApproved || role === "admin";
   const isOnline = kycVerified && (setOnline.variables ?? profile?.is_online ?? false);
+
+  const driverVehicleType = resolveDriverVehicleType(
+    driverVehicleRow.data,
+    driverKyc.data?.vehicle_id,
+    (catalogue.data ?? []).map((v) => v.id),
+  );
+  const vehicleTypeUnknown =
+    role === "driver" && kycApproved && !!catalogue.data && !driverVehicleType;
+  const dispatchCtx = useMemo<DriverDispatchContext>(
+    () => ({
+      isOnline,
+      kycApproved,
+      serviceZone: profile?.service_zone,
+      vehicleType: driverVehicleType,
+    }),
+    [isOnline, kycApproved, profile?.service_zone, driverVehicleType],
+  );
+  useEffect(() => {
+    dispatchCtxRef.current = dispatchCtx;
+  }, [dispatchCtx]);
+
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
