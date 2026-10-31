@@ -14,7 +14,9 @@
 
 ## Preview build repair — source only
 
-- [x] Narrow the optional driver-offer schema locally; missing dispatch tables skip push without notifying unrelated drivers, while other failures remain visible.
+- [x] Narrow the optional driver-offer schema locally; other failures remain visible.
+- [x] Ride alert matching (2026-10-31): pop-up and push go only to online, verified, same-zone drivers with the requested vehicle type; a live sequential offer stays exclusive; missing dispatch table falls back to matched drivers. Removed the missing-table realtime binding that the service rejects. 33 tests pass. Not yet exercised signed in as a driver.
+- [ ] Driver vehicle types: driver_profiles.vehicle_type is empty for all drivers and some verification records hold a registration number instead of a vehicle type — those drivers see a 'Vehicle type not set' notice and get no pop-ups until corrected.
 - [x] Preview harness reported build OK at 2026-10-22 08:22:34 UTC; 8 regression tests passed across driver offers and rebooking. No production migrations, records or deployments.
 - Remaining pilot issues are not certified by this build fix; live dispatch remains blocked by the unapplied dispatch schema, and authenticated push delivery was not exercised.
 

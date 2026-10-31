@@ -2,7 +2,7 @@ import type { AnyRow } from "@/lib/rows";
 import type { Database } from "@/integrations/supabase/types";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -41,6 +41,11 @@ import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
 import { useVehicleTypes, type VehicleType } from "@/lib/vehicles";
 import { sweepStaleBookings } from "@/lib/notifications.functions";
 import { MINIPORT_TEST_MODE } from "@/lib/testing";
+import {
+  isRideAlertMatch,
+  resolveDriverVehicleType,
+  type DriverDispatchContext,
+} from "@/lib/dispatch-match";
 
 export const Route = createFileRoute("/_authenticated/driver")({
   head: () => ({
@@ -154,14 +159,30 @@ function DriverPage() {
       if (!user?.id) return null;
       const { data, error } = await supabase
         .from("driver_kyc")
-        .select("status")
+        .select("status, vehicle_id")
         .eq("driver_id", user.id)
         .maybeSingle();
       if (error) throw error;
-      return data?.status ?? null;
+      return data ?? null;
     },
   });
-  const kycApproved = driverKyc.data === "approved";
+  const kycApproved = driverKyc.data?.status === "approved";
+
+  // Vehicle type used to match ride alerts. The driver profile value wins over
+  // the vehicle picked during verification.
+  const driverVehicleRow = useQuery({
+    queryKey: ["driver-vehicle-type", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("driver_profiles")
+        .select("vehicle_type")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.vehicle_type ?? null;
+    },
+  });
 
   useEffect(() => {
     if (!user || role !== "driver" || activeMode === "driver") return;
@@ -299,29 +320,27 @@ function DriverPage() {
     qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
   }, [qc, user]);
 
+  // Latest matching context, read by the realtime handlers without resubscribing.
+  const dispatchCtxRef = useRef<DriverDispatchContext | null>(null);
+
   useEffect(() => {
     if (!user) return;
+    const feedKey = ["driver-feed", user.id];
+    // Show a matching request the moment it arrives, before the feed refetch finishes.
+    const showInstantly = (row: DriverJob) => {
+      const ctx = dispatchCtxRef.current;
+      if (!ctx || !isRideAlertMatch(row, ctx)) return;
+      const prev = qc.getQueryData<DriverJob[]>(feedKey);
+      // Already listed (for example a fare boost on a known request): no new alert.
+      if (!prev || prev.some((b) => b.id === row.id)) return;
+      qc.setQueryData<DriverJob[]>(feedKey, [row, ...prev]);
+      playRideAlert();
+    };
     // Scoped listeners only: new open requests, requests that just got taken,
-    // and this driver's own trips. Unrelated bookings no longer refetch anything.
+    // and this driver's own trips. Only tables published for realtime are bound:
+    // binding a missing table makes the whole channel fail.
     const ch = supabase
-      .channel(`driver-bookings-${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "booking_dispatch_offers",
-          filter: `driver_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const offer = payload.new as { booking_id?: string; expires_at?: string };
-          qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
-          if (offer.booking_id) {
-            toast.info("Ride request for you", { description: "Accept within 20 seconds." });
-            playRideAlert();
-          }
-        },
-      )
+      .channel(`driver-bookings-${user.id}-${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         {
@@ -331,18 +350,8 @@ function DriverPage() {
           filter: "status=eq.pending",
         },
         (payload) => {
-          qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
-          const next = payload.new as { driver_id?: string | null; service_zone?: string };
-          const eligibleForAlert =
-            profile?.is_online === true &&
-            profile.kyc_status === "approved" &&
-            profile.service_zone === (next.service_zone ?? "Faridabad");
-          if (!next.driver_id && eligibleForAlert) {
-            toast.info("New ride request", {
-              description: `${next.service_zone ?? "Faridabad"} zone · open Live requests`,
-            });
-            playRideAlert();
-          }
+          showInstantly(payload.new as DriverJob);
+          qc.invalidateQueries({ queryKey: feedKey });
         },
       )
       .on(
@@ -366,9 +375,11 @@ function DriverPage() {
           table: "bookings",
           filter: "status=eq.pending",
         },
-        () => {
-          // Pending fare boosts and other booking changes are delivered in realtime.
-          qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
+        (payload) => {
+          // Scheduled rides released for dispatch, fare boosts and vehicle
+          // changes all arrive here; a newly matching request pops up at once.
+          showInstantly(payload.new as DriverJob);
+          qc.invalidateQueries({ queryKey: feedKey });
         },
       )
       .on(
@@ -380,7 +391,7 @@ function DriverPage() {
           filter: `driver_id=eq.${user.id}`,
         },
         () => {
-          qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
+          qc.invalidateQueries({ queryKey: feedKey });
           qc.invalidateQueries({ queryKey: ["driver-wallet", user.id] });
         },
       )
@@ -402,7 +413,7 @@ function DriverPage() {
       document.removeEventListener("visibilitychange", recover);
       supabase.removeChannel(ch);
     };
-  }, [user, profile, qc, refreshFeed]);
+  }, [user, qc, refreshFeed]);
 
   const accept = useMutation({
     mutationFn: async (id: string) => {
@@ -508,9 +519,30 @@ function DriverPage() {
     (b) => b.status === "pending" && !b.driver_id && !b.cancelled_at,
   );
   const mine = (queue.data ?? []).filter((b) => b.driver_id === user?.id && b.status !== "pending");
-  const kycStatus = driverKyc.data ?? profile?.kyc_status ?? "not_submitted";
+  const kycStatus = driverKyc.data?.status ?? profile?.kyc_status ?? "not_submitted";
   const kycVerified = kycApproved || role === "admin";
   const isOnline = kycVerified && (setOnline.variables ?? profile?.is_online ?? false);
+
+  const driverVehicleType = resolveDriverVehicleType(
+    driverVehicleRow.data,
+    driverKyc.data?.vehicle_id,
+    (catalogue.data ?? []).map((v) => v.id),
+  );
+  const vehicleTypeUnknown =
+    role === "driver" && kycApproved && !!catalogue.data && !driverVehicleType;
+  const dispatchCtx = useMemo<DriverDispatchContext>(
+    () => ({
+      isOnline,
+      kycApproved,
+      serviceZone: profile?.service_zone,
+      vehicleType: driverVehicleType,
+    }),
+    [isOnline, kycApproved, profile?.service_zone, driverVehicleType],
+  );
+  useEffect(() => {
+    dispatchCtxRef.current = dispatchCtx;
+  }, [dispatchCtx]);
+
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -610,11 +642,11 @@ function DriverPage() {
   const earnedTier = [...sortedTiers].reverse().find((t) => t.rides_required <= ridesToday);
   const earnedToday = earnedTier?.bonus_amount ?? 0;
 
-  // Full-screen incoming-ride alert: only when verified, online, free, and not dismissed.
-  const incoming =
-    kycVerified && isOnline && !activeJob
-      ? pending.find((b) => !dismissed.includes(b.id))
-      : undefined;
+  // Full-screen incoming-ride alert: only for a verified, online, free driver,
+  // and only for requests in their zone that need their vehicle type.
+  const incoming = !activeJob
+    ? pending.find((b) => !dismissed.includes(b.id) && isRideAlertMatch(b, dispatchCtx))
+    : undefined;
 
   if (loading)
     return (
@@ -670,6 +702,24 @@ function DriverPage() {
             <Link to="/driver-kyc">
               {kycStatus === "not_submitted" ? "Start KYC" : "View status"}
             </Link>
+          </Button>
+        </div>
+      )}
+      {vehicleTypeUnknown && (
+        <div
+          role="status"
+          className="surface-card flex items-start gap-3 border-l-4 border-l-warning bg-warning/5 p-3"
+        >
+          <Truck className="mt-0.5 h-4 w-4 text-warning" />
+          <div className="flex-1 text-sm">
+            <p className="font-semibold text-secondary">Vehicle type not set</p>
+            <p className="text-xs text-muted-foreground">
+              Instant ride pop-ups only match your vehicle type. Select your vehicle in verification
+              so matching requests can reach you.
+            </p>
+          </div>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/driver-kyc">Update</Link>
           </Button>
         </div>
       )}
