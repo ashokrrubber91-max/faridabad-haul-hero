@@ -2,7 +2,7 @@ import type { AnyRow } from "@/lib/rows";
 import type { Database } from "@/integrations/supabase/types";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -41,6 +41,11 @@ import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
 import { useVehicleTypes, type VehicleType } from "@/lib/vehicles";
 import { sweepStaleBookings } from "@/lib/notifications.functions";
 import { MINIPORT_TEST_MODE } from "@/lib/testing";
+import {
+  isRideAlertMatch,
+  resolveDriverVehicleType,
+  type DriverDispatchContext,
+} from "@/lib/dispatch-match";
 
 export const Route = createFileRoute("/_authenticated/driver")({
   head: () => ({
@@ -637,11 +642,11 @@ function DriverPage() {
   const earnedTier = [...sortedTiers].reverse().find((t) => t.rides_required <= ridesToday);
   const earnedToday = earnedTier?.bonus_amount ?? 0;
 
-  // Full-screen incoming-ride alert: only when verified, online, free, and not dismissed.
-  const incoming =
-    kycVerified && isOnline && !activeJob
-      ? pending.find((b) => !dismissed.includes(b.id))
-      : undefined;
+  // Full-screen incoming-ride alert: only for a verified, online, free driver,
+  // and only for requests in their zone that need their vehicle type.
+  const incoming = !activeJob
+    ? pending.find((b) => !dismissed.includes(b.id) && isRideAlertMatch(b, dispatchCtx))
+    : undefined;
 
   if (loading)
     return (
