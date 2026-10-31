@@ -914,7 +914,9 @@ function DriverPage() {
             <AlertTriangle className="mx-auto mb-2 h-5 w-5 text-destructive" />
             <p className="font-semibold text-secondary">Ride requests load nahi ho pa rahi hain.</p>
             <p className="mt-1 break-words text-muted-foreground">
-              {queue.error instanceof Error ? queue.error.message : "Connection or database error. Please retry."}
+              {queue.error instanceof Error
+                ? queue.error.message
+                : "Connection or database error. Please retry."}
             </p>
             <Button
               size="sm"
@@ -929,9 +931,20 @@ function DriverPage() {
         ) : (
           <>
             {queue.isError && queue.data && (
-              <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-secondary" role="status">
-                <span>Connection interrupted. Showing the last loaded requests. MiniPort will retry automatically.</span>
-                <Button size="sm" variant="outline" onClick={() => void queue.refetch()} disabled={queue.isFetching}>
+              <div
+                className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-secondary"
+                role="status"
+              >
+                <span>
+                  Connection interrupted. Showing the last loaded requests. MiniPort will retry
+                  automatically.
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void queue.refetch()}
+                  disabled={queue.isFetching}
+                >
                   {queue.isFetching ? "Retrying…" : "Retry"}
                 </Button>
               </div>
@@ -943,7 +956,13 @@ function DriverPage() {
                   ? "No open rides right now. MiniPort is checking for new requests…"
                   : "Go online to receive job requests."}
                 {isOnline && (
-                  <Button size="sm" variant="outline" className="mx-auto mt-3 block" onClick={() => void queue.refetch()} disabled={queue.isFetching}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mx-auto mt-3 block"
+                    onClick={() => void queue.refetch()}
+                    disabled={queue.isFetching}
+                  >
                     {queue.isFetching ? "Checking…" : "Refresh rides"}
                   </Button>
                 )}
