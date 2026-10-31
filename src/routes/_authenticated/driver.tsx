@@ -283,8 +283,10 @@ function DriverPage() {
     // Ride-feed reads are safe to retry. React Query retries only transient
     // network/availability failures; permission, RLS and SQL errors are shown
     // immediately and are never hidden by repeated requests.
-    retry: (failureCount, error) => failureCount < 2 && isTransientRideFeedError(error),
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 4000),
+    // Keep the last successful feed visible and retry temporary outages quietly.
+    // Supabase Realtime also reconnects its socket/channel internally.
+    retry: (failureCount, error) => failureCount < 5 && isTransientRideFeedError(error),
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 15000),
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
     refetchInterval: 30000,
@@ -340,7 +342,7 @@ function DriverPage() {
     // and this driver's own trips. Only tables published for realtime are bound:
     // binding a missing table makes the whole channel fail.
     const ch = supabase
-      .channel(`driver-bookings-${user.id}-${Math.random().toString(36).slice(2)}`)
+      .channel(`driver-bookings-${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -396,9 +398,10 @@ function DriverPage() {
         },
       )
       .subscribe((status) => {
-        if (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          refreshFeed();
-        }
+        // Supabase Realtime automatically retries transient channel/socket errors.
+        // Refresh only after a successful (re)subscription; never surface transient
+        // CHANNEL_ERROR/TIMED_OUT states as user-facing connection warnings.
+        if (status === "SUBSCRIBED") refreshFeed();
       });
 
     // Reconnect handling: refresh the queue when the phone comes back online or
@@ -906,45 +909,8 @@ function DriverPage() {
               </div>
             ))}
           </div>
-        ) : queue.isError && !queue.data ? (
-          <div className="surface-card p-6 text-center text-sm" role="alert">
-            <AlertTriangle className="mx-auto mb-2 h-5 w-5 text-warning" />
-            <p className="font-medium text-secondary">Ride requests are temporarily unavailable.</p>
-            <p className="mt-1 text-muted-foreground">
-              Check your internet connection. MiniPort will retry automatically when the connection
-              returns.
-            </p>
-            <Button
-              size="sm"
-              variant="outline"
-              className="mt-3"
-              onClick={() => queue.refetch()}
-              disabled={queue.isFetching}
-            >
-              {queue.isFetching ? "Reconnecting…" : "Retry now"}
-            </Button>
-          </div>
         ) : (
           <>
-            {queue.isError && queue.data && (
-              <div
-                className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-secondary"
-                role="status"
-              >
-                <span>
-                  Connection interrupted. Showing your last loaded requests while MiniPort
-                  reconnects.
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => queue.refetch()}
-                  disabled={queue.isFetching}
-                >
-                  {queue.isFetching ? "Retrying…" : "Retry"}
-                </Button>
-              </div>
-            )}
             {pending.length === 0 ? (
               <div className="surface-card p-6 text-center text-sm text-muted-foreground">
                 <Truck className="mx-auto mb-2 h-5 w-5" />
