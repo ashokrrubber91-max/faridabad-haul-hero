@@ -154,14 +154,30 @@ function DriverPage() {
       if (!user?.id) return null;
       const { data, error } = await supabase
         .from("driver_kyc")
-        .select("status")
+        .select("status, vehicle_id")
         .eq("driver_id", user.id)
         .maybeSingle();
       if (error) throw error;
-      return data?.status ?? null;
+      return data ?? null;
     },
   });
-  const kycApproved = driverKyc.data === "approved";
+  const kycApproved = driverKyc.data?.status === "approved";
+
+  // Vehicle type used to match ride alerts. The driver profile value wins over
+  // the vehicle picked during verification.
+  const driverVehicleRow = useQuery({
+    queryKey: ["driver-vehicle-type", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("driver_profiles")
+        .select("vehicle_type")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.vehicle_type ?? null;
+    },
+  });
 
   useEffect(() => {
     if (!user || role !== "driver" || activeMode === "driver") return;
@@ -299,29 +315,26 @@ function DriverPage() {
     qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
   }, [qc, user]);
 
+  // Latest matching context, read by the realtime handlers without resubscribing.
+  const dispatchCtxRef = useRef<DriverDispatchContext | null>(null);
+
   useEffect(() => {
     if (!user) return;
+    const feedKey = ["driver-feed", user.id];
+    // Show a matching request the moment it arrives, before the feed refetch finishes.
+    const showInstantly = (row: DriverJob) => {
+      const ctx = dispatchCtxRef.current;
+      if (!ctx || !isRideAlertMatch(row, ctx)) return;
+      qc.setQueryData<DriverJob[]>(feedKey, (prev) =>
+        prev && !prev.some((b) => b.id === row.id) ? [row, ...prev] : prev,
+      );
+      playRideAlert();
+    };
     // Scoped listeners only: new open requests, requests that just got taken,
-    // and this driver's own trips. Unrelated bookings no longer refetch anything.
+    // and this driver's own trips. Only tables published for realtime are bound:
+    // binding a missing table makes the whole channel fail.
     const ch = supabase
-      .channel(`driver-bookings-${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "booking_dispatch_offers",
-          filter: `driver_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const offer = payload.new as { booking_id?: string; expires_at?: string };
-          qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
-          if (offer.booking_id) {
-            toast.info("Ride request for you", { description: "Accept within 20 seconds." });
-            playRideAlert();
-          }
-        },
-      )
+      .channel(`driver-bookings-${user.id}-${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         {
@@ -331,18 +344,8 @@ function DriverPage() {
           filter: "status=eq.pending",
         },
         (payload) => {
-          qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
-          const next = payload.new as { driver_id?: string | null; service_zone?: string };
-          const eligibleForAlert =
-            profile?.is_online === true &&
-            profile.kyc_status === "approved" &&
-            profile.service_zone === (next.service_zone ?? "Faridabad");
-          if (!next.driver_id && eligibleForAlert) {
-            toast.info("New ride request", {
-              description: `${next.service_zone ?? "Faridabad"} zone · open Live requests`,
-            });
-            playRideAlert();
-          }
+          showInstantly(payload.new as DriverJob);
+          qc.invalidateQueries({ queryKey: feedKey });
         },
       )
       .on(
@@ -366,9 +369,11 @@ function DriverPage() {
           table: "bookings",
           filter: "status=eq.pending",
         },
-        () => {
-          // Pending fare boosts and other booking changes are delivered in realtime.
-          qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
+        (payload) => {
+          // Scheduled rides released for dispatch, fare boosts and vehicle
+          // changes all arrive here; a newly matching request pops up at once.
+          showInstantly(payload.new as DriverJob);
+          qc.invalidateQueries({ queryKey: feedKey });
         },
       )
       .on(
@@ -380,7 +385,7 @@ function DriverPage() {
           filter: `driver_id=eq.${user.id}`,
         },
         () => {
-          qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
+          qc.invalidateQueries({ queryKey: feedKey });
           qc.invalidateQueries({ queryKey: ["driver-wallet", user.id] });
         },
       )
@@ -402,7 +407,7 @@ function DriverPage() {
       document.removeEventListener("visibilitychange", recover);
       supabase.removeChannel(ch);
     };
-  }, [user, profile, qc, refreshFeed]);
+  }, [user, qc, refreshFeed]);
 
   const accept = useMutation({
     mutationFn: async (id: string) => {
