@@ -87,7 +87,7 @@ GRANT EXECUTE ON FUNCTION public.dispatch_next_driver(uuid) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.process_driver_dispatch_queue()
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
-AS $
+AS $$
 DECLARE r record; advanced integer:=0; started integer:=0; locked_booking uuid;
 BEGIN
   FOR r IN SELECT DISTINCT booking_id FROM public.booking_dispatch_offers
@@ -123,7 +123,7 @@ REVOKE ALL ON FUNCTION public.process_driver_dispatch_queue() FROM PUBLIC,anon,a
 
 CREATE OR REPLACE FUNCTION public.accept_booking(_booking_id uuid)
 RETURNS public.bookings LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
-AS $
+AS $$
 DECLARE v_driver public.profiles%ROWTYPE; v_booking public.bookings%ROWTYPE;
   v_balance numeric:=0; v_active integer:=0; v_driver_vehicle text;
 BEGIN
@@ -204,7 +204,7 @@ GRANT EXECUTE ON FUNCTION public.accept_booking(uuid) TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.decline_booking(_booking_id uuid)
 RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
-AS $
+AS $$
 DECLARE changed integer; v_booking public.bookings%ROWTYPE;
 BEGIN
   IF auth.uid() IS NULL OR NOT public.has_role(auth.uid(),'driver'::public.app_role) THEN
@@ -239,7 +239,7 @@ RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $
+AS $$
 DECLARE
   r record;
   reminder_count integer := 0;
@@ -396,7 +396,7 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = ''
-AS $
+AS $$
   SELECT
     (
       to_jsonb(b) - ARRAY[
@@ -473,7 +473,7 @@ RETURNS public.bookings
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $
+AS $$
 DECLARE
   b public.bookings%ROWTYPE;
   uid uuid := auth.uid();
@@ -554,7 +554,7 @@ RETURNS public.bookings
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $
+AS $$
 DECLARE
   b public.bookings%ROWTYPE;
   v_driver public.profiles%ROWTYPE;
@@ -794,7 +794,7 @@ RETURNS public.bookings
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $
+AS $$
 DECLARE
   b public.bookings%ROWTYPE;
   uid uuid := auth.uid();
@@ -847,7 +847,7 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $
+AS $$
 BEGIN
   IF NEW.status IN (
     'completed'::public.booking_status,
