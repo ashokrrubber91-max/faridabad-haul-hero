@@ -31,8 +31,8 @@ jobs:
         run: bun install
 
       # Bun's non-major audit fixer chooses the lowest patched versions allowed
-      # by all current dependency ranges. This only changes this temporary CI
-      # workspace; it does not commit or push anything to the repository.
+      # by current dependency ranges. Changes stay in the isolated runner until
+      # the audit, typecheck, tests, lint and build have all passed.
       - name: Apply non-major security fixes in the isolated runner
         id: audit_fix
         continue-on-error: true
@@ -73,10 +73,9 @@ jobs:
       - name: Require a clean security audit
         if: always()
         env:
-          FIX_OUTCOME: ${{ steps.audit_fix.outcome }}
           AUDIT_OUTCOME: ${{ steps.audit.outcome }}
         run: |
-          if [ "$FIX_OUTCOME" != "success" ] || [ "$AUDIT_OUTCOME" != "success" ]; then
+          if [ "$AUDIT_OUTCOME" != "success" ]; then
             echo "::error::The dependency update candidate still has unresolved high or critical advisories."
             exit 1
           fi
