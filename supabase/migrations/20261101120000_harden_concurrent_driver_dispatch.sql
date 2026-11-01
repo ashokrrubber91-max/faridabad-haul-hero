@@ -834,8 +834,10 @@ BEGIN
   RETURN b;
 END;
 $$;
-REVOKE ALL ON FUNCTION public.complete_booking_with_pod(uuid, text) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.complete_booking_with_pod(uuid, text) TO authenticated;
+-- Do not expose this legacy helper: it can mark a trip complete without
+-- checking the customer's drop OTP. The supported flow is verify_booking_otp.
+REVOKE ALL ON FUNCTION public.complete_booking_with_pod(uuid, text)
+  FROM PUBLIC, anon, authenticated;
 
 
 -- Purge OTP material once a trip is closed, regardless of which trusted
