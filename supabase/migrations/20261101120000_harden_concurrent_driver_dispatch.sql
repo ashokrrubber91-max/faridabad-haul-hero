@@ -460,3 +460,210 @@ $$;
 REVOKE ALL ON FUNCTION public.get_open_driver_bookings() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_open_driver_bookings() TO authenticated;
 NOTIFY pgrst, 'reload schema';
+
+
+-- Cancellation closes any outstanding driver offers and never returns OTPs.
+CREATE OR REPLACE FUNCTION public.cancel_booking(
+  _booking_id uuid,
+  _reason text,
+  _note text DEFAULT NULL::text
+)
+RETURNS public.bookings
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  b public.bookings%ROWTYPE;
+  uid uuid := auth.uid();
+  clean_reason text;
+  next_notes text;
+  actor public.cancel_actor;
+  category public.cancellation_category;
+BEGIN
+  IF uid IS NULL THEN RAISE EXCEPTION 'Please sign in again'; END IF;
+  clean_reason := left(btrim(COALESCE(_reason, '')), 300);
+  IF length(clean_reason) < 3 THEN RAISE EXCEPTION 'Add a cancellation reason'; END IF;
+
+  SELECT * INTO b FROM public.bookings WHERE id = _booking_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Trip not found'; END IF;
+  IF b.status IN ('completed'::public.booking_status, 'cancelled'::public.booking_status, 'expired'::public.booking_status) THEN
+    RAISE EXCEPTION 'Trip is already closed';
+  END IF;
+
+  IF b.customer_id = uid THEN
+    IF b.status NOT IN ('pending'::public.booking_status, 'accepted'::public.booking_status, 'in_progress'::public.booking_status) THEN
+      RAISE EXCEPTION 'This trip can no longer be cancelled';
+    END IF;
+    actor := 'customer';
+    category := 'customer_cancelled';
+  ELSIF b.driver_id = uid THEN
+    IF b.status <> 'accepted'::public.booking_status THEN
+      RAISE EXCEPTION 'You can only drop a trip before pickup verification';
+    END IF;
+    actor := 'driver';
+    category := 'driver_cancelled';
+  ELSE
+    RAISE EXCEPTION 'Only the customer or assigned driver can cancel this trip';
+  END IF;
+
+  next_notes := CASE
+    WHEN _note IS NULL OR btrim(_note) = '' THEN b.notes
+    WHEN b.notes IS NULL OR btrim(b.notes) = '' THEN left(btrim(_note), 500)
+    ELSE left(b.notes || ' · ' || btrim(_note), 1000)
+  END;
+
+  PERFORM set_config('miniport.trusted_write', 'on', true);
+  UPDATE public.bookings
+     SET status = 'cancelled'::public.booking_status,
+         cancelled_at = now(),
+         cancellation_reason = clean_reason,
+         cancelled_by = actor,
+         cancellation_category = category,
+         notes = next_notes,
+         payment_status = CASE
+           WHEN b.payment_status = 'pending'::public.payment_status
+           THEN 'failed'::public.payment_status
+           ELSE b.payment_status
+         END
+   WHERE id = _booking_id
+  RETURNING * INTO b;
+  PERFORM set_config('miniport.trusted_write', 'off', true);
+
+  UPDATE public.booking_dispatch_offers
+     SET status = 'skipped', responded_at = now()
+   WHERE booking_id = _booking_id AND status = 'offered';
+
+  b.pickup_otp := NULL;
+  b.drop_otp := NULL;
+  RETURN b;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.cancel_booking(uuid, text, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.cancel_booking(uuid, text, text) TO authenticated;
+
+-- Admin manual assignment follows the same lock order and eligibility checks
+-- as automatic dispatch, and records the assignment in the offer history.
+CREATE OR REPLACE FUNCTION public.admin_assign_driver(_booking_id uuid, _driver_id uuid)
+RETURNS public.bookings
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  b public.bookings%ROWTYPE;
+  v_driver public.profiles%ROWTYPE;
+  v_driver_vehicle text;
+  next_seq integer;
+BEGIN
+  IF NOT public.has_role(auth.uid(), 'admin'::public.app_role) THEN
+    RAISE EXCEPTION 'Only the operations team can assign drivers';
+  END IF;
+
+  -- Match automatic dispatch lock order: booking first, then driver profile.
+  SELECT * INTO b FROM public.bookings WHERE id = _booking_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Trip not found'; END IF;
+  IF b.status <> 'pending'::public.booking_status OR b.driver_id IS NOT NULL OR b.cancelled_at IS NOT NULL THEN
+    RAISE EXCEPTION 'Trip is no longer searching for a driver';
+  END IF;
+  IF b.payment_method <> 'cod' AND b.payment_status <> 'paid' THEN
+    RAISE EXCEPTION 'Trip payment must be confirmed before driver assignment';
+  END IF;
+
+  SELECT * INTO v_driver FROM public.profiles WHERE id = _driver_id FOR UPDATE;
+  IF NOT FOUND
+     OR NOT public.has_role(_driver_id, 'driver'::public.app_role)
+     OR v_driver.kyc_status <> 'approved'::public.kyc_status
+     OR v_driver.is_online IS NOT TRUE THEN
+    RAISE EXCEPTION 'Driver must be online and approved to take trips';
+  END IF;
+
+  IF COALESCE(b.service_zone, 'Faridabad')
+     IS DISTINCT FROM COALESCE(v_driver.service_zone, 'Faridabad') THEN
+    RAISE EXCEPTION 'Driver is outside the trip service zone';
+  END IF;
+
+  SELECT COALESCE(
+    (SELECT vt.id
+     FROM public.vehicle_types vt
+     JOIN public.driver_profiles dp ON dp.user_id = _driver_id
+     WHERE vt.id = dp.vehicle_type),
+    (SELECT dk.vehicle_id
+     FROM public.driver_kyc dk
+     WHERE dk.driver_id = _driver_id
+       AND dk.status = 'approved'::public.kyc_status
+     ORDER BY dk.updated_at DESC
+     LIMIT 1)
+  ) INTO v_driver_vehicle;
+  IF v_driver_vehicle IS DISTINCT FROM b.vehicle_type THEN
+    RAISE EXCEPTION 'Driver vehicle does not match the trip vehicle type';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.bookings active
+    WHERE active.driver_id = _driver_id
+      AND active.status IN ('accepted'::public.booking_status, 'in_progress'::public.booking_status)
+      AND active.cancelled_at IS NULL
+      AND active.id <> _booking_id
+  ) THEN
+    RAISE EXCEPTION 'That driver is already on a trip';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.booking_dispatch_offers active_offer
+    WHERE active_offer.driver_id = _driver_id
+      AND active_offer.status = 'offered'
+      AND active_offer.expires_at > now()
+      AND active_offer.booking_id <> _booking_id
+  ) THEN
+    RAISE EXCEPTION 'That driver already has another live ride offer';
+  END IF;
+
+  UPDATE public.bookings
+     SET driver_id = _driver_id,
+         status = 'accepted'::public.booking_status,
+         updated_at = now()
+   WHERE id = _booking_id
+  RETURNING * INTO b;
+
+  UPDATE public.booking_dispatch_offers
+     SET status = 'skipped', responded_at = now()
+   WHERE booking_id = _booking_id
+     AND status = 'offered'
+     AND driver_id <> _driver_id;
+
+  SELECT COALESCE(MAX(sequence_no), 0) + 1 INTO next_seq
+  FROM public.booking_dispatch_offers
+  WHERE booking_id = _booking_id;
+
+  INSERT INTO public.booking_dispatch_offers
+    (booking_id, driver_id, sequence_no, status, offered_at, expires_at, responded_at)
+  VALUES (_booking_id, _driver_id, next_seq, 'accepted', now(), now(), now())
+  ON CONFLICT (booking_id, driver_id)
+  DO UPDATE SET status = 'accepted', responded_at = now(), expires_at = now();
+
+  INSERT INTO public.notifications (user_id, title, body, kind)
+  VALUES (
+    _driver_id,
+    'MiniPort ride assigned by operations',
+    'A verified MiniPort booking has been assigned to you. Pickup: ' ||
+      b.pickup_address || ' → Drop: ' || b.drop_address,
+    'driver_ride_offer'
+  );
+
+  INSERT INTO public.audit_logs (actor_id, action, table_name, row_id, new_data)
+  VALUES (
+    auth.uid(),
+    'admin_assign_driver',
+    'bookings',
+    _booking_id,
+    jsonb_build_object('driver_id', _driver_id)
+  );
+
+  b.pickup_otp := NULL;
+  b.drop_otp := NULL;
+  RETURN b;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.admin_assign_driver(uuid, uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_assign_driver(uuid, uuid) TO authenticated;
