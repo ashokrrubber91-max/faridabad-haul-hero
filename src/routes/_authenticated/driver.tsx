@@ -32,7 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
+import { driverEarningBreakdown, vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
 import { addressLines } from "@/lib/address";
 
 import { SupportChat } from "@/components/support/SupportChat";
@@ -1160,9 +1160,7 @@ function PendingJob({
     const t = setTimeout(() => setSecs((s) => s - 1), 1000);
     return () => clearTimeout(t);
   }, [secs]);
-  const rate = Number(job.commission_rate) || 0.1;
-  const commission = Math.round(Number(job.fare) * rate);
-  const net = Number(job.fare) - commission;
+  const { fare, commission, net, commissionRate } = driverEarningBreakdown(job);
   return (
     <div className="surface-card border-l-4 border-l-primary p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1187,9 +1185,9 @@ function PendingJob({
         </div>
         <div className="text-right">
           <p className="text-[11px] uppercase text-muted-foreground">You will earn</p>
-          <p className="font-display text-2xl text-success">₹{net}</p>
+          <p className="font-display text-2xl text-success">₹{net.toFixed(0)}</p>
           <p className="text-[10px] text-muted-foreground">
-            Fare ₹{Number(job.fare).toFixed(0)} − {Math.round(rate * 100)}%
+            Fare ₹{fare.toFixed(0)} − commission ₹{commission.toFixed(0)} ({Math.round(commissionRate * 100)}%)
           </p>
         </div>
       </div>
