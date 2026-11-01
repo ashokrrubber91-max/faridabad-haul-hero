@@ -99,4 +99,6 @@ jobs:
             exit 0
           fi
           git commit -m "chore(security): update patched dependencies"
+          git fetch origin "${PR_HEAD_REF}"
+          git rebase FETCH_HEAD
           git push origin "HEAD:${PR_HEAD_REF}"
