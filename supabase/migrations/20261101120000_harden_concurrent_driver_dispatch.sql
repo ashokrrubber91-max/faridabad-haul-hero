@@ -318,3 +318,137 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.process_scheduled_booking_automation() FROM PUBLIC, anon, authenticated;
+
+
+-- Restore column-scoped access that was accidentally widened by a later
+-- table-level GRANT. API users must never read OTP/contact columns directly.
+REVOKE SELECT, INSERT, UPDATE ON public.bookings FROM authenticated, anon, PUBLIC;
+
+GRANT SELECT (
+  id, customer_id, driver_id, pickup_address, drop_address, vehicle_type,
+  distance_km, fare, fare_boost, helper_count, helper_fee, status, notes,
+  created_at, updated_at, coupon_code, coupon_discount, coins_redeemed,
+  payment_method, payment_status, commission_rate, commission_amount,
+  driver_net_earning, pickup_verified_at, drop_verified_at, rating, review,
+  pod_photo_url, cancellation_reason, pickup_lat, pickup_lng, drop_lat, drop_lng,
+  loading_started_at, loading_stopped_at, unloading_started_at, unloading_stopped_at,
+  service_zone, scheduled_for, cargo_weight_kg, cancelled_at, expires_at,
+  booking_source, loading_overtime_minutes, unloading_overtime_minutes,
+  overtime_charge, final_fare, cancelled_by, cancellation_category, stops,
+  is_multi_stop, total_stops
+) ON public.bookings TO authenticated;
+
+-- Customers may submit only booking inputs. Server-owned fields (OTP, driver,
+-- payment state, calculated totals, timestamps and verification fields) are
+-- never writable from the browser.
+GRANT INSERT (
+  customer_id, pickup_address, drop_address, pickup_lat, pickup_lng,
+  drop_lat, drop_lng, service_zone, vehicle_type, helper_count, helper_fee,
+  distance_km, fare, total_stops, is_multi_stop, stops, coupon_code,
+  coins_redeemed, payment_method, status, scheduled_for, cargo_weight_kg, notes
+) ON public.bookings TO authenticated;
+
+-- The only direct customer edit on an existing booking is a completed-trip review.
+GRANT UPDATE (rating, review) ON public.bookings TO authenticated;
+GRANT ALL ON public.bookings TO service_role;
+
+DROP POLICY IF EXISTS "Bookings: select own or authorized dispatch" ON public.bookings;
+DROP POLICY IF EXISTS "Bookings: update by authorized participant" ON public.bookings;
+DROP POLICY IF EXISTS "Bookings: customer review completed trip" ON public.bookings;
+
+CREATE POLICY "Bookings: select own or assigned driver"
+ON public.bookings FOR SELECT TO authenticated
+USING (
+  public.has_role(auth.uid(), 'admin'::public.app_role)
+  OR customer_id = auth.uid()
+  OR (
+    public.has_role(auth.uid(), 'driver'::public.app_role)
+    AND public.is_kyc_approved(auth.uid())
+    AND driver_id = auth.uid()
+  )
+);
+
+CREATE POLICY "Bookings: customer review completed trip"
+ON public.bookings FOR UPDATE TO authenticated
+USING (
+  customer_id = auth.uid()
+  AND status = 'completed'::public.booking_status
+)
+WITH CHECK (
+  customer_id = auth.uid()
+  AND status = 'completed'::public.booking_status
+);
+
+-- The open-driver feed is now offer-scoped, vehicle/zone-aware and privacy
+-- minimized. A driver cannot enumerate every pending customer booking.
+CREATE OR REPLACE FUNCTION public.get_open_driver_bookings()
+RETURNS SETOF jsonb
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+  SELECT
+    (
+      to_jsonb(b) - ARRAY[
+        'pickup_otp', 'drop_otp', 'customer_phone', 'customer_id', 'notes',
+        'stops', 'pod_photo_url', 'rating', 'review', 'cancellation_reason',
+        'cancelled_by', 'coupon_code', 'coupon_discount', 'coins_redeemed',
+        'wallet_deducted_amount', 'final_payable_amount'
+      ]
+    ) || jsonb_build_object(
+      'notes', NULL,
+      'stops', COALESCE(
+        (
+          SELECT jsonb_agg(
+            stop_item.value - ARRAY['contact_name', 'contact_phone']
+            ORDER BY COALESCE((stop_item.value->>'sequence')::integer, 0)
+          )
+          FROM jsonb_array_elements(COALESCE(b.stops, '[]'::jsonb)) AS stop_item(value)
+        ),
+        '[]'::jsonb
+      )
+    )
+  FROM public.bookings b
+  JOIN public.booking_dispatch_offers o
+    ON o.booking_id = b.id
+   AND o.driver_id = auth.uid()
+   AND o.status = 'offered'
+   AND o.expires_at > now()
+  JOIN public.profiles p ON p.id = auth.uid()
+  LEFT JOIN public.driver_profiles dp ON dp.user_id = auth.uid()
+  JOIN LATERAL (
+    SELECT dk.vehicle_id
+    FROM public.driver_kyc dk
+    WHERE dk.driver_id = auth.uid()
+      AND dk.status = 'approved'::public.kyc_status
+    ORDER BY dk.updated_at DESC
+    LIMIT 1
+  ) approved_kyc ON true
+  WHERE auth.uid() IS NOT NULL
+    AND public.has_role(auth.uid(), 'driver'::public.app_role)
+    AND public.is_kyc_approved(auth.uid())
+    AND p.is_online IS TRUE
+    AND p.kyc_status = 'approved'::public.kyc_status
+    AND COALESCE(p.service_zone, 'Faridabad') = COALESCE(b.service_zone, 'Faridabad')
+    AND COALESCE(
+      (SELECT vt.id FROM public.vehicle_types vt WHERE vt.id = dp.vehicle_type),
+      approved_kyc.vehicle_id
+    ) = b.vehicle_type
+    AND b.status = 'pending'::public.booking_status
+    AND b.driver_id IS NULL
+    AND b.cancelled_at IS NULL
+    AND (b.expires_at IS NULL OR b.expires_at > now())
+    AND NOT EXISTS (
+      SELECT 1 FROM public.bookings active
+      WHERE active.driver_id = auth.uid()
+        AND active.status IN ('accepted', 'in_progress')
+        AND active.cancelled_at IS NULL
+    )
+  ORDER BY b.created_at DESC
+  LIMIT 60;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_open_driver_bookings() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_open_driver_bookings() TO authenticated;
+NOTIFY pgrst, 'reload schema';
