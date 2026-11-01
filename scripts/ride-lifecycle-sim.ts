@@ -148,6 +148,13 @@ export function runRideLifecycleSimulation(opts: SimOptions = {}): SimReport {
     completed: Math.floor(rand() * 50),
   }));
   const driverById = new Map(drivers.map((d) => [d.id, d]));
+  // Candidate pool per vehicle type (performance only; the real matcher still decides).
+  const driversByVehicle = new Map<string, Driver[]>();
+  for (const d of drivers) {
+    const list = driversByVehicle.get(d.vehicleType) ?? [];
+    list.push(d);
+    driversByVehicle.set(d.vehicleType, list);
+  }
 
   const bookings: Booking[] = Array.from({ length: customerCount }, (_, i) => {
     const createdAt = Math.floor(rand() * burst);
@@ -218,7 +225,7 @@ export function runRideLifecycleSimulation(opts: SimOptions = {}): SimReport {
     };
     let best: Driver | null = null;
     let bestKm = Infinity;
-    for (const d of drivers) {
+    for (const d of driversByVehicle.get(b.vehicleType) ?? []) {
       if (d.activeBookingId || past.has(d.id)) continue;
       if (!isRideAlertMatch(bookingRow, d, now * 1000)) continue;
       const km = haversineKm(d.lat, d.lng, b.pickupLat, b.pickupLng);
