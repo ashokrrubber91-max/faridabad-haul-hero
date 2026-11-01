@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { KeyRound, Plus, RefreshCw, Search, Shield, UserCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
@@ -68,7 +68,7 @@ export function AccountManagementTab() {
   const [resetPasswordValue, setResetPasswordValue] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const result = await list({});
@@ -78,11 +78,11 @@ export function AccountManagementTab() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [list]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   const createAccount = async () => {
     if (!/^\d{10}$/.test(form.phone))

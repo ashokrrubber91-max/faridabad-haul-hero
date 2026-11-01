@@ -2,7 +2,7 @@ import type { AnyRow } from "@/lib/rows";
 import type { Database } from "@/integrations/supabase/types";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -32,7 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
+import { driverEarningBreakdown, vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
 import { addressLines } from "@/lib/address";
 
 import { SupportChat } from "@/components/support/SupportChat";
@@ -93,22 +93,15 @@ async function loadOpenDriverJobs(): Promise<{ data: unknown[] | null; error: Er
     (viaRpc.error.code === "PGRST202" ||
       viaRpc.error.code === "42883" ||
       /could not find the function/i.test(viaRpc.error.message));
-  if (!missing) {
-    return { data: viaRpc.data, error: viaRpc.error ? new Error(viaRpc.error.message) : null };
+  if (missing) {
+    return {
+      data: null,
+      error: new Error(
+        "Secure driver offers are unavailable. Please update the MiniPort database migrations. Direct booking-table fallback is disabled to protect customer data.",
+      ),
+    };
   }
-  const direct = await supabase
-    .from("bookings")
-    .select(BOOKING_FIELDS)
-    .eq("status", "pending")
-    .is("driver_id", null)
-    .is("cancelled_at", null)
-    .order("created_at", { ascending: false })
-    .limit(60);
-  const now = Date.now();
-  const rows = (direct.data ?? []).filter(
-    (b) => !b.expires_at || new Date(b.expires_at).getTime() > now,
-  );
-  return { data: rows, error: direct.error ? new Error(direct.error.message) : null };
+  return { data: viaRpc.data, error: viaRpc.error ? new Error(viaRpc.error.message) : null };
 }
 
 /** Retry only temporary transport/service failures; never retry RLS or SQL errors. */
@@ -323,25 +316,11 @@ function DriverPage() {
     qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
   }, [qc, user]);
 
-  // Latest matching context, read by the realtime handlers without resubscribing.
-  const dispatchCtxRef = useRef<DriverDispatchContext | null>(null);
-
   useEffect(() => {
     if (!user) return;
     const feedKey = ["driver-feed", user.id];
-    // Show a matching request the moment it arrives, before the feed refetch finishes.
-    const showInstantly = (row: DriverJob) => {
-      const ctx = dispatchCtxRef.current;
-      if (!ctx || !isRideAlertMatch(row, ctx)) return;
-      const prev = qc.getQueryData<DriverJob[]>(feedKey);
-      // Already listed (for example a fare boost on a known request): no new alert.
-      if (!prev || prev.some((b) => b.id === row.id)) return;
-      qc.setQueryData<DriverJob[]>(feedKey, [row, ...prev]);
-      playRideAlert();
-    };
-    // Scoped listeners only: new open requests, requests that just got taken,
-    // and this driver's own trips. Only tables published for realtime are bound:
-    // binding a missing table makes the whole channel fail.
+    // The offer table is scoped by RLS to this driver. Never subscribe to raw
+    // pending booking rows, which contain customer information.
     const ch = supabase
       .channel(`driver-bookings-${user.id}`)
       .on(
@@ -349,25 +328,12 @@ function DriverPage() {
         {
           event: "INSERT",
           schema: "public",
-          table: "bookings",
-          filter: "status=eq.pending",
-        },
-        (payload) => {
-          showInstantly(payload.new as DriverJob);
-          qc.invalidateQueries({ queryKey: feedKey });
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "bookings",
-          filter: "status=eq.accepted",
+          table: "booking_dispatch_offers",
+          filter: `driver_id=eq.${user.id}`,
         },
         () => {
-          // A request another driver just took must leave this feed immediately.
-          qc.invalidateQueries({ queryKey: ["driver-feed", user.id] });
+          playRideAlert();
+          qc.invalidateQueries({ queryKey: feedKey });
         },
       )
       .on(
@@ -375,20 +341,17 @@ function DriverPage() {
         {
           event: "UPDATE",
           schema: "public",
-          table: "bookings",
-          filter: "status=eq.pending",
+          table: "booking_dispatch_offers",
+          filter: `driver_id=eq.${user.id}`,
         },
-        (payload) => {
-          // Scheduled rides released for dispatch, fare boosts and vehicle
-          // changes all arrive here; a newly matching request pops up at once.
-          showInstantly(payload.new as DriverJob);
+        () => {
           qc.invalidateQueries({ queryKey: feedKey });
         },
       )
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "UPDATE",
           schema: "public",
           table: "bookings",
           filter: `driver_id=eq.${user.id}`,
@@ -399,14 +362,9 @@ function DriverPage() {
         },
       )
       .subscribe((status) => {
-        // Supabase Realtime automatically retries transient channel/socket errors.
-        // Refresh only after a successful (re)subscription; never surface transient
-        // CHANNEL_ERROR/TIMED_OUT states as user-facing connection warnings.
         if (status === "SUBSCRIBED") refreshFeed();
       });
 
-    // Reconnect handling: refresh the queue when the phone comes back online or
-    // the app returns to the foreground. Nothing is fetched while hidden.
     const recover = () => {
       if (document.visibilityState === "visible") refreshFeed();
     };
@@ -550,10 +508,6 @@ function DriverPage() {
     }),
     [isOnline, kycApproved, profile?.service_zone, driverVehicleType],
   );
-  useEffect(() => {
-    dispatchCtxRef.current = dispatchCtx;
-  }, [dispatchCtx]);
-
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayCompleted = mine.filter(
@@ -1160,9 +1114,7 @@ function PendingJob({
     const t = setTimeout(() => setSecs((s) => s - 1), 1000);
     return () => clearTimeout(t);
   }, [secs]);
-  const rate = Number(job.commission_rate) || 0.1;
-  const commission = Math.round(Number(job.fare) * rate);
-  const net = Number(job.fare) - commission;
+  const { fare, commission, net, commissionRate } = driverEarningBreakdown(job);
   return (
     <div className="surface-card border-l-4 border-l-primary p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1187,9 +1139,12 @@ function PendingJob({
         </div>
         <div className="text-right">
           <p className="text-[11px] uppercase text-muted-foreground">You will earn</p>
-          <p className="font-display text-2xl text-success">₹{net}</p>
+          <p className="font-display text-2xl text-success">₹{net.toFixed(0)}</p>
           <p className="text-[10px] text-muted-foreground">
-            Fare ₹{Number(job.fare).toFixed(0)} − {Math.round(rate * 100)}%
+            <span>Fare ₹{fare.toFixed(0)}</span>{" "}
+            <span>
+              Commission ₹{commission.toFixed(0)} ({Math.round(commissionRate * 100)}%)
+            </span>
           </p>
         </div>
       </div>

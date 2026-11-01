@@ -1,6 +1,6 @@
 import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { MINIPORT_TEST_MODE, TEST_OTP } from "@/lib/testing";
 
 /**

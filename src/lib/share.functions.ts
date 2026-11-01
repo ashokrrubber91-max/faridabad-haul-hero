@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 /**
  * Public read for a shared trip link. The token is resolved on the server so the

@@ -1,5 +1,5 @@
 import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Copy, Gift, MessageCircle, Share2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,25 +17,26 @@ type ReferralRow = {
 
 export function ReferralCard() {
   const { user } = useAuth();
+  const userId = user?.id;
   const [code, setCode] = useState("");
   const [rows, setRows] = useState<ReferralRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  const load = async () => {
-    if (!user) return;
+  const load = useCallback(async () => {
+    if (!userId) return;
     setLoading(true);
     try {
       const [profileResult, referralsResult] = await Promise.all([
         (supabase as unknown as UntypedClient)
           .from("profiles")
           .select("referral_code")
-          .eq("id", user.id)
+          .eq("id", userId)
           .maybeSingle(),
         (supabase as unknown as UntypedClient)
           .from("referrals")
           .select("id,status,referred_type,reward_amount,created_at,rewarded_at")
-          .eq("referrer_id", user.id)
+          .eq("referrer_id", userId)
           .order("created_at", { ascending: false }),
       ]);
 
@@ -57,11 +58,11 @@ export function ReferralCard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     void load();
-  }, [user?.id]);
+  }, [load]);
 
   const link = useMemo(() => {
     if (!code || typeof window === "undefined") return "";

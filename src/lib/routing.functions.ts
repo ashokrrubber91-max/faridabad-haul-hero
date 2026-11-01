@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { sanitizeDriverNotes } from "@/lib/driver-notes";
 
@@ -111,7 +111,10 @@ export const createBooking = createServerFn({ method: "POST" })
     const helperCount = data.helperCount;
     const helperFee = helperCount * 250;
 
-    const { data: booking, error } = await context.supabase
+    // Only this authenticated server function can create a booking row. The
+    // database trigger still applies fare, coupon, coin and schedule rules.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: booking, error } = await supabaseAdmin
       .from("bookings")
       .insert({
         customer_id: authenticatedCustomerId,
@@ -225,10 +228,15 @@ export const createBooking = createServerFn({ method: "POST" })
       walletDeductedAmount = Number(applied.wallet_deducted_amount ?? 0);
       finalPayableAmount = Number(applied.final_payable_amount ?? booking.fare);
     } else {
-      await context.supabase
+      // Financial columns are not client-writable. This server function has
+      // already revalidated the caller and created the booking for this user.
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error: payableError } = await supabaseAdmin
         .from("bookings")
         .update({ wallet_deducted_amount: 0, final_payable_amount: Number(booking.fare) })
-        .eq("id", booking.id);
+        .eq("id", booking.id)
+        .eq("customer_id", authenticatedCustomerId);
+      if (payableError) throw new Error(payableError.message);
     }
 
     return {

@@ -41,14 +41,20 @@ export function LiveTripMap({
   const driverMarker = useRef<google.maps.Marker | null>(null);
   const pickupMarker = useRef<google.maps.Marker | null>(null);
   const dropMarker = useRef<google.maps.Marker | null>(null);
-  const exactPickup: LatLng | null =
-    typeof pickupLat === "number" && typeof pickupLng === "number"
-      ? { lat: pickupLat, lng: pickupLng }
-      : null;
-  const exactDrop: LatLng | null =
-    typeof dropLat === "number" && typeof dropLng === "number"
-      ? { lat: dropLat, lng: dropLng }
-      : null;
+  const exactPickup = useMemo<LatLng | null>(
+    () =>
+      typeof pickupLat === "number" && typeof pickupLng === "number"
+        ? { lat: pickupLat, lng: pickupLng }
+        : null,
+    [pickupLat, pickupLng],
+  );
+  const exactDrop = useMemo<LatLng | null>(
+    () =>
+      typeof dropLat === "number" && typeof dropLng === "number"
+        ? { lat: dropLat, lng: dropLng }
+        : null,
+    [dropLat, dropLng],
+  );
   const [pickup, setPickup] = useState<LatLng | null>(exactPickup);
   const [drop, setDrop] = useState<LatLng | null>(exactDrop);
   const [mapError, setMapError] = useState(false);
@@ -91,7 +97,7 @@ export function LiveTripMap({
     return () => {
       cancelled = true;
     };
-  }, [pickupAddress, dropAddress, pickupLat, pickupLng, dropLat, dropLng]);
+  }, [pickupAddress, dropAddress, exactPickup, exactDrop]);
 
   const location = useQuery({
     queryKey: ["driver-location", driverId, bookingId],
@@ -109,6 +115,8 @@ export function LiveTripMap({
       return data ?? null;
     },
   });
+  const refetchLocation = location.refetch;
+
   useEffect(() => {
     if (!driverId) return;
     const ch = supabase
@@ -121,24 +129,24 @@ export function LiveTripMap({
           table: "driver_locations",
           filter: `driver_id=eq.${driverId}`,
         },
-        () => void location.refetch(),
+        () => void refetchLocation(),
       )
       .subscribe();
     return () => {
       void supabase.removeChannel(ch);
     };
-  }, [driverId]);
+  }, [driverId, refetchLocation]);
   // Broadcast is the low-latency trip signal; refetch the canonical row immediately.
   useEffect(() => {
     if (!bookingId) return;
     const ch = supabase
       .channel(`trip:${bookingId}`, { config: { private: true } })
-      .on("broadcast", { event: "location" }, () => void location.refetch())
+      .on("broadcast", { event: "location" }, () => void refetchLocation())
       .subscribe();
     return () => {
       void supabase.removeChannel(ch);
     };
-  }, [bookingId, location.refetch]);
+  }, [bookingId, refetchLocation]);
 
   const lastFix = useMemo<{ pos: LatLng; ageMs: number } | null>(() => {
     const row = location.data;
@@ -176,7 +184,7 @@ export function LiveTripMap({
       .then((g) => {
         if (cancelled || !mapRef.current) return;
         mapInstance.current = new g.maps.Map(mapRef.current, {
-          center: target ?? pickup,
+          center: pickup,
           zoom: 14,
           disableDefaultUI: true,
           zoomControl: true,

@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /** Firebase web config + VAPID public key. Both are publishable client values. */

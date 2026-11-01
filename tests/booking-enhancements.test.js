@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { coinsToRedeem, bookingDiscount } from "../src/lib/booking-discounts";
+import { driverEarningBreakdown } from "../src/lib/booking";
 import { canShareItinerary, remainingLoadCapacity, sharedLoadFare } from "../src/lib/co-loading";
 import { sanitizeDriverNotes, validateNoteFile } from "../src/lib/driver-notes";
 
@@ -83,5 +84,33 @@ describe("Driver note safety", () => {
     expect(validateNoteFile({ type: "image/svg+xml", size: 20 }, "photo")).not.toBeNull();
     expect(validateNoteFile({ type: "image/jpeg", size: 6 * 1024 * 1024 }, "photo")).not.toBeNull();
     expect(validateNoteFile({ type: "audio/webm", size: 1024 }, "audio")).toBeNull();
+  });
+});
+
+describe("Driver earning breakdown", () => {
+  test("uses the stored commission and net payout instead of assuming 10 percent", () => {
+    expect(
+      driverEarningBreakdown({
+        fare: 1000,
+        commission_rate: 0.15,
+        commission_amount: 150,
+        driver_net_earning: 850,
+      }),
+    ).toEqual({ fare: 1000, commission: 150, net: 850, commissionRate: 0.15 });
+  });
+
+  test("preserves a legitimate zero commission", () => {
+    expect(
+      driverEarningBreakdown({ fare: 500, commission_amount: 0, driver_net_earning: 500 }),
+    ).toEqual({ fare: 500, commission: 0, net: 500, commissionRate: 0 });
+  });
+
+  test("uses the configured commission rate only when stored amounts are absent", () => {
+    expect(driverEarningBreakdown({ fare: 800, commission_rate: 0.125 })).toEqual({
+      fare: 800,
+      commission: 100,
+      net: 700,
+      commissionRate: 0.125,
+    });
   });
 });

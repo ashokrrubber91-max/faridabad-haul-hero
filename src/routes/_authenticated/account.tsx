@@ -56,6 +56,39 @@ import { CustomerProfileView } from "@/components/account/CustomerProfileView";
 import { DriverProfileView } from "@/components/account/DriverProfileView";
 import { DailyPassCard } from "@/components/driver/DailyPassCard";
 
+type MonthlyDriverEarning = {
+  key: string;
+  label: string;
+  totalEarnings: number;
+  rides: number;
+  commission: number;
+  netEarning: number;
+};
+
+type DriverPayout = {
+  id: string;
+  amount: number | string | null;
+  created_at: string;
+  method: string | null;
+  status: string;
+  utr_number: string | null;
+  rejection_reason: string | null;
+};
+
+type CustomerGstin = {
+  id: string;
+  business_name: string;
+  gstin: string;
+  is_default: boolean;
+};
+
+type SavedAddress = {
+  id: string;
+  alias: string | null;
+  kind: string;
+  address: string;
+};
+
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
     meta: [
@@ -94,7 +127,7 @@ function AccountPage() {
         .select("role")
         .eq("user_id", user.id);
       if (error) throw error;
-      return (data ?? []).map((r: any) => r.role as string);
+      return ((data ?? []) as Array<{ role: string }>).map((row) => row.role);
     },
   });
   const roles: string[] = [...cachedRoles, ...(freshRoles.data ?? [])];
@@ -211,9 +244,9 @@ function AccountPage() {
   });
 
   const [selectedMonth, setSelectedMonth] = useState("all");
-  const filteredMonths = useMemo(() => {
+  const filteredMonths = useMemo<MonthlyDriverEarning[]>(() => {
     if (selectedMonth === "all") return monthlyDriverEarnings.data ?? [];
-    return (monthlyDriverEarnings.data ?? []).filter((m: any) => m.key === selectedMonth);
+    return (monthlyDriverEarnings.data ?? []).filter((month) => month.key === selectedMonth);
   }, [monthlyDriverEarnings.data, selectedMonth]);
 
   const driverPayouts = useQuery({
@@ -230,7 +263,7 @@ function AccountPage() {
         .order("created_at", { ascending: false })
         .limit(20);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as DriverPayout[];
     },
   });
 
@@ -245,7 +278,7 @@ function AccountPage() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as SavedAddress[];
     },
   });
 
@@ -260,7 +293,7 @@ function AccountPage() {
         .eq("user_id", user.id)
         .order("is_default", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as CustomerGstin[];
     },
   });
 
@@ -352,15 +385,18 @@ function AccountPage() {
 
   const signOut = () => void signOutEverywhere(qc);
 
+  const rolesKey = roles.join(",");
+  const kycStatus = profile?.kyc_status ?? null;
+
   useEffect(() => {
     if (!driverStateKnown) return;
     console.log("[MiniPort account]", {
       active_mode: activeMode,
-      user_roles: roles,
-      kyc_status: profile?.kyc_status ?? null,
+      user_roles: rolesKey ? rolesKey.split(",") : [],
+      kyc_status: kycStatus,
       view: isAdmin ? "admin" : isDriverProfile ? "driver" : "customer",
     });
-  }, [driverStateKnown, activeMode, roles.join(","), isDriverProfile, isAdmin]);
+  }, [driverStateKnown, activeMode, rolesKey, kycStatus, isDriverProfile, isAdmin]);
 
   if (!authLoading && !user) {
     return (
@@ -483,7 +519,7 @@ function AccountPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All months</SelectItem>
-                  {(monthlyDriverEarnings.data ?? []).map((month: any) => (
+                  {(monthlyDriverEarnings.data ?? []).map((month) => (
                     <SelectItem key={month.key} value={month.key}>
                       {month.label}
                     </SelectItem>
@@ -502,7 +538,7 @@ function AccountPage() {
               </p>
             ) : (
               <div className="mt-4 space-y-3">
-                {filteredMonths.map((month: any) => (
+                {filteredMonths.map((month) => (
                   <div key={month.key} className="rounded-md border p-3">
                     <div className="mb-3 flex items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-secondary">{month.label}</p>
@@ -549,7 +585,7 @@ function AccountPage() {
                 <p className="mt-2 text-sm text-muted-foreground">No wallet payouts yet.</p>
               ) : (
                 <div className="mt-2 divide-y rounded-md border">
-                  {(driverPayouts.data ?? []).map((payout: any) => (
+                  {(driverPayouts.data ?? []).map((payout) => (
                     <div key={payout.id} className="flex items-center justify-between gap-3 p-3">
                       <div>
                         <p className="text-sm font-semibold text-secondary">
@@ -641,7 +677,7 @@ function AccountPage() {
                 </p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {(gstins.data ?? []).map((g: any) => (
+                  {(gstins.data ?? []).map((g) => (
                     <li key={g.id} className="flex items-center gap-3 py-2.5">
                       <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
@@ -705,7 +741,7 @@ function AccountPage() {
                 </p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {(addresses.data ?? []).map((a: any) => (
+                  {(addresses.data ?? []).map((a) => (
                     <li key={a.id} className="flex items-center gap-3 py-2.5">
                       <Home className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
