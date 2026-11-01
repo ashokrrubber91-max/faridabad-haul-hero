@@ -8,9 +8,11 @@ DO $$
 BEGIN
   IF to_regclass('public.driver_profiles') IS NULL
      OR to_regclass('public.vehicle_types') IS NULL
-     OR to_regclass('public.platform_settings') IS NULL THEN
+     OR to_regclass('public.platform_settings') IS NULL
+     OR to_regclass('private.booking_otps') IS NULL
+     OR to_regclass('public.booking_otp_attempts') IS NULL THEN
     RAISE EXCEPTION
-      'MiniPort schema is incomplete: restore and validate driver_profiles, vehicle_types, and platform_settings migrations before applying dispatch hardening';
+      'MiniPort schema is incomplete: restore and validate driver_profiles, vehicle_types, platform_settings, booking_otps, and booking_otp_attempts migrations before applying dispatch hardening';
   END IF;
 END;
 $$;
