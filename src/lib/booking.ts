@@ -79,7 +79,7 @@ export const BOOKING_FIELDS =
   "id, customer_id, driver_id, pickup_address, drop_address, vehicle_type, distance_km, fare, fare_boost, helper_count, helper_fee, status, notes, created_at, updated_at, coupon_code, coupon_discount, coins_redeemed, payment_method, payment_status, commission_rate, commission_amount, driver_net_earning, pickup_verified_at, drop_verified_at, rating, review, pod_photo_url, cancellation_reason, pickup_lat, pickup_lng, drop_lat, drop_lng, loading_started_at, loading_stopped_at, unloading_started_at, unloading_stopped_at, service_zone, scheduled_for, cargo_weight_kg, cancelled_at, expires_at, booking_source, loading_overtime_minutes, unloading_overtime_minutes, overtime_charge, final_fare, cancelled_by, cancellation_category, stops, is_multi_stop, total_stops";
 
 export type DriverEarningInput = {
-  fare: number | string | null | undefined;
+  fare?: number | string | null;
   commission_amount?: number | string | null;
   commission_rate?: number | string | null;
   driver_net_earning?: number | string | null;
@@ -98,7 +98,8 @@ export function driverEarningBreakdown(input: DriverEarningInput) {
     Number.isFinite(parsedCommission) && parsedCommission >= 0
       ? parsedCommission
       : Math.round(fare * fallbackRate);
-  const parsedNet = input.driver_net_earning == null ? Number.NaN : Number(input.driver_net_earning);
+  const parsedNet =
+    input.driver_net_earning == null ? Number.NaN : Number(input.driver_net_earning);
   const net = Number.isFinite(parsedNet) ? parsedNet : fare - commission;
 
   return {
