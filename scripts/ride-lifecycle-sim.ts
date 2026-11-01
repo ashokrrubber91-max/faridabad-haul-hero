@@ -114,7 +114,8 @@ function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number) {
   const r = (d: number) => (d * Math.PI) / 180;
   const dLat = r(bLat - aLat);
   const dLng = r(bLng - aLng);
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(r(aLat)) * Math.cos(r(bLat)) * Math.sin(dLng / 2) ** 2;
+  const h =
+    Math.sin(dLat / 2) ** 2 + Math.cos(r(aLat)) * Math.cos(r(bLat)) * Math.sin(dLng / 2) ** 2;
   return 2 * 6371 * Math.asin(Math.sqrt(h));
 }
 
@@ -385,7 +386,12 @@ export function runRideLifecycleSimulation(opts: SimOptions = {}): SimReport {
       }
     }
     // Invariant: at most one live offer per booking; one active ride per driver.
-    if (cursor >= byCreated.length && events.size === 0 && liveOffer.size === 0 && nextRetryAt.size === 0)
+    if (
+      cursor >= byCreated.length &&
+      events.size === 0 &&
+      liveOffer.size === 0 &&
+      nextRetryAt.size === 0
+    )
       break;
   }
 
@@ -406,7 +412,10 @@ export function runRideLifecycleSimulation(opts: SimOptions = {}): SimReport {
       if (d.vehicleType !== b.vehicleType || !d.kycApproved || !d.isOnline)
         violate(`${b.id}: offered to ineligible driver ${d.id}`);
     }
-    const ordered = offers.every((o, i) => i === 0 || o.offeredAt >= offers[i - 1].expiresAt || offers[i - 1].status === "declined");
+    const ordered = offers.every(
+      (o, i) =>
+        i === 0 || o.offeredAt >= offers[i - 1].expiresAt || offers[i - 1].status === "declined",
+    );
     if (!ordered) violate(`${b.id}: overlapping offers`);
     if (b.status === "completed") {
       if (accepted !== 1) violate(`${b.id}: completed with ${accepted} accepted offers`);
@@ -422,7 +431,10 @@ export function runRideLifecycleSimulation(opts: SimOptions = {}): SimReport {
 
   const sorted = [...acceptLatencies].sort((a, b) => a - b);
   const assigned = bookings.filter((b) => b.driverId);
-  const offersOnAssigned = assigned.reduce((s, b) => s + (offersByBooking.get(b.id)?.length ?? 0), 0);
+  const offersOnAssigned = assigned.reduce(
+    (s, b) => s + (offersByBooking.get(b.id)?.length ?? 0),
+    0,
+  );
   return {
     users,
     customers: customerCount,
