@@ -32,7 +32,12 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { driverEarningBreakdown, vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
+import {
+  driverEarningBreakdown,
+  vehicleLabel,
+  STATUS_META,
+  BOOKING_FIELDS,
+} from "@/lib/booking";
 import { addressLines } from "@/lib/address";
 
 import { SupportChat } from "@/components/support/SupportChat";
@@ -1187,7 +1192,8 @@ function PendingJob({
           <p className="text-[11px] uppercase text-muted-foreground">You will earn</p>
           <p className="font-display text-2xl text-success">₹{net.toFixed(0)}</p>
           <p className="text-[10px] text-muted-foreground">
-            Fare ₹{fare.toFixed(0)} − commission ₹{commission.toFixed(0)} ({Math.round(commissionRate * 100)}%)
+            Fare ₹{fare.toFixed(0)} − commission ₹{commission.toFixed(0)} (
+            {Math.round(commissionRate * 100)}%)
           </p>
         </div>
       </div>
