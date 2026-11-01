@@ -715,7 +715,9 @@ BEGIN
 
   IF NEW.scheduled_for IS NOT NULL AND NEW.scheduled_for > now() THEN
     NEW.status := 'scheduled'::public.booking_status;
-    NEW.expires_at := COALESCE(NEW.expires_at, NEW.scheduled_for + interval '30 minutes');
+    -- The table default is now()+30m; scheduled trips must override it so
+    -- they remain dispatchable until 30 minutes after the requested pickup.
+    NEW.expires_at := NEW.scheduled_for + interval '30 minutes';
   ELSE
     NEW.status := 'pending'::public.booking_status;
     NEW.expires_at := COALESCE(NEW.expires_at, now() + interval '30 minutes');
