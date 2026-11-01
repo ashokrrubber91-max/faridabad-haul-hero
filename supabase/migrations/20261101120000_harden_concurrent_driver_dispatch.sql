@@ -815,6 +815,8 @@ BEGIN
      SET drop_verified_at = now(),
          status = 'completed'::public.booking_status,
          pod_photo_url = _pod_path,
+         pickup_otp = NULL,
+         drop_otp = NULL,
          unloading_stopped_at = COALESCE(unloading_stopped_at, now())
    WHERE id = _booking_id
   RETURNING * INTO b;
@@ -849,10 +851,6 @@ BEGIN
   ) AND OLD.status IS DISTINCT FROM NEW.status THEN
     DELETE FROM private.booking_otps WHERE booking_id = NEW.id;
     DELETE FROM public.booking_otp_attempts WHERE booking_id = NEW.id;
-    UPDATE public.bookings
-       SET pickup_otp = NULL, drop_otp = NULL
-     WHERE id = NEW.id
-       AND (pickup_otp IS NOT NULL OR drop_otp IS NOT NULL);
   END IF;
   RETURN NEW;
 END;
