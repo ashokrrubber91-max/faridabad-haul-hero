@@ -74,6 +74,36 @@ describe("Ride alert matching", () => {
     expect(matched.every((id) => Number(id.slice(7)) % 11 !== 0)).toBe(true);
   });
 
+  test("keeps 250 customer booking matches isolated across 1,000 drivers", async () => {
+    const candidates = Array.from({ length: 1000 }, (_, index) => ({
+      ...driver,
+      id: `driver-${index}`,
+      isOnline: index % 4 !== 0,
+      kycApproved: index % 5 !== 0,
+      serviceZone: index % 2 === 0 ? "Faridabad" : "Gurugram",
+      vehicleType: index % 3 === 0 ? "tata_ace" : "tata_407",
+    }));
+    const requests = Array.from({ length: 250 }, (_, index) => ({
+      ...booking,
+      service_zone: index % 2 === 0 ? "Faridabad" : "Gurugram",
+      vehicle_type: index % 3 === 0 ? "tata_ace" : "tata_407",
+    }));
+    const results = await Promise.all(
+      requests.map(async (request) => selectMatchedDriverIds(request, candidates)),
+    );
+
+    expect(results).toHaveLength(250);
+    for (const matches of results) {
+      expect(new Set(matches).size).toBe(matches.length);
+      expect(
+        matches.every((id) => {
+          const index = Number(id.slice(7));
+          return index % 4 !== 0 && index % 5 !== 0;
+        }),
+      ).toBe(true);
+    }
+  });
+
   test("does not alert for taken, cancelled or expired rides", () => {
     expect(isRideAlertMatch({ ...booking, driver_id: "d2" }, driver)).toBe(false);
     expect(isRideAlertMatch({ ...booking, cancelled_at: "2026-10-31T10:00:00Z" }, driver)).toBe(
