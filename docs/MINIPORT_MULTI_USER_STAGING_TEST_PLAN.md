@@ -103,6 +103,8 @@ expiry window.
 - Try invalid OTPs and verify attempt limits/rate limits work.
 - Cancel and complete bookings; confirm private OTP records and attempt records are purged.
 - Confirm the test bypass is enabled only in staging and never in a production build/environment.
+- Review `private.booking_stop_otps` RLS separately. Browser roles currently have no table privileges;
+  do not enable RLS until the trusted stop-OTP RPC access path and required policies are reviewed.
 
 **Pass:** No OTP appears in open-offer feeds, logs, realtime booking payloads, or unauthorized
 RPC responses.
