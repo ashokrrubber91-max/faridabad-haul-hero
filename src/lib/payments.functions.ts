@@ -1,6 +1,6 @@
 import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /** Publishable Razorpay key id + whether payments are configured at all. */
