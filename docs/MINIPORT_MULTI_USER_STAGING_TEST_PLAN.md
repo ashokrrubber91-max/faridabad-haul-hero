@@ -125,7 +125,7 @@ These are pure code-level simulations, not a live database or network load test.
 test, use a disposable staging project and a controlled load generator (for example, k6) with
 ramp-up, steady-state, and spike phases. Start small (10, 25, 50, then 100 concurrent booking
 requests) and monitor database CPU, query latency, queue depth, offer latency, error rate, and
- duplicate assignments. Never load-test production.
+duplicate assignments. Never load-test production.
 
 ## Evidence to record
 
