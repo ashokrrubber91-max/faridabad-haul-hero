@@ -213,7 +213,8 @@ export function runRideLifecycleSimulation(opts: SimOptions = {}): SimReport {
       driver_id: b.driverId,
       service_zone: b.serviceZone,
       vehicle_type: b.vehicleType,
-      expires_at: new Date(b.expiresAt * 1000).toISOString(),
+      // Booking expiry is enforced by the queue loop; skip per-driver date parsing.
+      expires_at: null,
     };
     let best: Driver | null = null;
     let bestKm = Infinity;
