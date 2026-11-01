@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "bun test",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.47",
