@@ -385,15 +385,18 @@ function AccountPage() {
 
   const signOut = () => void signOutEverywhere(qc);
 
+  const rolesKey = roles.join(",");
+  const kycStatus = profile?.kyc_status ?? null;
+
   useEffect(() => {
     if (!driverStateKnown) return;
     console.log("[MiniPort account]", {
       active_mode: activeMode,
-      user_roles: roles,
-      kyc_status: profile?.kyc_status ?? null,
+      user_roles: rolesKey ? rolesKey.split(",") : [],
+      kyc_status: kycStatus,
       view: isAdmin ? "admin" : isDriverProfile ? "driver" : "customer",
     });
-  }, [driverStateKnown, activeMode, roles.join(","), isDriverProfile, isAdmin]);
+  }, [driverStateKnown, activeMode, rolesKey, kycStatus, isDriverProfile, isAdmin]);
 
   if (!authLoading && !user) {
     return (
