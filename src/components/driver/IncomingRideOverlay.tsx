@@ -132,7 +132,12 @@ export function IncomingRideOverlay({
     setListening(false);
     if (briefingSpokenFor.current !== job.id) {
       briefingSpokenFor.current = job.id;
-      const { fare, commission, net } = driverEarningBreakdown(job);
+      const { fare, commission, net } = driverEarningBreakdown({
+        fare: job.fare,
+        commission_amount: job.commission_amount,
+        commission_rate: job.commission_rate,
+        driver_net_earning: job.driver_net_earning,
+      });
       const weight =
         job.cargo_weight_kg != null && Number(job.cargo_weight_kg) > 0
           ? `Cargo weight ${Number(job.cargo_weight_kg)} kilogram. `
