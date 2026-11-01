@@ -868,3 +868,27 @@ FOR EACH ROW
 EXECUTE FUNCTION public.purge_closed_booking_otps();
 
 REVOKE ALL ON FUNCTION public.purge_closed_booking_otps() FROM PUBLIC, anon, authenticated;
+
+
+-- This row-sync trigger uses only NEW/OLD fields. An empty search_path avoids
+-- mutable schema resolution without changing its behavior.
+CREATE OR REPLACE FUNCTION public.sync_booking_cargo_weight_columns()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+BEGIN
+  IF NEW.cargo_weight IS DISTINCT FROM OLD.cargo_weight
+     AND NEW.cargo_weight_kg IS NOT DISTINCT FROM OLD.cargo_weight_kg THEN
+    NEW.cargo_weight_kg := NEW.cargo_weight;
+  ELSIF NEW.cargo_weight_kg IS DISTINCT FROM OLD.cargo_weight_kg
+     AND NEW.cargo_weight IS NOT DISTINCT FROM OLD.cargo_weight THEN
+    NEW.cargo_weight := NEW.cargo_weight_kg;
+  ELSIF NEW.cargo_weight IS NOT NULL AND NEW.cargo_weight_kg IS NULL THEN
+    NEW.cargo_weight_kg := NEW.cargo_weight;
+  ELSIF NEW.cargo_weight_kg IS NOT NULL AND NEW.cargo_weight IS NULL THEN
+    NEW.cargo_weight := NEW.cargo_weight_kg;
+  END IF;
+  RETURN NEW;
+END;
+$$;
