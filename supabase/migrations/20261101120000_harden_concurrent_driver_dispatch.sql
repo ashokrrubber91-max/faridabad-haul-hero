@@ -195,3 +195,95 @@ REVOKE ALL ON FUNCTION public.decline_booking(uuid) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.decline_booking(uuid) TO authenticated;
 
 NOTIFY pgrst,'reload schema';
+
+
+-- Scheduled trips must use the same single-driver offer pipeline as immediate
+-- trips. The older automation broadcast to every online driver in a zone,
+-- including drivers who had no active offer and could not accept the booking.
+CREATE OR REPLACE FUNCTION public.process_scheduled_booking_automation()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  r record;
+  reminder_count integer := 0;
+  assigned_driver_reminder_count integer := 0;
+  dispatch_count integer := 0;
+BEGIN
+  FOR r IN
+    SELECT s.id, s.customer_id, b.driver_id, s.scheduled_for,
+           b.pickup_address, b.drop_address
+    FROM public.scheduled_booking_reminders s
+    JOIN public.bookings b ON b.id = s.booking_id
+    WHERE s.status = 'queued'
+      AND s.reminder_at <= now()
+      AND b.status = 'scheduled'
+      AND b.payment_status = 'paid'
+      AND b.scheduled_for > now()
+    ORDER BY s.reminder_at
+    FOR UPDATE OF s SKIP LOCKED
+  LOOP
+    INSERT INTO public.notifications (user_id, title, body, kind)
+    VALUES (
+      r.customer_id,
+      'Upcoming scheduled trip — 24-hour reminder',
+      'Your MiniPort pickup is scheduled for ' ||
+        to_char(r.scheduled_for AT TIME ZONE 'Asia/Kolkata', 'DD Mon YYYY, HH12:MI AM') ||
+        '. Your trip will be offered to one eligible nearby driver shortly before pickup.',
+      'scheduled_reminder'
+    );
+
+    IF r.driver_id IS NOT NULL AND r.driver_id <> r.customer_id THEN
+      INSERT INTO public.notifications (user_id, title, body, kind)
+      VALUES (
+        r.driver_id,
+        'Assigned scheduled trip — 24-hour reminder',
+        'You are assigned to a MiniPort pickup scheduled for ' ||
+          to_char(r.scheduled_for AT TIME ZONE 'Asia/Kolkata', 'DD Mon YYYY, HH12:MI AM') ||
+          '. Pickup: ' || r.pickup_address || '. Drop: ' || r.drop_address ||
+          '. Please keep your availability updated.',
+        'scheduled_reminder'
+      );
+      assigned_driver_reminder_count := assigned_driver_reminder_count + 1;
+    END IF;
+
+    UPDATE public.scheduled_booking_reminders
+       SET status = 'sent', sent_at = now(), updated_at = now()
+     WHERE id = r.id AND status = 'queued';
+    reminder_count := reminder_count + 1;
+  END LOOP;
+
+  -- The status update fires the secure sequential-dispatch trigger. It creates
+  -- one expiring offer for one verified, online, nearby, vehicle-compatible
+  -- driver; it deliberately does not broadcast a non-actionable alert to all.
+  WITH dispatched AS (
+    UPDATE public.bookings b
+       SET status = 'pending', updated_at = now()
+     WHERE b.status = 'scheduled'
+       AND b.scheduled_for IS NOT NULL
+       AND b.scheduled_for > now()
+       AND b.scheduled_for <= now() + interval '30 minutes'
+       AND b.payment_status = 'paid'
+    RETURNING b.id
+  )
+  SELECT count(*) INTO dispatch_count FROM dispatched;
+
+  UPDATE public.scheduled_booking_reminders s
+     SET status = 'cancelled', updated_at = now()
+    FROM public.bookings b
+   WHERE s.booking_id = b.id
+     AND s.status = 'queued'
+     AND (b.status <> 'scheduled' OR b.scheduled_for <= now());
+
+  RETURN jsonb_build_object(
+    'reminders_sent', reminder_count,
+    'assigned_driver_reminders_sent', assigned_driver_reminder_count,
+    'bookings_dispatched', dispatch_count,
+    'dispatch_mode', 'sequential_single_driver_offer'
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.process_scheduled_booking_automation() FROM PUBLIC, anon, authenticated;
