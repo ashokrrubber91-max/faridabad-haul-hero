@@ -1,6 +1,20 @@
 -- Prevent simultaneous live offers to one driver and serialize concurrent
 -- accepts. Lock order is booking -> driver profile -> offer rows.
 
+-- Fail before changing anything if the project's prerequisite schema is missing.
+-- The read-only project audit found these relations absent in the connected DB,
+-- although the application and existing booking-pricing functions depend on them.
+DO $$
+BEGIN
+  IF to_regclass('public.driver_profiles') IS NULL
+     OR to_regclass('public.vehicle_types') IS NULL
+     OR to_regclass('public.platform_settings') IS NULL THEN
+    RAISE EXCEPTION
+      'MiniPort schema is incomplete: restore and validate driver_profiles, vehicle_types, and platform_settings migrations before applying dispatch hardening';
+  END IF;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.dispatch_next_driver(_booking_id uuid)
 RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
 AS $$
