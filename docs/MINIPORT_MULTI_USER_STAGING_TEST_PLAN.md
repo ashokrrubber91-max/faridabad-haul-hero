@@ -6,9 +6,12 @@
 
 1. Use a separate Supabase staging project and a staging app build.
 2. Apply and verify the pending database migrations in staging before testing this PR.
-3. Keep the owner-authorized OTP bypass confined to staging. Confirm it is disabled before any production release.
-4. Create separate test identities: at least 5 customers, 5 drivers, and 1 operations/admin account. Use test phone numbers and non-sensitive sample addresses.
-5. Create drivers with deliberately different vehicle types, service zones, KYC states, online/offline states, and GPS freshness.
+3. Keep the owner-authorized OTP bypass confined to staging. Confirm it is disabled before any
+   production release.
+4. Create separate test identities: at least 5 customers, 5 drivers, and 1 operations/admin account.
+   Use test phone numbers and non-sensitive sample addresses.
+5. Create drivers with deliberately different vehicle types, service zones, KYC states,
+   online/offline states, and GPS freshness.
 6. Use Razorpay test mode and test wallet balances only. Never use real customer funds.
 
 ## 1. Customer and booking isolation
@@ -17,10 +20,13 @@
 - Create bookings at nearly the same time with different pickup/drop addresses and vehicle types.
 - Confirm A sees only A's bookings and B sees only B's bookings.
 - Confirm each booking has a unique ID and the correct customer owner.
-- As a driver, attempt to query pending rows directly from `bookings`; it must not expose other customers' pending bookings.
+- As a driver, attempt to query pending rows directly from `bookings`; it must not expose other
+  customers' pending bookings.
 - Confirm the driver feed returns only an unexpired offer addressed to that driver.
-- Confirm the open-offer payload contains no OTP, customer phone, customer ID, private notes, or stop contact phone/email.
-- Confirm direct browser INSERT into `bookings` is denied and direct UPDATE of fare, payment state, driver assignment, or trip status is denied.
+- Confirm the open-offer payload contains no OTP, customer phone, customer ID, private notes, or
+  stop contact phone/email.
+- Confirm direct browser INSERT into `bookings` is denied and direct UPDATE of fare, payment state,
+  driver assignment, or trip status is denied.
 - Confirm a customer can update only the rating/review fields on their own completed booking.
 
 **Pass:** No cross-customer booking, address, contact, OTP, payment, or review data is visible.
@@ -49,7 +55,8 @@ Create bookings for multiple vehicle types and service zones.
 - Decline an offer and verify the next eligible driver receives it.
 - Let an offer expire and verify the queue advances to the next eligible driver.
 - Cancel a booking while an offer is live and verify all outstanding offers are invalidated.
-- Disconnect a driver during an offer, reconnect, and verify the feed refreshes without duplicating the offer.
+- Disconnect a driver during an offer, reconnect, and verify the feed refreshes without duplicating
+  the offer.
 
 **Pass:** Exactly one driver is assigned to a booking; a driver cannot hold two active trips; no duplicate active offers or mixed booking IDs appear.
 
@@ -95,8 +102,10 @@ Use separate Android devices and accounts (at minimum one customer device and tw
 - Move one driver device and confirm only its own location is updated.
 - Background/lock the driver phone and confirm expected location/notification behavior.
 - Switch mobile data/Wi-Fi off and on during an offer.
-- Test incoming offer sound, accept, decline, timeout, pickup, OTP verification, delivery/POD, and completion.
-- Confirm one driver's screen never displays another driver's assigned trip or customer contact details.
+- Test incoming offer sound, accept, decline, timeout, pickup, OTP verification, delivery/POD, and
+  completion.
+- Confirm one driver's screen never displays another driver's assigned trip or customer contact
+  details.
 
 **Pass:** Correct identity and booking remain attached to each device through reconnects and app restarts.
 
@@ -115,7 +124,8 @@ For each scenario record:
 - Number of customer and driver test accounts.
 - Booking IDs and assigned driver test IDs (do not record real phone numbers).
 - Expected vs actual result, timestamps, and sanitized logs.
-- Any duplicate assignments, cross-user visibility, stale locations, payment inconsistencies, or failed notifications.
+- Any duplicate assignments, cross-user visibility, stale locations, payment inconsistencies, or
+  failed notifications.
 
 ## Release gate
 
@@ -125,4 +135,5 @@ Do not call MiniPort production-ready until:
 - The multi-user, concurrent-acceptance, scheduled-booking, OTP/RLS, and sandbox payment tests pass.
 - Physical Android tests pass on multiple devices.
 - OTP testing bypass is securely disabled for production.
-- A controlled staging load test shows no cross-user data leakage, duplicate assignment, or unacceptable latency.
+- A controlled staging load test shows no cross-user data leakage, duplicate assignment, or
+  unacceptable latency.
