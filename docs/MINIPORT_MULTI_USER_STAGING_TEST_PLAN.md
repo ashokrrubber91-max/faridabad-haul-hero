@@ -8,8 +8,8 @@ Do not use production users, production data, or real payments.
 - Compare the repository migration files with the staging database migration history.
 - Verify that every relation referenced by booking, pricing, vehicle matching, and dispatch
   functions exists before invoking those functions.
-- The read-only production review on 2026-11-01 found that `public.driver_profiles` and
-  `public.vehicle_types` were absent from the connected database, while current SQL functions
+- The read-only production review on 2026-11-01 found that `public.driver_profiles`,
+  `public.vehicle_types`, and `public.platform_settings` were absent from the connected database, while current SQL functions
   and application code reference them. The migration history also did not contain the repository's
   September 2026 vehicle-catalogue migrations.
 - Treat this as schema drift. Do not apply this PR migration alone or assume a successful CI build
