@@ -134,8 +134,12 @@ BEGIN
   -- Booking first, then profile: concurrent accepts by this driver serialize.
   SELECT * INTO v_booking FROM public.bookings WHERE id=_booking_id FOR UPDATE;
   IF NOT FOUND OR v_booking.driver_id IS NOT NULL OR v_booking.status<>'pending'
-     OR v_booking.cancelled_at IS NOT NULL THEN
-    RAISE EXCEPTION 'Ride already accepted or closed';
+     OR v_booking.cancelled_at IS NOT NULL
+     OR (v_booking.expires_at IS NOT NULL AND v_booking.expires_at <= now()) THEN
+    RAISE EXCEPTION 'Ride already accepted, expired or closed';
+  END IF;
+  IF v_booking.payment_method <> 'cod' AND v_booking.payment_status <> 'paid' THEN
+    RAISE EXCEPTION 'Trip payment must be confirmed before driver acceptance';
   END IF;
 
   SELECT * INTO v_driver FROM public.profiles WHERE id=auth.uid() FOR UPDATE;
@@ -568,7 +572,9 @@ BEGIN
   -- Match automatic dispatch lock order: booking first, then driver profile.
   SELECT * INTO b FROM public.bookings WHERE id = _booking_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Trip not found'; END IF;
-  IF b.status <> 'pending'::public.booking_status OR b.driver_id IS NOT NULL OR b.cancelled_at IS NOT NULL THEN
+  IF b.status <> 'pending'::public.booking_status OR b.driver_id IS NOT NULL
+     OR b.cancelled_at IS NOT NULL
+     OR (b.expires_at IS NOT NULL AND b.expires_at <= now()) THEN
     RAISE EXCEPTION 'Trip is no longer searching for a driver';
   END IF;
   IF b.payment_method <> 'cod' AND b.payment_status <> 'paid' THEN
