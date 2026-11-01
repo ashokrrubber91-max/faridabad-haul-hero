@@ -392,9 +392,9 @@ DROP POLICY IF EXISTS "Bookings: select own or authorized dispatch" ON public.bo
 DROP POLICY IF EXISTS "Bookings: update by authorized participant" ON public.bookings;
 DROP POLICY IF EXISTS "Bookings: customer review completed trip" ON public.bookings;
 
--- The private stop OTP table is not granted to browser roles. Enable RLS as
--- defense in depth so a future accidental grant does not expose OTP records.
-ALTER TABLE private.booking_stop_otps ENABLE ROW LEVEL SECURITY;
+-- private.booking_stop_otps remains a separate defense-in-depth follow-up.
+-- It has no anon/authenticated table grants in the reviewed live schema.
+-- Do not enable RLS until its trusted RPC access path and policies are reviewed.
 
 CREATE POLICY "Bookings: select own or assigned driver"
 ON public.bookings FOR SELECT TO authenticated
