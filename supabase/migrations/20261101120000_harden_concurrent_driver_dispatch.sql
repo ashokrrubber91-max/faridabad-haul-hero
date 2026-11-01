@@ -2,7 +2,7 @@
 -- accepts. Lock order is booking -> driver profile -> offer rows.
 
 CREATE OR REPLACE FUNCTION public.dispatch_next_driver(_booking_id uuid)
-RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,extensions
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
 AS $$
 DECLARE b public.bookings%ROWTYPE; next_driver uuid; next_seq integer; dist numeric;
 BEGIN
@@ -22,8 +22,8 @@ BEGIN
   FROM public.booking_dispatch_offers WHERE booking_id=_booking_id;
 
   SELECT dl.driver_id,
-    round((ST_Distance(dl.location_geog,
-      ST_SetSRID(ST_MakePoint(b.pickup_lng,b.pickup_lat),4326)::geography)/1000.0)::numeric,3)
+    round((extensions.ST_Distance(dl.location_geog,
+      extensions.ST_SetSRID(extensions.ST_MakePoint(b.pickup_lng,b.pickup_lat),4326)::extensions.geography)/1000.0)::numeric,3)
   INTO next_driver,dist
   FROM public.driver_locations dl
   JOIN public.profiles p ON p.id=dl.driver_id
@@ -46,8 +46,8 @@ BEGIN
     )=b.vehicle_type
     AND dl.updated_at>=now()-interval '90 seconds'
     AND b.pickup_lat IS NOT NULL AND b.pickup_lng IS NOT NULL
-    AND ST_DWithin(dl.location_geog,
-      ST_SetSRID(ST_MakePoint(b.pickup_lng,b.pickup_lat),4326)::geography,7000)
+    AND extensions.ST_DWithin(dl.location_geog,
+      extensions.ST_SetSRID(extensions.ST_MakePoint(b.pickup_lng,b.pickup_lat),4326)::extensions.geography,7000)
     AND NOT EXISTS(SELECT 1 FROM public.driver_booking_passes x
       WHERE x.booking_id=_booking_id AND x.driver_id=dl.driver_id)
     AND NOT EXISTS(SELECT 1 FROM public.booking_dispatch_offers x
@@ -59,8 +59,8 @@ BEGIN
       WHERE active.driver_id=dl.driver_id AND active.status IN ('accepted','in_progress')
         AND active.cancelled_at IS NULL)
   ORDER BY
-    ST_Distance(dl.location_geog,
-      ST_SetSRID(ST_MakePoint(b.pickup_lng,b.pickup_lat),4326)::geography) ASC,
+    extensions.ST_Distance(dl.location_geog,
+      extensions.ST_SetSRID(extensions.ST_MakePoint(b.pickup_lng,b.pickup_lat),4326)::extensions.geography) ASC,
     (SELECT count(*) FROM public.bookings done
       WHERE done.driver_id=dl.driver_id AND done.status='completed') DESC,
     dl.updated_at DESC
@@ -86,8 +86,8 @@ REVOKE ALL ON FUNCTION public.dispatch_next_driver(uuid) FROM PUBLIC,anon,authen
 GRANT EXECUTE ON FUNCTION public.dispatch_next_driver(uuid) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.process_driver_dispatch_queue()
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public
-AS $$
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $
 DECLARE r record; advanced integer:=0; started integer:=0; locked_booking uuid;
 BEGIN
   FOR r IN SELECT DISTINCT booking_id FROM public.booking_dispatch_offers
@@ -122,8 +122,8 @@ $$;
 REVOKE ALL ON FUNCTION public.process_driver_dispatch_queue() FROM PUBLIC,anon,authenticated;
 
 CREATE OR REPLACE FUNCTION public.accept_booking(_booking_id uuid)
-RETURNS public.bookings LANGUAGE plpgsql SECURITY DEFINER SET search_path=public
-AS $$
+RETURNS public.bookings LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $
 DECLARE v_driver public.profiles%ROWTYPE; v_booking public.bookings%ROWTYPE;
   v_balance numeric:=0; v_active integer:=0; v_driver_vehicle text;
 BEGIN
@@ -193,7 +193,9 @@ BEGIN
   UPDATE public.booking_dispatch_offers SET status='skipped',responded_at=now()
   WHERE booking_id=_booking_id AND status='offered' AND driver_id<>auth.uid();
 
-  v_booking.pickup_otp:=NULL; v_booking.drop_otp:=NULL;
+  v_booking.pickup_otp:=NULL;
+  v_booking.drop_otp:=NULL;
+  v_booking.customer_phone:=NULL;
   RETURN v_booking;
 END;
 $$;
@@ -201,8 +203,8 @@ REVOKE ALL ON FUNCTION public.accept_booking(uuid) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.accept_booking(uuid) TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.decline_booking(_booking_id uuid)
-RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=public
-AS $$
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $
 DECLARE changed integer; v_booking public.bookings%ROWTYPE;
 BEGIN
   IF auth.uid() IS NULL OR NOT public.has_role(auth.uid(),'driver'::public.app_role) THEN
@@ -236,8 +238,8 @@ CREATE OR REPLACE FUNCTION public.process_scheduled_booking_automation()
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
-AS $$
+SET search_path = ''
+AS $
 DECLARE
   r record;
   reminder_count integer := 0;
@@ -393,8 +395,8 @@ RETURNS SETOF jsonb
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public, extensions
-AS $$
+SET search_path = ''
+AS $
   SELECT
     (
       to_jsonb(b) - ARRAY[
@@ -470,8 +472,8 @@ CREATE OR REPLACE FUNCTION public.cancel_booking(
 RETURNS public.bookings
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
-AS $$
+SET search_path = ''
+AS $
 DECLARE
   b public.bookings%ROWTYPE;
   uid uuid := auth.uid();
@@ -551,8 +553,8 @@ CREATE OR REPLACE FUNCTION public.admin_assign_driver(_booking_id uuid, _driver_
 RETURNS public.bookings
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, extensions
-AS $$
+SET search_path = ''
+AS $
 DECLARE
   b public.bookings%ROWTYPE;
   v_driver public.profiles%ROWTYPE;
@@ -789,8 +791,8 @@ CREATE OR REPLACE FUNCTION public.complete_booking_with_pod(_booking_id uuid, _p
 RETURNS public.bookings
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, private
-AS $$
+SET search_path = ''
+AS $
 DECLARE
   b public.bookings%ROWTYPE;
   uid uuid := auth.uid();
@@ -840,8 +842,8 @@ CREATE OR REPLACE FUNCTION public.purge_closed_booking_otps()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, private
-AS $$
+SET search_path = ''
+AS $
 BEGIN
   IF NEW.status IN (
     'completed'::public.booking_status,
