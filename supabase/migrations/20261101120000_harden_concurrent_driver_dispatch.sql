@@ -349,12 +349,11 @@ GRANT SELECT (
 -- Customers may submit only booking inputs. Server-owned fields (OTP, driver,
 -- payment state, calculated totals, timestamps and verification fields) are
 -- never writable from the browser.
-GRANT INSERT (
-  customer_id, pickup_address, drop_address, pickup_lat, pickup_lng,
-  drop_lat, drop_lng, service_zone, vehicle_type, helper_count, helper_fee,
-  distance_km, fare, total_stops, is_multi_stop, stops, coupon_code,
-  coins_redeemed, payment_method, status, scheduled_for, cargo_weight_kg, notes
-) ON public.bookings TO authenticated;
+-- Booking rows are inserted only by the authenticated server function after
+-- route calculation and user verification. The browser has no direct INSERT.
+REVOKE INSERT ON public.bookings FROM authenticated, anon, PUBLIC;
+DROP POLICY IF EXISTS "Bookings: authenticated user inserts own booking" ON public.bookings;
+DROP POLICY IF EXISTS "Bookings: customer inserts own booking" ON public.bookings;
 
 -- The only direct customer edit on an existing booking is a completed-trip review.
 GRANT UPDATE (rating, review) ON public.bookings TO authenticated;
@@ -667,3 +666,110 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.admin_assign_driver(uuid, uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_assign_driver(uuid, uuid) TO authenticated;
+
+
+-- The trusted server booking function uses the service-role client only after
+-- checking the caller's session. Re-run all financial rules using the explicit
+-- customer_id, and preserve scheduled bookings rather than forcing them pending.
+CREATE OR REPLACE FUNCTION public.bookings_enforce_insert_financials()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  actor_id uuid := auth.uid();
+  service_role_call boolean := COALESCE(auth.role(), '') = 'service_role';
+  base numeric;
+  per_km numeric;
+  gross numeric;
+  disc numeric := 0;
+  cpn record;
+  coin_cap numeric;
+  bal numeric;
+  v_weight integer;
+  helper_count_safe smallint;
+  helper_fee_safe numeric;
+  stop_fee numeric;
+  stop_count integer;
+BEGIN
+  IF actor_id IS NULL AND NOT service_role_call THEN
+    RAISE EXCEPTION 'Please sign in again';
+  END IF;
+  IF actor_id IS NOT NULL AND public.has_role(actor_id, 'admin'::public.app_role) THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.customer_id IS NULL THEN RAISE EXCEPTION 'Booking customer is required'; END IF;
+  IF actor_id IS NOT NULL AND NEW.customer_id <> actor_id THEN
+    RAISE EXCEPTION 'You can only book for your own account';
+  END IF;
+
+  IF NEW.scheduled_for IS NOT NULL AND NEW.scheduled_for > now() THEN
+    NEW.status := 'scheduled'::public.booking_status;
+    NEW.expires_at := COALESCE(NEW.expires_at, NEW.scheduled_for + interval '30 minutes');
+  ELSE
+    NEW.status := 'pending'::public.booking_status;
+    NEW.expires_at := COALESCE(NEW.expires_at, now() + interval '30 minutes');
+  END IF;
+
+  NEW.payment_status := 'pending'::public.payment_status;
+  SELECT s.commission_rate INTO NEW.commission_rate
+  FROM public.platform_settings s WHERE s.id;
+  NEW.commission_rate := COALESCE(NEW.commission_rate, 0.10);
+  NEW.commission_amount := 0;
+  NEW.driver_net_earning := 0;
+  NEW.driver_id := NULL;
+  NEW.pickup_verified_at := NULL;
+  NEW.drop_verified_at := NULL;
+  NEW.rating := NULL;
+  NEW.review := NULL;
+  NEW.pod_photo_url := NULL;
+
+  SELECT v.base_fare, v.per_km_fare, v.weight_limit_kg
+    INTO base, per_km, v_weight
+  FROM public.vehicle_types v
+  WHERE v.id::text = NEW.vehicle_type::text AND v.active;
+  IF base IS NULL THEN RAISE EXCEPTION 'This vehicle is not available for booking'; END IF;
+
+  helper_count_safe := GREATEST(LEAST(COALESCE(NEW.helper_count, 0), 2), 0)::smallint;
+  IF COALESCE(v_weight, 0) <= 20 THEN helper_count_safe := 0; END IF;
+  helper_fee_safe := helper_count_safe * 250;
+  NEW.helper_count := helper_count_safe;
+  NEW.helper_fee := helper_fee_safe;
+  NEW.distance_km := GREATEST(COALESCE(NEW.distance_km, 0), 0);
+
+  stop_count := GREATEST(LEAST(COALESCE(NEW.total_stops, 1), 4), 1);
+  NEW.total_stops := stop_count;
+  NEW.is_multi_stop := stop_count > 1;
+  stop_fee := GREATEST(stop_count - 1, 0) * 50;
+  gross := ROUND(base + per_km * NEW.distance_km + helper_fee_safe + stop_fee);
+
+  IF NEW.coupon_code IS NOT NULL AND BTRIM(NEW.coupon_code) <> '' THEN
+    SELECT * INTO cpn
+    FROM public.validate_coupon(NEW.coupon_code, gross, NEW.customer_id);
+    IF cpn.message = 'ok' AND cpn.discount > 0 THEN
+      NEW.coupon_code := cpn.code;
+      NEW.coupon_discount := cpn.discount;
+    ELSE
+      NEW.coupon_code := NULL;
+      NEW.coupon_discount := 0;
+    END IF;
+  ELSE
+    NEW.coupon_code := NULL;
+    NEW.coupon_discount := 0;
+  END IF;
+
+  SELECT coins_balance INTO bal
+  FROM public.wallet_accounts WHERE user_id = NEW.customer_id;
+  coin_cap := LEAST(
+    GREATEST(gross - COALESCE(NEW.coupon_discount, 0), 0),
+    COALESCE(bal, 0)
+  );
+  NEW.coins_redeemed := GREATEST(LEAST(COALESCE(NEW.coins_redeemed, 0), coin_cap), 0);
+  disc := COALESCE(NEW.coupon_discount, 0) + COALESCE(NEW.coins_redeemed, 0);
+  NEW.fare := GREATEST(gross - disc, 0);
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.bookings_enforce_insert_financials() FROM PUBLIC, anon, authenticated;
