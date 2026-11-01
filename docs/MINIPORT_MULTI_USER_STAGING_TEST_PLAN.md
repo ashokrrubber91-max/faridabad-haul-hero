@@ -1,6 +1,7 @@
 # MiniPort multi-user and physical staging test plan
 
-**Status:** Test plan only. These staging and physical-device scenarios have not been executed. Do not use production users, production data, or real payments.
+**Status:** Test plan only. These staging and physical-device scenarios have not been executed.
+Do not use production users, production data, or real payments.
 
 ## Before testing
 
@@ -58,7 +59,8 @@ Create bookings for multiple vehicle types and service zones.
 - Disconnect a driver during an offer, reconnect, and verify the feed refreshes without duplicating
   the offer.
 
-**Pass:** Exactly one driver is assigned to a booking; a driver cannot hold two active trips; no duplicate active offers or mixed booking IDs appear.
+**Pass:** Exactly one driver is assigned to a booking; a driver cannot hold two active trips; no
+duplicate active offers or mixed booking IDs appear.
 
 ## 4. Scheduled bookings
 
@@ -70,7 +72,8 @@ Create bookings for multiple vehicle types and service zones.
 - Confirm reminders go to the correct customer and, once assigned, the correct driver.
 - Confirm an expired/cancelled scheduled booking is not offered.
 
-**Pass:** No premature broadcast, no stuck scheduled booking, and no offer after the booking expiry window.
+**Pass:** No premature broadcast, no stuck scheduled booking, and no offer after the booking
+expiry window.
 
 ## 5. OTP and privacy
 
@@ -81,7 +84,8 @@ Create bookings for multiple vehicle types and service zones.
 - Cancel and complete bookings; confirm private OTP records and attempt records are purged.
 - Confirm the test bypass is enabled only in staging and never in a production build/environment.
 
-**Pass:** No OTP appears in open-offer feeds, logs, realtime booking payloads, or unauthorized RPC responses.
+**Pass:** No OTP appears in open-offer feeds, logs, realtime booking payloads, or unauthorized
+RPC responses.
 
 ## 6. Payment and wallet (sandbox only)
 
@@ -92,7 +96,8 @@ Create bookings for multiple vehicle types and service zones.
 - Cancel a booking before and after payment; verify the correct refund/settlement state.
 - Verify no customer can directly edit fare, commission, wallet deduction, or payment status.
 
-**Pass:** No duplicate debit/credit, no underpaid booking accepted, and no client-side financial field tampering.
+**Pass:** No duplicate debit/credit, no underpaid booking accepted, and no client-side financial
+field tampering.
 
 ## 7. Physical Android checks
 
@@ -107,7 +112,8 @@ Use separate Android devices and accounts (at minimum one customer device and tw
 - Confirm one driver's screen never displays another driver's assigned trip or customer contact
   details.
 
-**Pass:** Correct identity and booking remain attached to each device through reconnects and app restarts.
+**Pass:** Correct identity and booking remain attached to each device through reconnects and app
+restarts.
 
 ## 8. Load and concurrency
 
@@ -115,7 +121,11 @@ Automated unit coverage currently includes:
 - 5,000 driver candidates in a matching test.
 - 250 independent booking-match requests across 1,000 simulated drivers.
 
-These are pure code-level simulations, not a live database or network load test. For a true load test, use a disposable staging project and a controlled load generator (for example, k6) with ramp-up, steady-state, and spike phases. Start small (10, 25, 50, then 100 concurrent booking requests) and monitor database CPU, query latency, queue depth, offer latency, error rate, and duplicate assignments. Never load-test production.
+These are pure code-level simulations, not a live database or network load test. For a true load
+test, use a disposable staging project and a controlled load generator (for example, k6) with
+ramp-up, steady-state, and spike phases. Start small (10, 25, 50, then 100 concurrent booking
+requests) and monitor database CPU, query latency, queue depth, offer latency, error rate, and
+ duplicate assignments. Never load-test production.
 
 ## Evidence to record
 
