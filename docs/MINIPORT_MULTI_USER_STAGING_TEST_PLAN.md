@@ -47,7 +47,9 @@ Prepare drivers with these combinations:
 
 Create bookings for multiple vehicle types and service zones.
 
-**Pass:** Only eligible drivers receive offers. A driver with an active trip or another live offer does not receive another offer. A wrong vehicle, wrong zone, offline driver, unapproved driver, or stale-location driver is never selected.
+**Pass:** Only eligible drivers receive offers. A driver with an active trip or another live offer
+does not receive another offer. A wrong vehicle, wrong zone, offline driver, unapproved driver,
+or stale-location driver is never selected.
 
 ## 3. Concurrent acceptance and dispatch
 
