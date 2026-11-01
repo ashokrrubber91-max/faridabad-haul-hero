@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
+    "simulate:rides": "bun scripts/ride-lifecycle-sim.ts",
     "format": "prettier --write ."
   },
   "dependencies": {

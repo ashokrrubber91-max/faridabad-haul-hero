@@ -115,3 +115,7 @@
 - [x] Ops messages create ops tasks; TODAY gives a trip summary. Driver assignment, fares and payouts stay in the console — WhatsApp can never change a role, assign a driver or move money.
 - [x] `/tasks` page for drivers and ops, with start / mark done through a permission-checked server action.
 - Needs credentials before it can send or receive: Twilio account SID, auth token and the WhatsApp sender number.
+
+## Ride lifecycle load simulation
+- [x] Offline 10,000-user simulation (`bun run simulate:rides`) + tests/ride-lifecycle-simulation.test.js — 40/40 tests pass, 0 rule violations.
+- [ ] Real backend load test — blocked: needs a separate test database (preview and live share one backend).

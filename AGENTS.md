@@ -21,3 +21,5 @@
 - Keep co-loading planning separate from assignment and financial writes; never enable pooled acceptance before atomic backend run/capacity/payment safeguards exist.
 - Goods-photo/audio drafts remain local until a dedicated private booking-attachment capability is installed; never repurpose KYC or delivery-proof storage, silently discard drafts, or embed media URLs in notes.
 - Account sync treats a profile-read failure as non-fatal once roles load, and the driver feed falls back to the RLS-guarded bookings read when the open-jobs RPC is absent, so profile or schema gaps never block the job feed.
+
+- The ride-lifecycle load simulation (scripts/ride-lifecycle-sim.ts) is offline and in-memory, mirroring the sequential-dispatch SQL rules and reusing the shared matcher, because the preview and live app share one backend and load tests must never write real bookings.
