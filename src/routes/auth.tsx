@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { toast } from "sonner";
 import { Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
