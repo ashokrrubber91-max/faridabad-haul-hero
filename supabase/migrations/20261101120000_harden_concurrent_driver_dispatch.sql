@@ -831,3 +831,37 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.complete_booking_with_pod(uuid, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.complete_booking_with_pod(uuid, text) TO authenticated;
+
+
+-- Purge OTP material once a trip is closed, regardless of which trusted
+-- completion/cancellation path performed the transition.
+CREATE OR REPLACE FUNCTION public.purge_closed_booking_otps()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, private
+AS $$
+BEGIN
+  IF NEW.status IN (
+    'completed'::public.booking_status,
+    'cancelled'::public.booking_status,
+    'expired'::public.booking_status
+  ) AND OLD.status IS DISTINCT FROM NEW.status THEN
+    DELETE FROM private.booking_otps WHERE booking_id = NEW.id;
+    DELETE FROM public.booking_otp_attempts WHERE booking_id = NEW.id;
+    UPDATE public.bookings
+       SET pickup_otp = NULL, drop_otp = NULL
+     WHERE id = NEW.id
+       AND (pickup_otp IS NOT NULL OR drop_otp IS NOT NULL);
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS bookings_purge_closed_otps ON public.bookings;
+CREATE TRIGGER bookings_purge_closed_otps
+AFTER UPDATE OF status ON public.bookings
+FOR EACH ROW
+EXECUTE FUNCTION public.purge_closed_booking_otps();
+
+REVOKE ALL ON FUNCTION public.purge_closed_booking_otps() FROM PUBLIC, anon, authenticated;
