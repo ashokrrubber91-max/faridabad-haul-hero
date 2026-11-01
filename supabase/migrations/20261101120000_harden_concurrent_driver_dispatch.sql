@@ -371,7 +371,6 @@ USING (
   OR customer_id = auth.uid()
   OR (
     public.has_role(auth.uid(), 'driver'::public.app_role)
-    AND public.is_kyc_approved(auth.uid())
     AND driver_id = auth.uid()
   )
 );
