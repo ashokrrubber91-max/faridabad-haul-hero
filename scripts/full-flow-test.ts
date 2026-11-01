@@ -593,7 +593,6 @@ async function main() {
     ),
   );
 
-
   // A shareable visual report is generated from the same in-memory run.
   // No simulated account, booking, OTP, or support ticket is written to Supabase.
   const testAccounts = {
