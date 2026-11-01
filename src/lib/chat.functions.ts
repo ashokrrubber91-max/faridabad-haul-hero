@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateText } from "ai";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 
 const InputSchema = z.object({
