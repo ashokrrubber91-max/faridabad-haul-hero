@@ -8,6 +8,7 @@ DECLARE b public.bookings%ROWTYPE; next_driver uuid; next_seq integer; dist nume
 BEGIN
   SELECT * INTO b FROM public.bookings WHERE id=_booking_id FOR UPDATE;
   IF NOT FOUND OR b.status<>'pending' OR b.driver_id IS NOT NULL OR b.cancelled_at IS NOT NULL
+     OR (b.expires_at IS NOT NULL AND b.expires_at<=now())
      OR (b.payment_method<>'cod' AND b.payment_status<>'paid') THEN RETURN NULL; END IF;
 
   -- A booking must have at most one live offer, even when its trigger and
@@ -243,6 +244,21 @@ DECLARE
   assigned_driver_reminder_count integer := 0;
   dispatch_count integer := 0;
 BEGIN
+  -- Dispatch first (booking -> driver -> offer locks), then reminders. This
+  -- keeps the same lock order as cancellation's booking -> reminder trigger.
+  WITH dispatched AS (
+    UPDATE public.bookings b
+       SET status = 'pending', updated_at = now()
+     WHERE b.status = 'scheduled'
+       AND b.scheduled_for IS NOT NULL
+       AND b.scheduled_for > now()
+       AND b.scheduled_for <= now() + interval '30 minutes'
+       AND b.payment_status = 'paid'
+       AND (b.expires_at IS NULL OR b.expires_at > now())
+    RETURNING b.id
+  )
+  SELECT count(*) INTO dispatch_count FROM dispatched;
+
   FOR r IN
     SELECT s.id, s.customer_id, b.driver_id, s.scheduled_for,
            b.pickup_address, b.drop_address
@@ -286,21 +302,6 @@ BEGIN
     reminder_count := reminder_count + 1;
   END LOOP;
 
-  -- The status update fires the secure sequential-dispatch trigger. It creates
-  -- one expiring offer for one verified, online, nearby, vehicle-compatible
-  -- driver; it deliberately does not broadcast a non-actionable alert to all.
-  WITH dispatched AS (
-    UPDATE public.bookings b
-       SET status = 'pending', updated_at = now()
-     WHERE b.status = 'scheduled'
-       AND b.scheduled_for IS NOT NULL
-       AND b.scheduled_for > now()
-       AND b.scheduled_for <= now() + interval '30 minutes'
-       AND b.payment_status = 'paid'
-    RETURNING b.id
-  )
-  SELECT count(*) INTO dispatch_count FROM dispatched;
-
   UPDATE public.scheduled_booking_reminders s
      SET status = 'cancelled', updated_at = now()
     FROM public.bookings b
@@ -316,8 +317,8 @@ BEGIN
   );
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.process_scheduled_booking_automation() FROM PUBLIC, anon, authenticated;
+
 
 
 -- Restore column-scoped access that was accidentally widened by a later
@@ -524,7 +525,9 @@ BEGIN
            WHEN b.payment_status = 'pending'::public.payment_status
            THEN 'failed'::public.payment_status
            ELSE b.payment_status
-         END
+         END,
+         pickup_otp = NULL,
+         drop_otp = NULL
    WHERE id = _booking_id
   RETURNING * INTO b;
   PERFORM set_config('miniport.trusted_write', 'off', true);
@@ -532,6 +535,7 @@ BEGIN
   UPDATE public.booking_dispatch_offers
      SET status = 'skipped', responded_at = now()
    WHERE booking_id = _booking_id AND status = 'offered';
+  DELETE FROM private.booking_otps WHERE booking_id = _booking_id;
 
   b.pickup_otp := NULL;
   b.drop_otp := NULL;
