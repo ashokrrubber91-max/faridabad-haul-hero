@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "simulate:rides": "bun scripts/ride-lifecycle-sim.ts",
+    "test:full-flow": "bun scripts/full-flow-test.ts",
     "format": "prettier --write ."
   },
   "dependencies": {
