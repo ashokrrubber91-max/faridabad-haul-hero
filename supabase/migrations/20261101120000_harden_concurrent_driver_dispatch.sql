@@ -27,8 +27,22 @@ BEGIN
   FROM public.driver_locations dl
   JOIN public.profiles p ON p.id=dl.driver_id
   JOIN public.user_roles ur ON ur.user_id=dl.driver_id AND ur.role='driver'::public.app_role
+  LEFT JOIN public.driver_profiles dp ON dp.user_id=dl.driver_id
+  JOIN LATERAL (
+    SELECT dk.vehicle_id
+    FROM public.driver_kyc dk
+    WHERE dk.driver_id=dl.driver_id AND dk.status='approved'::public.kyc_status
+    ORDER BY dk.updated_at DESC
+    LIMIT 1
+  ) approved_kyc ON true
   WHERE p.is_online IS TRUE AND p.kyc_status='approved'::public.kyc_status
     AND COALESCE(p.service_zone,'Faridabad')=COALESCE(b.service_zone,'Faridabad')
+    -- Match the requested catalogue vehicle. Prefer a valid driver profile
+    -- vehicle, then fall back to the vehicle from the latest approved KYC.
+    AND COALESCE(
+      (SELECT vt.id FROM public.vehicle_types vt WHERE vt.id=dp.vehicle_type),
+      approved_kyc.vehicle_id
+    )=b.vehicle_type
     AND dl.updated_at>=now()-interval '90 seconds'
     AND b.pickup_lat IS NOT NULL AND b.pickup_lng IS NOT NULL
     AND ST_DWithin(dl.location_geog,
@@ -110,7 +124,7 @@ CREATE OR REPLACE FUNCTION public.accept_booking(_booking_id uuid)
 RETURNS public.bookings LANGUAGE plpgsql SECURITY DEFINER SET search_path=public
 AS $$
 DECLARE v_driver public.profiles%ROWTYPE; v_booking public.bookings%ROWTYPE;
-  v_balance numeric:=0; v_active integer:=0;
+  v_balance numeric:=0; v_active integer:=0; v_driver_vehicle text;
 BEGIN
   IF auth.uid() IS NULL OR NOT public.has_role(auth.uid(),'driver'::public.app_role) THEN
     RAISE EXCEPTION 'Only drivers can accept rides';
@@ -143,6 +157,23 @@ BEGIN
   IF COALESCE(v_booking.service_zone,'Faridabad')
      IS DISTINCT FROM COALESCE(v_driver.service_zone,'Faridabad') THEN
     RAISE EXCEPTION 'Ride is outside your service zone';
+  END IF;
+
+  SELECT COALESCE(
+    (SELECT vt.id
+     FROM public.vehicle_types vt
+     JOIN public.driver_profiles dp ON dp.user_id=auth.uid()
+     WHERE vt.id=dp.vehicle_type),
+    (SELECT dk.vehicle_id
+     FROM public.driver_kyc dk
+     WHERE dk.driver_id=auth.uid()
+       AND dk.status='approved'::public.kyc_status
+     ORDER BY dk.updated_at DESC
+     LIMIT 1)
+  ) INTO v_driver_vehicle;
+
+  IF v_driver_vehicle IS DISTINCT FROM v_booking.vehicle_type THEN
+    RAISE EXCEPTION 'This ride requires a different vehicle type';
   END IF;
 
   IF NOT EXISTS(SELECT 1 FROM public.booking_dispatch_offers o
