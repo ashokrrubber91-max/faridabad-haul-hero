@@ -93,12 +93,15 @@ describe("Ride alert matching", () => {
     );
 
     expect(results).toHaveLength(250);
-    for (const matches of results) {
+    for (const [requestIndex, matches] of results.entries()) {
+      const request = requests[requestIndex];
       expect(new Set(matches).size).toBe(matches.length);
       expect(
         matches.every((id) => {
           const index = Number(id.slice(7));
-          return index % 4 !== 0 && index % 5 !== 0;
+          const correctZone = (index % 2 === 0) === (request.service_zone === "Faridabad");
+          const correctVehicle = (index % 3 === 0) === (request.vehicle_type === "tata_ace");
+          return index % 4 !== 0 && index % 5 !== 0 && correctZone && correctVehicle;
         }),
       ).toBe(true);
     }
