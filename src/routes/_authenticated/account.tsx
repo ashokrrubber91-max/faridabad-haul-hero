@@ -244,7 +244,7 @@ function AccountPage() {
   });
 
   const [selectedMonth, setSelectedMonth] = useState("all");
-  const filteredMonths = useMemo(() => {
+  const filteredMonths = useMemo<MonthlyDriverEarning[]>(() => {
     if (selectedMonth === "all") return monthlyDriverEarnings.data ?? [];
     return (monthlyDriverEarnings.data ?? []).filter((month) => month.key === selectedMonth);
   }, [monthlyDriverEarnings.data, selectedMonth]);
