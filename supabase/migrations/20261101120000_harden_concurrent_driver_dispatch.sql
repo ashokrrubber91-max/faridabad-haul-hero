@@ -10,6 +10,13 @@ BEGIN
   IF NOT FOUND OR b.status<>'pending' OR b.driver_id IS NOT NULL OR b.cancelled_at IS NOT NULL
      OR (b.payment_method<>'cod' AND b.payment_status<>'paid') THEN RETURN NULL; END IF;
 
+  -- A booking must have at most one live offer, even when its trigger and
+  -- queue worker attempt dispatch at the same time.
+  IF EXISTS (SELECT 1 FROM public.booking_dispatch_offers x
+    WHERE x.booking_id=_booking_id AND x.status='offered' AND x.expires_at>now()) THEN
+    RETURN NULL;
+  END IF;
+
   SELECT COALESCE(MAX(sequence_no),0)+1 INTO next_seq
   FROM public.booking_dispatch_offers WHERE booking_id=_booking_id;
 
@@ -21,7 +28,7 @@ BEGIN
   JOIN public.profiles p ON p.id=dl.driver_id
   JOIN public.user_roles ur ON ur.user_id=dl.driver_id AND ur.role='driver'::public.app_role
   WHERE p.is_online IS TRUE AND p.kyc_status='approved'::public.kyc_status
-    AND (p.service_zone IS NULL OR p.service_zone=b.service_zone)
+    AND COALESCE(p.service_zone,'Faridabad')=COALESCE(b.service_zone,'Faridabad')
     AND dl.updated_at>=now()-interval '90 seconds'
     AND b.pickup_lat IS NOT NULL AND b.pickup_lng IS NOT NULL
     AND ST_DWithin(dl.location_geog,
