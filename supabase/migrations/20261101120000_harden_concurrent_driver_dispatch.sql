@@ -366,9 +366,21 @@ DROP POLICY IF EXISTS "Bookings: customer inserts own booking" ON public.booking
 GRANT UPDATE (rating, review) ON public.bookings TO authenticated;
 GRANT ALL ON public.bookings TO service_role;
 
+-- Remove the exact legacy policy names currently present in the live
+-- database as well as names used by earlier migration variants. PostgreSQL
+-- combines permissive policies with OR, so leaving even one broad SELECT
+-- policy would preserve cross-customer pending-booking visibility.
+DROP POLICY IF EXISTS "Drivers can view searching rides" ON public.bookings;
+DROP POLICY IF EXISTS "Bookings: customer and assigned driver select" ON public.bookings;
+DROP POLICY IF EXISTS "Bookings: customer insert own" ON public.bookings;
+DROP POLICY IF EXISTS "Bookings: authorized participant update" ON public.bookings;
 DROP POLICY IF EXISTS "Bookings: select own or authorized dispatch" ON public.bookings;
 DROP POLICY IF EXISTS "Bookings: update by authorized participant" ON public.bookings;
 DROP POLICY IF EXISTS "Bookings: customer review completed trip" ON public.bookings;
+
+-- The private stop OTP table is not granted to browser roles. Enable RLS as
+-- defense in depth so a future accidental grant does not expose OTP records.
+ALTER TABLE private.booking_stop_otps ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Bookings: select own or assigned driver"
 ON public.bookings FOR SELECT TO authenticated
