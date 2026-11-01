@@ -111,7 +111,10 @@ export const createBooking = createServerFn({ method: "POST" })
     const helperCount = data.helperCount;
     const helperFee = helperCount * 250;
 
-    const { data: booking, error } = await context.supabase
+    // Only this authenticated server function can create a booking row. The
+    // database trigger still applies fare, coupon, coin and schedule rules.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: booking, error } = await supabaseAdmin
       .from("bookings")
       .insert({
         customer_id: authenticatedCustomerId,
