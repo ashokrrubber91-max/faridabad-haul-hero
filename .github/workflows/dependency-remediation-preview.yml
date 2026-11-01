@@ -1,0 +1,82 @@
+name: Dependency remediation preview
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "package.json"
+      - "bun.lock"
+      - ".github/workflows/dependency-remediation-preview.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-remediation-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Preview safe dependency fixes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install the reviewed lockfile
+        run: bun install --frozen-lockfile
+
+      # Bun's non-major audit fixer chooses the lowest patched versions allowed
+      # by all current dependency ranges. This only changes this temporary CI
+      # workspace; it does not commit or push anything to the repository.
+      - name: Apply non-major security fixes in the isolated runner
+        id: audit_fix
+        continue-on-error: true
+        run: bun audit fix
+
+      - name: Verify the updated dependency graph
+        id: audit
+        continue-on-error: true
+        run: bun audit --audit-level=high
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Automated tests
+        run: bun run test
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Production build
+        run: bun run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'placeholder-publishable-key' }}
+          VITE_SUPABASE_PROJECT_ID: ${{ vars.VITE_SUPABASE_PROJECT_ID || 'placeholder' }}
+
+      - name: Upload dependency update candidate for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: miniport-dependency-remediation-candidate
+          path: |
+            package.json
+            bun.lock
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Require a clean security audit
+        if: always()
+        env:
+          FIX_OUTCOME: ${{ steps.audit_fix.outcome }}
+          AUDIT_OUTCOME: ${{ steps.audit.outcome }}
+        run: |
+          if [ "$FIX_OUTCOME" != "success" ] || [ "$AUDIT_OUTCOME" != "success" ]; then
+            echo "::error::The dependency update candidate still has unresolved high or critical advisories."
+            exit 1
+          fi
