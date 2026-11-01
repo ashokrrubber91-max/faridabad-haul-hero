@@ -16,6 +16,7 @@
  *
  * Exits with code 1 when any invariant fails.
  */
+import { mkdir } from "node:fs/promises";
 import { DEFAULT_SERVICE_ZONE, isRideAlertMatch } from "../src/lib/dispatch-match";
 
 // ---------------------------------------------------------------- constants
@@ -424,7 +425,7 @@ function runTrip(b: Booking, driverId: string) {
 }
 
 // ---------------------------------------------------------------- run
-function main() {
+async function main() {
   const t0 = performance.now();
   // 1. Seed users
   const admin: User = { id: "A1", role: "admin" };
@@ -569,7 +570,8 @@ function main() {
 
   console.log("MiniPort full-flow integration test (in-memory, no database writes)");
   console.table({
-    users: USERS,
+    users: users.size,
+    totalTestAccountsCreated: users.size,
     seed: SEED,
     drivers: driverCount,
     driversKycRejected: rejected,
@@ -591,6 +593,67 @@ function main() {
     ),
   );
 
+
+  // A shareable visual report is generated from the same in-memory run.
+  // No simulated account, booking, OTP, or support ticket is written to Supabase.
+  const testAccounts = {
+    total: users.size,
+    customers: customerCount,
+    drivers: driverCount,
+    admins: 1,
+    persistedToDatabase: 0,
+    storage: "in-memory only",
+  };
+  console.table(testAccounts);
+
+  const status = violations.length === 0 ? "PASS" : "FAIL";
+  const completed = by("completed");
+  const expired = by("expired");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+    <rect width="1200" height="760" rx="28" fill="#fff8ef"/>
+    <rect width="1200" height="150" rx="28" fill="#f97316"/>
+    <text x="64" y="70" fill="#ffffff" font-family="Arial,sans-serif" font-size="30" font-weight="700">MINIPORT · FULL-FLOW TEST REPORT</text>
+    <text x="64" y="112" fill="#ffedd5" font-family="Arial,sans-serif" font-size="18">Deterministic Faridabad simulation · Seed ${SEED} · No production data touched</text>
+    <rect x="64" y="184" width="1072" height="170" rx="22" fill="#ffffff" stroke="#eadfd2" stroke-width="2"/>
+    <text x="96" y="230" fill="#6b6259" font-family="Arial,sans-serif" font-size="20">TOTAL TEST ACCOUNTS CREATED (IN MEMORY)</text>
+    <text x="96" y="320" fill="#171717" font-family="Arial,sans-serif" font-size="82" font-weight="700">${testAccounts.total.toLocaleString("en-US")}</text>
+    <rect x="64" y="384" width="336" height="118" rx="18" fill="#ffedd5"/>
+    <text x="92" y="426" fill="#9a3412" font-family="Arial,sans-serif" font-size="19">CUSTOMERS</text>
+    <text x="92" y="476" fill="#171717" font-family="Arial,sans-serif" font-size="42" font-weight="700">${customerCount.toLocaleString("en-US")}</text>
+    <rect x="432" y="384" width="336" height="118" rx="18" fill="#dcfce7"/>
+    <text x="460" y="426" fill="#166534" font-family="Arial,sans-serif" font-size="19">DRIVERS</text>
+    <text x="460" y="476" fill="#171717" font-family="Arial,sans-serif" font-size="42" font-weight="700">${driverCount.toLocaleString("en-US")}</text>
+    <rect x="800" y="384" width="336" height="118" rx="18" fill="#e0e7ff"/>
+    <text x="828" y="426" fill="#3730a3" font-family="Arial,sans-serif" font-size="19">ADMIN TEST ACCOUNT</text>
+    <text x="828" y="476" fill="#171717" font-family="Arial,sans-serif" font-size="42" font-weight="700">1</text>
+    <rect x="64" y="530" width="1072" height="112" rx="18" fill="#ffffff" stroke="#eadfd2" stroke-width="2"/>
+    <text x="96" y="575" fill="#6b6259" font-family="Arial,sans-serif" font-size="19">RIDES COMPLETED: ${completed.toLocaleString("en-US")}    ·    EXPIRED: ${expired.toLocaleString("en-US")}</text>
+    <text x="96" y="615" fill="#6b6259" font-family="Arial,sans-serif" font-size="19">DATABASE WRITES: 0    ·    MODE: IN-MEMORY SIMULATION</text>
+    <rect x="64" y="670" width="1072" height="58" rx="16" fill="${status === "PASS" ? "#16a34a" : "#dc2626"}"/>
+    <text x="600" y="709" text-anchor="middle" fill="#ffffff" font-family="Arial,sans-serif" font-size="25" font-weight="700">${status} · ${violations.length} INVARIANT VIOLATIONS</text>
+  </svg>`;
+  const report = {
+    generatedAt: new Date().toISOString(),
+    status,
+    seed: SEED,
+    testAccounts,
+    rides: { total: all.length, completed, expired },
+    dispatch: stats,
+    support: ticketSummary,
+    violations,
+    note: "All accounts and activity are simulated in memory. No Supabase or production records were created or modified.",
+  };
+  await mkdir("test-results", { recursive: true });
+  await Bun.write("test-results/full-flow-report.svg", svg);
+  await Bun.write("test-results/full-flow-report.json", JSON.stringify(report, null, 2));
+  await Bun.write(
+    "test-results/full-flow-report.html",
+    `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>MiniPort Full-Flow Test Report</title><style>body{margin:0;padding:20px;background:#fff8ef;font-family:Arial,sans-serif}main{max-width:1000px;margin:auto}img{width:100%;height:auto;display:block;border-radius:18px}p{color:#6b6259;text-align:center}</style></head><body><main><img src="./full-flow-report.svg" alt="MiniPort test report"><p>Generated by bun run test:full-flow. Test accounts are not saved in the database.</p></main></body></html>`,
+  );
+  console.log("Visual report: test-results/full-flow-report.svg");
+  console.log("HTML report:   test-results/full-flow-report.html");
+  console.log("JSON report:   test-results/full-flow-report.json");
+
   if (violations.length) {
     console.error(`FAIL: ${violations.length} invariant violation(s)`);
     for (const v of violations.slice(0, 25)) console.error(" -", v);
@@ -599,4 +662,7 @@ function main() {
   console.log("PASS: all invariants held");
 }
 
-main();
+main().catch((error) => {
+  console.error("Full-flow test runner failed:", error);
+  process.exit(1);
+});
