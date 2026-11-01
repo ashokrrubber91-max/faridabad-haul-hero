@@ -12,7 +12,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { vehicleLabel } from "@/lib/booking";
+import { driverEarningBreakdown, vehicleLabel } from "@/lib/booking";
 
 type Job = {
   id: string;
@@ -21,6 +21,9 @@ type Job = {
   vehicle_type: string;
   distance_km: number | string;
   fare: number | string;
+  commission_amount?: number | string | null;
+  commission_rate?: number | string | null;
+  driver_net_earning?: number | string | null;
   payment_method: string;
   notes: string | null;
   scheduled_for?: string | null;
@@ -129,9 +132,7 @@ export function IncomingRideOverlay({
     setListening(false);
     if (briefingSpokenFor.current !== job.id) {
       briefingSpokenFor.current = job.id;
-      const fare = Number(job.fare) || 0;
-      const commission = Math.round(fare * 0.1);
-      const net = fare - commission;
+      const { fare, commission, net } = driverEarningBreakdown(job);
       const weight =
         job.cargo_weight_kg != null && Number(job.cargo_weight_kg) > 0
           ? `Cargo weight ${Number(job.cargo_weight_kg)} kilogram. `
@@ -150,6 +151,9 @@ export function IncomingRideOverlay({
     job.vehicle_type,
     job.distance_km,
     job.fare,
+    job.commission_amount,
+    job.commission_rate,
+    job.driver_net_earning,
     job.scheduled_for,
     job.cargo_weight_kg,
     muted,
@@ -198,8 +202,7 @@ export function IncomingRideOverlay({
       toast.error("Microphone start nahi hua. Button se choose karein.");
     }
   };
-  const commission = Math.round(Number(job.fare) * 0.1);
-  const net = Number(job.fare) - commission;
+  const { fare, commission, net, commissionRate } = driverEarningBreakdown(job);
   const weight =
     job.cargo_weight_kg != null && Number(job.cargo_weight_kg) > 0
       ? Number(job.cargo_weight_kg)
@@ -261,7 +264,7 @@ export function IncomingRideOverlay({
           </p>
           <p className="font-display text-4xl">₹{net}</p>
           <p className="text-[11px] text-white/50">
-            Fare ₹{Number(job.fare).toFixed(0)} − estimated 10% commission (₹{commission})
+            Fare ₹{fare.toFixed(0)} − commission ({Math.round(commissionRate * 100)}%) ₹{commission.toFixed(0)}
           </p>
         </div>
       </div>
