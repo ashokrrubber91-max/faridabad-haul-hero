@@ -225,10 +225,15 @@ export const createBooking = createServerFn({ method: "POST" })
       walletDeductedAmount = Number(applied.wallet_deducted_amount ?? 0);
       finalPayableAmount = Number(applied.final_payable_amount ?? booking.fare);
     } else {
-      await context.supabase
+      // Financial columns are not client-writable. This server function has
+      // already revalidated the caller and created the booking for this user.
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error: payableError } = await supabaseAdmin
         .from("bookings")
         .update({ wallet_deducted_amount: 0, final_payable_amount: Number(booking.fare) })
-        .eq("id", booking.id);
+        .eq("id", booking.id)
+        .eq("customer_id", authenticatedCustomerId);
+      if (payableError) throw new Error(payableError.message);
     }
 
     return {
