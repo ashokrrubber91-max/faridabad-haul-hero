@@ -255,7 +255,7 @@ BEGIN
        AND b.scheduled_for IS NOT NULL
        AND b.scheduled_for > now()
        AND b.scheduled_for <= now() + interval '30 minutes'
-       AND b.payment_status = 'paid'
+       AND (b.payment_method = 'cod' OR b.payment_status = 'paid')
        AND (b.expires_at IS NULL OR b.expires_at > now())
     RETURNING b.id
   )
@@ -269,7 +269,7 @@ BEGIN
     WHERE s.status = 'queued'
       AND s.reminder_at <= now()
       AND b.status = 'scheduled'
-      AND b.payment_status = 'paid'
+      AND (b.payment_method = 'cod' OR b.payment_status = 'paid')
       AND b.scheduled_for > now()
     ORDER BY s.reminder_at
     FOR UPDATE OF s SKIP LOCKED
