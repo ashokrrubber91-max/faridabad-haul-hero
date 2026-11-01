@@ -264,8 +264,10 @@ export function IncomingRideOverlay({
           </p>
           <p className="font-display text-4xl">₹{net}</p>
           <p className="text-[11px] text-white/50">
-            Fare ₹{fare.toFixed(0)} − commission ({Math.round(commissionRate * 100)}%)
-            ₹{commission.toFixed(0)}
+            <span>Fare ₹{fare.toFixed(0)}</span>{" "}
+            <span>
+              Commission ₹{commission.toFixed(0)} ({Math.round(commissionRate * 100)}%)
+            </span>
           </p>
         </div>
       </div>
