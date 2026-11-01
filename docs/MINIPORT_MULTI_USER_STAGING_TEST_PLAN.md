@@ -120,6 +120,7 @@ restarts.
 ## 8. Load and concurrency
 
 Automated unit coverage currently includes:
+
 - 5,000 driver candidates in a matching test.
 - 250 independent booking-match requests across 1,000 simulated drivers.
 
@@ -132,6 +133,7 @@ duplicate assignments. Never load-test production.
 ## Evidence to record
 
 For each scenario record:
+
 - Staging build commit SHA and database migration version.
 - Number of customer and driver test accounts.
 - Booking IDs and assigned driver test IDs (do not record real phone numbers).
@@ -142,6 +144,7 @@ For each scenario record:
 ## Release gate
 
 Do not call MiniPort production-ready until:
+
 - All CI checks pass.
 - All database migrations apply cleanly in staging.
 - The multi-user, concurrent-acceptance, scheduled-booking, OTP/RLS, and sandbox payment tests pass.
