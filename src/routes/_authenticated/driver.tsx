@@ -32,12 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  driverEarningBreakdown,
-  vehicleLabel,
-  STATUS_META,
-  BOOKING_FIELDS,
-} from "@/lib/booking";
+import { driverEarningBreakdown, vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
 import { addressLines } from "@/lib/address";
 
 import { SupportChat } from "@/components/support/SupportChat";
