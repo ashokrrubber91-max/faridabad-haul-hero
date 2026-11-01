@@ -543,7 +543,7 @@ BEGIN
   b.customer_phone := NULL;
   RETURN b;
 END;
-$;
+$$;
 REVOKE ALL ON FUNCTION public.cancel_booking(uuid, text, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.cancel_booking(uuid, text, text) TO authenticated;
 
@@ -672,7 +672,7 @@ BEGIN
   b.customer_phone := NULL;
   RETURN b;
 END;
-$;
+$$;
 REVOKE ALL ON FUNCTION public.admin_assign_driver(uuid, uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_assign_driver(uuid, uuid) TO authenticated;
 
