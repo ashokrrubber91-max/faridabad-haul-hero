@@ -539,9 +539,10 @@ BEGIN
 
   b.pickup_otp := NULL;
   b.drop_otp := NULL;
+  b.customer_phone := NULL;
   RETURN b;
 END;
-$$;
+$;
 REVOKE ALL ON FUNCTION public.cancel_booking(uuid, text, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.cancel_booking(uuid, text, text) TO authenticated;
 
@@ -622,12 +623,14 @@ BEGIN
     RAISE EXCEPTION 'That driver already has another live ride offer';
   END IF;
 
+  PERFORM set_config('miniport.trusted_write', 'on', true);
   UPDATE public.bookings
      SET driver_id = _driver_id,
          status = 'accepted'::public.booking_status,
          updated_at = now()
    WHERE id = _booking_id
   RETURNING * INTO b;
+  PERFORM set_config('miniport.trusted_write', 'off', true);
 
   UPDATE public.booking_dispatch_offers
      SET status = 'skipped', responded_at = now()
@@ -665,9 +668,10 @@ BEGIN
 
   b.pickup_otp := NULL;
   b.drop_otp := NULL;
+  b.customer_phone := NULL;
   RETURN b;
 END;
-$$;
+$;
 REVOKE ALL ON FUNCTION public.admin_assign_driver(uuid, uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_assign_driver(uuid, uuid) TO authenticated;
 
@@ -777,3 +781,53 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.bookings_enforce_insert_financials() FROM PUBLIC, anon, authenticated;
+
+
+-- Completing a trip with POD is a trusted state transition. Keep the booking
+-- trigger's protected columns writable only inside this verified RPC and
+-- return no OTP or customer contact data to the driver.
+CREATE OR REPLACE FUNCTION public.complete_booking_with_pod(_booking_id uuid, _pod_path text)
+RETURNS public.bookings
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, private
+AS $$
+DECLARE
+  b public.bookings%ROWTYPE;
+  uid uuid := auth.uid();
+BEGIN
+  IF uid IS NULL THEN RAISE EXCEPTION 'Please sign in again'; END IF;
+  IF _pod_path IS NULL OR btrim(_pod_path) = '' THEN
+    RAISE EXCEPTION 'Attach a delivery photo first';
+  END IF;
+
+  SELECT * INTO b FROM public.bookings WHERE id = _booking_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Trip not found'; END IF;
+  IF b.driver_id IS DISTINCT FROM uid THEN
+    RAISE EXCEPTION 'Only the assigned driver can complete this trip';
+  END IF;
+  IF b.status <> 'in_progress'::public.booking_status THEN
+    RAISE EXCEPTION 'Trip is not in progress';
+  END IF;
+
+  PERFORM set_config('miniport.trusted_write', 'on', true);
+  UPDATE public.bookings
+     SET drop_verified_at = now(),
+         status = 'completed'::public.booking_status,
+         pod_photo_url = _pod_path,
+         unloading_stopped_at = COALESCE(unloading_stopped_at, now())
+   WHERE id = _booking_id
+  RETURNING * INTO b;
+  PERFORM set_config('miniport.trusted_write', 'off', true);
+
+  DELETE FROM private.booking_otps WHERE booking_id = _booking_id;
+  DELETE FROM public.booking_otp_attempts WHERE booking_id = _booking_id;
+
+  b.pickup_otp := NULL;
+  b.drop_otp := NULL;
+  b.customer_phone := NULL;
+  RETURN b;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.complete_booking_with_pod(uuid, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.complete_booking_with_pod(uuid, text) TO authenticated;
