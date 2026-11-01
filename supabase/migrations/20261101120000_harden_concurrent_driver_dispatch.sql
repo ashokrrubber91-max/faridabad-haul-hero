@@ -323,6 +323,14 @@ REVOKE ALL ON FUNCTION public.process_scheduled_booking_automation() FROM PUBLIC
 -- Restore column-scoped access that was accidentally widened by a later
 -- table-level GRANT. API users must never read OTP/contact columns directly.
 REVOKE SELECT, INSERT, UPDATE ON public.bookings FROM authenticated, anon, PUBLIC;
+REVOKE SELECT (pickup_otp, drop_otp, customer_phone)
+  ON public.bookings FROM authenticated, anon, PUBLIC;
+REVOKE INSERT (pickup_otp, drop_otp, customer_phone, driver_id, payment_status,
+               commission_amount, driver_net_earning, pickup_verified_at, drop_verified_at)
+  ON public.bookings FROM authenticated, anon, PUBLIC;
+REVOKE UPDATE (notes, rating, review, loading_started_at, loading_stopped_at,
+               unloading_started_at, unloading_stopped_at)
+  ON public.bookings FROM authenticated, anon, PUBLIC;
 
 GRANT SELECT (
   id, customer_id, driver_id, pickup_address, drop_address, vehicle_type,
