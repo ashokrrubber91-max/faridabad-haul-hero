@@ -53,25 +53,19 @@ describe("Ride alert matching", () => {
 
   test("does not let an unset driver zone match a different explicit zone", () => {
     expect(
-      isRideAlertMatch(
-        { ...booking, service_zone: "Gurugram" },
-        { ...driver, serviceZone: null },
-      ),
+      isRideAlertMatch({ ...booking, service_zone: "Gurugram" }, { ...driver, serviceZone: null }),
     ).toBe(false);
   });
 
   test("filters a 5,000-driver candidate simulation without duplicate driver ids", () => {
-    const candidates = Array.from(
-      { length: 5000 },
-      (_, index) => ({
-        ...driver,
-        id: `driver-${index}`,
-        isOnline: index % 3 !== 0,
-        kycApproved: index % 5 !== 0,
-        serviceZone: index % 11 === 0 ? "Gurugram" : "Faridabad",
-        vehicleType: index % 7 === 0 ? "tata_ace" : "tata_407",
-      }),
-    );
+    const candidates = Array.from({ length: 5000 }, (_, index) => ({
+      ...driver,
+      id: `driver-${index}`,
+      isOnline: index % 3 !== 0,
+      kycApproved: index % 5 !== 0,
+      serviceZone: index % 11 === 0 ? "Gurugram" : "Faridabad",
+      vehicleType: index % 7 === 0 ? "tata_ace" : "tata_407",
+    }));
     const matched = selectMatchedDriverIds(booking, candidates);
     expect(new Set(matched).size).toBe(matched.length);
     expect(matched.every((id) => Number(id.slice(7)) % 3 !== 0)).toBe(true);
