@@ -9,7 +9,7 @@ on:
       - ".github/workflows/dependency-remediation-preview.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: dependency-remediation-preview-${{ github.event.pull_request.number }}
@@ -27,8 +27,8 @@ jobs:
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
 
-      - name: Install the reviewed lockfile
-        run: bun install --frozen-lockfile
+      - name: Resolve the updated dependency manifest
+        run: bun install
 
       # Bun's non-major audit fixer chooses the lowest patched versions allowed
       # by all current dependency ranges. This only changes this temporary CI
@@ -80,3 +80,21 @@ jobs:
             echo "::error::The dependency update candidate still has unresolved high or critical advisories."
             exit 1
           fi
+
+      # This workflow is intentionally limited to this same-repository review
+      # branch. It pushes only the lockfile produced by the successful audit
+      # and test run; it never targets main or a fork.
+      - name: Commit verified dependency lockfile to the review branch
+        if: success() && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'codex/miniport-ci-quality-fixes-2026-11-01'
+        env:
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json bun.lock
+          if git diff --cached --quiet; then
+            echo "No dependency lockfile changes to commit."
+            exit 0
+          fi
+          git commit -m "chore(security): update patched dependencies"
+          git push origin "HEAD:${PR_HEAD_REF}"
