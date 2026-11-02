@@ -88,6 +88,8 @@ type Driver = {
   kyc: "pending" | "approved" | "rejected";
   online: boolean;
   activeBooking: string | null;
+  /** Booking whose live offer this driver currently holds (offers are exclusive). */
+  heldOffer: string | null;
 };
 type Status = "pending" | "accepted" | "in_progress" | "completed" | "expired";
 type Booking = {
@@ -143,6 +145,7 @@ const stats = {
   connectionTimeouts: 0,
   networkRetries: 0,
   duplicateAcceptsBlocked: 0,
+  busyDriverAcceptsBlocked: 0,
   goOnlineBlockedBeforeKyc: 0,
   nonAdminApprovalsBlocked: 0,
   maxOfferLifetimeS: 0,
@@ -166,7 +169,8 @@ const api = {
     d.online = online;
   },
   createBooking(customerId: string, vehicle: Vehicle, hub: (typeof HUBS)[number]): Booking {
-    if (users.get(customerId)?.role !== "customer") throw new ServerError("42501", "customers only");
+    if (users.get(customerId)?.role !== "customer")
+      throw new ServerError("42501", "customers only");
     const id = `B${bookings.size + 1}`;
     const b: Booking = {
       id,
@@ -202,7 +206,8 @@ const api = {
     let best: Driver | null = null;
     let bestKm = Infinity;
     for (const d of drivers.values()) {
-      if (d.activeBooking || b.offered.has(d.id) || d.vehicle !== b.vehicle) continue;
+      if (d.activeBooking || d.heldOffer || b.offered.has(d.id) || d.vehicle !== b.vehicle)
+        continue;
       const ok = isRideAlertMatch(
         shape,
         {
@@ -227,6 +232,8 @@ const api = {
     if (best.kyc !== "approved") violations.push(`offer to unverified driver ${best.id}`);
     b.offered.add(best.id);
     offerHistory.get(b.id)!.push(best.id);
+    if (best.heldOffer) violations.push(`driver ${best.id} holds two live offers`);
+    best.heldOffer = b.id;
     b.liveOffer = { driverId: best.id, expiresAt: now + OFFER_TTL_S, offeredAt: now };
     stats.offers++;
     return best.id;
@@ -248,6 +255,13 @@ const api = {
     }
     stats.maxOfferLifetimeS = Math.max(stats.maxOfferLifetimeS, now - live.offeredAt);
     b.liveOffer = null;
+    d.heldOffer = null;
+    if (action === "accept" && d.activeBooking) {
+      stats.busyDriverAcceptsBlocked++;
+      b.nextRetryAt = now;
+      idempotency.set(key, { ok: false, code: "driver_busy" });
+      throw new ServerError("driver_busy", "driver already on a ride");
+    }
     if (action === "decline") {
       stats.offersDeclined++;
       b.nextRetryAt = now;
@@ -267,7 +281,8 @@ const api = {
     if (b.driverId !== driverId) throw new ServerError("42501", "not your booking");
     const expected = stage === "pickup" ? b.status === "accepted" : b.status === "in_progress";
     if (!expected) throw new ServerError("P0001", "wrong stage");
-    if (b.otpAttempts[stage] >= MAX_OTP_ATTEMPTS) throw new ServerError("locked", "too many attempts");
+    if (b.otpAttempts[stage] >= MAX_OTP_ATTEMPTS)
+      throw new ServerError("locked", "too many attempts");
     const truth = stage === "pickup" ? b.pickupOtp : b.dropOtp;
     if (code !== truth) {
       b.otpAttempts[stage]++;
@@ -336,7 +351,9 @@ function aiAssistantResolve(t: Ticket) {
     case "declined_offer":
       t.status = "auto_resolved";
       t.resolution =
-        b.status === "expired" ? "Customer notified; suggested fare boost or vehicle change" : "Re-dispatched to next nearest captain";
+        b.status === "expired"
+          ? "Customer notified; suggested fare boost or vehicle change"
+          : "Re-dispatched to next nearest captain";
       if (b.status === "expired") t.status = "escalated";
       break;
     case "connection_timeout":
@@ -353,7 +370,7 @@ function aiAssistantResolve(t: Ticket) {
 // ---------------------------------------------------------------- driver/customer behaviour
 function scheduleOfferResponse(b: Booking, driverId: string) {
   const roll = rand();
-  // Forced edge cases: the first offer of every booking at even ids gets declined.
+  // Forced edge case: the first offer on every 7th booking is declined.
   const forceDecline = offerHistory.get(b.id)!.length === 1 && Number(b.id.slice(1)) % 7 === 0;
   if (forceDecline || roll < 0.15) {
     at(now + between(2, 12), () => {
@@ -395,7 +412,8 @@ function enterOtp(b: Booking, driverId: string, stage: "pickup" | "drop", then: 
       api.verifyOtp(driverId, b.id, stage, wrong);
       violations.push(`${b.id} accepted wrong ${stage} OTP`);
     } catch (e) {
-      if ((e as ServerError).code !== "invalid_otp") violations.push(`${b.id} unexpected OTP error`);
+      if ((e as ServerError).code !== "invalid_otp")
+        violations.push(`${b.id} unexpected OTP error`);
     }
     if (b.status !== statusBefore) violations.push(`${b.id} advanced on wrong ${stage} OTP`);
     stats.wrongOtp++;
@@ -438,6 +456,7 @@ function main() {
       kyc: "pending",
       online: false,
       activeBooking: null,
+      heldOffer: null,
     });
   }
   const customerIds: string[] = [];
@@ -483,7 +502,9 @@ function main() {
   }
 
   // 4. Event loop: offers, expiries, retries
-  const unverified = new Set([...drivers.values()].filter((d) => d.kyc !== "approved").map((d) => d.id));
+  const unverified = new Set(
+    [...drivers.values()].filter((d) => d.kyc !== "approved").map((d) => d.id),
+  );
   for (now = 1; now <= MAX_SIM_S; now++) {
     const list = events.get(now);
     if (list) {
@@ -496,12 +517,14 @@ function main() {
       open++;
       if (b.liveOffer && b.liveOffer.expiresAt <= now) {
         stats.maxOfferLifetimeS = Math.max(stats.maxOfferLifetimeS, now - b.liveOffer.offeredAt);
+        drivers.get(b.liveOffer.driverId)!.heldOffer = null;
         b.liveOffer = null;
         stats.offersExpired++;
         b.nextRetryAt = now;
       }
       if (now >= b.expiresAt) {
         b.status = "expired";
+        if (b.liveOffer) drivers.get(b.liveOffer.driverId)!.heldOffer = null;
         b.liveOffer = null;
         addTicket(b.id, "no_driver_found");
         continue;
@@ -524,16 +547,20 @@ function main() {
   const all = [...bookings.values()];
   const by = (s: Status) => all.filter((b) => b.status === s).length;
   for (const b of all) {
-    if (b.status !== "completed" && b.status !== "expired") violations.push(`${b.id} stuck in ${b.status}`);
+    if (b.status !== "completed" && b.status !== "expired")
+      violations.push(`${b.id} stuck in ${b.status}`);
     const h = offerHistory.get(b.id)!;
     if (new Set(h).size !== h.length) violations.push(`${b.id} re-offered a driver`);
   }
-  if (stats.maxOfferLifetimeS > OFFER_TTL_S) violations.push(`offer lived ${stats.maxOfferLifetimeS}s`);
+  if (stats.maxOfferLifetimeS > OFFER_TTL_S)
+    violations.push(`offer lived ${stats.maxOfferLifetimeS}s`);
   if (stats.goOnlineBlockedBeforeKyc !== driverCount) violations.push("verification gate leaked");
   if (stats.nonAdminApprovalsBlocked !== 1) violations.push("non-admin KYC approval not blocked");
-  for (const d of drivers.values()) if (d.activeBooking) violations.push(`${d.id} still busy`);
+  for (const d of drivers.values())
+    if (d.activeBooking || d.heldOffer) violations.push(`${d.id} still busy`);
   for (const cat of ["wrong_otp", "declined_offer", "connection_timeout"] as const)
-    if (!tickets.some((t) => t.category === cat)) violations.push(`edge case ${cat} never triggered`);
+    if (!tickets.some((t) => t.category === cat))
+      violations.push(`edge case ${cat} never triggered`);
   if (tickets.some((t) => t.status === "open")) violations.push("support tickets left unresolved");
   if (stats.offersDeclined === 0) violations.push("no declines exercised");
   for (const hub of HUBS)
@@ -574,7 +601,10 @@ function main() {
   console.table(ticketSummary);
   console.table(
     Object.fromEntries(
-      HUBS.map((h) => [h.name, all.filter((b) => b.hub === h.name && b.status === "completed").length]),
+      HUBS.map((h) => [
+        h.name,
+        all.filter((b) => b.hub === h.name && b.status === "completed").length,
+      ]),
     ),
   );
 
