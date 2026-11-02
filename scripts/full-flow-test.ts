@@ -89,6 +89,8 @@ type Driver = {
   kyc: "pending" | "approved" | "rejected";
   online: boolean;
   activeBooking: string | null;
+  /** Booking whose live offer this driver currently holds (offers are exclusive). */
+  heldOffer: string | null;
 };
 type Status = "pending" | "accepted" | "in_progress" | "completed" | "expired";
 type Booking = {
@@ -144,6 +146,7 @@ const stats = {
   connectionTimeouts: 0,
   networkRetries: 0,
   duplicateAcceptsBlocked: 0,
+  busyDriverAcceptsBlocked: 0,
   goOnlineBlockedBeforeKyc: 0,
   nonAdminApprovalsBlocked: 0,
   maxOfferLifetimeS: 0,
@@ -204,7 +207,8 @@ const api = {
     let best: Driver | null = null;
     let bestKm = Infinity;
     for (const d of drivers.values()) {
-      if (d.activeBooking || b.offered.has(d.id) || d.vehicle !== b.vehicle) continue;
+      if (d.activeBooking || d.heldOffer || b.offered.has(d.id) || d.vehicle !== b.vehicle)
+        continue;
       const ok = isRideAlertMatch(
         shape,
         {
@@ -229,6 +233,8 @@ const api = {
     if (best.kyc !== "approved") violations.push(`offer to unverified driver ${best.id}`);
     b.offered.add(best.id);
     offerHistory.get(b.id)!.push(best.id);
+    if (best.heldOffer) violations.push(`driver ${best.id} holds two live offers`);
+    best.heldOffer = b.id;
     b.liveOffer = { driverId: best.id, expiresAt: now + OFFER_TTL_S, offeredAt: now };
     stats.offers++;
     return best.id;
@@ -250,6 +256,13 @@ const api = {
     }
     stats.maxOfferLifetimeS = Math.max(stats.maxOfferLifetimeS, now - live.offeredAt);
     b.liveOffer = null;
+    d.heldOffer = null;
+    if (action === "accept" && d.activeBooking) {
+      stats.busyDriverAcceptsBlocked++;
+      b.nextRetryAt = now;
+      idempotency.set(key, { ok: false, code: "driver_busy" });
+      throw new ServerError("driver_busy", "driver already on a ride");
+    }
     if (action === "decline") {
       stats.offersDeclined++;
       b.nextRetryAt = now;
@@ -358,7 +371,7 @@ function aiAssistantResolve(t: Ticket) {
 // ---------------------------------------------------------------- driver/customer behaviour
 function scheduleOfferResponse(b: Booking, driverId: string) {
   const roll = rand();
-  // Forced edge cases: the first offer of every booking at even ids gets declined.
+  // Forced edge case: the first offer on every 7th booking is declined.
   const forceDecline = offerHistory.get(b.id)!.length === 1 && Number(b.id.slice(1)) % 7 === 0;
   if (forceDecline || roll < 0.15) {
     at(now + between(2, 12), () => {
@@ -444,6 +457,7 @@ async function main() {
       kyc: "pending",
       online: false,
       activeBooking: null,
+      heldOffer: null,
     });
   }
   const customerIds: string[] = [];
@@ -504,12 +518,14 @@ async function main() {
       open++;
       if (b.liveOffer && b.liveOffer.expiresAt <= now) {
         stats.maxOfferLifetimeS = Math.max(stats.maxOfferLifetimeS, now - b.liveOffer.offeredAt);
+        drivers.get(b.liveOffer.driverId)!.heldOffer = null;
         b.liveOffer = null;
         stats.offersExpired++;
         b.nextRetryAt = now;
       }
       if (now >= b.expiresAt) {
         b.status = "expired";
+        if (b.liveOffer) drivers.get(b.liveOffer.driverId)!.heldOffer = null;
         b.liveOffer = null;
         addTicket(b.id, "no_driver_found");
         continue;
@@ -541,7 +557,8 @@ async function main() {
     violations.push(`offer lived ${stats.maxOfferLifetimeS}s`);
   if (stats.goOnlineBlockedBeforeKyc !== driverCount) violations.push("verification gate leaked");
   if (stats.nonAdminApprovalsBlocked !== 1) violations.push("non-admin KYC approval not blocked");
-  for (const d of drivers.values()) if (d.activeBooking) violations.push(`${d.id} still busy`);
+  for (const d of drivers.values())
+    if (d.activeBooking || d.heldOffer) violations.push(`${d.id} still busy`);
   for (const cat of ["wrong_otp", "declined_offer", "connection_timeout"] as const)
     if (!tickets.some((t) => t.category === cat))
       violations.push(`edge case ${cat} never triggered`);

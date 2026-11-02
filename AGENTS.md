@@ -23,3 +23,5 @@
 - Account sync treats a profile-read failure as non-fatal once roles load, and the driver feed falls back to the RLS-guarded bookings read when the open-jobs RPC is absent, so profile or schema gaps never block the job feed.
 
 - The ride-lifecycle load simulation (scripts/ride-lifecycle-sim.ts) is offline and in-memory, mirroring the sequential-dispatch SQL rules and reusing the shared matcher, because the preview and live app share one backend and load tests must never write real bookings.
+
+- The full-flow integration runner (scripts/full-flow-test.ts, `bun run test:full-flow`) is in-memory like the ride simulation, because the preview and live app share one backend; it must never seed accounts, approve KYC or write bookings.
