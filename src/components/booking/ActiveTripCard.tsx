@@ -192,7 +192,7 @@ export function ActiveTripCard({
           </div>
 
           <Button className="mt-3 w-full" onClick={() => setChatOpen(true)}>
-            <MessageCircle className="mr-2 h-4 w-4" /> Message {driverName}
+            <MessageCircle className="mr-2 h-4 w-4" /> Chat
           </Button>
         </div>
 
