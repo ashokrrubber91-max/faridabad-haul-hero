@@ -1,4 +1,3 @@
-import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
 import { useEffect, useMemo, useState } from "react";
 import { MapPin, Mic, Send, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
@@ -60,16 +59,28 @@ export function QuickChatModal({
     if (!open || !user) return;
     let cancelled = false;
     const load = async () => {
-      const { data, error } = await (supabase as unknown as UntypedClient)
+      const { data, error } = await supabase
         .from("booking_messages")
         .select("id,sender_id,body,message_type,created_at")
         .eq("booking_id", bookingId)
         .order("created_at", { ascending: true })
         .limit(100);
-      if (!cancelled && !error) setMessages((data ?? []) as ChatMessage[]);
+      if (cancelled) return;
+      if (error) {
+        toast.error("Could not load this booking chat");
+        return;
+      }
+      setMessages((current) => {
+        const byId = new Map(current.map((message) => [message.id, message]));
+        for (const message of data ?? []) byId.set(message.id, message);
+        return [...byId.values()].sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        );
+      });
     };
     void load();
 
+    setMessages([]);
     const channel = supabase
       .channel("booking-chat-" + bookingId)
       .on(
@@ -96,7 +107,7 @@ export function QuickChatModal({
   const send = async (value = text, messageType: ChatMessage["message_type"] = "text") => {
     const clean = value.trim();
     if (!clean || !user) return;
-    const { error } = await (supabase as unknown as UntypedClient).from("booking_messages").insert({
+    const { error } = await supabase.from("booking_messages").insert({
       booking_id: bookingId,
       sender_id: user.id,
       body: clean,
