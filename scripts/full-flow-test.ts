@@ -28,7 +28,8 @@ const MAX_OTP_ATTEMPTS = 5;
 const MAX_NETWORK_RETRIES = 3;
 const MAX_SIM_S = 6 * 60 * 60;
 
-const VEHICLES = ["tata_ace", "three_wheeler", "pickup_8ft"] as const;
+// Match the app vehicle catalogue IDs: Tata Ace, Pickup 8ft, Tata 407 and Bike Delivery.
+const VEHICLES = ["tata_ace", "pickup_8ft", "tata_407", "bike_delivery"] as const;
 type Vehicle = (typeof VEHICLES)[number];
 
 const HUBS = [
