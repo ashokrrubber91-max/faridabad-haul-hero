@@ -1,5 +1,5 @@
 import type { SupabaseClient as UntypedClient } from "@supabase/supabase-js";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MapPin, Mic, Send, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,8 @@ export function QuickChatModal({
   const [text, setText] = useState("");
   const [quickOpen, setQuickOpen] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sending, setSending] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const initials = useMemo(
     () =>
       counterpartName
@@ -71,7 +73,7 @@ export function QuickChatModal({
     void load();
 
     const channel = supabase
-      .channel("booking-chat-" + bookingId)
+      .channel("booking-chat-" + bookingId + "-" + Math.random().toString(36).slice(2))
       .on(
         "postgres_changes",
         {
@@ -85,7 +87,10 @@ export function QuickChatModal({
           setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        // Re-sync history after (re)connecting so no message is missed.
+        if (status === "SUBSCRIBED") void load();
+      });
 
     return () => {
       cancelled = true;
@@ -93,16 +98,35 @@ export function QuickChatModal({
     };
   }, [open, user, bookingId]);
 
+  useEffect(() => {
+    if (open) bottomRef.current?.scrollIntoView({ block: "end" });
+  }, [open, messages.length]);
+
   const send = async (value = text, messageType: ChatMessage["message_type"] = "text") => {
     const clean = value.trim();
-    if (!clean || !user) return;
-    const { error } = await (supabase as unknown as UntypedClient).from("booking_messages").insert({
-      booking_id: bookingId,
-      sender_id: user.id,
-      body: clean,
-      message_type: messageType,
-    });
-    if (error) return toast.error(error.message);
+    if (!clean || !user || sending) return;
+    setSending(true);
+    const { data, error } = await (supabase as unknown as UntypedClient)
+      .from("booking_messages")
+      .insert({
+        booking_id: bookingId,
+        sender_id: user.id,
+        body: clean.slice(0, 1000),
+        message_type: messageType,
+      })
+      .select("id,sender_id,body,message_type,created_at")
+      .single();
+    setSending(false);
+    if (error) {
+      toast.error(
+        error.code === "42501"
+          ? "Chat is available only while this ride is active"
+          : "Message not sent. Please try again.",
+      );
+      return;
+    }
+    const row = data as ChatMessage;
+    setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
     setText("");
   };
 
@@ -151,7 +175,7 @@ export function QuickChatModal({
           </div>
           <div className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>Do not share any personal details with captain over call or chat</span>
+            <span>Do not share any personal details over call or chat</span>
           </div>
         </SheetHeader>
 
@@ -181,7 +205,7 @@ export function QuickChatModal({
           <div className="mt-4 space-y-2">
             {messages.length === 0 ? (
               <div className="rounded-xl bg-muted/50 p-4 text-center text-sm text-muted-foreground">
-                Start a safe in-app conversation with your captain.
+                Start a safe in-app conversation with {counterpartName}.
               </div>
             ) : (
               messages.map((m) => (
@@ -203,6 +227,7 @@ export function QuickChatModal({
                 </div>
               ))
             )}
+            <div ref={bottomRef} />
           </div>
         </div>
 
@@ -233,7 +258,13 @@ export function QuickChatModal({
               placeholder="Type a message…"
               className="min-w-0"
             />
-            <Button type="button" size="icon" onClick={() => void send()} aria-label="Send message">
+            <Button
+              type="button"
+              size="icon"
+              disabled={sending || !text.trim()}
+              onClick={() => void send()}
+              aria-label="Send message"
+            >
               <Send className="h-4 w-4" />
             </Button>
           </div>
