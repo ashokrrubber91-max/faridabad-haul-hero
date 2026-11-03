@@ -61,7 +61,11 @@ export function parseWeightKg(text: string): number | null {
   const value = Number(m[1].replace(",", "."));
   if (!Number.isFinite(value) || value <= 0) return null;
   const unit = m[2].toLowerCase();
-  const kg = /ton|टन/.test(unit) ? value * 1000 : /quintal|क्विंटल/.test(unit) ? value * 100 : value;
+  const kg = /ton|टन/.test(unit)
+    ? value * 1000
+    : /quintal|क्विंटल/.test(unit)
+      ? value * 100
+      : value;
   return kg > MAX_VOICE_WEIGHT_KG ? null : Math.round(kg * 10) / 10;
 }
 
@@ -75,15 +79,13 @@ export function parseRideCommand(input: string): ParsedRideCommand {
   let drop: string | null = null;
 
   // "pickup X drop Y"
-  const labelled = /pick\s*-?\s*up\s+(?:from\s+)?(.+?)\s+drop(?:\s*off)?\s+(?:at\s+|to\s+)?(.+)/i.exec(
-    body,
-  );
+  const labelled =
+    /pick\s*-?\s*up\s+(?:from\s+)?(.+?)\s+drop(?:\s*off)?\s+(?:at\s+|to\s+)?(.+)/i.exec(body);
   // "from X to Y"
   const fromTo = /\bfrom\s+(.+?)\s+(?:to|till|until)\s+(.+)/i.exec(body);
   // Hinglish / Hindi: "X se Y tak|ko|jana hai"
-  const seTak = /(.+?)\s+(?:se|से)\s+(.+?)(?:\s+(?:tak|तक|ko|को|jana|जाना|le\s*jana|bhejna).*)?$/i.exec(
-    body,
-  );
+  const seTak =
+    /(.+?)\s+(?:se|से)\s+(.+?)(?:\s+(?:tak|तक|ko|को|jana|जाना|le\s*jana|bhejna).*)?$/i.exec(body);
   // Plain "X to Y"
   const plainTo = /(.+?)\s+to\s+(.+)/i.exec(body);
 
