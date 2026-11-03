@@ -20,6 +20,7 @@ import {
   IndianRupee,
   ShieldCheck,
   Camera,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PushAlertToggle } from "@/components/driver/PushAlertToggle";
@@ -38,6 +39,7 @@ import { addressLines } from "@/lib/address";
 import { SupportChat } from "@/components/support/SupportChat";
 import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
+import { QuickChatModal } from "@/components/chat/QuickChatModal";
 import { useVehicleTypes, type VehicleType } from "@/lib/vehicles";
 import { sweepStaleBookings } from "@/lib/notifications.functions";
 import { MINIPORT_TEST_MODE } from "@/lib/testing";
@@ -1274,6 +1276,7 @@ function ActiveJobCard({
   stopBusy: boolean;
 }) {
   const [otp, setOtp] = useState("");
+  const [chatOpen, setChatOpen] = useState(false);
   const [podPath, setPodPath] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -1500,6 +1503,12 @@ function ActiveJobCard({
         )}
       </div>
 
+      <div className="mt-3">
+        <Button className="w-full sm:w-auto" onClick={() => setChatOpen(true)}>
+          <MessageCircle className="mr-2 h-4 w-4" /> Chat
+        </Button>
+      </div>
+
       <WaitingChargesCard booking={job} vehicle={vehicle} />
 
       <div className="mt-3 flex flex-wrap gap-2">
@@ -1632,6 +1641,12 @@ function ActiveJobCard({
           </div>
         )}
       </div>
+      <QuickChatModal
+        open={chatOpen}
+        onOpenChange={setChatOpen}
+        bookingId={job.id}
+        counterpartName={contact.name || "Customer"}
+      />
     </section>
   );
 }
