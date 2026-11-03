@@ -214,7 +214,7 @@ function RideCard({ ride }: { ride: AnyRow }) {
             </p>
           </div>
           <Button size="sm" onClick={() => setChatOpen(true)}>
-            <MessageCircle className="mr-1.5 h-4 w-4" /> Message customer
+            <MessageCircle className="mr-1.5 h-4 w-4" /> Chat
           </Button>
         </div>
       )}

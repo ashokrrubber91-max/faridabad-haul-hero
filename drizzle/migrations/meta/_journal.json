@@ -113,6 +113,13 @@
       "when": 1793377096908,
       "tag": "0015_add_set_driver_online_rpc",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793727805169,
+      "tag": "0016_grant_booking_messages_access",
+      "breakpoints": true
     }
   ]
 }

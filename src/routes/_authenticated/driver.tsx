@@ -20,6 +20,7 @@ import {
   IndianRupee,
   ShieldCheck,
   Camera,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PushAlertToggle } from "@/components/driver/PushAlertToggle";
@@ -36,6 +37,7 @@ import { vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
 import { addressLines } from "@/lib/address";
 
 import { SupportChat } from "@/components/support/SupportChat";
+import { QuickChatModal } from "@/components/chat/QuickChatModal";
 import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
 import { useVehicleTypes, type VehicleType } from "@/lib/vehicles";
@@ -905,6 +907,7 @@ function DriverPage() {
         <ActiveJobCard
           job={activeJob}
           customerPhone={customerProfile.data?.phone ?? null}
+          customerName={customerProfile.data?.name ?? null}
           onVerify={(otp, next, podPath) =>
             verifyOtp.mutate({
               id: activeJob.id,
@@ -1242,6 +1245,7 @@ function playRideAlert() {
 function ActiveJobCard({
   job,
   customerPhone,
+  customerName,
   onVerify,
   onStage,
   stageBusy,
@@ -1254,6 +1258,7 @@ function ActiveJobCard({
 }: {
   job: AnyRow;
   customerPhone?: string | null;
+  customerName?: string | null;
   onVerify: (otp: string, next: "in_progress" | "completed", podPath?: string | null) => void;
   onStage: (
     action: "start_loading" | "stop_loading" | "start_unloading" | "stop_unloading",
@@ -1276,6 +1281,7 @@ function ActiveJobCard({
   const [otp, setOtp] = useState("");
   const [podPath, setPodPath] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const uploadProof = async (file: File) => {
     setUploading(true);
@@ -1491,14 +1497,25 @@ function ActiveJobCard({
         <Badge variant="outline">
           {job.status === "accepted" ? "Accepted / Pickup" : "In transit"}
         </Badge>
-        {customerPhone && (
-          <Button asChild size="sm" variant="outline" className="ml-auto">
-            <a href={"tel:" + customerPhone}>
-              <Phone className="h-3.5 w-3.5" /> Call customer
-            </a>
+        <div className="ml-auto flex gap-2">
+          <Button size="sm" onClick={() => setChatOpen(true)}>
+            <MessageCircle className="h-3.5 w-3.5" /> Chat
           </Button>
-        )}
+          {customerPhone && (
+            <Button asChild size="sm" variant="outline">
+              <a href={"tel:" + customerPhone}>
+                <Phone className="h-3.5 w-3.5" /> Call customer
+              </a>
+            </Button>
+          )}
+        </div>
       </div>
+      <QuickChatModal
+        open={chatOpen}
+        onOpenChange={setChatOpen}
+        bookingId={job.id}
+        counterpartName={customerName || "Customer"}
+      />
 
       <WaitingChargesCard booking={job} vehicle={vehicle} />
 
