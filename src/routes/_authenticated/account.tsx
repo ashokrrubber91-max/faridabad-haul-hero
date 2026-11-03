@@ -57,7 +57,6 @@ import { CustomerProfileView } from "@/components/account/CustomerProfileView";
 import { DriverProfileView } from "@/components/account/DriverProfileView";
 import { DailyPassCard } from "@/components/driver/DailyPassCard";
 
-
 type AccountRoleRow = Pick<Database["public"]["Tables"]["user_roles"]["Row"], "role">;
 type MonthlyDriverEarning = {
   key: string;
@@ -229,7 +228,9 @@ function AccountPage() {
   const [selectedMonth, setSelectedMonth] = useState("all");
   const filteredMonths = useMemo(() => {
     if (selectedMonth === "all") return monthlyDriverEarnings.data ?? [];
-    return (monthlyDriverEarnings.data ?? []).filter((m: MonthlyDriverEarning) => m.key === selectedMonth);
+    return (monthlyDriverEarnings.data ?? []).filter(
+      (m: MonthlyDriverEarning) => m.key === selectedMonth,
+    );
   }, [monthlyDriverEarnings.data, selectedMonth]);
 
   const driverPayouts = useQuery({
