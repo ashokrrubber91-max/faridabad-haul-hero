@@ -14,11 +14,13 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
+type ChatMessageType = "text" | "location" | "voice";
+
 type ChatMessage = {
   id: string;
   sender_id: string;
   body: string;
-  message_type: "text" | "location" | "voice";
+  message_type: ChatMessageType;
   created_at: string;
 };
 
@@ -70,9 +72,10 @@ export function QuickChatModal({
         toast.error("Could not load this booking chat");
         return;
       }
+      const loadedMessages = (data ?? []) as ChatMessage[];
       setMessages((current) => {
         const byId = new Map(current.map((message) => [message.id, message]));
-        for (const message of data ?? []) byId.set(message.id, message);
+        for (const message of loadedMessages) byId.set(message.id, message);
         return [...byId.values()].sort(
           (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
         );
