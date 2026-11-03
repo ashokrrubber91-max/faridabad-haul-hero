@@ -42,6 +42,10 @@ export function PartLoadOption({
           <div>
             <Label htmlFor="part-load-sharing">Share Ride / Part-Load</Label>
             <p className="mt-1 text-xs text-muted-foreground">
+              Allows multiple shipments to share vehicle capacity, reducing freight costs and
+              optimizing delivery routes for partial loads.
+            </p>
+            <p className="mt-1 text-xs font-medium text-secondary">
               {remaining === null
                 ? "Requires goods below vehicle capacity"
                 : `${remaining} kg available for another load`}
