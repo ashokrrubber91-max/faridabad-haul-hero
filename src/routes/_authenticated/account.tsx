@@ -56,6 +56,53 @@ import { CustomerProfileView } from "@/components/account/CustomerProfileView";
 import { DriverProfileView } from "@/components/account/DriverProfileView";
 import { DailyPassCard } from "@/components/driver/DailyPassCard";
 
+import type { Database } from "@/integrations/supabase/types";
+
+interface UserRoleRecord {
+  role: Database["public"]["Enums"]["app_role"];
+}
+
+interface BookingEarningsRecord {
+  fare: number;
+  commission_amount: number;
+  driver_net_earning: number;
+  updated_at: string;
+  created_at: string;
+}
+
+interface MonthlyDriverEarning {
+  key: string;
+  label: string;
+  totalEarnings: number;
+  rides: number;
+  commission: number;
+  netEarning: number;
+}
+
+interface DriverPayoutRecord {
+  id: string;
+  amount: number;
+  status: Database["public"]["Enums"]["withdrawal_status"];
+  method: string;
+  utr_number: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+}
+
+interface CustomerGstinRecord {
+  id: string;
+  business_name: string;
+  gstin: string;
+  is_default: boolean;
+}
+
+interface SavedAddressRecord {
+  id: string;
+  alias: string | null;
+  kind: Database["public"]["Enums"]["address_kind"];
+  address: string;
+}
+
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
     meta: [
@@ -94,7 +141,7 @@ function AccountPage() {
         .select("role")
         .eq("user_id", user.id);
       if (error) throw error;
-      return (data ?? []).map((r: any) => r.role as string);
+      return (data ?? []).map((row: UserRoleRecord) => row.role);
     },
   });
   const roles: string[] = [...cachedRoles, ...(freshRoles.data ?? [])];
@@ -213,7 +260,7 @@ function AccountPage() {
   const [selectedMonth, setSelectedMonth] = useState("all");
   const filteredMonths = useMemo(() => {
     if (selectedMonth === "all") return monthlyDriverEarnings.data ?? [];
-    return (monthlyDriverEarnings.data ?? []).filter((m: any) => m.key === selectedMonth);
+    return (monthlyDriverEarnings.data ?? []).filter((month: MonthlyDriverEarning) => month.key === selectedMonth);
   }, [monthlyDriverEarnings.data, selectedMonth]);
 
   const driverPayouts = useQuery({
@@ -483,7 +530,7 @@ function AccountPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All months</SelectItem>
-                  {(monthlyDriverEarnings.data ?? []).map((month: any) => (
+                  {(monthlyDriverEarnings.data ?? []).map((month: MonthlyDriverEarning) => (
                     <SelectItem key={month.key} value={month.key}>
                       {month.label}
                     </SelectItem>
@@ -502,7 +549,7 @@ function AccountPage() {
               </p>
             ) : (
               <div className="mt-4 space-y-3">
-                {filteredMonths.map((month: any) => (
+                {filteredMonths.map((month: MonthlyDriverEarning) => (
                   <div key={month.key} className="rounded-md border p-3">
                     <div className="mb-3 flex items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-secondary">{month.label}</p>
@@ -549,7 +596,7 @@ function AccountPage() {
                 <p className="mt-2 text-sm text-muted-foreground">No wallet payouts yet.</p>
               ) : (
                 <div className="mt-2 divide-y rounded-md border">
-                  {(driverPayouts.data ?? []).map((payout: any) => (
+                  {(driverPayouts.data ?? []).map((payout: DriverPayoutRecord) => (
                     <div key={payout.id} className="flex items-center justify-between gap-3 p-3">
                       <div>
                         <p className="text-sm font-semibold text-secondary">
@@ -641,7 +688,7 @@ function AccountPage() {
                 </p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {(gstins.data ?? []).map((g: any) => (
+                  {(gstins.data ?? []).map((g: CustomerGstinRecord) => (
                     <li key={g.id} className="flex items-center gap-3 py-2.5">
                       <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
@@ -705,7 +752,7 @@ function AccountPage() {
                 </p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {(addresses.data ?? []).map((a: any) => (
+                  {(addresses.data ?? []).map((a: SavedAddressRecord) => (
                     <li key={a.id} className="flex items-center gap-3 py-2.5">
                       <Home className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
