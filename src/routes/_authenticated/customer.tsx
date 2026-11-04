@@ -1,5 +1,5 @@
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -28,6 +28,7 @@ import { LocationSearchOverlay, type PlacePick } from "@/components/booking/Loca
 import { MapPinConfirm } from "@/components/booking/MapPinConfirm";
 import { LiveTripMap } from "@/components/booking/LiveTripMap";
 import { ActiveTripCard } from "@/components/booking/ActiveTripCard";
+import { VoiceBookingAssistant, type VoiceRide } from "@/components/booking/VoiceBookingAssistant";
 import { DriverMatchingCard } from "@/components/booking/DriverMatchingCard";
 import { VehicleSelector } from "@/components/booking/VehicleSelector";
 
@@ -626,6 +627,18 @@ function CustomerPage() {
     }
   };
 
+  const applyVoiceRide = useCallback((ride: VoiceRide) => {
+    setPickup(ride.pickup);
+    setDrop(ride.drop);
+    setStops([]);
+    setVehicle(ride.vehicle);
+    setCargoWeightKg(ride.weightKg ? String(ride.weightKg) : "");
+    setScheduledAt("");
+    setStep("review");
+  }, []);
+  const { mutate: submitBooking } = create;
+  const confirmVoiceRide = useCallback(() => submitBooking(), [submitBooking]);
+
   return (
     <div className="grid min-w-0 gap-6 lg:grid-cols-[1.1fr_1fr] [&>*]:min-w-0">
       <div className="lg:col-span-2">
@@ -1080,6 +1093,16 @@ function CustomerPage() {
           setPendingStop(null);
           setStopStage(null);
         }}
+      />
+      <VoiceBookingAssistant
+        vehicles={vehicles}
+        currentVehicle={vehicle}
+        quoteReady={!!pickup && !!drop && distanceKm > 0 && !routeQuote.isFetching}
+        quoteFailed={routeQuote.isError}
+        fareLabel={grossFare > 0 ? `₹${Math.round(grossFare)}` : null}
+        submitting={create.isPending}
+        onApply={applyVoiceRide}
+        onConfirm={confirmVoiceRide}
       />
       <SupportChat role="customer" />
     </div>

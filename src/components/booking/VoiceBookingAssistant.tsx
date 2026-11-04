@@ -138,13 +138,17 @@ export function VoiceBookingAssistant({
         setMessage("Measuring the road route and fare…");
         onApply({ pickup, drop, vehicle: vehicle.id, weightKg: command.weightKg });
       } catch {
-        if (id === runId.current) fail("Address search is unavailable right now. Please try again.");
+        if (id === runId.current)
+          fail("Address search is unavailable right now. Please try again.");
       }
     },
     [currentVehicle, fail, onApply, vehicles],
   );
 
-  const onVoiceResult = useCallback((text: string) => void handleTranscript(text), [handleTranscript]);
+  const onVoiceResult = useCallback(
+    (text: string) => void handleTranscript(text),
+    [handleTranscript],
+  );
   const voiceIn = useVoiceInput(onVoiceResult, "en-IN");
 
   // Listening ends without a result → back to idle instead of a stuck spinner.
@@ -298,7 +302,10 @@ export function VoiceBookingAssistant({
           )}
 
           {phase === "countdown" && (
-            <p className="mt-4 text-center font-display text-5xl text-primary" aria-live="assertive">
+            <p
+              className="mt-4 text-center font-display text-5xl text-primary"
+              aria-live="assertive"
+            >
               {seconds}
             </p>
           )}
@@ -344,7 +351,7 @@ export function VoiceBookingAssistant({
             )}
           </div>
           <p className="mt-3 text-center text-[11px] text-muted-foreground">
-            Fare is confirmed by MiniPort before booking. Your voice is processed on this device.
+            Fare is confirmed by MiniPort before booking.
           </p>
         </SheetContent>
       </Sheet>
