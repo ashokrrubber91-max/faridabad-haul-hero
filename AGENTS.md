@@ -25,3 +25,5 @@
 - The ride-lifecycle load simulation (scripts/ride-lifecycle-sim.ts) is offline and in-memory, mirroring the sequential-dispatch SQL rules and reusing the shared matcher, because the preview and live app share one backend and load tests must never write real bookings.
 
 - The full-flow integration runner (scripts/full-flow-test.ts, `bun run test:full-flow`) is in-memory like the ride simulation, because the preview and live app share one backend; it must never seed accounts, approve KYC or write bookings.
+
+- Voice booking parses speech on-device with a deterministic parser (src/lib/voice-booking.ts) and books only through the normal createBooking mutation after a cancellable countdown, so it costs no AI credits and never bypasses server pricing, payment or dispatch.
