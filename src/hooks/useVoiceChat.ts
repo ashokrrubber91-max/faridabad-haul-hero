@@ -35,7 +35,7 @@ export function isVoiceOutputSupported() {
 }
 
 /** Hook: mic-based speech-to-text with auto language detection (hi-IN default listen locale, falls back). */
-export function useVoiceInput(onResult: (text: string) => void) {
+export function useVoiceInput(onResult: (text: string) => void, lang: DetectedLang = "hi-IN") {
   const [listening, setListening] = useState(false);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
 
@@ -43,7 +43,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
     const Ctor = getSpeechRecognitionCtor();
     if (!Ctor) return;
     const rec = new Ctor();
-    rec.lang = "hi-IN";
+    rec.lang = lang;
     rec.continuous = false;
     rec.interimResults = false;
     rec.onresult = (e: SpeechResultLike) => {
@@ -55,7 +55,7 @@ export function useVoiceInput(onResult: (text: string) => void) {
     recRef.current = rec;
     setListening(true);
     rec.start();
-  }, [onResult]);
+  }, [onResult, lang]);
 
   const stop = useCallback(() => {
     recRef.current?.stop();
