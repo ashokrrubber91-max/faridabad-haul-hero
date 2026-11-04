@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type DetectedLang = "hi-IN" | "en-IN";
+export type DetectedLang = "hi-IN" | "en-IN" | "pa-IN" | "bn-IN" | "mr-IN" | "ta-IN" | "te-IN" | "gu-IN";
 
 /** Devanagari script => Hindi, otherwise default to Indian English. */
 export function detectLang(text: string): DetectedLang {
@@ -95,7 +95,7 @@ export function useVoiceOutput() {
       const voices = voicesRef.current.length
         ? voicesRef.current
         : window.speechSynthesis.getVoices();
-      const preferredLocales = lang === "hi-IN" ? ["hi-IN", "en-IN"] : ["en-IN", "hi-IN"];
+      const preferredLocales = [lang, "hi-IN", "en-IN"];
       let chosen: SpeechSynthesisVoice | undefined;
       for (const locale of preferredLocales) {
         chosen = voices.find(
