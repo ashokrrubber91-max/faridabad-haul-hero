@@ -4,7 +4,13 @@ export type DetectedLang = "hi-IN" | "en-IN" | "pa-IN" | "bn-IN" | "mr-IN" | "ta
 
 /** Devanagari script => Hindi, otherwise default to Indian English. */
 export function detectLang(text: string): DetectedLang {
-  return /[\u0900-\u097F]/.test(text) ? "hi-IN" : "en-IN";
+  if (/[\u0900-\u097F]/.test(text)) return "hi-IN";
+  if (/[\u0A00-\u0A7F]/.test(text)) return "pa-IN";
+  if (/[\u0980-\u09FF]/.test(text) || /[\u0B00-\u0B7F]/.test(text)) return "bn-IN";
+  if (/[\u0B80-\u0BFF]/.test(text)) return "ta-IN";
+  if (/[\u0C00-\u0C7F]/.test(text)) return "te-IN";
+  if (/[\u0A80-\u0AFF]/.test(text)) return "gu-IN";
+  return "en-IN";
 }
 
 type SpeechResultLike = { results?: { [k: number]: { [k: number]: { transcript?: string } } } };
