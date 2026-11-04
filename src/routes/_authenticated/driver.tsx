@@ -1498,8 +1498,13 @@ function ActiveJobCard({
           {job.status === "accepted" ? "Accepted / Pickup" : "In transit"}
         </Badge>
         <div className="ml-auto flex gap-2">
-          <Button size="sm" onClick={() => setChatOpen(true)}>
-            <MessageCircle className="h-3.5 w-3.5" /> Chat
+          <Button
+            size="sm"
+            className="fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] left-4 right-4 z-40 h-12 w-auto shadow-lg sm:static sm:ml-auto sm:h-9 sm:w-auto sm:shadow-none"
+            onClick={() => setChatOpen(true)}
+            aria-label={`Chat with ${customerName || "Customer"}`}
+          >
+            <MessageCircle className="h-4 w-4" /> Chat
           </Button>
           {customerPhone && (
             <Button asChild size="sm" variant="outline">
