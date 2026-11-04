@@ -42,6 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { SupportChat } from "@/components/support/SupportChat";
 import { vehicleLabel, BOOKING_FIELDS } from "@/lib/booking";
@@ -55,6 +56,29 @@ import { DeleteAccountCard } from "@/components/account/DeleteAccountCard";
 import { CustomerProfileView } from "@/components/account/CustomerProfileView";
 import { DriverProfileView } from "@/components/account/DriverProfileView";
 import { DailyPassCard } from "@/components/driver/DailyPassCard";
+
+type AccountRoleRow = Pick<Database["public"]["Tables"]["user_roles"]["Row"], "role">;
+type MonthlyDriverEarning = {
+  key: string;
+  label: string;
+  totalEarnings: number;
+  rides: number;
+  commission: number;
+  netEarning: number;
+};
+type MonthlyDriverEarningSummary = Omit<MonthlyDriverEarning, "key">;
+type DriverPayout = Pick<
+  Database["public"]["Tables"]["withdrawal_requests"]["Row"],
+  "id" | "amount" | "created_at" | "method" | "status" | "utr_number" | "rejection_reason"
+>;
+type CustomerGstin = Pick<
+  Database["public"]["Tables"]["customer_gstins"]["Row"],
+  "id" | "business_name" | "gstin" | "is_default"
+>;
+type SavedAddress = Pick<
+  Database["public"]["Tables"]["saved_addresses"]["Row"],
+  "id" | "alias" | "kind" | "address"
+>;
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({
@@ -94,7 +118,7 @@ function AccountPage() {
         .select("role")
         .eq("user_id", user.id);
       if (error) throw error;
-      return (data ?? []).map((r: any) => r.role as string);
+      return (data ?? []).map((r: AccountRoleRow) => r.role as string);
     },
   });
   const roles: string[] = [...cachedRoles, ...(freshRoles.data ?? [])];
@@ -174,16 +198,7 @@ function AccountPage() {
         .order("updated_at", { ascending: false });
       if (error) throw error;
 
-      const months = new Map<
-        string,
-        {
-          label: string;
-          totalEarnings: number;
-          rides: number;
-          commission: number;
-          netEarning: number;
-        }
-      >();
+      const months = new Map<string, MonthlyDriverEarningSummary>();
       for (const booking of data ?? []) {
         const date = new Date(booking.updated_at ?? booking.created_at);
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -213,7 +228,9 @@ function AccountPage() {
   const [selectedMonth, setSelectedMonth] = useState("all");
   const filteredMonths = useMemo(() => {
     if (selectedMonth === "all") return monthlyDriverEarnings.data ?? [];
-    return (monthlyDriverEarnings.data ?? []).filter((m: any) => m.key === selectedMonth);
+    return (monthlyDriverEarnings.data ?? []).filter(
+      (m: MonthlyDriverEarning) => m.key === selectedMonth,
+    );
   }, [monthlyDriverEarnings.data, selectedMonth]);
 
   const driverPayouts = useQuery({
@@ -483,7 +500,7 @@ function AccountPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All months</SelectItem>
-                  {(monthlyDriverEarnings.data ?? []).map((month: any) => (
+                  {(monthlyDriverEarnings.data ?? []).map((month: MonthlyDriverEarning) => (
                     <SelectItem key={month.key} value={month.key}>
                       {month.label}
                     </SelectItem>
@@ -502,7 +519,7 @@ function AccountPage() {
               </p>
             ) : (
               <div className="mt-4 space-y-3">
-                {filteredMonths.map((month: any) => (
+                {filteredMonths.map((month: MonthlyDriverEarning) => (
                   <div key={month.key} className="rounded-md border p-3">
                     <div className="mb-3 flex items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-secondary">{month.label}</p>
@@ -549,7 +566,7 @@ function AccountPage() {
                 <p className="mt-2 text-sm text-muted-foreground">No wallet payouts yet.</p>
               ) : (
                 <div className="mt-2 divide-y rounded-md border">
-                  {(driverPayouts.data ?? []).map((payout: any) => (
+                  {(driverPayouts.data ?? []).map((payout: DriverPayout) => (
                     <div key={payout.id} className="flex items-center justify-between gap-3 p-3">
                       <div>
                         <p className="text-sm font-semibold text-secondary">
@@ -641,7 +658,7 @@ function AccountPage() {
                 </p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {(gstins.data ?? []).map((g: any) => (
+                  {(gstins.data ?? []).map((g: CustomerGstin) => (
                     <li key={g.id} className="flex items-center gap-3 py-2.5">
                       <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
@@ -705,7 +722,7 @@ function AccountPage() {
                 </p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {(addresses.data ?? []).map((a: any) => (
+                  {(addresses.data ?? []).map((a: SavedAddress) => (
                     <li key={a.id} className="flex items-center gap-3 py-2.5">
                       <Home className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
