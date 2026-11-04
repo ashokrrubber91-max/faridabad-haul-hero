@@ -203,7 +203,7 @@ function AccountPage() {
   const showCustomerSections =
     driverStateKnown && isCustomerProfile && !hasDriverRole && !hasDriverDomain;
 
-  const monthlyDriverEarnings = useQuery({
+  // Driver earnings are summarized from completed booking records; this query is read-only.\n  const monthlyDriverEarnings = useQuery({
     queryKey: ["driver-monthly-earnings", user?.id],
     enabled: Boolean(user?.id) && isDriverProfile && !isAdmin,
     queryFn: async () => {
