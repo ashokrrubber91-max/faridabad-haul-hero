@@ -573,6 +573,18 @@ function CustomerPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const applyVoiceRide = useCallback((ride: VoiceRide) => {
+    setPickup(ride.pickup);
+    setDrop(ride.drop);
+    setStops([]);
+    setVehicle(ride.vehicle);
+    setCargoWeightKg(ride.weightKg ? String(ride.weightKg) : "");
+    setScheduledAt("");
+    setStep("review");
+  }, []);
+  const { mutate: submitBooking } = create;
+  const confirmVoiceRide = useCallback(() => submitBooking(), [submitBooking]);
+
   if (loading) return <CenterLoader />;
   if (role && role !== "customer" && role !== "admin") {
     return <Navigate to={role === "driver" ? "/driver" : "/admin"} />;
@@ -626,18 +638,6 @@ function CustomerPage() {
       setLocatingMode(null);
     }
   };
-
-  const applyVoiceRide = useCallback((ride: VoiceRide) => {
-    setPickup(ride.pickup);
-    setDrop(ride.drop);
-    setStops([]);
-    setVehicle(ride.vehicle);
-    setCargoWeightKg(ride.weightKg ? String(ride.weightKg) : "");
-    setScheduledAt("");
-    setStep("review");
-  }, []);
-  const { mutate: submitBooking } = create;
-  const confirmVoiceRide = useCallback(() => submitBooking(), [submitBooking]);
 
   return (
     <div className="grid min-w-0 gap-6 lg:grid-cols-[1.1fr_1fr] [&>*]:min-w-0">
