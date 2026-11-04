@@ -260,7 +260,9 @@ function AccountPage() {
   const [selectedMonth, setSelectedMonth] = useState("all");
   const filteredMonths = useMemo(() => {
     if (selectedMonth === "all") return monthlyDriverEarnings.data ?? [];
-    return (monthlyDriverEarnings.data ?? []).filter((month: MonthlyDriverEarning) => month.key === selectedMonth);
+    return (monthlyDriverEarnings.data ?? []).filter(
+      (month: MonthlyDriverEarning) => month.key === selectedMonth,
+    );
   }, [monthlyDriverEarnings.data, selectedMonth]);
 
   const driverPayouts = useQuery({
