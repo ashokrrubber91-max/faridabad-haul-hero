@@ -214,7 +214,9 @@ function RootComponent() {
       ) : (
         <Outlet />
       )}
-      {!authLoading && !syncError && (role === "customer" || role === "driver") && <SonaAssistant />}
+      {!authLoading && !syncError && (role === "customer" || role === "driver") && (
+        <SonaAssistant />
+      )}
       <Toaster richColors position="top-center" />
       <OfflineBanner />
     </QueryClientProvider>

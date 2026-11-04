@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type DetectedLang = "hi-IN" | "en-IN" | "pa-IN" | "bn-IN" | "mr-IN" | "ta-IN" | "te-IN" | "gu-IN";
+export type DetectedLang =
+  "hi-IN" | "en-IN" | "pa-IN" | "bn-IN" | "mr-IN" | "ta-IN" | "te-IN" | "gu-IN";
 
 /** Devanagari script => Hindi, otherwise default to Indian English. */
 export function detectLang(text: string): DetectedLang {
