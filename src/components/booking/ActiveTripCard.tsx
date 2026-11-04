@@ -191,7 +191,11 @@ export function ActiveTripCard({
             </div>
           </div>
 
-          <Button className="mt-3 w-full" onClick={() => setChatOpen(true)}>
+          <Button
+            className="fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] left-4 right-4 z-40 h-12 w-auto shadow-lg sm:static sm:mt-3 sm:h-10 sm:w-full sm:shadow-none"
+            onClick={() => setChatOpen(true)}
+            aria-label={`Chat with ${driverName}`}
+          >
             <MessageCircle className="mr-2 h-4 w-4" /> Chat with {driverName}
           </Button>
         </div>
