@@ -1278,6 +1278,7 @@ function ActiveJobCard({
   onStopVerify: (sequence: number, otp: string) => void;
   stopBusy: boolean;
 }) {
+  const queryClient = useQueryClient();
   const [otp, setOtp] = useState("");
   const [podPath, setPodPath] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -1285,25 +1286,34 @@ function ActiveJobCard({
 
   const uploadProof = async (file: File) => {
     setUploading(true);
-    const { data: auth } = await supabase.auth.getUser();
-    const uid = auth.user?.id;
-    if (!uid) {
+    try {
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (authError || !uid) {
+        throw new Error("Session expired — please sign in again");
+      }
+
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${uid}/${job.id}-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("delivery-proof")
+        .upload(path, file, { upsert: true });
+      if (error) throw error;
+
+      // Update this card immediately, then refresh the server-backed trip data.
+      setPodPath(path);
+      await Promise.allSettled([
+        queryClient.invalidateQueries({ queryKey: ["driver-feed"] }),
+        queryClient.invalidateQueries({ queryKey: ["driver-rides"] }),
+        queryClient.invalidateQueries({ queryKey: ["booking", job.id] }),
+        queryClient.invalidateQueries({ queryKey: ["delivery-proof"] }),
+      ]);
+      toast.success("Proof photo attached");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not upload delivery photo");
+    } finally {
       setUploading(false);
-      toast.error("Session expired — please sign in again");
-      return;
     }
-    const ext = file.name.split(".").pop() || "jpg";
-    const path = `${uid}/${job.id}-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage
-      .from("delivery-proof")
-      .upload(path, file, { upsert: true });
-    setUploading(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    setPodPath(path);
-    toast.success("Proof photo attached");
   };
   const next = job.status === "accepted" ? "in_progress" : "completed";
   const nextStop = stops.find((s) => s.status !== "verified" && s.status !== "completed") ?? null;
@@ -1641,8 +1651,10 @@ function ActiveJobCard({
                 capture="environment"
                 className="sr-only"
                 onChange={(e) => {
-                  const f = e.target.files?.[0];
+                  const input = e.currentTarget;
+                  const f = input.files?.[0];
                   if (f) void uploadProof(f);
+                  input.value = "";
                 }}
               />
             </label>
