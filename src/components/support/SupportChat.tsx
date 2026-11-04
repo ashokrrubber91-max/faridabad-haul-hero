@@ -72,7 +72,6 @@ async function buildClientContext(role: "customer" | "driver", userId?: string):
     }
 
     if (role === "driver") {
-      // Voice co-pilot context: answer today's completed rides and earnings from real records.
       const now = new Date();
       const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
       const { data: todayRows } = await supabase
@@ -187,7 +186,7 @@ export function SupportChat({ role }: { role: "customer" | "driver" }) {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] right-3 z-30 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg transition-transform hover:scale-105 sm:bottom-5 sm:right-5"
+          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] right-3 z-40 flex min-h-12 items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg transition-transform hover:scale-105 sm:bottom-5 sm:right-5"
           aria-label="Help & Support"
         >
           <MessageCircle className="h-5 w-5" />
