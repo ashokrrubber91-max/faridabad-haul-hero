@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "@tanstack/react-router";
+import { useRouter, useRouterState } from "@tanstack/react-router";
 import { Bot, Mic, MicOff, Volume2, VolumeX, Settings2, X, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,7 @@ function containsAny(text: string, words: string[]): boolean {
 export function SonaAssistant() {
   const { user, role, profile } = useAuth();
   const router = useRouter();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [assistantName, setAssistantName] = useState("Sona");
@@ -260,7 +261,12 @@ export function SonaAssistant() {
               ? "Main wallet balance, ride history, aaj ki kamai, booking, referrals aur support mein help kar sakti hoon. Aap kya karna chahenge?"
               : "I can help with wallet balance, ride history, today's earnings, booking, referrals and support. What would you like?";
         }
-        if (destination) await router.navigate({ to: destination });
+        if (destination) {
+          // Collapse Sona before changing screens so it never covers the destination page.
+          setOpen(false);
+          setSettingsOpen(false);
+          await router.navigate({ to: destination });
+        }
       } catch {
         reply =
           detected === "hi-IN"
@@ -269,6 +275,9 @@ export function SonaAssistant() {
       } finally {
         addMessage("assistant", reply);
         say(reply, detected);
+        // Keep the answer in session history and speak it, then return the screen to its normal layout.
+        setOpen(false);
+        setSettingsOpen(false);
         setBusy(false);
       }
     },
@@ -282,6 +291,13 @@ export function SonaAssistant() {
     [processCommand],
   );
   const voiceIn = useVoiceInput(onVoiceResult, language);
+
+  useEffect(() => {
+    // Also dismiss Sona when navigation is triggered outside the assistant.
+    setOpen(false);
+    setSettingsOpen(false);
+    voiceIn.stop();
+  }, [pathname, voiceIn.stop]);
 
   useEffect(() => () => voiceIn.stop(), [voiceIn.stop]);
 
@@ -329,7 +345,7 @@ export function SonaAssistant() {
       {open && (
         <section
           aria-label={`${assistantName} assistant`}
-          className="fixed inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] z-[70] mx-auto flex max-h-[min(76dvh,620px)] w-auto max-w-md flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl"
+          className="fixed inset-x-3 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] z-[70] mx-auto flex max-h-[min(calc(100dvh-9rem-env(safe-area-inset-bottom,0px)),620px)] w-auto max-w-md flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl"
         >
           <header className="flex items-center justify-between gap-2 border-b bg-primary px-4 py-3 text-primary-foreground">
             <div className="flex min-w-0 items-center gap-2">
