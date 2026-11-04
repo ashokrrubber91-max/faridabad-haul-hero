@@ -336,7 +336,7 @@ export function SonaAssistant() {
           type="button"
           onClick={() => setOpen(true)}
           aria-label={`Open ${assistantName} voice assistant`}
-          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] left-1/2 z-[45] flex h-14 -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-4 text-primary-foreground shadow-xl"
+          className="fixed bottom-[calc(9.25rem+env(safe-area-inset-bottom,0px))] right-3 z-[45] flex h-14 items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary px-4 text-primary-foreground shadow-xl ring-1 ring-primary/10 sm:bottom-[5.5rem] sm:right-5"
         >
           <Bot className="h-5 w-5" />
           <span className="text-sm font-semibold">{assistantName}</span>
