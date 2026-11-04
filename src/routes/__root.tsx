@@ -17,6 +17,7 @@ import { LogOut, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { SonaAssistant } from "@/components/assistant/SonaAssistant";
 
 function NotFoundComponent() {
   return (
@@ -213,6 +214,7 @@ function RootComponent() {
       ) : (
         <Outlet />
       )}
+      {!authLoading && !syncError && (role === "customer" || role === "driver") && <SonaAssistant />}
       <Toaster richColors position="top-center" />
       <OfflineBanner />
     </QueryClientProvider>
