@@ -149,7 +149,7 @@ export function SonaAssistant() {
       } else if (containsAny(text, ["home", "ghar", "होम"])) {
         reply = "Opening your home screen.";
         destination = isDriver ? "/driver" : "/customer";
-      } else if (containsAny(text, ["hello", "hi", "namaste", "राम राम", "नमस्ते"])) {
+      } else if (containsAny(text, ["hello", "hi", "hey", "namaste", "राम राम", "नमस्ते"])) {
         reply = detected === "hi-IN" ? `Ram Ram ${profile?.name || ""}! Main ${assistantName} hoon. Wallet, rides, booking ya support mein help kar sakti hoon.` : `Hello ${profile?.name || ""}! I'm ${assistantName}. I can help with wallet, rides, booking and support.`;
       } else {
         reply = detected === "hi-IN"
@@ -192,12 +192,12 @@ export function SonaAssistant() {
     <>
       {!open && (
         <button type="button" onClick={() => setOpen(true)} aria-label={`Open ${assistantName} voice assistant`}
-          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] right-3 z-[45] flex h-14 items-center gap-2 rounded-full bg-primary px-4 text-primary-foreground shadow-xl sm:bottom-5 sm:right-5">
+          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] left-1/2 z-[45] flex h-14 -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-4 text-primary-foreground shadow-xl">
           <Bot className="h-5 w-5" /><span className="text-sm font-semibold">{assistantName}</span>
         </button>
       )}
       {open && (
-        <section aria-label={`${assistantName} assistant`} className="fixed inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] z-[70] mx-auto flex max-h-[min(76dvh,620px)] w-auto max-w-md flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl sm:inset-x-auto sm:bottom-5 sm:right-5 sm:w-[390px]">
+        <section aria-label={`${assistantName} assistant`} className="fixed inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] z-[70] mx-auto flex max-h-[min(76dvh,620px)] w-auto max-w-md flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl">
           <header className="flex items-center justify-between gap-2 border-b bg-primary px-4 py-3 text-primary-foreground">
             <div className="flex min-w-0 items-center gap-2"><Bot className="h-5 w-5 shrink-0" /><div className="min-w-0"><p className="font-semibold">{assistantName}</p><p className="text-[11px] opacity-85">MiniPort voice co-pilot</p></div></div>
             <div className="flex shrink-0 items-center gap-1">
