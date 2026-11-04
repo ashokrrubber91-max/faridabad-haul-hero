@@ -17,9 +17,10 @@ export const MAX_VOICE_WEIGHT_KG = 50_000;
 
 const VEHICLE_PATTERNS: Array<[VoiceVehicleId, RegExp]> = [
   ["tata_407", /\b(?:tata\s*)?(?:4\s*0\s*7|four\s*o\s*seven|चार\s*सौ\s*सात)\b/i],
+  // A bare "pickup" is the pickup location keyword, so the vehicle needs a size or noun.
   [
     "pickup_8ft",
-    /\b(?:pick\s*-?\s*up|पिकअप)(?:\s*(?:8|eight|आठ)\s*(?:ft|feet|foot|फ़ुट|फुट))?\b|\b(?:8|eight)\s*(?:ft|feet|foot)\b/i,
+    /\bpick\s*-?\s*up\s*(?:8|eight)\s*(?:ft|feet|foot)\b|\b(?:8|eight)\s*(?:ft|feet|foot)\b|\bpick\s*-?\s*up\s+(?:truck|gaadi|gadi|vehicle)\b|पिकअप\s*(?:गाड़ी|8|आठ)/i,
   ],
   ["tata_ace", /\b(?:tata\s*)?ace\b|chhota\s*hathi|छोटा\s*हाथी|टाटा\s*ऐस/i],
   ["bike_delivery", /\b(?:bike|motor\s*cycle|two\s*wheeler|बाइक)(?:\s*delivery)?\b/i],
