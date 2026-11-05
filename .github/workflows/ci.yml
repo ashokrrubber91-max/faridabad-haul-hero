@@ -31,6 +31,9 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
+      - name: Test suite
+        run: bun run test
+
       # ESLint 9 flat config: fails on any error; caps warning growth.
       - name: Lint
         run: bunx eslint . --max-warnings=20
