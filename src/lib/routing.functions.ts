@@ -111,7 +111,8 @@ export const createBooking = createServerFn({ method: "POST" })
     const helperCount = data.helperCount;
     const helperFee = helperCount * 250;
 
-    const { data: booking, error } = await context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: booking, error } = await supabaseAdmin
       .from("bookings")
       .insert({
         customer_id: authenticatedCustomerId,
@@ -224,11 +225,6 @@ export const createBooking = createServerFn({ method: "POST" })
       };
       walletDeductedAmount = Number(applied.wallet_deducted_amount ?? 0);
       finalPayableAmount = Number(applied.final_payable_amount ?? booking.fare);
-    } else {
-      await context.supabase
-        .from("bookings")
-        .update({ wallet_deducted_amount: 0, final_payable_amount: Number(booking.fare) })
-        .eq("id", booking.id);
     }
 
     return {
