@@ -42,6 +42,7 @@ import { IncomingRideOverlay } from "@/components/driver/IncomingRideOverlay";
 import { WaitingChargesCard } from "@/components/booking/WaitingChargesCard";
 import { useVehicleTypes, type VehicleType } from "@/lib/vehicles";
 import { sweepStaleBookings } from "@/lib/notifications.functions";
+import { driverFeedRpcErrorMessage } from "@/lib/driver-feed-security";
 import { MINIPORT_TEST_MODE } from "@/lib/testing";
 import {
   DEFAULT_SERVICE_ZONE,
@@ -80,37 +81,22 @@ type IncentiveTier = { rides_required: number; bonus_amount: number; label: stri
 type DriverJob = Database["public"]["Tables"]["bookings"]["Row"];
 
 /**
- * Open jobs prefer the OTP-safe security-definer RPC. When that RPC is not
- * installed in the live database, fall back to the RLS-guarded bookings read
- * (KYC approved, online, same zone, not passed). BOOKING_FIELDS carries no OTP
- * or customer phone columns.
+ * Open jobs must come exclusively from the OTP-redacting, per-driver dispatch RPC.
+ * A missing RPC is a configuration failure: fail closed rather than reading raw
+ * pending bookings, which could expose customer contact details or verification codes.
  */
 async function loadOpenDriverJobs(): Promise<{ data: unknown[] | null; error: Error | null }> {
   const rpc = supabase.rpc as unknown as (
     fn: string,
   ) => Promise<{ data: unknown[] | null; error: { code?: string; message: string } | null }>;
   const viaRpc = await rpc("get_open_driver_bookings");
-  const missing =
-    !!viaRpc.error &&
-    (viaRpc.error.code === "PGRST202" ||
-      viaRpc.error.code === "42883" ||
-      /could not find the function/i.test(viaRpc.error.message));
-  if (!missing) {
-    return { data: viaRpc.data, error: viaRpc.error ? new Error(viaRpc.error.message) : null };
+  if (viaRpc.error) {
+    return {
+      data: null,
+      error: new Error(driverFeedRpcErrorMessage(viaRpc.error)),
+    };
   }
-  const direct = await supabase
-    .from("bookings")
-    .select(BOOKING_FIELDS)
-    .eq("status", "pending")
-    .is("driver_id", null)
-    .is("cancelled_at", null)
-    .order("created_at", { ascending: false })
-    .limit(60);
-  const now = Date.now();
-  const rows = (direct.data ?? []).filter(
-    (b) => !b.expires_at || new Date(b.expires_at).getTime() > now,
-  );
-  return { data: rows, error: direct.error ? new Error(direct.error.message) : null };
+  return { data: viaRpc.data, error: null };
 }
 
 /** Retry only temporary transport/service failures; never retry RLS or SQL errors. */
