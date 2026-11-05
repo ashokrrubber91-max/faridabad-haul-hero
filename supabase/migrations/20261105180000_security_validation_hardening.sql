@@ -85,6 +85,33 @@ $$;
 REVOKE ALL ON FUNCTION public.booking_contacts(uuid[]) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.booking_contacts(uuid[]) TO authenticated;
 
+-- Contact details are scoped to the customer, assigned driver or admin only.
+CREATE OR REPLACE FUNCTION public.booking_contacts(_booking_ids uuid[])
+RETURNS TABLE (booking_id uuid, counterpart_id uuid, name text, phone text)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $
+  SELECT b.id,
+         CASE WHEN b.customer_id = auth.uid() THEN b.driver_id ELSE b.customer_id END,
+         CASE WHEN b.customer_id = auth.uid() THEN COALESCE(d.name, '') ELSE COALESCE(c.name, '') END,
+         CASE WHEN b.customer_id = auth.uid() THEN COALESCE(d.phone, '') ELSE COALESCE(c.phone, '') END
+  FROM public.bookings b
+  LEFT JOIN public.profiles c ON c.id = b.customer_id
+  LEFT JOIN public.profiles d ON d.id = b.driver_id
+  WHERE b.id = ANY(_booking_ids)
+    AND auth.uid() IS NOT NULL
+    AND (
+      b.customer_id = auth.uid()
+      OR b.driver_id = auth.uid()
+      OR public.has_role(auth.uid(), 'admin'::public.app_role)
+    )
+    AND (b.driver_id IS NOT NULL OR b.customer_id <> auth.uid() OR public.has_role(auth.uid(), 'admin'::public.app_role));
+$;
+REVOKE ALL ON FUNCTION public.booking_contacts(uuid[]) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.booking_contacts(uuid[]) TO authenticated;
+
 -- Server-side OTP verification with a five-attempt / ten-minute lockout.
 CREATE OR REPLACE FUNCTION public.verify_booking_otp(_booking_id uuid, _stage text, _otp text)
 RETURNS jsonb
