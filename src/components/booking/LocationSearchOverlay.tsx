@@ -232,7 +232,8 @@ export function LocationSearchOverlay({
                   <Input
                     autoFocus
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                    onChange={(e) => setQuery(e.target.value.slice(0, 200))}
+                    maxLength={200}
                     placeholder="Search building, area, landmark"
                     className="h-7 border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
                   />
