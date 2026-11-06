@@ -611,19 +611,24 @@ export function TripIssuesTab({
     qc.invalidateQueries({ queryKey: ["admin-trip-issues"] });
   };
 
-  const filtered = (rows.data ?? []).filter((issue) => {
-    const state = issue.resolved_at ? "resolved" : "open";
-    if (filter !== "all" && state !== filter) return false;
-    if (!q.trim()) return true;
-    const needle = q.toLowerCase();
-    const reporter = profileMap.get(issue.reporter_id);
-    return (
-      String(issue.issue_type).toLowerCase().includes(needle) ||
-      String(issue.booking_id).toLowerCase().includes(needle) ||
-      (reporter?.name ?? "").toLowerCase().includes(needle) ||
-      (reporter?.phone ?? "").includes(q.trim())
-    );
-  });
+  const dq = useDeferredValue(q);
+  const filtered = useMemo(
+    () =>
+      (rows.data ?? []).filter((issue) => {
+        const state = issue.resolved_at ? "resolved" : "open";
+        if (filter !== "all" && state !== filter) return false;
+        if (!dq.trim()) return true;
+        const needle = dq.toLowerCase();
+        const reporter = profileMap.get(issue.reporter_id);
+        return (
+          String(issue.issue_type).toLowerCase().includes(needle) ||
+          String(issue.booking_id).toLowerCase().includes(needle) ||
+          (reporter?.name ?? "").toLowerCase().includes(needle) ||
+          (reporter?.phone ?? "").includes(dq.trim())
+        );
+      }),
+    [rows.data, filter, dq, profileMap],
+  );
 
   return (
     <Shell
