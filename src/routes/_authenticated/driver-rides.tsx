@@ -2,7 +2,7 @@ import type { AnyRow } from "@/lib/rows";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Camera, Loader2, MessageCircle, Package } from "lucide-react";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -136,7 +136,7 @@ function DriverRidesPage() {
   );
 }
 
-function RideCard({ ride }: { ride: AnyRow }) {
+const RideCard = memo(function RideCard({ ride }: { ride: AnyRow }) {
   const [proofUrl, setProofUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -260,4 +260,4 @@ function RideCard({ ride }: { ride: AnyRow }) {
       />
     </article>
   );
-}
+});
