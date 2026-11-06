@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useDeferredValue } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -120,23 +120,28 @@ function OrdersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const all = orders.data ?? [];
-  const term = search.trim().toLowerCase();
-  const list = all
-    .filter((o) =>
-      filter === "active"
-        ? ["pending", "scheduled", "accepted", "arrived", "in_progress"].includes(o.status)
-        : filter === "completed"
-          ? o.status === "completed"
-          : o.status === "cancelled" || o.status === "expired",
-    )
-    .filter((o) =>
-      term
-        ? o.pickup_address.toLowerCase().includes(term) ||
-          o.drop_address.toLowerCase().includes(term) ||
-          o.id.slice(0, 8).toLowerCase().includes(term)
-        : true,
-    );
+  const all = useMemo(() => orders.data ?? [], [orders.data]);
+  const deferredSearch = useDeferredValue(search);
+  const term = deferredSearch.trim().toLowerCase();
+  const list = useMemo(
+    () =>
+      all
+        .filter((o) =>
+          filter === "active"
+            ? ["pending", "scheduled", "accepted", "arrived", "in_progress"].includes(o.status)
+            : filter === "completed"
+              ? o.status === "completed"
+              : o.status === "cancelled" || o.status === "expired",
+        )
+        .filter((o) =>
+          term
+            ? o.pickup_address.toLowerCase().includes(term) ||
+              o.drop_address.toLowerCase().includes(term) ||
+              o.id.slice(0, 8).toLowerCase().includes(term)
+            : true,
+        ),
+    [all, filter, term],
+  );
 
   const downloadInvoice = (b: (typeof all)[number]) => {
     const ok = openInvoice(
