@@ -439,7 +439,9 @@ function SignUpForm({
   const [code, setCode] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [referralCode, setReferralCode] = useState(initialReferralCode?.toUpperCase() ?? "");
-  const [referralStatus, setReferralStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
+  const [referralStatus, setReferralStatus] = useState<"idle" | "checking" | "valid" | "invalid">(
+    "idle",
+  );
   const [cooldown, setCooldown] = useCooldown();
 
   const validateReferral = async (code: string) => {
