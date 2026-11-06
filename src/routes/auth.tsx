@@ -31,7 +31,7 @@ const searchSchema = z.object({
   // Only a known in-app destination is accepted, so this can never be used to
   // bounce someone to an external site after signing in.
   next: z.enum(["/admin"]).optional(),
-  ref: z.string().trim().max(20).optional(),
+  ref: z.string().trim().regex(/^MP[A-Z0-9]{8}$/).optional(),
 });
 
 export const Route = createFileRoute("/auth")({
