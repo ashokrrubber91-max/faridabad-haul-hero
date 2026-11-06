@@ -377,8 +377,6 @@ function SignInForm() {
         <Label htmlFor="signin-phone">Phone number</Label>
         <Input
           id="signin-phone"
-          inputMode="tel"
-          autoComplete="tel"
           placeholder="98xxxxxxxx"
           value={phone}
           onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
