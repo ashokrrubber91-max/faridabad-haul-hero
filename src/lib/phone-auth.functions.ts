@@ -223,3 +223,20 @@ export const verifyPhoneOtp = createServerFn({ method: "POST" })
     if (!MINIPORT_TEST_MODE) await clearAttempts(supabaseAdmin, phone);
     return { ok: true as const, tokenHash, isNewAccount: created_new };
   });
+
+
+/** Checks a referral code before OTP/account creation without exposing referrer data. */
+export const checkReferralCode = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({ code: z.string().trim().regex(/^MP[A-Z0-9]{8}$/) }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: referrer, error } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("referral_code", data.code)
+      .maybeSingle();
+    if (error || !referrer) return { valid: false as const, message: "Referral code is invalid or expired." };
+    return { valid: true as const, message: "Referral code verified." };
+  });
