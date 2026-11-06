@@ -381,9 +381,15 @@ function SignInForm() {
           autoComplete="tel"
           placeholder="98xxxxxxxx"
           value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+          maxLength={10}
+          inputMode="numeric"
+          autoComplete="tel-national"
           required
         />
+        {phone.length > 0 && !isValidIndianMobile(phone) && (
+          <p className="mt-1 text-xs text-destructive">Enter a valid 10-digit Indian mobile number.</p>
+        )}
       </div>
       <div>
         <Label htmlFor="signin-pw">Password</Label>
@@ -605,19 +611,18 @@ function SignUpForm({
         <Input
           id="su-referral"
           value={referralCode}
-          onChange={(e) =>
-            setReferralCode(
-              e.target.value
-                .toUpperCase()
-                .replace(/[^A-Z0-9]/g, "")
-                .slice(0, 20),
-            )
-          }
+          onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10))}
           placeholder="MPXXXXXXXX"
-          maxLength={20}
+          maxLength={10}
+          aria-invalid={referralCode.length > 0 && !/^MP[A-Z0-9]{8}$/.test(referralCode)}
           readOnly={!!initialReferralCode}
         />
-        {initialReferralCode && <p className="mt-1 text-xs text-success">Referral code applied</p>}
+        {referralCode.length > 0 && !/^MP[A-Z0-9]{8}$/.test(referralCode) && (
+          <p className="mt-1 text-xs text-destructive">Enter a valid 10-character code starting with MP.</p>
+        )}
+        {initialReferralCode && /^MP[A-Z0-9]{8}$/.test(referralCode) && (
+          <p className="mt-1 text-xs text-success">Referral code format looks valid. We’ll verify it before account creation.</p>
+        )}
       </div>
       <label htmlFor="su-terms" className="flex items-start gap-2 text-sm text-muted-foreground">
         <input
