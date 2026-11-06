@@ -358,6 +358,15 @@ function CustomerPage() {
     mutationFn: async () => {
       if (!pickup) throw new Error("Choose pickup location");
       if (!drop) throw new Error("Choose drop location");
+      if (pickup.address.trim().length < 3 || pickup.address.length > 400) throw new Error("Select a valid pickup address.");
+      if (drop.address.trim().length < 3 || drop.address.length > 400) throw new Error("Select a valid drop address.");
+      const selectedCapacity = Number(selectedVehicle?.weight_limit_kg ?? 0);
+      if (cargoWeightKg.trim()) {
+        const weight = Number(cargoWeightKg);
+        if (!Number.isFinite(weight) || weight <= 0) throw new Error("Cargo weight must be greater than 0 kg.");
+        if (selectedCapacity > 0 && weight > selectedCapacity) throw new Error("Cargo weight exceeds the selected vehicle capacity.");
+      }
+      if (notes.length > 500) throw new Error("Notes must be 500 characters or fewer.");
       if (attachments.length > 0)
         throw new Error(
           "Private attachment uploads are not available in this testing setup. Remove the drafts before booking; your text notes will still be included.",
@@ -407,7 +416,7 @@ function CustomerPage() {
           cargoWeightKg: cargoWeightKg.trim() ? Number(cargoWeightKg) : null,
           notes:
             [
-              sanitizeDriverNotes(notes).trim(),
+              sanitizeDriverNotes(notes.slice(0, 500)).trim(),
               stops.length > 0 && `Stops: ${stops.map((s) => s.address).join(" → ")}`,
               pickup.contactName && `Sender: ${pickup.contactName} (${pickup.contactPhone ?? ""})`,
               drop.contactName && `Receiver: ${drop.contactName} (${drop.contactPhone ?? ""})`,
