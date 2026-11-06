@@ -111,7 +111,11 @@ const verifySchema = z.object({
   intent: z.enum(["signin", "signup"]),
   name: z.string().trim().min(2).max(60).optional(),
   acceptedTerms: z.boolean().optional(),
-  referralCode: z.string().trim().regex(/^MP[A-Z0-9]{8}$/).optional(),
+  referralCode: z
+    .string()
+    .trim()
+    .regex(/^MP[A-Z0-9]{8}$/)
+    .optional(),
   requestedRole: z.enum(["customer", "driver"]).optional(),
 });
 
@@ -169,7 +173,10 @@ export const verifyPhoneOtp = createServerFn({ method: "POST" })
         .eq("referral_code", data.referralCode)
         .maybeSingle();
       if (referralError || !referrer) {
-        return { ok: false as const, message: "This referral code is invalid. Check it and try again." };
+        return {
+          ok: false as const,
+          message: "This referral code is invalid. Check it and try again.",
+        };
       }
     }
 
@@ -224,11 +231,17 @@ export const verifyPhoneOtp = createServerFn({ method: "POST" })
     return { ok: true as const, tokenHash, isNewAccount: created_new };
   });
 
-
 /** Checks a referral code before OTP/account creation without exposing referrer data. */
 export const checkReferralCode = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
-    z.object({ code: z.string().trim().regex(/^MP[A-Z0-9]{8}$/) }).parse(input),
+    z
+      .object({
+        code: z
+          .string()
+          .trim()
+          .regex(/^MP[A-Z0-9]{8}$/),
+      })
+      .parse(input),
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -237,6 +250,7 @@ export const checkReferralCode = createServerFn({ method: "POST" })
       .select("id")
       .eq("referral_code", data.code)
       .maybeSingle();
-    if (error || !referrer) return { valid: false as const, message: "Referral code is invalid or expired." };
+    if (error || !referrer)
+      return { valid: false as const, message: "Referral code is invalid or expired." };
     return { valid: true as const, message: "Referral code verified." };
   });

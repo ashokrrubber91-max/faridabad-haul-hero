@@ -31,7 +31,11 @@ const searchSchema = z.object({
   // Only a known in-app destination is accepted, so this can never be used to
   // bounce someone to an external site after signing in.
   next: z.enum(["/admin"]).optional(),
-  ref: z.string().trim().regex(/^MP[A-Z0-9]{8}$/).optional(),
+  ref: z
+    .string()
+    .trim()
+    .regex(/^MP[A-Z0-9]{8}$/)
+    .optional(),
 });
 
 export const Route = createFileRoute("/auth")({
@@ -386,7 +390,9 @@ function SignInForm() {
           required
         />
         {phone.length > 0 && !isValidIndianMobile(phone) && (
-          <p className="mt-1 text-xs text-destructive">Enter a valid 10-digit Indian mobile number.</p>
+          <p className="mt-1 text-xs text-destructive">
+            Enter a valid 10-digit Indian mobile number.
+          </p>
         )}
       </div>
       <div>
@@ -609,17 +615,28 @@ function SignUpForm({
         <Input
           id="su-referral"
           value={referralCode}
-          onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10))}
+          onChange={(e) =>
+            setReferralCode(
+              e.target.value
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, "")
+                .slice(0, 10),
+            )
+          }
           placeholder="MPXXXXXXXX"
           maxLength={10}
           aria-invalid={referralCode.length > 0 && !/^MP[A-Z0-9]{8}$/.test(referralCode)}
           readOnly={!!initialReferralCode}
         />
         {referralCode.length > 0 && !/^MP[A-Z0-9]{8}$/.test(referralCode) && (
-          <p className="mt-1 text-xs text-destructive">Enter a valid 10-character code starting with MP.</p>
+          <p className="mt-1 text-xs text-destructive">
+            Enter a valid 10-character code starting with MP.
+          </p>
         )}
         {initialReferralCode && /^MP[A-Z0-9]{8}$/.test(referralCode) && (
-          <p className="mt-1 text-xs text-success">Referral code format looks valid. We’ll verify it before account creation.</p>
+          <p className="mt-1 text-xs text-success">
+            Referral code format looks valid. We’ll verify it before account creation.
+          </p>
         )}
       </div>
       <label htmlFor="su-terms" className="flex items-start gap-2 text-sm text-muted-foreground">

@@ -180,11 +180,14 @@ export function ReviewBooking({
             placeholder="e.g. 450"
             className="mt-3 h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
           />
-          {cargoWeightKg.trim() && (!Number.isFinite(Number(cargoWeightKg)) || Number(cargoWeightKg) <= 0 || (maxWeightKg !== null && Number(cargoWeightKg) > maxWeightKg)) && (
-            <p className="mt-1 text-xs text-destructive">
-              Enter a weight above 0 and within the selected vehicle capacity.
-            </p>
-          )}
+          {cargoWeightKg.trim() &&
+            (!Number.isFinite(Number(cargoWeightKg)) ||
+              Number(cargoWeightKg) <= 0 ||
+              (maxWeightKg !== null && Number(cargoWeightKg) > maxWeightKg)) && (
+              <p className="mt-1 text-xs text-destructive">
+                Enter a weight above 0 and within the selected vehicle capacity.
+              </p>
+            )}
         </div>
 
         {notes.trim() && (
