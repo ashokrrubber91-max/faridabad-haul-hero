@@ -19,7 +19,7 @@ import {
   useAuth,
 } from "@/hooks/useAuth";
 import { recordConsent } from "@/lib/legal";
-import { startPhoneOtp, verifyPhoneOtp } from "@/lib/phone-auth.functions";
+import { checkReferralCode, startPhoneOtp, verifyPhoneOtp } from "@/lib/phone-auth.functions";
 import { MINIPORT_TEST_MODE, TEST_OTP } from "@/lib/testing";
 
 /** Kept in step with the server-side cooldown; only used for the countdown UI. */
@@ -430,6 +430,7 @@ function SignUpForm({
 }) {
   const start = useServerFn(startPhoneOtp);
   const verify = useServerFn(verifyPhoneOtp);
+  const checkReferral = useServerFn(checkReferralCode);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"customer" | "driver">(defaultRole);
@@ -438,7 +439,28 @@ function SignUpForm({
   const [code, setCode] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [referralCode, setReferralCode] = useState(initialReferralCode?.toUpperCase() ?? "");
+  const [referralStatus, setReferralStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
   const [cooldown, setCooldown] = useCooldown();
+
+  const validateReferral = async (code: string) => {
+    if (!code) {
+      setReferralStatus("idle");
+      return true;
+    }
+    if (!/^MP[A-Z0-9]{8}$/.test(code)) {
+      setReferralStatus("invalid");
+      return false;
+    }
+    setReferralStatus("checking");
+    try {
+      const result = await checkReferral({ data: { code } });
+      setReferralStatus(result.valid ? "valid" : "invalid");
+      return result.valid;
+    } catch {
+      setReferralStatus("invalid");
+      return false;
+    }
+  };
 
   const sendCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -449,6 +471,10 @@ function SignUpForm({
     }
     if (!agreed)
       return toast.error("Please accept the Terms & Conditions and Privacy Policy to continue");
+    if (referralCode && !(await validateReferral(referralCode))) {
+      toast.error("Referral code is invalid or expired. Please check it.");
+      return;
+    }
 
     setBusy(true);
     try {
