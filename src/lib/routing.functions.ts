@@ -9,10 +9,10 @@ const point = z.object({
 });
 
 const place = point.extend({
-  address: z.string().trim().min(3).max(400),
+  address: z.string().trim().min(3).max(200),
   placeId: z.string().trim().max(300).nullish(),
-  contactName: z.string().trim().max(120).nullish(),
-  contactPhone: z.string().trim().max(20).nullish(),
+  contactName: z.string().trim().max(80).nullish(),
+  contactPhone: z.string().trim().max(13).nullish(),
 });
 
 /** Vehicles are configured in the database, so the id is validated by shape. */
@@ -62,7 +62,7 @@ export const createBooking = createServerFn({ method: "POST" })
           .optional()
           .default(null),
         helperCount: z.number().int().min(0).max(2).default(0),
-        notes: z.string().trim().max(2000).nullable().default(null),
+        notes: z.string().trim().max(500).nullable().default(null),
       })
       .parse(input),
   )
