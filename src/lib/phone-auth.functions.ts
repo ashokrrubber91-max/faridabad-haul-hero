@@ -31,7 +31,7 @@ function loginEmail(phone: string): string {
 }
 
 const startSchema = z.object({
-  phone: z.string().min(1),
+  phone: z.string().trim().min(10).max(13),
   intent: z.enum(["signin", "signup"]),
 });
 
@@ -111,7 +111,7 @@ const verifySchema = z.object({
   intent: z.enum(["signin", "signup"]),
   name: z.string().trim().min(2).max(60).optional(),
   acceptedTerms: z.boolean().optional(),
-  referralCode: z.string().trim().max(20).optional(),
+  referralCode: z.string().trim().regex(/^MP[A-Z0-9]{8}$/).optional(),
   requestedRole: z.enum(["customer", "driver"]).optional(),
 });
 
@@ -159,6 +159,17 @@ export const verifyPhoneOtp = createServerFn({ method: "POST" })
                   ? "That code is not correct. Please check and try again."
                   : "We could not check that code right now. Please try again in a moment.";
         return { ok: false as const, message };
+      }
+    }
+
+    if (data.intent === "signup" && data.referralCode) {
+      const { data: referrer, error: referralError } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("referral_code", data.referralCode)
+        .maybeSingle();
+      if (referralError || !referrer) {
+        return { ok: false as const, message: "This referral code is invalid. Check it and try again." };
       }
     }
 
