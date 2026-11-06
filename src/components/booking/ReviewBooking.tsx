@@ -171,10 +171,20 @@ export function ReviewBooking({
             step="0.1"
             max={maxWeightKg ?? 100000}
             value={cargoWeightKg}
-            onChange={(e) => onCargoWeightKgChange(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value.replace(/[^0-9.]/g, "");
+              if ((next.match(/\./g) ?? []).length > 1) return;
+              if (next.length > 0 && Number(next) > (maxWeightKg ?? 100000)) return;
+              onCargoWeightKgChange(next.slice(0, 9));
+            }}
             placeholder="e.g. 450"
             className="mt-3 h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
           />
+          {cargoWeightKg.trim() && (!Number.isFinite(Number(cargoWeightKg)) || Number(cargoWeightKg) <= 0 || (maxWeightKg !== null && Number(cargoWeightKg) > maxWeightKg)) && (
+            <p className="mt-1 text-xs text-destructive">
+              Enter a weight above 0 and within the selected vehicle capacity.
+            </p>
+          )}
         </div>
 
         {notes.trim() && (
