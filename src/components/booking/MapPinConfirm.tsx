@@ -191,8 +191,13 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
       toast.error("Tap “Set location” to confirm the pin");
       return;
     }
-    if (!contactName.trim() || !contactPhone.trim()) {
+    const normalizedPhone = normalizeContactPhone(contactPhone);
+    if (!contactName.trim() || !normalizedPhone) {
       toast.error(`Enter ${mode === "pickup" ? "sender" : "receiver"} name and mobile`);
+      return;
+    }
+    if (normalizedPhone.length > 13) {
+      toast.error("Enter a valid mobile number, such as +91 98765 43210.");
       return;
     }
     setSaving(true);
@@ -207,7 +212,7 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
           longitude: coords.lng,
           place_id: initialRef.current?.placeId ?? null,
           contact_name: contactName.trim(),
-          contact_phone: contactPhone.trim(),
+          contact_phone: normalizedPhone,
         });
         if (error) throw error;
         toast.success("Address saved");
@@ -218,7 +223,7 @@ export function MapPinConfirm({ open, onOpenChange, mode, initial, onConfirm }: 
         lng: coords.lng,
         placeId: initialRef.current?.placeId,
         contactName: contactName.trim(),
-        contactPhone: contactPhone.trim(),
+        contactPhone: normalizedPhone,
         alias: alias.trim() || undefined,
         kind: saveEnabled ? saveKind : undefined,
       });

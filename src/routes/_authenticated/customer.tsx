@@ -363,10 +363,15 @@ function CustomerPage() {
     mutationFn: async () => {
       if (!pickup) throw new Error("Choose pickup location");
       if (!drop) throw new Error("Choose drop location");
-      if (pickup.address.trim().length < 3 || pickup.address.length > 400)
-        throw new Error("Select a valid pickup address.");
-      if (drop.address.trim().length < 3 || drop.address.length > 400)
-        throw new Error("Select a valid drop address.");
+      const addressError = bookingAddressError([
+        { label: "Pickup", address: pickup.address },
+        ...stops.map((stop, index) => ({ label: `Stop ${index + 1}`, address: stop.address })),
+        { label: "Drop", address: drop.address },
+      ]);
+      if (addressError) throw new Error(addressError);
+      const bookingNotes = customerBookingNotes(notes, selectedGstin);
+      if (bookingNotes && bookingNotes.length > BOOKING_NOTES_MAX)
+        throw new Error("Notes and GST billing details must be 500 characters or fewer.");
       const selectedCapacity = Number(selectedVehicle?.weight_limit_kg ?? 0);
       if (cargoWeightKg.trim()) {
         const weight = Number(cargoWeightKg);
@@ -423,17 +428,7 @@ function CustomerPage() {
           walletDeductedAmount: walletDeduction,
           scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
           cargoWeightKg: cargoWeightKg.trim() ? Number(cargoWeightKg) : null,
-          notes:
-            [
-              sanitizeDriverNotes(notes.slice(0, 500)).trim(),
-              stops.length > 0 && `Stops: ${stops.map((s) => s.address).join(" → ")}`,
-              pickup.contactName && `Sender: ${pickup.contactName} (${pickup.contactPhone ?? ""})`,
-              drop.contactName && `Receiver: ${drop.contactName} (${drop.contactPhone ?? ""})`,
-              selectedGstin &&
-                `Billed to GSTIN ${selectedGstin.gstin} (${selectedGstin.business_name})`,
-            ]
-              .filter(Boolean)
-              .join(" · ") || null,
+          notes: bookingNotes,
         },
       });
 
