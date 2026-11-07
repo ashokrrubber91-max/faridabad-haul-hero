@@ -104,7 +104,9 @@ async function loadOpenDriverJobs(): Promise<{ data: unknown[] | null; error: Er
   // than falling back to a broad table read.
   return {
     data: null,
-    error: new Error("Secure ride dispatch is temporarily unavailable. Please refresh or contact MiniPort support."),
+    error: new Error(
+      "Secure ride dispatch is temporarily unavailable. Please refresh or contact MiniPort support.",
+    ),
   };
 }
 
