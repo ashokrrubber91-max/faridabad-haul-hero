@@ -1,3 +1,3 @@
-/** MiniPort testing switches. Keep TEST_MODE=true only in a dedicated test build. */
-export const MINIPORT_TEST_MODE = true;
+/** MiniPort testing switches. Test-only OTP bypass must never be enabled in production. */
+export const MINIPORT_TEST_MODE = import.meta.env.DEV;
 export const TEST_OTP = "123456";
