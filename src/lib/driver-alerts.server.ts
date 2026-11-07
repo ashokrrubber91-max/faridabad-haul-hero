@@ -118,6 +118,21 @@ async function findMatchedDriverIds(
   return selectMatchedDriverIds(booking, candidates, passed);
 }
 
+/** The closest eligible drivers (database ranks by distance from the pickup). */
+async function findNearestDriverIds(admin: AdminClient, bookingId: string): Promise<string[]> {
+  const rpc = admin.rpc.bind(admin) as unknown as (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: { driver_id: string }[] | null; error: { message: string } | null }>;
+  const { data, error } = await rpc("nearest_dispatch_drivers", {
+    _booking_id: bookingId,
+    _limit: 15,
+  });
+  // A missing function or any lookup failure must never block ride alerts.
+  if (error) return [];
+  return (data ?? []).map((r) => r.driver_id);
+}
+
 export async function alertDriversAboutBooking(
   bookingId: string,
 ): Promise<{ sent: number; failed: number }> {
@@ -146,7 +161,12 @@ export async function alertDriversAboutBooking(
   let driverIds: string[];
   if (target.mode === "offer") driverIds = [target.driverId];
   else if (target.mode === "no_offer") driverIds = [];
-  else driverIds = await findMatchedDriverIds(supabaseAdmin, booking);
+  else {
+    // Nearest drivers first (live locations); fall back to zone/vehicle matching
+    // when the booking has no pickup coordinates or no driver has a fresh location.
+    driverIds = await findNearestDriverIds(supabaseAdmin, bookingId);
+    if (driverIds.length === 0) driverIds = await findMatchedDriverIds(supabaseAdmin, booking);
+  }
   if (driverIds.length === 0) return { sent: 0, failed: 0 };
 
   const { data: tokenRows, error: tokenError } = await supabaseAdmin

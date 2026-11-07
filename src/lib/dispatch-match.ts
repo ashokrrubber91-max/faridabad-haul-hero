@@ -6,11 +6,44 @@
 
 export const DEFAULT_SERVICE_ZONE = "Faridabad";
 
+/**
+ * Distance windows: a ride opens to nearby drivers first and widens with age.
+ * Mirrors the database rule enforced by accept_booking (dispatch_radius_km).
+ */
+export const DISPATCH_WINDOWS: ReadonlyArray<{ untilSeconds: number; km: number }> = [
+  { untilSeconds: 20, km: 3 },
+  { untilSeconds: 40, km: 6 },
+  { untilSeconds: 60, km: 10 },
+];
+/** A driver location older than this counts as unknown. */
+export const LOCATION_FRESH_MS = 5 * 60 * 1000;
+
+/** Radius in km for a ride of this age, or null once it is open to every matching driver. */
+export function dispatchRadiusKm(ageSeconds: number): number | null {
+  for (const w of DISPATCH_WINDOWS) if (ageSeconds < w.untilSeconds) return w.km;
+  return null;
+}
+
+export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const a =
+    Math.sin(rad(lat2 - lat1) / 2) ** 2 +
+    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(rad(lng2 - lng1) / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(a));
+}
+
+export type DriverLocationFix = { lat: number; lng: number; updatedAt: string | number };
+
 export type DriverDispatchContext = {
   isOnline: boolean;
   kycApproved: boolean;
   serviceZone: string | null | undefined;
   vehicleType: string | null | undefined;
+  /**
+   * undefined = location not tracked here (no distance rule applied);
+   * null = tracked but unknown, so the driver waits for the open-to-all stage.
+   */
+  location?: DriverLocationFix | null;
 };
 
 export type DispatchBooking = {
@@ -20,6 +53,9 @@ export type DispatchBooking = {
   service_zone?: string | null;
   vehicle_type: string | null | undefined;
   expires_at?: string | null;
+  created_at?: string | null;
+  pickup_lat?: number | null;
+  pickup_lng?: number | null;
 };
 
 /**
@@ -40,6 +76,25 @@ export function resolveDriverVehicleType(
   return null;
 }
 
+/** True when this driver is inside the ride's current distance window. */
+export function isDriverInDispatchWindow(
+  booking: DispatchBooking,
+  driver: DriverDispatchContext,
+  now: number = Date.now(),
+): boolean {
+  if (driver.location === undefined) return true;
+  if (!booking.created_at || booking.pickup_lat == null || booking.pickup_lng == null) return true;
+  const created = new Date(booking.created_at).getTime();
+  if (Number.isNaN(created)) return true;
+  const radius = dispatchRadiusKm(Math.max(0, (now - created) / 1000));
+  if (radius === null) return true;
+  const loc = driver.location;
+  if (!loc) return false;
+  const seen = typeof loc.updatedAt === "number" ? loc.updatedAt : new Date(loc.updatedAt).getTime();
+  if (Number.isNaN(seen) || now - seen > LOCATION_FRESH_MS) return false;
+  return haversineKm(loc.lat, loc.lng, booking.pickup_lat, booking.pickup_lng) <= radius;
+}
+
 export function isRideAlertMatch(
   booking: DispatchBooking,
   driver: DriverDispatchContext,
@@ -51,7 +106,8 @@ export function isRideAlertMatch(
   const bookingZone = booking.service_zone || DEFAULT_SERVICE_ZONE;
   const driverZone = driver.serviceZone || DEFAULT_SERVICE_ZONE;
   if (bookingZone !== driverZone) return false;
-  return booking.vehicle_type === driver.vehicleType;
+  if (booking.vehicle_type !== driver.vehicleType) return false;
+  return isDriverInDispatchWindow(booking, driver, now);
 }
 
 export type CandidateDriver = DriverDispatchContext & { id: string };

@@ -1,5 +1,13 @@
 # MiniPort roadmap
 
+## Nearest-first dispatch (7 November 2026)
+
+- [x] Rides open by distance from the pickup and widen with age: 3 km (0-20s), 6 km (20-40s), 10 km (40-60s), then every matching driver. `accept_booking` enforces it (all earlier rules kept); the driver app mirrors it for display. Applied to the live database; migration `20261107180000_nearest_first_dispatch_windows.sql`.
+- [x] Push alerts go to the 15 nearest eligible drivers (`nearest_dispatch_drivers`, service role only) instead of an arbitrary first 500; falls back to zone/vehicle matching when no driver has a fresh location.
+- [x] Verified in a rolled-back transaction on the live database: near/mid/far/no-location drivers at ride ages 0/25/45/70s behave as specified, and 200 simultaneous-style accepts give exactly one winner.
+- [ ] A driver without a location fix from the last 5 minutes only sees a ride after 60s. Keep driver location sharing on.
+- [ ] Not yet exercised on a real device with a signed-in driver.
+
 ## Booking enhancements — preview/source only (24 October 2026)
 
 - [x] Confirmed three features: 25% discount on matched loads, immediate standard-fare dispatch without a match; ₹1 per coin.

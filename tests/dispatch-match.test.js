@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
+  dispatchRadiusKm,
+  haversineKm,
   isRideAlertMatch,
   resolveDriverVehicleType,
   selectMatchedDriverIds,
@@ -75,5 +77,59 @@ describe("Ride alert matching", () => {
       { ...driver, id: "offline", isOnline: false },
     ];
     expect(selectMatchedDriverIds(booking, drivers, new Set(["passed"]))).toEqual(["match"]);
+  });
+});
+
+describe("Nearest-first distance windows", () => {
+  const created = Date.parse("2026-11-07T10:00:00Z");
+  const ride = { ...booking, created_at: "2026-11-07T10:00:00Z", pickup_lat: 28.4, pickup_lng: 77.31 };
+  const at = (secs) => created + secs * 1000;
+  const fix = (lat, now) => ({ lat, lng: 77.31, updatedAt: now });
+  const near = (now) => ({ ...driver, location: fix(28.41, now) }); // ~1.1 km
+  const mid = (now) => ({ ...driver, location: fix(28.445, now) }); // ~5 km
+  const far = (now) => ({ ...driver, location: fix(28.5, now) }); // ~11 km
+
+  test("radius widens 3 -> 6 -> 10 km, then opens to everyone", () => {
+    expect(dispatchRadiusKm(0)).toBe(3);
+    expect(dispatchRadiusKm(19.9)).toBe(3);
+    expect(dispatchRadiusKm(20)).toBe(6);
+    expect(dispatchRadiusKm(40)).toBe(10);
+    expect(dispatchRadiusKm(60)).toBeNull();
+  });
+
+  test("first 20 seconds: only the nearby driver", () => {
+    const now = at(5);
+    expect(isRideAlertMatch(ride, near(now), now)).toBe(true);
+    expect(isRideAlertMatch(ride, mid(now), now)).toBe(false);
+    expect(isRideAlertMatch(ride, far(now), now)).toBe(false);
+  });
+
+  test("20-40 seconds: 6 km; 40-60 seconds: 10 km (11 km driver still waits)", () => {
+    expect(isRideAlertMatch(ride, mid(at(25)), at(25))).toBe(true);
+    expect(isRideAlertMatch(ride, far(at(45)), at(45))).toBe(false);
+  });
+
+  test("after 60 seconds every matching driver sees it, even without a location", () => {
+    const now = at(70);
+    expect(isRideAlertMatch(ride, far(now), now)).toBe(true);
+    expect(isRideAlertMatch(ride, { ...driver, location: null }, now)).toBe(true);
+  });
+
+  test("a driver with no known or a stale location waits for the open-to-all stage", () => {
+    const now = at(5);
+    expect(isRideAlertMatch(ride, { ...driver, location: null }, now)).toBe(false);
+    expect(isRideAlertMatch(ride, { ...driver, location: fix(28.41, now - 6 * 60 * 1000) }, now)).toBe(
+      false,
+    );
+  });
+
+  test("no distance rule when location is not tracked or the ride has no pickup coordinates", () => {
+    expect(isRideAlertMatch(ride, driver, at(5))).toBe(true);
+    const noCoords = { ...ride, pickup_lat: null, pickup_lng: null };
+    expect(isRideAlertMatch(noCoords, { ...driver, location: null }, at(5))).toBe(true);
+  });
+
+  test("haversine matches the database: about 1.1 km per 0.01 degree of latitude", () => {
+    expect(haversineKm(28.4, 77.31, 28.41, 77.31)).toBeCloseTo(1.11, 1);
   });
 });

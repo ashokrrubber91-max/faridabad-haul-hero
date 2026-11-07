@@ -540,15 +540,42 @@ function DriverPage() {
   ).length;
   const vehicleTypeUnknown =
     role === "driver" && kycApproved && !!catalogue.data && !driverVehicleType;
+  // The driver's own last shared location: rides open to nearby drivers first.
+  const ownLocation = useQuery({
+    queryKey: ["driver-own-location", user?.id],
+    enabled: !!user && isOnline,
+    refetchInterval: 15000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("driver_locations")
+        .select("latitude,longitude,updated_at")
+        .eq("driver_id", user!.id)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return data
+        ? { lat: data.latitude, lng: data.longitude, updatedAt: data.updated_at }
+        : null;
+    },
+  });
   const dispatchCtx = useMemo<DriverDispatchContext>(
     () => ({
       isOnline,
       kycApproved,
       serviceZone: profile?.service_zone,
       vehicleType: driverVehicleType,
+      location: ownLocation.data,
     }),
-    [isOnline, kycApproved, profile?.service_zone, driverVehicleType],
+    [isOnline, kycApproved, profile?.service_zone, driverVehicleType, ownLocation.data],
   );
+  // Re-check the distance windows while rides are waiting, so a ride that widens to
+  // this driver appears without waiting for the next feed refresh.
+  const [, setWindowTick] = useState(0);
+  const hasPending = pending.length > 0;
+  useEffect(() => {
+    if (!hasPending) return;
+    const timer = setInterval(() => setWindowTick((n) => n + 1), 5000);
+    return () => clearInterval(timer);
+  }, [hasPending]);
   useEffect(() => {
     dispatchCtxRef.current = dispatchCtx;
   }, [dispatchCtx]);
