@@ -1,3 +1,4 @@
+import { Skeleton } from "@/components/ui/skeleton";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useDeferredValue } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -200,8 +201,12 @@ function OrdersPage() {
       </div>
 
       {orders.isLoading ? (
-        <div className="flex justify-center py-10">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        <div className="py-2">
+          <div className="space-y-2" aria-busy="true">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
         </div>
       ) : orders.isError ? (
         <div className="surface-card p-8 text-center text-sm">

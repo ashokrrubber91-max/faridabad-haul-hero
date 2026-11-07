@@ -1,3 +1,4 @@
+import { Skeleton } from "@/components/ui/skeleton";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -277,8 +278,12 @@ function WalletPage() {
           Transaction history
         </h2>
         {txns.isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <div className="py-2">
+            <div className="space-y-2" aria-busy="true">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
           </div>
         ) : (txns.data ?? []).length === 0 ? (
           <p className="text-sm text-muted-foreground">
@@ -469,7 +474,10 @@ function BankAccounts({
         </Dialog>
       </div>
       {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        <div className="mt-3 space-y-2" aria-busy="true">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-2/3" />
+        </div>
       ) : accounts.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           Add a bank account or UPI ID to withdraw your earnings.

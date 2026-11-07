@@ -543,7 +543,10 @@ function AccountPage() {
             </div>
 
             {monthlyDriverEarnings.isLoading ? (
-              <Loader2 className="mt-4 h-4 w-4 animate-spin text-primary" />
+              <div className="mt-3 space-y-2" aria-busy="true">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-2/3" />
+              </div>
             ) : monthlyDriverEarnings.isError ? (
               <p className="mt-4 text-sm text-destructive">Could not load monthly earnings.</p>
             ) : (monthlyDriverEarnings.data ?? []).length === 0 ? (
@@ -594,7 +597,10 @@ function AccountPage() {
                 Wallet payout history
               </h3>
               {driverPayouts.isLoading ? (
-                <Loader2 className="mt-3 h-4 w-4 animate-spin text-primary" />
+                <div className="mt-3 space-y-2" aria-busy="true">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-2/3" />
+                </div>
               ) : (driverPayouts.data ?? []).length === 0 ? (
                 <p className="mt-2 text-sm text-muted-foreground">No wallet payouts yet.</p>
               ) : (
@@ -684,7 +690,10 @@ function AccountPage() {
                 </Dialog>
               </div>
               {gstins.isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <div className="mt-3 space-y-2" aria-busy="true">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-2/3" />
+                </div>
               ) : (gstins.data ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No GSTIN saved. Add one to get GST tax invoices for business bookings.
@@ -748,7 +757,10 @@ function AccountPage() {
                 <MapPin className="h-4 w-4 text-primary" /> Saved addresses
               </h2>
               {addresses.isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <div className="mt-3 space-y-2" aria-busy="true">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-2/3" />
+                </div>
               ) : (addresses.data ?? []).length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No saved addresses. Tap “Save address” while booking to store one.

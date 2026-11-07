@@ -347,12 +347,12 @@ function SearchingPage() {
               )}
               {tracking && (
                 <div className="mp-slide-up">
-                <ActiveTripCard
-                  bookingId={b.id}
-                  driverId={b.driver_id}
-                  vehicleType={b.vehicle_type}
-                  status={b.status === "accepted" ? "accepted" : "in_progress"}
-                />
+                  <ActiveTripCard
+                    bookingId={b.id}
+                    driverId={b.driver_id}
+                    vehicleType={b.vehicle_type}
+                    status={b.status === "accepted" ? "accepted" : "in_progress"}
+                  />
                 </div>
               )}
               {tracking && (
