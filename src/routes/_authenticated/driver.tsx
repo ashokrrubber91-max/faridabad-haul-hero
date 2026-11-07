@@ -98,19 +98,14 @@ async function loadOpenDriverJobs(): Promise<{ data: unknown[] | null; error: Er
   if (!missing) {
     return { data: viaRpc.data, error: viaRpc.error ? new Error(viaRpc.error.message) : null };
   }
-  const direct = await supabase
-    .from("bookings")
-    .select(BOOKING_FIELDS)
-    .eq("status", "pending")
-    .is("driver_id", null)
-    .is("cancelled_at", null)
-    .order("created_at", { ascending: false })
-    .limit(60);
-  const now = Date.now();
-  const rows = (direct.data ?? []).filter(
-    (b) => !b.expires_at || new Date(b.expires_at).getTime() > now,
-  );
-  return { data: rows, error: direct.error ? new Error(direct.error.message) : null };
+  // Fail closed if the secure offer RPC is missing. Direct SELECT on pending
+  // bookings is intentionally not granted because booking rows contain private
+  // pickup/drop details and verification data. Restore the RPC migration rather
+  // than falling back to a broad table read.
+  return {
+    data: null,
+    error: new Error("Secure ride dispatch is temporarily unavailable. Please refresh or contact MiniPort support."),
+  };
 }
 
 /** Retry only temporary transport/service failures; never retry RLS or SQL errors. */
