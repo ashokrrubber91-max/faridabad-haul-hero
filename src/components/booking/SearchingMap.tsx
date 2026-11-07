@@ -70,7 +70,8 @@ export function SearchingMap({
         >
           <div className="relative grid h-48 w-48 place-items-center">
             <span className="ride-radar" />
-            <span className="ride-radar ride-radar-delayed" />
+            <span className="ride-radar ride-radar-mid" />
+            <span className="ride-radar ride-radar-late" />
             <span className="grid h-14 w-14 place-items-center rounded-full border-4 border-card bg-primary text-primary-foreground shadow-lg">
               <Truck className="h-6 w-6" />
             </span>

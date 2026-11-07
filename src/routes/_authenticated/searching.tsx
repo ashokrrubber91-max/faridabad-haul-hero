@@ -200,6 +200,14 @@ function SearchingPage() {
       setCancelBusy(false);
     }
   };
+  const searchStage =
+    elapsed < 20
+      ? "Finding the nearest driver..."
+      : elapsed < 40
+        ? "Widening the search to 6 km..."
+        : elapsed < 60
+          ? "Widening the search to 10 km..."
+          : "Checking every driver in Faridabad...";
   const heading = !b
     ? "Connecting to logistics network…"
     : searching
@@ -338,12 +346,14 @@ function SearchingPage() {
                 </Badge>
               )}
               {tracking && (
+                <div className="mp-slide-up">
                 <ActiveTripCard
                   bookingId={b.id}
                   driverId={b.driver_id}
                   vehicleType={b.vehicle_type}
                   status={b.status === "accepted" ? "accepted" : "in_progress"}
                 />
+                </div>
               )}
               {tracking && (
                 <TripSafetyActions
@@ -357,9 +367,9 @@ function SearchingPage() {
               {searching ? (
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs text-muted-foreground">
-                    {elapsed < 60
-                      ? "Checking available captains near your pickup"
-                      : "Still searching for an available captain"}
+                    <span key={searchStage} className="mp-fade-in inline-block">
+                      {searchStage}
+                    </span>
                   </p>
                   <div className="flex gap-2">
                     <Button
