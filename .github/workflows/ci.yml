@@ -35,6 +35,13 @@ jobs:
       - name: Lint
         run: bunx eslint . --max-warnings=20
 
+      - name: Dispatch matching unit tests
+        run: bun test tests/dispatch-match.test.js
+
+      # Exact requested fake cohort: no Auth or Supabase writes.
+      - name: 10,000-driver and 20,000-customer in-memory ride simulation
+        run: bun run test:full-flow --drivers=10000 --customers=20000 --seed=7
+
       - name: Production build
         run: bun run build
         env:
