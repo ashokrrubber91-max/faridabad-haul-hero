@@ -9,6 +9,7 @@ import { Loader2, Home, Store, Bookmark, ArrowLeft, Crosshair, Check, MapPin } f
 import { lookupAddress } from "@/lib/address-lookup";
 import { loadGoogleMaps, FARIDABAD_CENTER } from "@/lib/google-maps";
 import { getCurrentFix, geoMessage } from "@/lib/geolocation";
+import { normalizeContactPhone } from "@/lib/booking-input";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";

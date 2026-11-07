@@ -60,7 +60,12 @@ import { DriverNotes } from "@/components/booking/DriverNotes";
 import { PartLoadOption } from "@/components/booking/PartLoadOption";
 import { useWalletBalances } from "@/hooks/useWalletBalances";
 import { bookingDiscount, coinsToRedeem } from "@/lib/booking-discounts";
-import { sanitizeDriverNotes, type NoteAttachment } from "@/lib/driver-notes";
+import { type NoteAttachment } from "@/lib/driver-notes";
+import {
+  BOOKING_NOTES_MAX,
+  bookingAddressError,
+  customerBookingNotes,
+} from "@/lib/booking-input";
 
 const ONLINE_METHODS: PaymentMethod[] = ["upi", "card", "netbanking"];
 

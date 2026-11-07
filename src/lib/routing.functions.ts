@@ -2,18 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { sanitizeDriverNotes } from "@/lib/driver-notes";
+import { bookingPlaceSchema } from "@/lib/booking-input";
 
 const point = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
 });
 
-const place = point.extend({
-  address: z.string().trim().min(3).max(200),
-  placeId: z.string().trim().max(300).nullish(),
-  contactName: z.string().trim().max(80).nullish(),
-  contactPhone: z.string().trim().max(13).nullish(),
-});
+const place = bookingPlaceSchema;
 
 /** Vehicles are configured in the database, so the id is validated by shape. */
 const vehicleId = z
