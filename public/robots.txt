@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+Allow: /auth
+Disallow: /admin
+Disallow: /account
+Disallow: /customer
+Disallow: /driver
+Disallow: /driver-kyc
+Disallow: /driver-rides
+Disallow: /orders
+Disallow: /refer
+Disallow: /searching
+Disallow: /tasks
+Disallow: /wallet
+Disallow: /trip/
+Disallow: /api/
