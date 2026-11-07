@@ -202,12 +202,12 @@ function SearchingPage() {
   };
   const searchStage =
     elapsed < 20
-      ? "Finding the nearest driver..."
+      ? "Finding the closest available verified driver..."
       : elapsed < 40
-        ? "Widening the search to 6 km..."
+        ? "Trying the next closest eligible driver..."
         : elapsed < 60
-          ? "Widening the search to 10 km..."
-          : "Checking every driver in Faridabad...";
+          ? "Continuing through nearby eligible drivers..."
+          : "Still searching for an available driver in Faridabad...";
   const heading = !b
     ? "Connecting to logistics network…"
     : searching
