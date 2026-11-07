@@ -11,7 +11,7 @@ const point = z.object({
 
 /** Accept common visual formatting without relaxing the stored phone limit. */
 export function normalizeContactPhone(value: string): string {
-  return value.replace(/[\s()\-]/g, "");
+  return value.replace(/[\s()-]/g, "");
 }
 
 export const bookingPlaceSchema = point.extend({
