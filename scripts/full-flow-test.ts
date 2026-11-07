@@ -46,7 +46,10 @@ function arg(name: string, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
 }
 const USERS = arg("users", 10_000);
-const DRIVER_COUNT = arg("drivers", Math.max(VEHICLES.length * HUBS.length, Math.round(USERS * 0.3)));
+const DRIVER_COUNT = arg(
+  "drivers",
+  Math.max(VEHICLES.length * HUBS.length, Math.round(USERS * 0.3)),
+);
 const CUSTOMER_COUNT = arg("customers", Math.max(0, USERS - DRIVER_COUNT));
 const SEED = arg("seed", 7);
 
