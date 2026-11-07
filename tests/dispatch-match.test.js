@@ -82,7 +82,12 @@ describe("Ride alert matching", () => {
 
 describe("Nearest-first distance windows", () => {
   const created = Date.parse("2026-11-07T10:00:00Z");
-  const ride = { ...booking, created_at: "2026-11-07T10:00:00Z", pickup_lat: 28.4, pickup_lng: 77.31 };
+  const ride = {
+    ...booking,
+    created_at: "2026-11-07T10:00:00Z",
+    pickup_lat: 28.4,
+    pickup_lng: 77.31,
+  };
   const at = (secs) => created + secs * 1000;
   const fix = (lat, now) => ({ lat, lng: 77.31, updatedAt: now });
   const near = (now) => ({ ...driver, location: fix(28.41, now) }); // ~1.1 km
@@ -118,9 +123,9 @@ describe("Nearest-first distance windows", () => {
   test("a driver with no known or a stale location waits for the open-to-all stage", () => {
     const now = at(5);
     expect(isRideAlertMatch(ride, { ...driver, location: null }, now)).toBe(false);
-    expect(isRideAlertMatch(ride, { ...driver, location: fix(28.41, now - 6 * 60 * 1000) }, now)).toBe(
-      false,
-    );
+    expect(
+      isRideAlertMatch(ride, { ...driver, location: fix(28.41, now - 6 * 60 * 1000) }, now),
+    ).toBe(false);
   });
 
   test("no distance rule when location is not tracked or the ride has no pickup coordinates", () => {

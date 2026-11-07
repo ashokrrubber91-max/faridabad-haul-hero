@@ -552,9 +552,7 @@ function DriverPage() {
         .eq("driver_id", user!.id)
         .maybeSingle();
       if (error) throw new Error(error.message);
-      return data
-        ? { lat: data.latitude, lng: data.longitude, updatedAt: data.updated_at }
-        : null;
+      return data ? { lat: data.latitude, lng: data.longitude, updatedAt: data.updated_at } : null;
     },
   });
   const dispatchCtx = useMemo<DriverDispatchContext>(

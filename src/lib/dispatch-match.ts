@@ -90,7 +90,8 @@ export function isDriverInDispatchWindow(
   if (radius === null) return true;
   const loc = driver.location;
   if (!loc) return false;
-  const seen = typeof loc.updatedAt === "number" ? loc.updatedAt : new Date(loc.updatedAt).getTime();
+  const seen =
+    typeof loc.updatedAt === "number" ? loc.updatedAt : new Date(loc.updatedAt).getTime();
   if (Number.isNaN(seen) || now - seen > LOCATION_FRESH_MS) return false;
   return haversineKm(loc.lat, loc.lng, booking.pickup_lat, booking.pickup_lng) <= radius;
 }
