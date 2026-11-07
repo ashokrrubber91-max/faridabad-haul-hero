@@ -118,14 +118,14 @@ export function IncomingRideOverlay({
   onDismiss: () => void;
   accepting: boolean;
 }) {
-  const [secs, setSecs] = useState(30);
+  const [secs, setSecs] = useState(20);
   const [muted, setMuted] = useState(false);
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const briefingSpokenFor = useRef<string | null>(null);
   useRingtone(secs > 0, muted);
   useEffect(() => {
-    setSecs(30);
+    setSecs(20);
     setListening(false);
     if (briefingSpokenFor.current !== job.id) {
       briefingSpokenFor.current = job.id;
@@ -209,7 +209,7 @@ export function IncomingRideOverlay({
       role="dialog"
       aria-modal="true"
       aria-label="Incoming ride request"
-      className="fixed inset-0 z-50 flex flex-col bg-secondary/95 p-5 text-white backdrop-blur-sm"
+      className="mp-slide-up fixed inset-0 z-50 flex flex-col bg-secondary/95 p-5 text-white backdrop-blur-sm"
     >
       <div className="flex items-center justify-between">
         <span className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-widest">
@@ -266,9 +266,32 @@ export function IncomingRideOverlay({
         </div>
       </div>
       <div className="mt-auto grid gap-2 pt-6">
-        <Button className="h-14 w-full text-lg" onClick={onAccept} disabled={accepting}>
-          {accepting ? "Accepting…" : "Accept ride"}
-        </Button>
+        <div className={`relative ${accepting || secs <= 0 ? "" : "mp-soft-pulse"}`}>
+          <Button className="h-14 w-full text-lg" onClick={onAccept} loading={accepting}>
+            {accepting ? "Accepting…" : "Accept ride"}
+          </Button>
+          {/* 20s countdown ring traced around the Accept button (pure CSS/SVG). */}
+          <svg
+            key={job.id}
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-1 h-[calc(100%+0.5rem)] w-[calc(100%+0.5rem)] overflow-visible"
+          >
+            <rect
+              x="1.5"
+              y="1.5"
+              width="calc(100% - 3px)"
+              height="calc(100% - 3px)"
+              rx="10"
+              pathLength={100}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeDasharray="100"
+              className="mp-ring text-primary-foreground"
+              style={{ ["--ring-len" as string]: "100", animation: "mp-ring 20s linear forwards" }}
+            />
+          </svg>
+        </div>
         <Button
           variant="outline"
           className="h-11 w-full border-white/30 bg-transparent text-white hover:bg-white/10"

@@ -142,9 +142,76 @@
     opacity: 0;
   }
 }
+.ride-radar-late {
+  animation-delay: 2s;
+}
+.ride-radar-mid {
+  animation-delay: 1s;
+}
+@keyframes mp-slide-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes mp-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes mp-soft-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+@keyframes mp-ring {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: var(--ring-len);
+  }
+}
+.mp-slide-up {
+  animation: mp-slide-up 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.mp-fade-in {
+  animation: mp-fade-in 180ms ease-out both;
+}
+.mp-soft-pulse {
+  animation: mp-soft-pulse 1.6s ease-in-out infinite;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 160ms;
+  animation-timing-function: ease-out;
+}
 @media (prefers-reduced-motion: reduce) {
   .ride-radar {
     animation: none;
     opacity: 0.25;
+  }
+  .mp-slide-up,
+  .mp-fade-in,
+  .mp-soft-pulse,
+  .mp-ring {
+    animation: none !important;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
   }
 }

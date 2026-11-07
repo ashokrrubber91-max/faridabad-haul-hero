@@ -22,6 +22,8 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 30_000,
+    // Browser-native cross-fade (<200ms, CSS in styles.css); no-op where unsupported.
+    defaultViewTransition: true,
   });
 
   return router;

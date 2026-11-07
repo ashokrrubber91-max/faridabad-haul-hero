@@ -1,3 +1,4 @@
+import { Skeleton } from "@/components/ui/skeleton";
 import type { AnyRow } from "@/lib/rows";
 import type { Database } from "@/integrations/supabase/types";
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
@@ -684,9 +685,11 @@ function DriverPage() {
 
   if (loading)
     return (
-      <Center>
-        <Loader2 className="h-5 w-5 animate-spin text-primary" />
-      </Center>
+      <div className="mx-auto max-w-2xl space-y-3 p-4" aria-busy="true">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-28 w-full" />
+        <Skeleton className="h-28 w-full" />
+      </div>
     );
   if (role && role !== "driver" && role !== "admin") return <Navigate to="/customer" />;
   if (
@@ -1700,7 +1703,7 @@ function extractContact(notes: string | null, prefix: "Sender" | "Receiver") {
 }
 
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="flex justify-center py-10">{children}</div>;
+  return <div className="py-2">{children}</div>;
 }
 
 /**
