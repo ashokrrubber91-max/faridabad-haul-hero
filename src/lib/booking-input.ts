@@ -28,8 +28,7 @@ export function bookingAddressError(
   places: Array<{ label: string; address: string }>,
 ): string | null {
   const invalid = places.find(
-    ({ address }) =>
-      address.trim().length < 3 || address.trim().length > BOOKING_ADDRESS_MAX,
+    ({ address }) => address.trim().length < 3 || address.trim().length > BOOKING_ADDRESS_MAX,
   );
   return invalid
     ? `${invalid.label} address must be between 3 and ${BOOKING_ADDRESS_MAX} characters. Choose a shorter address.`

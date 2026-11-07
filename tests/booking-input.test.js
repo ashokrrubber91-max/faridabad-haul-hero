@@ -36,9 +36,9 @@ describe("booking input limits", () => {
 
   test("uses the same 200-character address boundary for client preflight and server validation", () => {
     const longAddress = "A".repeat(201);
-    expect(
-      bookingAddressError([{ label: "Pickup", address: longAddress }]),
-    ).toBe("Pickup address must be between 3 and 200 characters. Choose a shorter address.");
+    expect(bookingAddressError([{ label: "Pickup", address: longAddress }])).toBe(
+      "Pickup address must be between 3 and 200 characters. Choose a shorter address.",
+    );
     expect(
       bookingPlaceSchema.safeParse({
         address: longAddress,
