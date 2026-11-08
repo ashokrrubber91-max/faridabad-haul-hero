@@ -251,6 +251,7 @@ function OtpSignInForm() {
         <Button
           type="submit"
           className="h-11 w-full text-base"
+          loading={busy}
           disabled={busy || !isValidIndianMobile(phone)}
         >
           {busy ? "Sending…" : "Send OTP"}
@@ -275,7 +276,7 @@ function OtpSignInForm() {
           required
         />
       </div>
-      <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
+      <Button type="submit" className="h-11 w-full text-base" loading={busy} disabled={busy}>
         {busy ? "Verifying\u2026" : "Verify & sign in"}
       </Button>
       <button
@@ -407,7 +408,7 @@ function SignInForm() {
           minLength={8}
         />
       </div>
-      <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
+      <Button type="submit" className="h-11 w-full text-base" loading={busy} disabled={busy}>
         {busy ? "Signing in…" : "Sign in"}
       </Button>
     </form>
@@ -554,7 +555,7 @@ function SignUpForm({
             required
           />
         </div>
-        <Button type="submit" className="h-11 w-full text-base" disabled={busy}>
+        <Button type="submit" className="h-11 w-full text-base" loading={busy} disabled={busy}>
           {busy ? "Verifying\u2026" : "Verify & create account"}
         </Button>
         <button
@@ -701,6 +702,7 @@ function SignUpForm({
       <Button
         type="submit"
         className="h-11 w-full text-base"
+        loading={busy}
         disabled={busy || !agreed || !isValidIndianMobile(phone)}
       >
         {busy ? "Sending code\u2026" : "Send verification code"}

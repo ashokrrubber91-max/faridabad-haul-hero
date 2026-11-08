@@ -994,6 +994,7 @@ function CustomerPage() {
             </Button>
             <Button
               variant="destructive"
+              loading={cancel.isPending}
               disabled={cancel.isPending}
               onClick={() => {
                 if (!cancelTarget) return;
