@@ -375,6 +375,7 @@ function SearchingPage() {
                     <Button
                       variant="destructive"
                       size="sm"
+                      loading={cancelBusy}
                       disabled={busy || !canCancelRide}
                       onClick={cancelRide}
                     >

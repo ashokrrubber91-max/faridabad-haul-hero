@@ -466,7 +466,7 @@ function BankAccounts({
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={() => add.mutate()} disabled={add.isPending}>
+              <Button onClick={() => add.mutate()} loading={add.isPending} disabled={add.isPending}>
                 {add.isPending ? "Saving…" : "Save method"}
               </Button>
             </DialogFooter>
@@ -594,7 +594,11 @@ function WithdrawDialog({
           )}
         </div>
         <DialogFooter>
-          <Button onClick={() => submit.mutate()} disabled={submit.isPending}>
+          <Button
+            onClick={() => submit.mutate()}
+            loading={submit.isPending}
+            disabled={submit.isPending}
+          >
             {submit.isPending ? "Requesting…" : "Request withdrawal"}
           </Button>
         </DialogFooter>

@@ -273,7 +273,7 @@ function DriverKycPage() {
               Continue <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={submit} disabled={submitting}>
+            <Button onClick={submit} loading={submitting} disabled={submitting}>
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit for review"}
             </Button>
           )}

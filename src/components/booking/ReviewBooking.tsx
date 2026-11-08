@@ -399,6 +399,7 @@ export function ReviewBooking({
         </Button>
         <Button
           onClick={onConfirm}
+          loading={submitting}
           disabled={submitting || attachments.length > 0}
           className="h-11 w-full"
         >

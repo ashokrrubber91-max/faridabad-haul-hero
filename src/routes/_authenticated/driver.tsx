@@ -1439,6 +1439,7 @@ function ActiveJobCard({
                 <Button
                   size="sm"
                   variant="outline"
+                  loading={stopBusy}
                   disabled={stopBusy || nextStop.status !== "arrived" || stopOtp.length !== 4}
                   onClick={() => {
                     onStopVerify(nextStop.sequence, stopOtp);
@@ -1581,6 +1582,7 @@ function ActiveJobCard({
           <Button
             size="sm"
             variant="outline"
+            loading={stageBusy}
             disabled={stageBusy}
             onClick={() => onStage("start_loading")}
           >
@@ -1591,6 +1593,7 @@ function ActiveJobCard({
           <Button
             size="sm"
             variant="outline"
+            loading={stageBusy}
             disabled={stageBusy}
             onClick={() => onStage("stop_loading")}
           >
@@ -1601,6 +1604,7 @@ function ActiveJobCard({
           <Button
             size="sm"
             variant="outline"
+            loading={stageBusy}
             disabled={stageBusy}
             onClick={() => onStage("start_unloading")}
           >
@@ -1611,6 +1615,7 @@ function ActiveJobCard({
           <Button
             size="sm"
             variant="outline"
+            loading={stageBusy}
             disabled={stageBusy}
             onClick={() => onStage("stop_unloading")}
           >
@@ -1638,6 +1643,7 @@ function ActiveJobCard({
           <Button
             size="sm"
             // Proof of delivery is mandatory, so the photo must be added first.
+            loading={pending}
             disabled={
               pending ||
               otp.length !== 4 ||
