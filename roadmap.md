@@ -1,5 +1,12 @@
 # MiniPort roadmap
 
+## Driver feed + migration safety (9 November 2026)
+
+- [x] `get_open_driver_bookings` was defined in a repo migration but never applied, so the fail-closed driver feed would have shown no rides. Applied a nearest-first version live (OTP/phone stripped, zone, passes, distance window). Verified in a rolled-back transaction: near driver sees a new ride at once, far driver after 60s, no customer phone in the payload.
+- [x] Removed the "duplicate trigger" drops from `20261107180000_repair_dispatch_...`: the live database has no duplicates and those drops would stop completion coins and SMS.
+- [ ] That repair migration still references PostGIS (`location_geog`, `ST_Distance`) and `booking_dispatch_offers`, which do not exist live; its `dispatch_next_driver` cannot run. Nothing calls it. Do not rely on it.
+- [ ] Of the 20261107* and 20261012134500 migrations only the dispatch-window and feed functions were applied (directly). Review the rest before applying.
+
 ## Nearest-first dispatch (7 November 2026)
 
 - [x] Rides open by distance from the pickup and widen with age: 3 km (0-20s), 6 km (20-40s), 10 km (40-60s), then every matching driver. `accept_booking` enforces it (all earlier rules kept); the driver app mirrors it for display. Applied to the live database; migration `20261107180000_nearest_first_dispatch_windows.sql`.

@@ -237,13 +237,11 @@ DROP POLICY IF EXISTS "Drivers can view searching rides" ON public.bookings;
 -- The old driver_wallets table is unused by the app; keep access service-only.
 REVOKE ALL ON TABLE public.driver_wallets FROM anon, authenticated;
 
--- 5) Remove duplicate triggers which double-debited coins, double-awarded
--- completion coins/earnings, duplicated SMS queue entries and regenerated OTPs.
-DROP TRIGGER IF EXISTS trg_bookings_debit_coins ON public.bookings;
-DROP TRIGGER IF EXISTS zz_bookings_award_coins ON public.bookings;
-DROP TRIGGER IF EXISTS trg_bookings_generate_otps ON public.bookings;
-DROP TRIGGER IF EXISTS zzz_bookings_enqueue_sms ON public.bookings;
-DROP TRIGGER IF EXISTS bookings_touch_updated_at ON public.bookings;
+-- 5) REMOVED: this section used to drop trg_bookings_debit_coins, zz_bookings_award_coins,
+-- trg_bookings_generate_otps, zzz_bookings_enqueue_sms and bookings_touch_updated_at as
+-- "duplicates". Checked against the live database on 2026-11-09: there are no duplicates.
+-- zz_bookings_award_coins and zzz_bookings_enqueue_sms are the ONLY triggers that award
+-- completion coins and queue SMS, so dropping them would silently stop both. Do not re-add.
 
 -- 6) Search-path hardening and missing foreign-key indexes.
 ALTER FUNCTION public.sync_booking_cargo_weight_columns() SET search_path = public;
