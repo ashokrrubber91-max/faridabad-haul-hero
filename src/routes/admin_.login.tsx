@@ -39,12 +39,76 @@ function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [denied, setDenied] = useState(false);
+  // Two-step verification: enroll an authenticator app once, then enter its code every sign-in.
+  const [stage, setStage] = useState<"password" | "mfa">("password");
+  const [factorId, setFactorId] = useState<string | null>(null);
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [secret, setSecret] = useState<string | null>(null);
+  const [code, setCode] = useState("");
 
-  // An account that already holds the team role goes straight to the control room.
+  const beginTwoStep = async () => {
+    const { data: level } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (level?.currentLevel === "aal2") {
+      navigate({ to: "/admin", replace: true });
+      return;
+    }
+    const { data: factors, error: listError } = await supabase.auth.mfa.listFactors();
+    if (listError) {
+      toast.error("Could not start two-step verification. Try again.");
+      return;
+    }
+    const verified = factors?.totp?.find((f) => f.status === "verified");
+    if (verified) {
+      setFactorId(verified.id);
+      setQrCode(null);
+      setSecret(null);
+      setStage("mfa");
+      return;
+    }
+    // Drop any half-finished enrollment, then start a fresh one.
+    for (const f of factors?.all ?? []) {
+      if (f.status === "unverified") await supabase.auth.mfa.unenroll({ factorId: f.id });
+    }
+    const { data, error } = await supabase.auth.mfa.enroll({
+      factorType: "totp",
+      friendlyName: "MiniPort Admin",
+    });
+    if (error || !data) {
+      toast.error(error?.message ?? "Could not set up two-step verification.");
+      return;
+    }
+    setFactorId(data.id);
+    setQrCode(data.totp.qr_code);
+    setSecret(data.totp.secret);
+    setStage("mfa");
+  };
+
+  const verifyTwoStep = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!factorId || code.replace(/\D/g, "").length !== 6) {
+      toast.error("Enter the 6-digit code from your authenticator app");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.mfa.challengeAndVerify({
+      factorId,
+      code: code.replace(/\D/g, ""),
+    });
+    setBusy(false);
+    if (error) {
+      toast.error("That code was not accepted. Wait for the next code and try again.");
+      setCode("");
+      return;
+    }
+    navigate({ to: "/admin", replace: true });
+  };
+
+  // A team account that is already signed in continues with the second step.
   useEffect(() => {
-    if (loading || !user) return;
-    if (roles.includes("admin")) navigate({ to: "/admin", replace: true });
-  }, [loading, user, roles, navigate]);
+    if (loading || !user || stage !== "password") return;
+    if (roles.includes("admin")) void beginTwoStep();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, user, roles]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +152,11 @@ function AdminLoginPage() {
     try {
       const state = await checkAccess({});
       setBusy(false);
-      if (state.isAdmin || !state.adminExists) {
+      if (state.isAdmin) {
+        await beginTwoStep();
+        return;
+      }
+      if (!state.adminExists) {
         navigate({ to: "/admin", replace: true });
         return;
       }
@@ -136,7 +204,63 @@ function AdminLoginPage() {
             </div>
           ) : null}
 
-          <form onSubmit={submit} className="mt-5 space-y-4">
+          {stage === "mfa" ? (
+            <form onSubmit={verifyTwoStep} className="mt-5 space-y-4">
+              {qrCode ? (
+                <div className="rounded-md border border-border bg-muted/40 p-4 text-sm">
+                  <p className="font-semibold text-secondary">Set up two-step verification</p>
+                  <p className="mt-1 text-muted-foreground">
+                    Scan this code with Google Authenticator, Authy or a similar app, then enter the
+                    6-digit code it shows.
+                  </p>
+                  <img
+                    src={qrCode}
+                    alt="Authenticator setup QR code"
+                    className="mx-auto mt-3 h-44 w-44 rounded bg-white p-2"
+                  />
+                  {secret ? (
+                    <p className="mt-2 break-all text-center text-xs text-muted-foreground">
+                      Can&rsquo;t scan? Enter this key: <span className="font-mono">{secret}</span>
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Enter the 6-digit code from your authenticator app.
+                </p>
+              )}
+              <div>
+                <Label htmlFor="admin-code">6-digit code</Label>
+                <Input
+                  id="admin-code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  placeholder="123456"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                  required
+                />
+              </div>
+              <Button type="submit" className="h-11 w-full text-base" loading={busy}>
+                Verify and open control room
+              </Button>
+              <button
+                type="button"
+                className="w-full text-center text-xs text-muted-foreground underline"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  setStage("password");
+                  setCode("");
+                  setPassword("");
+                }}
+              >
+                Use a different account
+              </button>
+            </form>
+          ) : null}
+
+          <form onSubmit={submit} className={stage === "mfa" ? "hidden" : "mt-5 space-y-4"}>
             <div>
               <Label htmlFor="admin-phone">Phone number</Label>
               <Input
@@ -172,14 +296,7 @@ function AdminLoginPage() {
             </Button>
           </form>
 
-          {user && !denied ? (
-            <p className="mt-4 text-xs text-muted-foreground">
-              Signed in already?{" "}
-              <Link to="/admin" className="underline">
-                Open the control room
-              </Link>
-            </p>
-          ) : null}
+
         </div>
         <p className="mt-4 text-center text-xs text-muted-foreground">
           Not team staff?{" "}

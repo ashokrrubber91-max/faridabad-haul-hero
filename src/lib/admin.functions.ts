@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAdminMfa } from "@/lib/admin-mfa";
 
 /**
  * Approves or rejects a driver application. The decision is taken on the server
@@ -8,7 +9,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  * can never verify a driver.
  */
 export const reviewDriverKyc = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdminMfa])
   .inputValidator((input) =>
     z
       .object({
@@ -67,7 +68,7 @@ const DUPLICATE_PHONE_MESSAGE =
   "An account with this mobile number already exists. Find it in the list below instead.";
 
 export const adminCreateAccount = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdminMfa])
   .inputValidator((input) =>
     z
       .object({
@@ -194,7 +195,7 @@ export const adminCreateAccount = createServerFn({ method: "POST" })
   });
 
 export const adminUpdateAccountStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdminMfa])
   .inputValidator((input) =>
     z
       .object({
@@ -227,7 +228,7 @@ export const adminUpdateAccountStatus = createServerFn({ method: "POST" })
   });
 
 export const adminResetPassword = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdminMfa])
   .inputValidator((input) =>
     z
       .object({
@@ -273,7 +274,7 @@ export const adminResetPassword = createServerFn({ method: "POST" })
   });
 
 export const adminListAccounts = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAdminMfa])
   .handler(async ({ context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,

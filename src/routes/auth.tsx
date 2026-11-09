@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import {
@@ -63,19 +62,50 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const search = useSearch({ from: "/auth" });
   const navigate = useNavigate();
+
+  // Old driver links (/auth?as=driver) land on the driver's own sign-in screen.
+  useEffect(() => {
+    if (search.as === "driver")
+      navigate({
+        to: "/driver-login",
+        search: { mode: search.mode, ref: search.ref },
+        replace: true,
+      });
+  }, [search.as, search.mode, search.ref, navigate]);
+
+  if (search.as === "driver") return null;
+  return (
+    <AuthScreen audience="customer" mode={search.mode} referralCode={search.ref} next={search.next} />
+  );
+}
+
+/** One sign-in screen per audience. Accounts are shared; only the entrance differs. */
+export function AuthScreen({
+  audience,
+  mode,
+  referralCode,
+  next,
+}: {
+  audience: "customer" | "driver";
+  mode?: "signin" | "signup";
+  referralCode?: string;
+  next?: "/admin";
+}) {
+  const navigate = useNavigate();
   const { user, role, loading } = useAuth();
-  const [tab, setTab] = useState<"signin" | "otp" | "signup">(search.mode ?? "signin");
+  const [tab, setTab] = useState<"signin" | "otp" | "signup">(mode ?? "signin");
+  const isDriver = audience === "driver";
 
   useEffect(() => {
     if (loading || !user) return;
 
     // Terms acceptance and device permissions run once in the signed-in
     // onboarding dialog, so sign-in only routes the user.
-    if (search.next) navigate({ to: search.next, replace: true });
+    if (next) navigate({ to: next, replace: true });
     else if (role === "admin") navigate({ to: "/admin", replace: true });
-    else if (role === "driver") navigate({ to: "/driver", replace: true });
+    else if (isDriver) navigate({ to: "/driver", replace: true });
     else navigate({ to: "/customer", replace: true });
-  }, [user, role, loading, navigate, search.next]);
+  }, [user, role, loading, navigate, next, isDriver]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -90,9 +120,13 @@ function AuthPage() {
 
       <main className="mx-auto w-full max-w-md px-5 pb-12 pt-4">
         <div className="surface-card p-6">
-          <h1 className="font-display text-3xl tracking-wide text-secondary">Welcome</h1>
+          <h1 className="font-display text-3xl tracking-wide text-secondary">
+            {isDriver ? "Driver sign in" : "Welcome"}
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Sign in with your phone number and password.
+            {isDriver
+              ? "Sign in to accept rides and track your earnings."
+              : "Sign in to book a mini truck in minutes."}
           </p>
           {MINIPORT_TEST_MODE && (
             <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
@@ -112,7 +146,6 @@ function AuthPage() {
               <TabsTrigger value="signup">Sign up</TabsTrigger>
             </TabsList>
             <TabsContent value="otp" className="pt-5 space-y-5">
-              \n{" "}
               <p className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
                 {MINIPORT_TEST_MODE
                   ? `Testing mode: enter ${TEST_OTP}. No SMS is sent.`
@@ -128,7 +161,7 @@ function AuthPage() {
               <SocialAuthButtons />
             </TabsContent>
             <TabsContent value="signup" className="pt-5 space-y-5">
-              <SignUpForm defaultRole={search.as ?? "customer"} referralCode={search.ref} />
+              <SignUpForm lockedRole={audience} referralCode={referralCode} />
               <OrDivider />
               <SocialAuthButtons />
             </TabsContent>
@@ -137,7 +170,12 @@ function AuthPage() {
         <p className="mt-4 text-center text-xs text-muted-foreground">
           {MINIPORT_TEST_MODE
             ? `Testing mode is active — universal OTP ${TEST_OTP}`
-            : "Password sign-in is available now."}
+            : isDriver
+              ? "Want to book a truck instead?"
+              : "Want to drive and earn?"}{" "}
+          <Link to={isDriver ? "/auth" : "/driver-login"} className="underline">
+            {isDriver ? "Customer sign in" : "Driver sign in"}
+          </Link>
         </p>
       </main>
     </div>
@@ -423,10 +461,10 @@ function SignInForm() {
  * nothing chosen on this screen can grant driver or admin access.
  */
 function SignUpForm({
-  defaultRole,
+  lockedRole,
   referralCode: initialReferralCode,
 }: {
-  defaultRole: "customer" | "driver";
+  lockedRole: "customer" | "driver";
   referralCode?: string;
 }) {
   const start = useServerFn(startPhoneOtp);
@@ -434,7 +472,7 @@ function SignUpForm({
   const checkReferral = useServerFn(checkReferralCode);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<"customer" | "driver">(defaultRole);
+  const role = lockedRole;
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState<"details" | "verify">("details");
   const [code, setCode] = useState("");
@@ -582,31 +620,6 @@ function SignUpForm({
 
   return (
     <form onSubmit={sendCode} className="space-y-4">
-      <div>
-        <Label>I want to</Label>
-        <RadioGroup
-          value={role}
-          onValueChange={(v) => setRole(v as "customer" | "driver")}
-          className="mt-2 grid grid-cols-2 gap-2"
-        >
-          <label
-            htmlFor="r-cust"
-            className={`cursor-pointer rounded-md border p-3 text-sm ${role === "customer" ? "border-primary bg-accent" : "border-border"}`}
-          >
-            <RadioGroupItem id="r-cust" value="customer" className="sr-only" />
-            <p className="font-semibold text-secondary">Book trucks</p>
-            <p className="text-xs text-muted-foreground">I&rsquo;m a customer</p>
-          </label>
-          <label
-            htmlFor="r-drv"
-            className={`cursor-pointer rounded-md border p-3 text-sm ${role === "driver" ? "border-primary bg-accent" : "border-border"}`}
-          >
-            <RadioGroupItem id="r-drv" value="driver" className="sr-only" />
-            <p className="font-semibold text-secondary">Drive & earn</p>
-            <p className="text-xs text-muted-foreground">I&rsquo;m a driver</p>
-          </label>
-        </RadioGroup>
-      </div>
       <div>
         <Label htmlFor="su-name">Full name</Label>
         <Input
