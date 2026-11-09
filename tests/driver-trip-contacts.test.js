@@ -42,10 +42,7 @@ describe("driver trip endpoint contacts", () => {
   test("does not substitute an intermediate stop contact for the receiver", () => {
     expect(
       resolveDriverTripContact(
-        [
-          { kind: "stop", contact_name: "Intermediate", contact_phone: "9876543212" },
-          ...endpoints,
-        ],
+        [{ kind: "stop", contact_name: "Intermediate", contact_phone: "9876543212" }, ...endpoints],
         "in_progress",
         null,
       ),
