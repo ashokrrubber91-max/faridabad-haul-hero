@@ -1,5 +1,11 @@
 # MiniPort roadmap
 
+## Monitoring follow-up — source/preview only (9 November 2026)
+
+- [ ] Restore driver sender/receiver calling from participant-scoped pickup/drop stop records, including single-stop trips; keep intermediate-stop verification and historical note contacts working.
+- [ ] Ride acceptance regression confirmed in source and the live function: no offer gate/settlement or vehicle check. Live offer table and dispatch-next function are absent; restoring sequential offers needs an approved plan and isolated test backend. Do not apply production migrations during the pilot.
+- [ ] Verify contact regression tests, full unit tests, lint and preview diagnostics; authenticated real-trip check needs a safe existing trip/session without live writes.
+
 ## Driver feed + migration safety (9 November 2026)
 
 - [x] `get_open_driver_bookings` was defined in a repo migration but never applied, so the fail-closed driver feed would have shown no rides. Applied a nearest-first version live (OTP/phone stripped, zone, passes, distance window). Verified in a rolled-back transaction: near driver sees a new ride at once, far driver after 60s, no customer phone in the payload.
