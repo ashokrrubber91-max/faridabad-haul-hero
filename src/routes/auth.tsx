@@ -75,7 +75,12 @@ function AuthPage() {
 
   if (search.as === "driver") return null;
   return (
-    <AuthScreen audience="customer" mode={search.mode} referralCode={search.ref} next={search.next} />
+    <AuthScreen
+      audience="customer"
+      mode={search.mode}
+      referralCode={search.ref}
+      next={search.next}
+    />
   );
 }
 
