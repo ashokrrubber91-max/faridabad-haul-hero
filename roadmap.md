@@ -1,5 +1,12 @@
 # MiniPort roadmap
 
+## Monitoring follow-up — source/preview only (9 November 2026)
+
+- [x] Restore driver sender/receiver calling from participant-scoped pickup/drop stop records, including single-stop trips; keep intermediate-stop verification and historical note contacts working. Endpoint records are excluded from stop OTP/completion checks.
+- [ ] Ride acceptance regression confirmed in source and the live function: no offer gate/settlement or vehicle check. Live offer table and dispatch-next function are absent; restoring sequential offers needs an approved plan and isolated test backend. Do not apply production migrations during the pilot.
+- [x] Reproduced missing single-stop sender before editing and reran the same check successfully afterward. Full unit suite: 64 passed, 0 failed, including 7 contact tests; full lint: 0 errors, 17 warnings. Preview harness reports build OK. No database writes/migrations/deployments or manual typecheck/build commands.
+- [ ] Authenticated real-trip call-button verification — own-account session mint failed (no matching auth user); needs a signed-in preview driver with an existing safe active trip. No arbitrary account or live booking created.
+
 ## Driver feed + migration safety (9 November 2026)
 
 - [x] `get_open_driver_bookings` was defined in a repo migration but never applied, so the fail-closed driver feed would have shown no rides. Applied a nearest-first version live (OTP/phone stripped, zone, passes, distance window). Verified in a rolled-back transaction: near driver sees a new ride at once, far driver after 60s, no customer phone in the payload.
@@ -9,7 +16,7 @@
 
 ## Nearest-first dispatch (7 November 2026)
 
-- [x] Rides open by distance from the pickup and widen with age: 3 km (0-20s), 6 km (20-40s), 10 km (40-60s), then every matching driver. `accept_booking` enforces it (all earlier rules kept); the driver app mirrors it for display. Applied to the live database; migration `20261107180000_nearest_first_dispatch_windows.sql`.
+- [x] Rides open by distance from the pickup and widen with age: 3 km (0-20s), 6 km (20-40s), 10 km (40-60s), then distance-unrestricted. `accept_booking` enforces distance only; the driver app additionally matches vehicle for display. Applied to the live database; migration `20261107180000_nearest_first_dispatch_windows.sql`. Audit correction (9 November): earlier exclusive-offer checks/settlement were not preserved and vehicle is not checked on acceptance; restoration is pending the monitoring plan.
 - [x] Push alerts go to the 15 nearest eligible drivers (`nearest_dispatch_drivers`, service role only) instead of an arbitrary first 500; falls back to zone/vehicle matching when no driver has a fresh location.
 - [x] Verified in a rolled-back transaction on the live database: near/mid/far/no-location drivers at ride ages 0/25/45/70s behave as specified, and 200 simultaneous-style accepts give exactly one winner.
 - [ ] A driver without a location fix from the last 5 minutes only sees a ride after 60s. Keep driver location sharing on.

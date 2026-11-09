@@ -27,3 +27,4 @@
 - The full-flow integration runner (scripts/full-flow-test.ts, `bun run test:full-flow`) is in-memory like the ride simulation, because the preview and live app share one backend; it must never seed accounts, approve KYC or write bookings.
 
 - Voice booking parses speech on-device with a deterministic parser (src/lib/voice-booking.ts) and books only through the normal createBooking mutation after a cancellable countdown, so it costs no AI credits and never bypasses server pricing, payment or dispatch.
+- Driver sender/receiver calls use participant-scoped pickup/drop stop contacts with a historical-note fallback; only intermediate stops enter the stop-verification workflow, so endpoint contacts cannot block completion.

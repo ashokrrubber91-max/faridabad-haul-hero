@@ -36,6 +36,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { vehicleLabel, STATUS_META, BOOKING_FIELDS } from "@/lib/booking";
 import { addressLines } from "@/lib/address";
+import { resolveDriverTripContact } from "@/lib/driver-trip-contacts";
 
 import { SupportChat } from "@/components/support/SupportChat";
 import { QuickChatModal } from "@/components/chat/QuickChatModal";
@@ -607,15 +608,16 @@ function DriverPage() {
 
   const activeStops = useQuery({
     queryKey: ["driver-active-stops", activeJob?.id],
-    enabled: !!activeJob?.id && Boolean(activeJob?.is_multi_stop),
+    enabled: !!activeJob?.id,
     queryFn: async () => {
+      const bookingId = activeJob?.id;
+      if (!bookingId) return [];
       const { data, error } = await supabase
         .from("booking_stops")
         .select(
           "id, sequence, kind, address, latitude, longitude, contact_name, contact_phone, status, arrived_at, verified_at",
         )
-        .eq("booking_id", activeJob!.id)
-        .eq("kind", "stop")
+        .eq("booking_id", bookingId)
         .order("sequence", { ascending: true });
       if (error) throw error;
       return data ?? [];
@@ -1276,7 +1278,7 @@ function ActiveJobCard({
   stageBusy,
   vehicle,
   pending,
-  stops,
+  stops: itineraryStops,
   onStopArrived,
   onStopVerify,
   stopBusy,
@@ -1294,6 +1296,9 @@ function ActiveJobCard({
   stops: Array<{
     id: string;
     sequence: number;
+    kind: string;
+    contact_name: string | null;
+    contact_phone: string | null;
     address: string;
     latitude: number | null;
     longitude: number | null;
@@ -1308,6 +1313,11 @@ function ActiveJobCard({
   const [podPath, setPodPath] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  // Endpoint contacts are separate from the intermediate-stop OTP workflow.
+  const stops = useMemo(
+    () => itineraryStops.filter((stop) => stop.kind === "stop"),
+    [itineraryStops],
+  );
 
   const uploadProof = async (file: File) => {
     setUploading(true);
@@ -1348,7 +1358,7 @@ function ActiveJobCard({
   const [stopOtp, setStopOtp] = useState("");
 
   const label = next === "in_progress" ? "Verify Pickup OTP" : "Verify Drop OTP";
-  const contact = extractContact(job.notes, next === "in_progress" ? "Sender" : "Receiver");
+  const contact = resolveDriverTripContact(itineraryStops, job.status, job.notes);
   const commission = Math.round(Number(job.fare) * (Number(job.commission_rate) || 0.1));
   const net = Number(job.fare) - commission;
   const isCash = job.payment_method === "cod";
@@ -1699,13 +1709,6 @@ function ActiveJobCard({
       </div>
     </section>
   );
-}
-
-function extractContact(notes: string | null, prefix: "Sender" | "Receiver") {
-  if (!notes) return { name: "", phone: "" };
-  const re = new RegExp(`${prefix}:\\s*([^(]+)\\(([^)]*)\\)`);
-  const m = notes.match(re);
-  return { name: (m?.[1] ?? "").trim(), phone: (m?.[2] ?? "").trim() };
 }
 
 function Center({ children }: { children: React.ReactNode }) {
