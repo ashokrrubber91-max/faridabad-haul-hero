@@ -104,26 +104,6 @@ function AdminGate() {
     if (!loading && !user) navigate({ to: "/admin/login", replace: true });
   }, [loading, user, navigate]);
 
-  // Team accounts must also have completed two-step verification (aal2) in this session.
-  const [mfaOk, setMfaOk] = useState<boolean | null>(null);
-  const isTeamAccount = roles.includes("admin");
-  useEffect(() => {
-    if (loading || !user || !isTeamAccount) return;
-    let alive = true;
-    void supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data, error }) => {
-      if (!alive) return;
-      if (error || data?.currentLevel !== "aal2") {
-        setMfaOk(false);
-        navigate({ to: "/admin/login", replace: true });
-      } else {
-        setMfaOk(true);
-      }
-    });
-    return () => {
-      alive = false;
-    };
-  }, [loading, user, isTeamAccount, navigate]);
-
   if (loading || !user) {
     return (
       <div className="mt-24 flex justify-center">
@@ -134,14 +114,6 @@ function AdminGate() {
 
   if (!roles.includes("admin")) {
     return <AdminSetupOrDenied />;
-  }
-
-  if (mfaOk !== true) {
-    return (
-      <div className="mt-24 flex justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-primary" />
-      </div>
-    );
   }
 
   return <AdminPage />;

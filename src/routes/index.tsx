@@ -76,7 +76,7 @@ function Index() {
                   Book a truck
                 </Button>
               </Link>
-              <Link to="/driver-login" search={{ mode: "signup" }}>
+              <Link to="/auth" search={{ mode: "signup", as: "driver" }}>
                 <Button size="lg" variant="secondary" className="h-12 px-6 text-base">
                   Drive with MiniPort
                 </Button>
