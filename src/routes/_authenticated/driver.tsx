@@ -1312,6 +1312,7 @@ function ActiveJobCard({
   const [otp, setOtp] = useState("");
   const [podPath, setPodPath] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const proofInputRef = useRef<HTMLInputElement>(null);
   const [chatOpen, setChatOpen] = useState(false);
   // Endpoint contacts are separate from the intermediate-stop OTP workflow.
   const stops = useMemo(
@@ -1679,26 +1680,38 @@ function ActiveJobCard({
             <p className="text-xs font-semibold uppercase tracking-wider text-primary">
               Proof of delivery {!podPath && <span className="text-destructive">· required</span>}
             </p>
-            <label className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-secondary">
+            <input
+              ref={proofInputRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              aria-label="Choose proof of delivery photo"
+              onChange={(e) => {
+                const input = e.currentTarget;
+                const file = input.files?.[0];
+                if (file) void uploadProof(file);
+                // Clear after capturing the File object so the same photo can be selected again.
+                input.value = "";
+              }}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="mt-2 inline-flex items-center gap-2"
+              disabled={uploading}
+              onClick={() => proofInputRef.current?.click()}
+            >
               <Camera className="h-4 w-4 text-primary" />
               {uploading
                 ? "Uploading…"
                 : podPath
-                  ? "Photo attached — retake"
-                  : "Take / upload delivery photo"}
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="sr-only"
-                onChange={(e) => {
-                  const input = e.currentTarget;
-                  const f = input.files?.[0];
-                  if (f) void uploadProof(f);
-                  input.value = "";
-                }}
-              />
-            </label>
+                  ? "Photo attached — choose another"
+                  : "Choose / take delivery photo"}
+            </Button>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Choose a photo from Gallery or take a new photo with Camera.
+            </p>
             {podPath && (
               <p className="mt-1 text-xs text-success">
                 Photo attached — it will be saved with the trip. The drop OTP is still required.
