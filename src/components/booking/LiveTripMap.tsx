@@ -327,14 +327,18 @@ export function LiveTripMap({
               the driver&rsquo;s progress still updates in the trip details above.
             </p>
           </div>
-        ) : (
-          !pickup ||
-          (!drop && (
-            <div className="absolute inset-0 grid place-items-center">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        ) : !pickup || !drop ? (
+          <div
+            className="absolute inset-0 grid place-items-center bg-muted/70"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="flex items-center gap-2 rounded-full border bg-card/95 px-4 py-2 text-xs font-medium text-muted-foreground shadow-sm">
+              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
+              Loading live map…
             </div>
-          ))
-        )}
+          </div>
+        ) : null}
       </div>
       {!immersive && (
         <p className="border-t bg-background px-3 py-1.5 text-[11px] text-muted-foreground">
