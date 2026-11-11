@@ -1,7 +1,7 @@
 /**
  * Fully automated, zero-touch end-to-end ride flow test for MiniPort.
  *
- *   bun run test:full-flow [--users=10000] [--seed=7]
+ *   bun run test:full-flow [--users=10000] [--drivers=10000 --customers=20000] [--seed=7]
  *
  * Runs entirely in memory. The preview and the live app share one database, so
  * this runner never seeds real accounts, never approves real KYC and never
@@ -46,6 +46,11 @@ function arg(name: string, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
 }
 const USERS = arg("users", 10_000);
+const DRIVER_COUNT = arg(
+  "drivers",
+  Math.max(VEHICLES.length * HUBS.length, Math.round(USERS * 0.3)),
+);
+const CUSTOMER_COUNT = arg("customers", Math.max(0, USERS - DRIVER_COUNT));
 const SEED = arg("seed", 7);
 
 function mulberry32(seed: number) {
@@ -443,8 +448,8 @@ async function main() {
   // 1. Seed users
   const admin: User = { id: "A1", role: "admin" };
   users.set(admin.id, admin);
-  const driverCount = Math.max(VEHICLES.length * HUBS.length, Math.round(USERS * 0.3));
-  const customerCount = USERS - driverCount;
+  const driverCount = DRIVER_COUNT;
+  const customerCount = CUSTOMER_COUNT;
   for (let i = 0; i < driverCount; i++) {
     const id = `D${i + 1}`;
     users.set(id, { id, role: "driver" });
@@ -587,8 +592,8 @@ async function main() {
 
   console.log("MiniPort full-flow integration test (in-memory, no database writes)");
   console.table({
-    users: users.size,
-    totalTestAccountsCreated: users.size,
+    users: driverCount + customerCount,
+    totalTestAccountsCreated: driverCount + customerCount,
     seed: SEED,
     drivers: driverCount,
     driversKycRejected: rejected,
@@ -613,7 +618,7 @@ async function main() {
   // A shareable visual report is generated from the same in-memory run.
   // No simulated account, booking, OTP, or support ticket is written to Supabase.
   const testAccounts = {
-    total: users.size,
+    total: driverCount + customerCount,
     customers: customerCount,
     drivers: driverCount,
     admins: 1,
